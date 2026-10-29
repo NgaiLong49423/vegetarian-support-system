@@ -148,3 +148,67 @@ test('connection errors can retry while missing and invalid ingredient IDs show 
   await page.getByRole('button', { name: 'Về danh mục', exact: true }).click();
   await expect(page).toHaveURL('/danh-muc-nguyen-lieu');
 });
+
+test('unit converter offers only the ingredient units and recalculates in both directions', async ({ page }) => {
+  await page.route('**/api/v1/ingredients/42', (route) => route.fulfill({ json: { ...ingredient, name: 'Nước' } }));
+  await page.route('**/api/v1/ingredients/42/units', (route) => route.fulfill({ json: [
+    { id: 1, code: 'mg', name: 'miligram', dimension: 'MASS', gramsPerUnit: 0.001, approximate: false },
+    { id: 2, code: 'g', name: 'gram', dimension: 'MASS', gramsPerUnit: 1, approximate: false },
+    { id: 3, code: 'ml', name: 'mililit', dimension: 'VOLUME', gramsPerUnit: 1, approximate: false },
+    { id: 4, code: 'L', name: 'lít', dimension: 'VOLUME', gramsPerUnit: 1000, approximate: false },
+    { id: 5, code: 'cup', name: 'cup', dimension: 'VOLUME', gramsPerUnit: 240, approximate: true },
+    { id: 6, code: 'quả', name: 'quả', dimension: 'COUNT', gramsPerUnit: 100, approximate: true },
+  ] }));
+  await page.goto('/nguyen-lieu/42');
+  const converter = page.getByRole('region', { name: 'Quy đổi đơn vị' });
+  const leftValue = converter.getByLabel('Số lượng thứ nhất');
+  const rightValue = converter.getByLabel('Số lượng quy đổi');
+  const leftUnit = converter.getByLabel('Đơn vị thứ nhất');
+  const rightUnit = converter.getByLabel('Đơn vị quy đổi');
+  await expect(leftUnit.locator('option')).toHaveCount(6);
+  await expect(converter.getByText(/ước tính/)).toBeVisible();
+  await leftUnit.selectOption('1');
+  await leftValue.fill('1000');
+  await expect(rightValue).toHaveValue('1');
+  await rightUnit.selectOption('4');
+  await expect(rightValue).toHaveValue('0.001');
+  await rightValue.fill('2');
+  await expect(leftValue).toHaveValue('2000000');
+  await leftUnit.selectOption('6');
+  await expect(rightValue).toHaveValue('200000');
+});
+
+test('unit converter handles blank, negative and zero inputs without showing invalid conversions', async ({ page }) => {
+  await page.route('**/api/v1/ingredients/42', (route) => route.fulfill({ json: { ...ingredient, name: 'Nước' } }));
+  await page.route('**/api/v1/ingredients/42/units', (route) => route.fulfill({ json: [
+    { id: 2, code: 'g', name: 'gram', dimension: 'MASS', gramsPerUnit: 1, approximate: false },
+    { id: 3, code: 'ml', name: 'mililit', dimension: 'VOLUME', gramsPerUnit: 1, approximate: false },
+  ] }));
+  await page.goto('/nguyen-lieu/42');
+  const left = page.getByLabel('Số lượng thứ nhất');
+  const right = page.getByLabel('Số lượng quy đổi');
+  await left.fill('');
+  await expect(right).toHaveValue('');
+  await left.fill('-1');
+  await expect(right).toHaveValue('');
+  await left.fill('0');
+  await expect(right).toHaveValue('0');
+  await expect(page.getByText(/ước tính/)).toHaveCount(0);
+});
+
+test('unit converter can retry a failed request and reports an ingredient with no units', async ({ page }) => {
+  let attempts = 0;
+  await page.route('**/api/v1/ingredients/42', (route) => route.fulfill({ json: ingredient }));
+  await page.route('**/api/v1/ingredients/42/units', (route) => {
+    attempts++;
+    return route.fulfill(attempts === 1
+      ? { status: 503, json: { status: 503, code: 'SERVICE_UNAVAILABLE' } }
+      : { json: [] });
+  });
+  await page.goto('/nguyen-lieu/42');
+  const converter = page.getByRole('region', { name: 'Quy đổi đơn vị' });
+  await expect(converter.getByRole('alert')).toContainText('Không tải được đơn vị quy đổi.');
+  await converter.getByRole('button', { name: 'Thử lại' }).click();
+  await expect(converter.getByText('Nguyên liệu này chưa có đơn vị quy đổi khả dụng.')).toBeVisible();
+  expect(attempts).toBe(2);
+});

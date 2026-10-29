@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.116.0
+> **Version:** v2.124.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-29
 > **Status:** Active
@@ -8,6 +8,26 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-29 — Synchronize FR-10 with the Current Develop Baseline
+
+**Status:** Working tree — not committed.
+
+**Scope:** Resolve integration conflicts against develop `910f0da5` so PR #194 can run its required CI workflows.
+
+### Added
+
+- None.
+
+### Changed
+
+- Preserve develop's ingredient-specific units, shopping changes, resizable chat and original recipe assistant while retaining FR-10 Guest chat, paid-feature guards, upgrade links and related-recipe deduplication.
+- Preserve both bug histories by relocating the older FR-10 BUG-067–069 records to BUG-082–084. Keep develop's records at their original IDs and reserve BUG-078–080 already allocated on FR-11.
+
+### Fixed
+
+- Resolve overlapping fixture-cleanup and mutable-clock test changes without removing the FR-10 isolation fixes.
+- Reconcile the current-week fixture after merging clock changes. All 91 selected Backend tests pass across the clean run and focused recheck; all 33 selected Frontend tests, TypeScript, production build and root Compose health checks pass. Regenerate OpenAPI from the synchronized running Backend.
 
 ## 2026-10-29 — Avoid Duplicate Related Recipe Cards
 
@@ -64,11 +84,6 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Replace the develop modal's local recipe/nutrition simulation with structured Gemini generation. Retain author editing, catalog-based calorie recalculation and manual publication. Match the latest develop dialog frame, advisory copy and light/dark styling.
 - Reconcile live Issue tracking only after separate authorization; the new FR-21 workflow needs follow-up tracking without rewriting completed Issue history.
-
-### Fixed
-
-- None.
-
 ## 2026-10-29 — Restore the Recipe Assistant Form Layout
 
 **Status:** Committed — `b60e177e9afc738a74569b37ed441dacbb3ab367`.
@@ -105,6 +120,41 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Preserve the original benefit wording when moving it between Plus and Pro. Do not add an Expert qualifier or an extra FR-37 benefit row to the plan cards.
 - Align server guards, chatbot workflow routing, current-subscription features, plan descriptions, upgrade messages and maintained requirements/use cases. Apply the current matrix to existing active subscriptions without changing their stored tier or paid expiry.
 - Keep live Issue reconciliation pending separate authorization. Issue #16 still describes the previous matrix at the time of this local change.
+## 2026-10-28 — Track Recipe Sources and Item Provenance in Shopping Lists
+
+**Status:** Committed — `2d04630c3cef07fb79e1a5fda3d2c0575c60a8f1`.
+
+**Scope:** Show recipes contributing to each shopping list and let Members adjust combined servings without changing Meal Plan entries.
+
+### Added
+
+- Store per-occurrence recipe source, serving count, and optional meal date/type; show a horizontal recipe carousel with one image, title, and combined serving total per recipe. Open the recipe detail from a card, adjust the combined servings alongside its ingredients, and return to the refreshed shopping list after saving.
+- Record each manually added contribution separately and require a selected catalog result before assigning a supported ingredient identity. Incomplete recipes are omitted from the recipe carousel; removing an aggregated ingredient removes all its list contributions while preserving recipe history as incomplete.
+
+### Changed
+
+- Group repeated recipe appearances into one card without displaying meal dates/types; distribute adjusted total servings proportionally across saved occurrences and recalculate their ingredient contributions. The recipe detail supports shopping-list context without changing Meal Plan behavior. Replace always-visible per-item source lines with a circular details control and a grouped recipe-contribution dialog showing the combined recipe servings.
+- Require Members to confirm a shopping-list item addition or quantity change before saving, with a confirmation that names the item and describes the quantity increase or decrease when conversion is safe; manual contribution edits also confirm the named item and the amount change. Let Members edit the total amount of a recipe-linked ingredient while preserving a recipe-required minimum; show an immediate inline warning and disable saving below that minimum without displaying a routine amount breakdown. The Backend also rejects totals below the minimum. Keep the recipe unit fixed while editing that total; manual-only items remain editable. Deleting a whole item removes both recipe and manual amounts. Add catalog search and limit supported items to units returned for the selected ingredient; free-text items remain custom and have no catalog image.
+- Classify surviving sibling contributions from an incomplete recipe occurrence as `UNKNOWN`. Keep them in the list total and item detail, but exclude them from the recipe carousel and required minimum. When reducing a total, consume `UNKNOWN` before Member-added amounts; increases remain Member-added. Deleting the item itself removes its own contributions. Extend FR-53 and add Flyway V29 for this lifecycle.
+- Consolidate all `UNKNOWN` contributions for one ingredient into a single total row in its detail dialog. Refresh the full shopping checklist after deleting an item so recipe cards update immediately without a page reload.
+- Add a three-dot menu to each shopping-list recipe card for quick serving changes and removing all occurrences of that recipe from the current list. Confirmations preview affected ingredient amounts; removal recalculates shared rows and deletes rows that no longer have any source, without changing the blog post or meal plan.
+- Extend FR-53 and FR-54 acceptance criteria for recipe provenance and quantity recalculation. Existing lists without recoverable source data remain unchanged.
+- Remove the duplicate serving-count input from the meal-plan recipe panel so the serving control appears only once.
+
+### Fixed
+
+- None.
+
+## 2026-10-28 — Improve AI Meal-Planning Preview Readability
+
+**Status:** Committed — `2d04630c3cef07fb79e1a5fda3d2c0575c60a8f1`.
+
+**Scope:** Put the current and upcoming dates before past dates in the nutrition-based AI menu preview.
+
+### Changed
+
+- Order the preview with today and future dates first, then show one “NGÀY ĐÃ QUA” divider before past dates. Applying the preview still uses each meal's original date and selection.
+- Improve contrast for the AI recipe assistant's labels and controls in dark mode.
 
 ### Fixed
 
@@ -130,6 +180,20 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Allow the real-stack AI entitlement test to use CI-provided environment variables when the ignored Backend `.env` file is absent, matching the existing Compose integration convention.
 - Run scoped cleanup both before and after recipe creation, media authorization, management, viewing, discovery and saved-recipe integration tests so their final fixtures cannot break later Auth tests through foreign keys.
+
+## 2026-10-28 — Seed the Demo Expert Nutrition Profile
+
+**Status:** Committed — `2d04630c3cef07fb79e1a5fda3d2c0575c60a8f1`.
+
+**Scope:** Populate profile fields for `demo-expert@mamxanh.local` in the local demonstration database.
+
+### Added
+
+- Add an idempotent local demo-profile fixture that fills the demo Expert's missing nutrition-profile fields without overwriting an already completed profile; the fixture does not describe a real person.
+
+### Fixed
+
+- None.
 
 ## 2026-10-27 — Integrate FR-10 with the Current Develop Baseline ([PR #194](https://github.com/NgaiLong49423/vegetarian-support-system/pull/194))
 
@@ -165,11 +229,6 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Restore the shared adapter model and provider-path/logging regression assertions to `gemini-3.8-flash`; preserve entitlement checks, structured output validation and the bounded retry deadline.
 - Update current integration guidance to distinguish controlled adapter tests from live generation with a valid provider key.
-
-### Fixed
-
-- None.
-
 ## 2026-10-27 — Chat Workflow Entitlements and Grounded Follow-up Discovery ([PR #194](https://github.com/NgaiLong49423/vegetarian-support-system/pull/194))
 
 **Status:** Committed — `0b9a552b`.
@@ -189,10 +248,45 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Prevent explicit paid workflow requests from reaching the general chatbot provider without entitlement checks (BUG-069).
 - Retrieve current public recipe candidates for follow-up requests, preserve dish categories, exclude previously shown card IDs when asking for alternatives, and keep absence claims limited to the catalog actually checked (BUG-068).
+## 2026-10-27 — Add Ingredient Unit Conversion to Public Detail
+
+**Status:** Committed — `c4794dba98b0a3d9e0a150ee08e8c7611ece3a67`.
+
+**Scope:** Let Guests and Members convert between units supported by the ingredient they are viewing.
+
+### Added
+
+- Add a two-way ingredient unit converter using per-ingredient gram factors, with retry and estimated-value guidance.
+
+### Changed
+
+- Extend FR-62 and its API integration guidance with the public unit conversion behavior.
+
+### Fixed
+
+- None.
+
+## 2026-10-27 — Standardize Ingredient Recipe Units
+
+**Status:** Committed — `c4794dba98b0a3d9e0a150ee08e8c7611ece3a67`.
+
+**Scope:** Add per-ingredient support for standardized recipe units and precise shopping aggregation.
+
+### Added
+
+- Add the `mg` unit, per-ingredient unit options, and grouped volume conversion management.
+
+### Changed
+
+- Limit new recipe unit choices to supported standard units, let administrators enter ingredient conversion factors directly without source metadata, and preserve sub-gram shopping quantities to six decimal places.
+
+### Fixed
+
+- Prevent legacy units and unsupported conversions from being selected for new recipe ingredients.
 
 ## 2026-10-27 — Fix AI Chat Questions About the Current Recipe
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `b294a28ebc1b2a8e1fce65f00b5dec3561b43325`.
 
 **Scope:** Let members ask ordinary questions about the recipe currently open without entering recipe discovery mode.
 
@@ -902,6 +996,27 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - None.
 
+## 2026-10-22 — Select Public Recipes Directly in Meal Plans (Issue #154)
+
+**Status:** Committed — `b5c8bdb`.
+
+**Scope:** Complete the FR-09 / FR-33 recipe picker flow using the existing public search and meal-plan APIs.
+
+### Added
+
+- Switch between saved recipes and public recipe search without leaving the selected meal; search and paginate both sources.
+- Cover empty saved collections, public add/replace, unavailable or duplicate choices, failure recovery, late responses and keyboard access in browser tests.
+
+### Changed
+
+- Keep saved recipes as the default source and preserve day, meal and servings when selecting a public replacement.
+- Extend the Compose integration scenario to verify adding a public recipe that is not saved, without inserting a saved-recipe row.
+
+### Fixed
+
+- Remove the requirement to leave the planner and save a recipe before selecting it for a meal; meal-plan operations do not modify the saved collection.
+
+
 ## 2026-10-21 — Add Public Ingredient Details ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
 
 **Status:** Committed — `25b113f`.
@@ -964,27 +1079,6 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Remove the unresolved dependency on the separately committed FR-55 export component so FR-53 can build independently.
 - Use explicit calendar-value comparisons and manage shopping-dialog focus through refs while preserving keyboard access to add, edit and cancel actions.
-## 2026-10-22 — Select Public Recipes Directly in Meal Plans (Issue #154)
-
-**Status:** Committed — `b5c8bdb`.
-
-**Scope:** Complete the FR-09 / FR-33 recipe picker flow using the existing public search and meal-plan APIs.
-
-### Added
-
-- Switch between saved recipes and public recipe search without leaving the selected meal; search and paginate both sources.
-- Cover empty saved collections, public add/replace, unavailable or duplicate choices, failure recovery, late responses and keyboard access in browser tests.
-
-### Changed
-
-- Keep saved recipes as the default source and preserve day, meal and servings when selecting a public replacement.
-- Extend the Compose integration scenario to verify adding a public recipe that is not saved, without inserting a saved-recipe row.
-
-### Fixed
-
-- Remove the requirement to leave the planner and save a recipe before selecting it for a meal; meal-plan operations do not modify the saved collection.
-
-
 ## 2026-10-21 — Restore CI Compatibility with Public Discovery ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
 
 **Status:** Committed — `51b706b`.
@@ -1161,6 +1255,27 @@ None.
 
 - Align the Landing tests and workspace guide with the current preview and navigation design.
 
+## 2026-10-19 — Point Duplicate Recipe Reports to the Open Report and Require New Details After Resolution (Issue #35)
+
+**Status:** Committed — `03ae27a`.
+
+**Scope:** Deliver the FR-30 rules that do not depend on the open supplement-storage and report-form decisions (Q67, Q68): a duplicate report now tells the client which open report to continue, and a report filed after an earlier one was resolved must describe the new problem (SRS 3.14, AC-30.2, AC-30.3).
+
+### Added
+
+- Add `reportId` of the reporter's open report to the `409 REPORT_ALREADY_OPEN` problem body of `POST /api/v1/recipes/{recipeId}/reports`.
+- Add SQL Server integration tests for duplicate reports, four concurrent submissions by the same member (one `201`, three `409` with the created `reportId`), re-reporting after `RESOLVED`, and a first report with a non-`OTHER` reason and no description.
+- Record BUG-065: moving a meal-plan entry sometimes leaves keyboard focus on the page body instead of the "Lịch ăn của bạn" heading (FR-33, AC-33.4; 6 of 28 isolated runs of `meal-plan-management.spec.ts:120` failed on `develop` `0e98048`).
+
+### Changed
+
+- Require a 10–500 character description for every reason when the member's previous report on the same recipe is `RESOLVED`; otherwise return `400 VALIDATION_FAILED` with `field = description`.
+- Document report submission, the duplicate rule and the re-report rule in `docs/api/API.md` section 22 and the Backend README.
+
+### Fixed
+
+- None.
+
 ## 2026-10-18 — Refine Account, Calendar and Admin Interfaces ([PR #156](https://github.com/NgaiLong49423/vegetarian-support-system/pull/156))
 
 **Status:** Committed — `2e6ec94`.
@@ -1182,27 +1297,6 @@ None.
 
 - Preserve API-backed recipe comments, reactions, views and meal-plan serving updates after synchronizing develop.
 - Keep tall registration forms scrollable, retain ingredient JSON preview/copy, and use the actual vegetarian-type label in recipe details.
-
-## 2026-10-19 — Point Duplicate Recipe Reports to the Open Report and Require New Details After Resolution (Issue #35)
-
-**Status:** Committed — `03ae27a`.
-
-**Scope:** Deliver the FR-30 rules that do not depend on the open supplement-storage and report-form decisions (Q67, Q68): a duplicate report now tells the client which open report to continue, and a report filed after an earlier one was resolved must describe the new problem (SRS 3.14, AC-30.2, AC-30.3).
-
-### Added
-
-- Add `reportId` of the reporter's open report to the `409 REPORT_ALREADY_OPEN` problem body of `POST /api/v1/recipes/{recipeId}/reports`.
-- Add SQL Server integration tests for duplicate reports, four concurrent submissions by the same member (one `201`, three `409` with the created `reportId`), re-reporting after `RESOLVED`, and a first report with a non-`OTHER` reason and no description.
-- Record BUG-065: moving a meal-plan entry sometimes leaves keyboard focus on the page body instead of the "Lịch ăn của bạn" heading (FR-33, AC-33.4; 6 of 28 isolated runs of `meal-plan-management.spec.ts:120` failed on `develop` `0e98048`).
-
-### Changed
-
-- Require a 10–500 character description for every reason when the member's previous report on the same recipe is `RESOLVED`; otherwise return `400 VALIDATION_FAILED` with `field = description`.
-- Document report submission, the duplicate rule and the re-report rule in `docs/api/API.md` section 22 and the Backend README.
-
-### Fixed
-
-- None.
 
 ## 2026-10-18 — Repair CI Contract and Recipe-Card Checks ([PR #148](https://github.com/NgaiLong49423/vegetarian-support-system/pull/148))
 
@@ -1367,29 +1461,6 @@ None.
 - Resolve Git, migration and contract conflicts against the current develop baseline, including commit `9114dcf`.
 - Document ProblemDetail error schemas for view-recording responses instead of the success DTO (BUG-035).
 - Adapt meal-plan browser fixtures and scope feedback assertions for concurrent view-recording messages.
-
-## 2026-10-13 — Add Member Following (Issue #69) ([PR #128](https://github.com/NgaiLong49423/vegetarian-support-system/pull/128))
-
-**Status:** Committed — `81ea5ec` (Backend), `8cd7bfc` (Frontend and documentation).
-
-**Scope:** Implement UC-59.1–UC-59.4 so members can follow and unfollow other members from the public profile, see follower and following counts, and browse both lists, following AC-59.1–AC-59.7 and BR-75.
-
-### Added
-
-- Add `GET /api/v1/members/{userId}/follow` (public follow summary with the viewer's state), idempotent `PUT`/`DELETE` on the same path, and paginated `GET /api/v1/members/{userId}/followers` and `/following` for signed-in users. The follower always comes from the session; only active customers and experts may follow; counts and lists include only active accounts.
-- Add the `FOLLOW_SELF_NOT_ALLOWED` (403) and `FOLLOW_TARGET_INACTIVE` (409) error codes.
-- Add follow counts, the follow button and the follower/following lists to the public profile page `/thanh-vien/:userId`.
-- Add SQL Server integration tests (including parallel follow requests) and Playwright tests for the follow flows.
-- Record BUG-032 under `.agents/outputs/bugs/`.
-
-### Changed
-
-- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
-- Document the follow API and error codes in `API.md` section 17 and the Backend/Frontend READMEs.
-
-### Fixed
-
-- None.
 
 ## 2026-10-15 — Align Recipe Reactions with Generated OpenAPI Verification ([PR #119](https://github.com/NgaiLong49423/vegetarian-support-system/pull/119))
 
@@ -1641,6 +1712,29 @@ None.
 - Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Integrate the three AI planning modes into the Meal Plan's “Dành cho bạn” area while keeping manual meal planning available separately.
 - Document the combined API contracts and clarify nutrition-menu replacement and rollback behavior.
+
+### Fixed
+
+- None.
+
+## 2026-10-13 — Add Member Following (Issue #69) ([PR #128](https://github.com/NgaiLong49423/vegetarian-support-system/pull/128))
+
+**Status:** Committed — `81ea5ec` (Backend), `8cd7bfc` (Frontend and documentation).
+
+**Scope:** Implement UC-59.1–UC-59.4 so members can follow and unfollow other members from the public profile, see follower and following counts, and browse both lists, following AC-59.1–AC-59.7 and BR-75.
+
+### Added
+
+- Add `GET /api/v1/members/{userId}/follow` (public follow summary with the viewer's state), idempotent `PUT`/`DELETE` on the same path, and paginated `GET /api/v1/members/{userId}/followers` and `/following` for signed-in users. The follower always comes from the session; only active customers and experts may follow; counts and lists include only active accounts.
+- Add the `FOLLOW_SELF_NOT_ALLOWED` (403) and `FOLLOW_TARGET_INACTIVE` (409) error codes.
+- Add follow counts, the follow button and the follower/following lists to the public profile page `/thanh-vien/:userId`.
+- Add SQL Server integration tests (including parallel follow requests) and Playwright tests for the follow flows.
+- Record BUG-032 under `.agents/outputs/bugs/`.
+
+### Changed
+
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
+- Document the follow API and error codes in `API.md` section 17 and the Backend/Frontend READMEs.
 
 ### Fixed
 
@@ -2171,51 +2265,6 @@ None.
 
 - Correct browse/detail responses that returned 90.91 instead of the required 91 for ten Likes and one Dislike; record the resolution in BUG-031.
 
-## 2026-10-09 — Add Recipe Reaction Backend (Issue #56)
-
-**Status:** Committed — `b9d8455`.
-
-**Scope:** Implement the Backend stage of FR-57 using the existing reaction schema. This checkpoint preceded the statistics alignment recorded on October 11; Frontend integration remains pending.
-
-### Added
-
-- Add authenticated GET, PUT and DELETE operations for the current Member's recipe reaction, with aggregate counts, rounded percentages, private cache policy and generated OpenAPI documentation.
-- Enforce author self-vote rejection and published-recipe checks; serialize reaction mutations through the existing recipe lock, preserving idempotent set/remove behavior.
-- Add focused unit and SQL Server integration tests. Local verification passed 35 unit/regression tests and 25 HTTP/SQL checks; the Testcontainers run could not start without Docker.
-
-### Changed
-
-- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
-- Document the reaction contract, verification limits and pending Frontend/read-statistics work in the Backend workspace guide.
-
-### Fixed
-
-None.
-
-## 2026-10-10 — Add Password Reset (Issue #9) ([PR #113](https://github.com/NgaiLong49423/vegetarian-support-system/pull/113))
-
-**Status:** Committed — `8794862`.
-
-**Scope:** Implement UC-03.6 and UC-03.7 so members can request a reset link by email and set a new password, following AC-03.14 and decisions Q13, Q27, Q47 and Q48.
-
-### Added
-
-- Add `POST /api/v1/auth/password-resets`, which always returns the same neutral `202` message and emails a 15-minute single-use link only to an existing active account outside the 60-second cooldown and under five emails per hour; unknown emails, locked accounts and rate-limited requests get no email and no `429`.
-- Add `POST /api/v1/auth/password-resets/confirm`, which stores the new BCrypt hash, consumes the token and returns `204`; it also verifies an unverified email, ends a temporary login block and lets a Google-only account set a password.
-- Add `PASSWORD_RESET_TOKEN_INVALID` (400) for unknown, used, replaced or expired tokens and `NEW_PASSWORD_SAME_AS_CURRENT` (400), and return `ACCOUNT_LOCKED` (403) when the account was locked after the email was sent.
-- Add Flyway migration `V11__user_password_reset.sql` with the token digest, its expiry and the reset-email rate-limit columns on `USER`, plus two checks, one default and a filtered unique index on the token digest.
-- Connect the forgot-password and reset-password pages to the API; the reset page keeps the token in memory and removes it from the address bar.
-- Add unit, SQL Server integration (cooldown, hourly limit, token replacement and expiry, parallel requests, 72-byte passwords, log redaction) and Playwright tests.
-
-### Changed
-
-- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
-- Remove the implemented password-reset endpoints and their schemas from the planned `openapi.yaml`, and document the flow and new error codes in `API.md`.
-- Synchronize `database/schema.sql`, the `database/queries.sql` expected counts and `database/README.md` with V11.
-
-### Fixed
-
-- None.
 ## 2026-10-11 — Add Public Author Profiles (Issue #29) ([PR #116](https://github.com/NgaiLong49423/vegetarian-support-system/pull/116))
 
 **Status:** Committed — `20399b3`.
@@ -2266,6 +2315,30 @@ None.
 - Fix BUG-021: another Expert or an Administrator could replace or delete the images of a Recipe Post they did not write, including the stored blobs.
 - Fix BUG-018: replacing the images of a Recipe Post that already had images always failed with `500` because the new rows were inserted before the old ones were deleted.
 
+## 2026-10-10 — Add Password Reset (Issue #9) ([PR #113](https://github.com/NgaiLong49423/vegetarian-support-system/pull/113))
+
+**Status:** Committed — `8794862`.
+
+**Scope:** Implement UC-03.6 and UC-03.7 so members can request a reset link by email and set a new password, following AC-03.14 and decisions Q13, Q27, Q47 and Q48.
+
+### Added
+
+- Add `POST /api/v1/auth/password-resets`, which always returns the same neutral `202` message and emails a 15-minute single-use link only to an existing active account outside the 60-second cooldown and under five emails per hour; unknown emails, locked accounts and rate-limited requests get no email and no `429`.
+- Add `POST /api/v1/auth/password-resets/confirm`, which stores the new BCrypt hash, consumes the token and returns `204`; it also verifies an unverified email, ends a temporary login block and lets a Google-only account set a password.
+- Add `PASSWORD_RESET_TOKEN_INVALID` (400) for unknown, used, replaced or expired tokens and `NEW_PASSWORD_SAME_AS_CURRENT` (400), and return `ACCOUNT_LOCKED` (403) when the account was locked after the email was sent.
+- Add Flyway migration `V11__user_password_reset.sql` with the token digest, its expiry and the reset-email rate-limit columns on `USER`, plus two checks, one default and a filtered unique index on the token digest.
+- Connect the forgot-password and reset-password pages to the API; the reset page keeps the token in memory and removes it from the address bar.
+- Add unit, SQL Server integration (cooldown, hourly limit, token replacement and expiry, parallel requests, 72-byte passwords, log redaction) and Playwright tests.
+
+### Changed
+
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
+- Remove the implemented password-reset endpoints and their schemas from the planned `openapi.yaml`, and document the flow and new error codes in `API.md`.
+- Synchronize `database/schema.sql`, the `database/queries.sql` expected counts and `database/README.md` with V11.
+
+### Fixed
+
+- None.
 ## 2026-10-10 — Add Google Login and Account Linking (Issue #8) ([PR #111](https://github.com/NgaiLong49423/vegetarian-support-system/pull/111))
 
 **Status:** Committed — `519ecbb`.
@@ -2290,6 +2363,27 @@ None.
 ### Fixed
 
 - None.
+
+## 2026-10-09 — Add Recipe Reaction Backend (Issue #56)
+
+**Status:** Committed — `b9d8455`.
+
+**Scope:** Implement the Backend stage of FR-57 using the existing reaction schema. This checkpoint preceded the statistics alignment recorded on October 11; Frontend integration remains pending.
+
+### Added
+
+- Add authenticated GET, PUT and DELETE operations for the current Member's recipe reaction, with aggregate counts, rounded percentages, private cache policy and generated OpenAPI documentation.
+- Enforce author self-vote rejection and published-recipe checks; serialize reaction mutations through the existing recipe lock, preserving idempotent set/remove behavior.
+- Add focused unit and SQL Server integration tests. Local verification passed 35 unit/regression tests and 25 HTTP/SQL checks; the Testcontainers run could not start without Docker.
+
+### Changed
+
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
+- Document the reaction contract, verification limits and pending Frontend/read-statistics work in the Backend workspace guide.
+
+### Fixed
+
+None.
 
 ## 2026-10-09 — Manage Saved Recipes in Backend (Issue #37) ([PR #110](https://github.com/NgaiLong49423/vegetarian-support-system/pull/110))
 
@@ -2603,6 +2697,27 @@ None.
 
 - Reuse the shared SQL Server integration-test context for the ingredient catalog database tests so required JWT configuration is present.
 
+## 2026-10-04 — Synchronize Password Login with the Develop Baseline (FR-03-B, Issue #6)
+
+**Status:** Committed — 998e404.
+
+**Scope:** Resolve the authentication feature branch conflicts with the current `develop` baseline while preserving the nutrition and ingredient-catalog schema changes.
+
+### Added
+
+None.
+
+### Changed
+
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
+- Move the account login-throttle migration to V6 after the existing V4 nutrition-consent and V5 ingredient-validation migrations.
+- Integrate real authenticated account state with the role-aware demo navigation, shared API client and nutrition requests.
+- Align the schema snapshot, verification query and API/database guides with the merged baseline.
+
+### Fixed
+
+- Keep demo role switching limited to demo sessions and clear demo state when a real user signs in or leaves the account.
+
 ## 2026-10-03 — Complete FR-18 Review Fixes ([PR #75](https://github.com/NgaiLong49423/vegetarian-support-system/pull/75))
 
 **Status:** Committed — f2e571df269d8522764b7b776b1ff5d18eb2a363.
@@ -2625,27 +2740,6 @@ None.
 - Preserve the complete coverage HTML reports, Authentication contract, and catalog form context during status changes.
 - Keep the conversion ingredient lookup independent from filtered search results and use the local calendar date for reference-date defaults.
 - Reject removal of a required source URL before updating nutrition-supported ingredients.
-
-## 2026-10-04 — Synchronize Password Login with the Develop Baseline (FR-03-B, Issue #6)
-
-**Status:** Committed — 998e404.
-
-**Scope:** Resolve the authentication feature branch conflicts with the current `develop` baseline while preserving the nutrition and ingredient-catalog schema changes.
-
-### Added
-
-None.
-
-### Changed
-
-- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
-- Move the account login-throttle migration to V6 after the existing V4 nutrition-consent and V5 ingredient-validation migrations.
-- Integrate real authenticated account state with the role-aware demo navigation, shared API client and nutrition requests.
-- Align the schema snapshot, verification query and API/database guides with the merged baseline.
-
-### Fixed
-
-- Keep demo role switching limited to demo sessions and clear demo state when a real user signs in or leaves the account.
 
 ## 2026-10-03 — Recipe Post Backend API and Data Handling (Issue #47)
 

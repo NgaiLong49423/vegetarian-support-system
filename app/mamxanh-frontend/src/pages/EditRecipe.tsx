@@ -130,6 +130,13 @@ export function EditRecipe() {
   const save = async (event: FormEvent) => {
     event.preventDefault();
     if (!form) return;
+    const invalidIndex = form.ingredients.findIndex((ingredient) => !references?.ingredients.some((option) =>
+      option.ingredientId === ingredient.ingredientId && option.unitId === ingredient.unitId));
+    if (invalidIndex >= 0) {
+      setFieldErrors({ [`ingredients[${invalidIndex}].unitId`]: 'Đơn vị này đã ngừng hỗ trợ. Chọn đơn vị mới và kiểm tra lại số lượng.' });
+      setError('Hãy thay các đơn vị cũ hoặc không còn được hỗ trợ trước khi lưu.');
+      return;
+    }
     setSaving(true);
     setError('');
     setFieldErrors({});
@@ -212,6 +219,8 @@ export function EditRecipe() {
             const matchingOptions = references.ingredients.filter((item) => item.ingredientId === ingredient.ingredientId);
             const allowedUnits = matchingOptions.map((item) => ({ unitId: item.unitId, code: item.unitCode, name: item.unitName }));
             const currentIngredient = recipe.ingredients.find((item) => item.ingredientId === ingredient.ingredientId);
+            const currentUnit = recipe.ingredients.find((item) => item.ingredientId === ingredient.ingredientId && item.unitId === ingredient.unitId);
+            const unitStillSupported = allowedUnits.some((unit) => unit.unitId === ingredient.unitId);
             return <div key={`${ingredient.ingredientId}-${index}`} className="grid gap-3 rounded-xl bg-brand-50/70 p-3 sm:grid-cols-[minmax(0,1fr)_120px_120px_auto] sm:items-start">
             <div>
               <label htmlFor={`edit-ingredient-${index}`} className="mb-1 block text-xs font-semibold text-ink-soft">Nguyên liệu</label>
@@ -224,7 +233,8 @@ export function EditRecipe() {
             </div>
             <div>
               <label htmlFor={`edit-unit-${index}`} className="mb-1 block text-xs font-semibold text-ink-soft">Đơn vị</label>
-              <select id={`edit-unit-${index}`} aria-label="Đơn vị" className={input} value={ingredient.unitId} onChange={(e) => setField('ingredients', form.ingredients.map((item, i) => i === index ? { ...item, unitId: Number(e.target.value) } : item))}>{allowedUnits.map((unit) => <option key={unit.unitId} value={unit.unitId}>{unit.name} ({unit.code})</option>)}</select>
+              <select id={`edit-unit-${index}`} aria-label="Đơn vị" required className={input} value={ingredient.unitId} onChange={(e) => setField('ingredients', form.ingredients.map((item, i) => i === index ? { ...item, unitId: Number(e.target.value) } : item))}>{!unitStillSupported && currentUnit && <option value={ingredient.unitId} disabled>{currentUnit.unitName} ({currentUnit.unitCode}) · đơn vị cũ, cần chọn lại</option>}{allowedUnits.map((unit) => <option key={unit.unitId} value={unit.unitId}>{unit.name} ({unit.code}){unit.code === 'cup' ? ' = 240 ml' : ''}</option>)}</select>
+              {!unitStillSupported && <span className="mt-1 block text-xs text-amber-800">Đơn vị của bài cũ không còn được hỗ trợ. Chọn đơn vị mới và kiểm tra lại số lượng trước khi lưu.</span>}
             </div>
             <div className="flex items-center pt-2 sm:pt-7 sm:justify-center">
               <BinButton size={28} disabled={form.ingredients.length === 1} aria-label="Xóa nguyên liệu" title="Xóa nguyên liệu" onClick={() => setField('ingredients', form.ingredients.filter((_, i) => i !== index))} />

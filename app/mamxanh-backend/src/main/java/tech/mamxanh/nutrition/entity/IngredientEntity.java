@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.math.BigDecimal;
 
 @Entity
@@ -33,6 +34,7 @@ public class IngredientEntity {
     @Column(name = "reference_date", nullable = false) private LocalDate referenceDate;
     @Column(name = "nutrition_supported", nullable = false) private boolean nutritionSupported;
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20) private CatalogStatus status;
+    @Column(name = "created_at", nullable = false, insertable = false, updatable = false) private LocalDateTime createdAt;
 
     protected IngredientEntity() { }
 
@@ -63,6 +65,7 @@ public class IngredientEntity {
     public LocalDate getReferenceDate() { return referenceDate; }
     public boolean isNutritionSupported() { return nutritionSupported; }
     public CatalogStatus getStatus() { return status; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
     public void update(String name, String group, String sourceName, String sourceUrl, LocalDate referenceDate) {
         this.name = name; this.ingredientGroup = group; this.sourceName = sourceName;
         this.sourceUrl = sourceUrl; this.referenceDate = referenceDate;

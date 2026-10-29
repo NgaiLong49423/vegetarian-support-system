@@ -1,6 +1,6 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.33.0
+> **Version:** v2.45.0
 > **Created:** 2026-09-14
 > **Last Updated:** 2026-10-29
 > **Status:** Active
@@ -1245,8 +1245,8 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **Tóm tắt yêu cầu:** Cung cấp giao diện quản trị chuyên biệt dành cho Administrator để quản lý các danh mục phân loại dữ liệu nền tảng của hệ thống: Danh mục nguyên liệu chuẩn (Standard Ingredient Catalog), Danh mục đơn vị đo lường chuẩn (`UNIT`), và Bảng quy đổi đơn vị theo nguyên liệu (`INGREDIENT_UNIT_CONVERSION`) (hệ thống không sử dụng bảng động `CATEGORY` / `RECIPE_CATEGORY`, thể loại món ăn được chuẩn hóa trực tiếp thành thuộc tính `dish_category` trên Recipe Post); Administrator có thẩm quyền xem, tìm kiếm, tạo mới, chỉnh sửa thông tin, cấu hình tỷ lệ quy đổi sang gam và ngừng sử dụng (soft-disable); hệ thống nghiêm cấm xóa vĩnh viễn (hard delete) các nguyên liệu hoặc đơn vị đang được tham chiếu trong các bài công thức công khai.
 - **Phạm vi nghiệp vụ:**
   - Quản lý danh mục nguyên liệu: Tên nguyên liệu chuẩn bằng tiếng Việt và nhóm nguyên liệu (Rau củ, Nấm, Đậu hạt, Gia vị, v.v.). Ứng dụng MVP không quản lý tên tiếng Anh hoặc đa ngôn ngữ.
-  - Quản lý đơn vị đo lường (`UNIT`): Tên đơn vị, ký hiệu, nhóm thứ nguyên (`MASS`, `VOLUME`, `COUNT`), trạng thái hoạt động (BR-73).
-  - Quản lý tỷ lệ quy đổi (`INGREDIENT_UNIT_CONVERSION`): Cấu hình tỷ lệ quy đổi từ một đơn vị đo lường sang khối lượng gam (`MASS` in grams) cho từng nguyên liệu cụ thể (ví dụ: 1 quả chuối $\approx 120\text{ g}$, 1 muỗng canh dầu ăn $\approx 14\text{ g}$) để phục vụ tính toán dinh dưỡng và kiểm tra hợp lệ khi xuất bản (BR-19, BR-73).
+  - Quản lý bộ đơn vị công thức chuẩn: `mg`, `g`, `kg`; `ml`, `L`, `tsp`, `tbsp`, `cup`; `quả`, `củ`, `miếng`. Hệ số khối lượng là cố định; đơn vị thể tích và đếm chỉ xuất hiện khi có quy đổi active cho đúng nguyên liệu. Đơn vị legacy tiếp tục đọc được nhưng không chọn cho công thức mới.
+  - Quản lý tỷ lệ quy đổi (`INGREDIENT_UNIT_CONVERSION`): Admin nhập gram trên một đơn vị đếm hoặc gram trên 1 ml cho nguyên liệu; hệ thống đồng bộ các hệ số `L/tsp/tbsp/cup` theo 1000/5/15/240 ml. Không yêu cầu khai báo nguồn; Admin có thể đánh dấu hệ số xấp xỉ. Ngừng/khôi phục là soft-disable; không hard-delete.
   - Thể loại món (`dish_category`): Được quản lý theo danh mục giá trị chuẩn hóa thuộc hệ thống (món nước, món xào, món lẩu, món kho, món canh, món chiên, món hấp, món gỏi / salad, món cuốn, món nướng, món tráng miệng / chè), không yêu cầu bảo trì bảng phân cấp động.
   - Phân quyền: Độc quyền cho vai trò `Administrator` (M09).
 - **Phân loại Actor:**
@@ -1337,6 +1337,9 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *Given* đã tồn tại một cấu hình quy đổi cho cùng cặp nguyên liệu và đơn vị,
   - *When* Administrator tạo thêm cấu hình quy đổi cho cặp đó,
   - *Then* hệ thống từ chối tạo bản ghi trùng.
+- **AC-18.14 (Đồng bộ quy đổi thể tích):** Admin nhập gram trên 1 ml cho một nguyên liệu; Backend lưu đồng bộ gram trên đơn vị cho `ml`, `L`, `tsp`, `tbsp`, `cup` theo hệ số 1, 1000, 5, 15, 240.
+- **AC-18.15 (Nhập hệ số quy đổi):** Admin nhập trực tiếp hệ số cho nguyên liệu; hệ thống không yêu cầu khai báo loại nguồn hay thông tin tham khảo. Admin có thể bật `is_approximate` để đánh dấu hệ số xấp xỉ.
+- **AC-18.16 (Soft-disable và khôi phục):** Admin ngừng/khôi phục quy đổi theo nguyên liệu; đơn vị ngừng hỗ trợ không được trả trong danh sách lựa chọn công thức mới.
 
 ---
 
@@ -1351,7 +1354,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **Use Case detail:** [Open interaction flows](../use-cases/recipe-contribution-and-community.md#fr-19).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Khi tạo hoặc sửa Recipe Post, Chuyên gia chỉ được tìm kiếm và chọn nguyên liệu đã có trong danh mục chuẩn do Admin quản lý (FR-18); mọi dòng nguyên liệu phải tham chiếu một mục catalog, không được nhập tên tự do, lưu dòng thiếu liên kết hoặc gửi đề xuất thêm nguyên liệu. Nếu không tìm thấy nguyên liệu, hệ thống không cho thêm/lưu dòng đó và hướng dẫn Chuyên gia liên hệ Admin ngoài hệ thống. Mỗi bài có từ 1 đến 50 dòng nguyên liệu (BR-19); mỗi dòng bắt buộc có định lượng số học dương (`quantity > 0`) và đơn vị hợp lệ thuộc danh mục `UNIT`; **bãi bỏ hoàn toàn và nghiêm cấm mức định lượng phi số học "vừa đủ"** (BR-14). Nếu đơn vị cần quy đổi sang gam mà chưa có tỷ lệ trong `INGREDIENT_UNIT_CONVERSION`, hệ thống **BẮT BUỘC CHẶN XUẤT BẢN** (BR-19, BR-73). Việc thiếu hồ sơ dinh dưỡng của một nguyên liệu đã có trong catalog chuẩn không tự chặn chọn hoặc công khai bài (FR-40, BR-50).
+- **Tóm tắt yêu cầu:** Khi tạo hoặc sửa Recipe Post, Chuyên gia chỉ được chọn nguyên liệu trong catalog chuẩn (FR-18), đơn vị trong bộ 11 mã chuẩn và được hỗ trợ cho đúng nguyên liệu. `mg/g/kg` có quy đổi cố định; thể tích và số đếm cần conversion active riêng theo nguyên liệu. Đơn vị legacy được giữ để hiển thị bài cũ nhưng không được chọn cho bài mới; khi sửa bài cũ, tác giả phải chọn đơn vị đang hỗ trợ và kiểm tra lại số lượng. Mỗi bài có 1–50 dòng, số lượng dương; cấm "vừa đủ". Backend xác thực lại khi lưu. Thiếu hồ sơ dinh dưỡng không tự chặn chọn/công khai (FR-40, BR-50).
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Mọi bài Recipe Post tạo mới hoặc chỉnh sửa trong hệ thống (FR-04, FR-16, FR-44).
   - Số lượng: Tối thiểu 1 dòng nguyên liệu, tối đa 50 dòng nguyên liệu (BR-19).
@@ -1408,6 +1411,8 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *Given* nguyên liệu chọn đơn vị đếm "quả" hoặc "muỗng" nhưng nguyên liệu đó chưa có tỷ lệ quy đổi sang gam trong `INGREDIENT_UNIT_CONVERSION`,
   - *When* tác giả nhấn công khai bài viết,
   - *Then* hệ thống từ chối xuất bản và hiển thị lỗi validation chặn xuất bản theo BR-19 và BR-73.
+- **AC-19.6 (Lọc đơn vị theo nguyên liệu và giữ số lượng):** Khi chọn nguyên liệu, hệ thống chỉ liệt kê `mg/g/kg` cùng các đơn vị volume/count có conversion active của nguyên liệu đó. Đổi nguyên liệu giữ unit nếu còn hỗ trợ, nếu không thì chọn `g`; số lượng người dùng nhập được giữ nguyên.
+- **AC-19.7 (Bài cũ và dữ liệu AI):** Bài cũ dùng đơn vị legacy vẫn hiển thị tên và lượng. Khi sửa, tác giả phải chọn unit mới trước khi lưu. Đơn vị AI không hỗ trợ phải được báo rõ và không tự động thay thế.
 
 ---
 
@@ -3468,7 +3473,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **Use Case detail:** [Open interaction flows](../use-cases/meal-planning-and-shopping.md#fr-53).
 
 #### Mục đích & Phạm vi
-  - **Tóm tắt yêu cầu:** Hệ thống cho phép Member đã đăng nhập tạo và quản lý Danh sách mua sắm (Shopping List) phục vụ đi chợ hoặc mua sắm nguyên liệu; Member có thể tạo danh sách rỗng độc lập với Lịch ăn và công thức, hoặc tạo nội dung từ Lịch ăn tuần (Meal Plan - FR-09), hoặc thêm từng bài công thức (Recipe Post) công khai vào một danh sách thuộc tài khoản hay tạo danh sách mới ngay trong thao tác; Member có thể đổi tên và xóa mọi danh sách thuộc tài khoản của mình; việc xóa loại bỏ checklist và dữ liệu đóng góp công thức của danh sách, không xóa Lịch ăn hoặc Recipe Post nguồn; hỗ trợ tự thêm các mặt hàng mua sắm thủ công (custom items), chỉnh sửa số lượng/đơn vị hoặc xóa mục; hiển thị checklist tương tác cho phép đánh dấu đã mua/chưa mua; lưu bền vững trạng thái checklist theo tài khoản (BR-32).
+  - **Tóm tắt yêu cầu:** Hệ thống cho phép Member đã đăng nhập tạo và quản lý Danh sách mua sắm (Shopping List) phục vụ đi chợ hoặc mua sắm nguyên liệu; Member có thể tạo danh sách rỗng độc lập với Lịch ăn và công thức, hoặc tạo nội dung từ Lịch ăn tuần (Meal Plan - FR-09), hoặc thêm từng bài công thức (Recipe Post) công khai vào một danh sách thuộc tài khoản hay tạo danh sách mới ngay trong thao tác; Member có thể đổi tên và xóa mọi danh sách thuộc tài khoản của mình; việc xóa loại bỏ checklist và dữ liệu đóng góp công thức của danh sách, không xóa Lịch ăn hoặc Recipe Post nguồn; mặt hàng catalog chỉ được hỗ trợ khi Member chọn một kết quả nguyên liệu chính xác; các phần thêm thủ công được lưu riêng với định lượng công thức để có thể gộp, xem, sửa hoặc xóa độc lập; xóa nguyên liệu gộp sẽ xóa toàn bộ đóng góp cho nguyên liệu đó khỏi danh sách; công thức chỉ được hiển thị trong danh sách khi mọi nguyên liệu và định lượng bắt buộc của từng nguồn còn đầy đủ; hiển thị checklist tương tác cho phép đánh dấu đã mua/chưa mua và lưu bền vững theo tài khoản (BR-32).
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Member đã đăng nhập tài khoản hợp lệ (FR-03, BR-05, BR-32).
   - Nguồn tạo:
@@ -3476,7 +3481,9 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
     2. Sinh từ Lịch ăn tuần (toàn bộ tuần hoặc các ngày được tích chọn trong FR-09).
       3. Thêm nguyên liệu từ một Recipe Post công khai tại mỗi lần thao tác từ menu hành động của thẻ công thức trong Khám phá (FR-17)/Công thức đã lưu (FR-32) hoặc nút trên trang chi tiết; Member chọn danh sách sở hữu hoặc tạo danh sách có tên mới cùng thao tác.
   - Tính năng quản lý danh sách: Member được đổi tên và xóa tất cả danh sách của chính mình, gồm danh sách `MANUAL`, danh sách tạo từ Lịch ăn và danh sách cá nhân từ Recipe Post. Tên mới của danh sách từ Lịch ăn được giữ nguyên, không tự đổi theo tuần.
-  - Tính năng quản lý tương tác: Thêm item thủ công ngoài công thức, sửa/xóa item, tick checklist đánh dấu đã mua/chưa mua.
+  - Tính năng quản lý tương tác: Thêm mặt hàng thủ công ngoài công thức, sửa tổng lượng của nguyên liệu gộp nhưng giữ lượng bắt buộc tối thiểu từ công thức, sửa/xóa phần đã thêm thủ công, xóa toàn bộ một nguyên liệu gộp khỏi danh sách, tick checklist đánh dấu đã mua/chưa mua.
+  - Danh sách mới lưu riêng từng lần xuất hiện của công thức, gồm công thức, khẩu phần và (nếu tạo từ Lịch ăn) ngày/bữa. Khi hiển thị, các lần cùng công thức được gom thành một thẻ và cộng tổng khẩu phần; Member có thể đổi tổng khẩu phần trong danh sách, hệ thống phân bổ lại giữa các nguồn và cập nhật nguyên liệu mà không sửa Lịch ăn hoặc bài công thức.
+  - Danh sách cũ thiếu metadata nguồn tiếp tục hoạt động nhưng không suy diễn công thức/khẩu phần. Đóng góp công thức lịch sử vốn đã lưu có thể hiển thị tên món, nhưng không có điều khiển khẩu phần nếu thiếu khẩu phần gốc.
 - **Phân loại Actor:**
   - Primary Actor: `Member` (người tạo và quản lý danh sách mua sắm).
   - Supporting Actor: `Hệ thống quản lý Danh sách mua sắm`.
@@ -3522,9 +3529,9 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - *When* Member chạm vào hộp kiểm của mục đó,
   - *Then* mục hàng chuyển sang trạng thái đã mua (gạch ngang chữ) và lưu lại trạng thái bền vững.
 - **AC-53.4 (Chỉnh sửa và xóa mục hàng trong danh sách):**
-  - *Given* một mục hàng có sẵn trong danh sách mua sắm,
-  - *When* Member thực hiện sửa số lượng hoặc nhấn xóa mục đó,
-  - *Then* hệ thống cập nhật đúng số lượng mới hoặc gỡ bỏ hoàn toàn mục đó khỏi danh sách.
+  - *Given* một nguyên liệu gộp có thể gồm định lượng bắt buộc từ công thức đầy đủ, phần còn lại của công thức không còn đầy đủ (mất xác định) và phần Member thêm thủ công,
+  - *When* Member sửa tổng số lượng hoặc xóa nguyên liệu gộp,
+  - *Then* hệ thống theo dõi riêng ba loại lượng. Chỉ công thức còn đủ mọi nguyên liệu mới tạo lượng bắt buộc và đặt mức sàn; Member không thể sửa tổng thấp hơn mức này. Khi tăng tổng, phần tăng thuộc lượng Member thêm. Khi giảm tổng, hệ thống giảm lượng mất xác định trước, rồi mới giảm lượng Member thêm; không giảm lượng bắt buộc. Khi tổng nhập thấp hơn mức bắt buộc, giao diện cảnh báo ngay dưới ô số lượng và khóa thao tác lưu; không hiển thị thường trực phần phân rã lượng. Trước khi lưu, bước xác nhận nêu tên mặt hàng và phần chênh lệch tăng/giảm so với tổng hiện tại khi quy đổi được an toàn; nếu không thể quy đổi thì nêu rõ số cũ và số mới mà không đoán chênh lệch. Khi Member xác nhận, hệ thống mới thêm mặt hàng hoặc cập nhật số lượng/đơn vị, gồm cả sửa phần thêm thủ công; hủy hoặc quay lại không thay đổi dữ liệu. Xóa nguyên liệu gộp loại bỏ các lượng gắn với chính item đó; các lượng của cùng lần xuất hiện công thức ở những item còn lại chuyển thành mất xác định, không còn làm món xuất hiện hay làm tăng mức sàn. Meal Plan và Recipe Post nguồn không bị sửa.
 - **AC-53.5 (Yêu cầu đăng nhập đối với danh sách mua sắm):**
   - *Given* người dùng là Guest chưa đăng nhập,
   - *When* cố gắng truy cập tính năng danh sách mua sắm,
@@ -3546,6 +3553,11 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - *Given* Member đã đăng nhập và không có hoặc đang có các Shopping List khác,
   - *When* Member chọn tạo danh sách trống, nhập tên hợp lệ và xác nhận,
   - *Then* hệ thống tạo checklist mới thuộc Member với tên đã chuẩn hóa, không có item và không cần Meal Plan hoặc Recipe Post; Member có thể mở danh sách và thêm mặt hàng thủ công.
+- **AC-53.10 (Lưu và hiển thị các món tạo danh sách):** Danh sách hiển thị các công thức nguồn thành một dãy thẻ cuộn ngang; mỗi thẻ chỉ gồm ảnh bìa, tên công thức và tổng khẩu phần, và chỉ xuất hiện khi toàn bộ nguyên liệu cùng định lượng bắt buộc của mọi lần xuất hiện còn trong danh sách. Nếu một dòng nguyên liệu bị xóa, mọi công thức phụ thuộc vào dòng đó bị ẩn; thêm cùng nguyên liệu thủ công không khôi phục liên kết công thức. Đóng góp còn lại từ lần xuất hiện không đầy đủ được phân loại riêng là mất xác định, không phải lượng Member thêm. Nếu cùng công thức xuất hiện nhiều lần trong Lịch ăn, các lần đó được gom thành một thẻ và khẩu phần được cộng lại; giao diện không hiển thị ngày hoặc bữa ăn. Chạm thẻ mở trang chi tiết công thức. Mỗi nguyên liệu có đóng góp từ công thức, mất xác định hoặc thêm thủ công có nút tròn xem chi tiết cạnh các thao tác; hộp thoại phân biệt ba loại lượng và gộp toàn bộ lượng mất xác định thành một tổng duy nhất, không liệt kê theo từng món hay lần xuất hiện. Sau khi xóa item, danh sách và thẻ món nguồn được đồng bộ ngay từ dữ liệu mới nhất. Thẻ công thức có menu ba chấm để chỉnh nhanh khẩu phần hoặc gỡ công thức khỏi danh sách.
+- **AC-53.11 (Đổi tổng khẩu phần trong Shopping List):** Member có thể chỉnh tổng khẩu phần từ menu ba chấm trên thẻ món hoặc từ trang chi tiết công thức. Trước khi lưu, giao diện hiển thị xác nhận cùng danh sách từng nguyên liệu và lượng dự kiến tăng/giảm. Khi xác nhận, hệ thống phân bổ tổng mới giữa các lần xuất hiện theo tỷ lệ khẩu phần đã lưu (bước 0,1; mỗi lần xuất hiện tối thiểu 0,5), tính lại đóng góp nguyên liệu tương ứng và cập nhật lượng cần mua. Thay đổi chỉ áp dụng cho Shopping List hiện tại, không sửa Meal Plan hoặc Recipe Post. Phần Member tự thêm và lượng mất xác định không đổi; nếu một lần xuất hiện thiếu khẩu phần gốc, không cho chỉnh tổng và không suy diễn giá trị.
+- **AC-53.12 (Chọn nguyên liệu catalog và gộp phần thêm thủ công):** Khi Member gõ tên mặt hàng, hệ thống hiển thị gợi ý catalog; chỉ chọn kết quả catalog mới tạo mặt hàng có ingredientId, ảnh và đơn vị được nguyên liệu hỗ trợ. Nếu Member không chọn kết quả, hệ thống lưu tên nhập như mặt hàng tùy chỉnh, không ảnh và cho chọn đơn vị chuẩn đang hoạt động. Trước khi thêm, giao diện hiển thị xác nhận với tên mặt hàng cụ thể và số lượng/đơn vị sắp thêm; chỉ xác nhận mới lưu. Khi thêm một nguyên liệu catalog đã có trong cùng danh sách với đơn vị có thể quy đổi an toàn, lượng được gộp vào dòng hiện có nhưng phần thêm được ghi riêng, hiển thị trong chi tiết và có thể sửa/xóa độc lập; nếu các đơn vị không thể quy đổi an toàn, giữ dòng riêng theo FR-54. Tên tự do trùng với tên catalog không được tự liên kết.
+- **AC-53.13 (Ẩn công thức khi thiếu nguyên liệu bắt buộc):** Khi một nguyên liệu gộp bị xóa, mọi đóng góp gắn với chính item đó bị xóa và mọi công thức phụ thuộc bị ẩn khỏi khu vực món ăn. Các đóng góp ở item còn lại của cùng lần xuất hiện chuyển thành lượng mất xác định; chúng vẫn được tính vào tổng có thể mua, nhưng không còn là mức sàn bắt buộc và không khôi phục món. Khi giảm tổng nguyên liệu, hệ thống trừ lượng mất xác định trước lượng thêm thủ công; lượng bắt buộc chỉ đến từ các lần xuất hiện công thức đầy đủ. Nguyên liệu đã đánh dấu đã mua vẫn được tính là còn trong danh sách. Thêm lại nguyên liệu thủ công không tự liên kết với bất kỳ công thức nào.
+- **AC-53.14 (Gỡ công thức khỏi Shopping List):** Từ menu ba chấm trên thẻ món, Member có thể gỡ toàn bộ các lần xuất hiện của công thức khỏi danh sách hiện tại. Trước khi gỡ, hộp thoại xác nhận liệt kê lượng của từng nguyên liệu sẽ giảm; nếu sau khi gỡ không còn đóng góp nào cho một nguyên liệu thì hộp thoại nêu rõ mặt hàng sẽ bị xóa khỏi danh sách. Chỉ sau khi Member xác nhận, Backend xóa các đóng góp của công thức và tính lại từng mặt hàng từ các nguồn còn lại; mặt hàng không còn nguồn bị xóa. Recipe Post, Lịch ăn và danh sách khác được giữ nguyên. Hủy xác nhận không thay đổi dữ liệu.
 
 ---
 
@@ -3560,7 +3572,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **Use Case detail:** [Open interaction flows](../use-cases/meal-planning-and-shopping.md#fr-54).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Hệ thống tự động tính toán và tổng hợp (gộp) các dòng nguyên liệu trùng lặp khi tạo danh sách mua sắm theo bộ quy tắc định lượng an toàn tuyệt đối: hệ thống CHỈ tổng hợp các dòng nguyên liệu khi chúng có cùng mã định danh nguyên liệu chuẩn (`ingredientId`) (BR-14, BR-49, BR-73); cho phép quy đổi an toàn cùng chiều đo lường giữa gam và kilôgam ($g \leftrightarrow kg$) và giữa mililít và lít ($ml \leftrightarrow l$); đối với các dòng khác chiều đo lường (như quả/củ/bìa sang gram), hệ thống CHỈ cho phép tổng hợp khi tồn tại quy tắc quy đổi chính thức trong bảng `INGREDIENT_UNIT_CONVERSION` cho đúng nguyên liệu đó; nếu không có quy tắc chuyển đổi, hệ thống giữ tách biệt thành các dòng độc lập, tuyệt đối không tự ý suy diễn hoặc gán tỷ lệ bất đối xứng; loại bỏ hoàn toàn khái niệm định lượng "vừa đủ" (to taste) vì toàn bộ nguyên liệu hợp lệ bắt buộc có số lượng số dương $> 0$ và đơn vị đo chuẩn thuộc bảng `UNIT`.
+- **Tóm tắt yêu cầu:** Shopping List chỉ tổng hợp cùng `ingredientId`. Chuẩn hóa tự động trong `MASS` (`mg/g/kg`) và `VOLUME` (`ml/L/tsp/tbsp/cup`) theo hệ số chuẩn; quy đổi khác dimension chỉ dùng conversion active của đúng nguyên liệu. Không có conversion thì giữ dòng riêng, không suy diễn. Lượng kết quả lưu đến 6 chữ số thập phân để tránh mất số lượng nhỏ. Mọi lượng phải dương; cấm "vừa đủ".
 - **Phạm vi nghiệp vụ:**
   - Quy tắc tổng hợp nguyên liệu:
     1. **Quy tắc cùng bản thể:** Bắt buộc có cùng `ingredientId`.
@@ -3617,6 +3629,9 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - *Given* danh sách có Món 1 dùng "2 quả Bơ" và Món 2 dùng "300g Bơ", và chưa có quy tắc quy đổi quả bơ sang gram trong `INGREDIENT_UNIT_CONVERSION`,
   - *When* hệ thống thực hiện tổng hợp danh sách mua sắm,
   - *Then* hệ thống giữ thành 2 dòng riêng biệt: "Bơ: 2 quả" và "Bơ: 300g" mà không tự ý gán tỷ lệ giả định.
+- **AC-54.6 (Đổi đơn vị chuẩn khối lượng/thể tích):** `1.000 mg` tổng hợp thành `1 g`, và `2 tsp + 1 ml` được chuẩn hóa thành `11 ml`; `cup` luôn tương đương `240 ml`.
+- **AC-54.7 (Giữ lượng rất nhỏ):** Khi tổng hợp `1 mg`, lượng được lưu/hiển thị không được làm tròn thành `0 g`.
+- **AC-54.8 (Tổng hợp lại theo khẩu phần nguồn):** Khi khẩu phần một nguồn công thức thay đổi, chỉ đóng góp của nguồn đó được tỷ lệ lại trước khi tổng hợp; đóng góp món khác và lượng chỉnh thủ công được giữ.
 
 ---
 
@@ -3952,9 +3967,9 @@ Customer và Expert đã đăng nhập có thể theo dõi/bỏ theo dõi qua h�
 
 #### Mục đích và phạm vi
 
-Hệ thống cung cấp trang công khai hiển thị toàn bộ nguyên liệu đang hoạt động trong danh mục chuẩn FR-18. Guest và Member có thể tìm nguyên liệu, mở trang chi tiết, xem ảnh minh họa và các chỉ tiêu dinh dưỡng có sẵn trên mỗi 100 g. Từ danh mục, người dùng chọn một hoặc nhiều nguyên liệu và chuyển tới trang Khám phá với các bộ lọc đã chọn; từ chi tiết, người dùng có thể tìm công thức theo riêng nguyên liệu đang xem. API công thức giữ nguyên quy tắc FR-08 hiện tại: kết quả phải có đủ tất cả nguyên liệu được chọn.
+Hệ thống cung cấp trang công khai hiển thị toàn bộ nguyên liệu đang hoạt động trong danh mục chuẩn FR-18. Guest và Member có thể tìm nguyên liệu, mở trang chi tiết, xem ảnh minh họa và các chỉ tiêu dinh dưỡng có sẵn trên mỗi 100 g. Tại trang chi tiết, người dùng có thể quy đổi hai chiều giữa các đơn vị đang được hỗ trợ cho chính nguyên liệu đó; hệ thống dùng hệ số gram trên mỗi đơn vị và hiển thị cảnh báo khi dữ liệu là ước tính. Từ danh mục, người dùng chọn một hoặc nhiều nguyên liệu và chuyển tới trang Khám phá với các bộ lọc đã chọn; từ chi tiết, người dùng có thể tìm công thức theo riêng nguyên liệu đang xem. API công thức giữ nguyên quy tắc FR-08 hiện tại: kết quả phải có đủ tất cả nguyên liệu được chọn.
 
-Trang này là cách duyệt trực tiếp từ điển nguyên liệu hiện có; không tạo taxonomy nhóm món ăn hoặc danh mục động mới. API công khai chỉ trả thông tin danh mục cần cho giao diện: ID, tên, nhóm, ảnh minh họa và các chỉ tiêu dinh dưỡng trên mỗi 100 g ở trang chi tiết. API không trả tên/URL nguồn tham chiếu, ngày tham khảo, trạng thái danh mục, cờ hỗ trợ tính dinh dưỡng hay trường quản trị khác. Chỉ nguyên liệu đang hoạt động mới có thể được liệt kê và xem chi tiết.
+Trang này là cách duyệt trực tiếp từ điển nguyên liệu hiện có; không tạo taxonomy nhóm món ăn hoặc danh mục động mới. API công khai trả thông tin danh mục cần cho giao diện: ID, tên, nhóm, ảnh minh họa, các chỉ tiêu dinh dưỡng trên mỗi 100 g ở trang chi tiết và danh sách đơn vị quy đổi đang hỗ trợ gồm ID, mã, tên, nhóm đơn vị, gram trên đơn vị và cờ ước tính. API không trả tên/URL nguồn tham chiếu, ngày tham khảo, trạng thái danh mục, cờ hỗ trợ tính dinh dưỡng hay trường quản trị khác. Chỉ nguyên liệu đang hoạt động mới có thể được liệt kê và xem chi tiết.
 
 #### Acceptance Criteria
 
@@ -3962,7 +3977,7 @@ Trang này là cách duyệt trực tiếp từ điển nguyên liệu hiện c�
 - **AC-62.2 — Tìm và chọn nhiều nguyên liệu:** Given danh mục nguyên liệu đã tải, When người dùng tìm theo tên và chọn hoặc bỏ chọn nguyên liệu từ thẻ, Then giao diện thể hiện đúng trạng thái đã chọn và hỗ trợ chọn nhiều nguyên liệu bằng chuột hoặc bàn phím.
 - **AC-62.3 — Tìm công thức theo nhiều nguyên liệu:** Given người dùng chọn một hoặc nhiều nguyên liệu đang hoạt động, When chọn Tìm công thức, Then trang Khám phá mở với đúng các ingredient ID đã chọn; công thức phải thỏa tất cả nguyên liệu theo semantics AND của FR-08.
 - **AC-62.4 — Duyệt danh sách nguyên liệu:** Given danh mục nguyên liệu được hiển thị, Then giao diện có thể cho biết nhóm của từng nguyên liệu nhưng không yêu cầu người dùng duyệt taxonomy nhóm món ăn để tìm hoặc chọn.
-- **AC-62.5 — Hạn chế dữ liệu API công khai:** Given danh sách nhóm/nguyên liệu hoặc chi tiết nguyên liệu được trả về, Then API chỉ có group name/count hoặc ingredient ID/name/group/image URL và các chỉ tiêu dinh dưỡng trên mỗi 100 g ở chi tiết; không tiết lộ nguồn tham chiếu, ngày tham khảo, trạng thái nội bộ, cờ hỗ trợ tính dinh dưỡng hoặc trường quản trị khác.
+- **AC-62.5 — Hạn chế dữ liệu API công khai:** Given danh sách nhóm/nguyên liệu, chi tiết hoặc đơn vị quy đổi được trả về, Then API chỉ có group name/count; ingredient ID/name/group/image URL; dinh dưỡng trên 100 g; hoặc đơn vị được hỗ trợ gồm ID/code/name/dimension/gramsPerUnit/approximate. API không tiết lộ nguồn tham chiếu, ngày tham khảo, trạng thái nội bộ, cờ hỗ trợ tính dinh dưỡng hoặc trường quản trị khác.
 - **AC-62.6 — Trạng thái giao diện:** Given danh mục đang tải, lỗi, rỗng hoặc có dữ liệu, Then UI hiển thị trạng thái tương ứng, có thể thử lại khi lỗi và các nhóm/nguyên liệu có thể thao tác bằng keyboard.
 - **AC-62.7 — Xem chi tiết nguyên liệu hoạt động:** Given nguyên liệu đang `ACTIVE`, When Guest hoặc Member mở chi tiết từ danh mục, Then trang hiển thị tên, nhóm, ảnh minh họa nếu có và bảng dinh dưỡng trên mỗi 100 g; ảnh trống/tải lỗi được nhận biết là chưa có ảnh; nguyên liệu `INACTIVE` hoặc ID không tồn tại trả cùng phản hồi không tìm thấy.
 - **AC-62.8 — Chỉ tiêu dinh dưỡng công khai:** Given chi tiết nguyên liệu được mở, Then bảng có thể hiển thị năng lượng, protein, carbohydrate, chất béo, chất xơ, canxi, sắt, vitamin B12 và kẽm; mỗi giá trị giữ đơn vị theo định nghĩa chỉ tiêu.
@@ -3970,5 +3985,6 @@ Trang này là cách duyệt trực tiếp từ điển nguyên liệu hiện c�
 - **AC-62.10 — Tiếp tục tìm công thức:** Given người dùng đang xem chi tiết nguyên liệu, When chọn Tìm công thức, Then trang Khám phá mở với đúng ID nguyên liệu đó làm bộ lọc.
 - **AC-62.11 — Bài công thức có nguyên liệu:** Given người dùng mở chi tiết nguyên liệu, Then trang tải và hiển thị ngay các bài công thức công khai có liên kết đúng ingredient ID đó, hỗ trợ Xem thêm, sắp xếp mới nhất/được yêu thích và mở từng bài; lỗi trang tiếp theo giữ các bài đã tải và cho thử lại đúng trang bị lỗi.
 - **AC-62.12 — Nhãn lọc loại món:** Given trang chi tiết hiển thị bài công thức liên quan, Then các nhãn loại ăn chay lấy từ lựa chọn chuẩn của hệ thống và lọc đồng thời với ingredient ID; nhãn mô tả loại của công thức, không tự suy ra nguyên liệu phù hợp hoặc vi phạm một chế độ ăn khi catalog chưa có dữ liệu phân loại đó.
+- **AC-62.13 — Quy đổi đơn vị theo nguyên liệu:** Given Guest hoặc Member đang xem chi tiết một nguyên liệu `ACTIVE`, When mở công cụ quy đổi, Then hai danh sách đơn vị chỉ gồm đơn vị API trả về cho nguyên liệu đó; nhập hoặc đổi đơn vị ở một phía sẽ cập nhật lượng tương đương phía kia bằng `gramsPerUnit`, giữ số lượng không âm và cho phép đổi giữa khối lượng, thể tích và số đếm khi cả hai đơn vị được hỗ trợ. Đơn vị ước tính được thông báo rõ; lỗi tải đơn vị cho phép thử lại mà không ảnh hưởng phần chi tiết nguyên liệu.
 
 ---

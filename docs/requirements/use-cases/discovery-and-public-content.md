@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M01
 > **File:** `docs/requirements/use-cases/discovery-and-public-content.md`
-> **Version:** v2.6.0
+> **Version:** v2.7.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-21
+> **Last Updated:** 2026-10-27
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -735,6 +735,7 @@ Guest hoặc Member duyệt nguyên liệu đang hoạt động, mở chi tiết
 6. Từ chi tiết, chọn `Tìm công thức` mở Khám phá với riêng nguyên liệu đang xem; liên kết về danh mục cho phép tiếp tục duyệt.
 7. Trang chi tiết đồng thời hiển thị lưới bài công thức công khai có ingredient ID đang xem; người dùng mở từng bài, chọn Xem thêm hoặc đổi sắp xếp mới nhất/được yêu thích.
 8. Người dùng bấm nhãn loại ăn chay của công thức để lọc lưới; mỗi request vẫn giữ ingredient ID. Đổi nhãn/sắp xếp bắt đầu lại từ trang đầu.
+9. Người dùng nhập lượng ở một phía của công cụ quy đổi hoặc đổi đơn vị ở một trong hai phía; hệ thống cập nhật lượng tương đương bằng hệ số của nguyên liệu đang xem. Hai danh sách chỉ gồm các đơn vị được hỗ trợ; dữ liệu ước tính được thông báo rõ.
 
 #### 3. Luồng thay thế và dữ liệu
 
@@ -747,3 +748,4 @@ Guest hoặc Member duyệt nguyên liệu đang hoạt động, mở chi tiết
 - API Khám phá giữ nguyên quy tắc hiện hành: khi nhiều nguyên liệu được chọn, công thức phải thỏa tất cả ID.
 - Lưới tái sử dụng API discovery của FR-08. Lỗi tải thêm giữ các thẻ hiện có và thử lại cùng trang. Không có bài tương ứng có thông báo rỗng riêng với lỗi kết nối.
 - Nhãn loại món lấy từ `vegetarianTypes` trong form options. Chúng dùng để lọc công thức; catalog hiện chưa xác lập nhãn phù hợp/không phù hợp chế độ ăn riêng cho từng nguyên liệu.
+- Công cụ quy đổi tải đơn vị từ `GET /api/v1/ingredients/{ingredientId}/units`. Nếu tải lỗi, người dùng có thể thử lại; lỗi không làm mất trang chi tiết hoặc dinh dưỡng. Các giá trị `approximate = true` hiển thị ghi chú rằng kết quả tham khảo.

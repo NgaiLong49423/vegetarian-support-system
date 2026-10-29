@@ -72,7 +72,7 @@ class PasswordResetIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void deleteUsers() {
-        userRepository.deleteAll();
+        userRepository.findByEmail(EMAIL).ifPresent(userRepository::delete);
     }
 
     // ---------------------------------------------------------------- UC-03.6 request

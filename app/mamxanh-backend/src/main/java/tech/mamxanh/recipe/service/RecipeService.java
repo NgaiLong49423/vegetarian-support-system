@@ -110,7 +110,9 @@ public class RecipeService {
             if (unit == null) {
                 errors.add(new FieldError(field + ".unitId", "Chọn đơn vị đang hoạt động trong danh mục."));
             } else {
-                if (ingredient != null && !"MASS".equals(unit.getDimension())
+                if (unit.getCode() == null || !java.util.Set.of("mg", "g", "kg", "ml", "L", "tsp", "tbsp", "cup", "quả", "củ", "miếng").contains(unit.getCode())) {
+                    errors.add(new FieldError(field + ".unitId", "Đơn vị này chỉ được giữ để đọc dữ liệu cũ, không dùng cho công thức mới."));
+                } else if (ingredient != null && !"MASS".equals(unit.getDimension())
                         && !conversionRepository.existsByIngredientIdAndUnitIdAndActiveTrue(ingredient.getId(), unit.getId())) {
                     errors.add(new FieldError(field + ".unitId",
                             "Nguyên liệu này chưa có quy đổi sang gram cho đơn vị đã chọn. Hãy chọn g/kg hoặc đơn vị có quy đổi."));
@@ -189,11 +191,15 @@ public class RecipeService {
     @Transactional(readOnly = true)
     public Map<Long, ShoppingReference> findShoppingReferences(java.util.Collection<Long> recipeIds) {
         if (recipeIds.isEmpty()) return Map.of();
+        Map<Long, String> covers = mediaRepository.findAllByRecipeIdInOrderByRecipeIdAscDisplayOrderAsc(recipeIds)
+                .stream().filter(tech.mamxanh.recipe.entity.RecipeMediaEntity::isCover)
+                .collect(Collectors.toMap(tech.mamxanh.recipe.entity.RecipeMediaEntity::getRecipeId,
+                        tech.mamxanh.recipe.entity.RecipeMediaEntity::getBlobUrl, (first, ignored) -> first));
         return recipeRepository.findAllById(recipeIds).stream().collect(Collectors.toMap(RecipePostEntity::getId,
                 recipe -> new ShoppingReference(recipe.getId(), "PUBLISHED".equals(recipe.getStatus()) ? recipe.getTitle() : null,
-                        "PUBLISHED".equals(recipe.getStatus()))));
+                        "PUBLISHED".equals(recipe.getStatus()), "PUBLISHED".equals(recipe.getStatus()) ? covers.get(recipe.getId()) : null)));
     }
-    public record ShoppingReference(long recipeId, String title, boolean available) { }
+    public record ShoppingReference(long recipeId, String title, boolean available, String coverUrl) { }
 
     @Transactional(readOnly = true)
     public RecipeDetailResponse getPublishedRecipe(Long recipeId) {
@@ -330,6 +336,7 @@ public class RecipeService {
                 .map(value -> new Choice(value.name(), value.label())).toList();
         List<UnitOption> units = unitReferenceRepository.findAllByOrderByNameAsc().stream()
                 .filter(RecipeUnitReferenceEntity::isActive)
+                .filter(unit -> java.util.Set.of("mg", "g", "kg", "ml", "L", "tsp", "tbsp", "cup", "quả", "củ", "miếng").contains(unit.getCode()))
                 .map(unit -> new UnitOption(unit.getId(), unit.getCode(), unit.getName(), unit.getDimension())).toList();
         return new RecipeFormOptionsResponse(categories, vegetarianTypes, difficulties, units);
     }

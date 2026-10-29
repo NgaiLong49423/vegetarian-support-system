@@ -59,6 +59,9 @@ export type IngredientRecipeReference = {
   status: string;
   publishedAt: string | null;
 };
+export type CatalogUnit = { id: number; code: string; name: string; dimension: string; baseFactor: number; active: boolean };
+export type IngredientConversion = { ingredientId: number; unitId: number; gramsPerUnit: number; approximate: boolean; active: boolean };
+export type ConversionDraft = { gramsPerUnit: number; approximate: boolean };
 
 type ApiResponse<T> = { success: boolean; data: T; message?: string };
 type ApiProblem = { detail?: string; errors?: Array<{ field: string; message: string }> };
@@ -137,4 +140,13 @@ export const adminCatalogApi = {
     request<CatalogIngredient>('/admin/ingredients/' + id + '/nutrition-support', json('PATCH', { enabled })),
   setIngredientActive: (id: number, active: boolean) =>
     request<CatalogIngredient>('/admin/ingredients/' + id + '/status', json('PATCH', { active })),
+  units: () => request<CatalogUnit[]>('/admin/units'),
+  conversions: (ingredientId?: number) => request<IngredientConversion[]>(
+    '/admin/ingredient-unit-conversions' + (ingredientId === undefined ? '' : '?ingredientId=' + ingredientId),
+  ),
+  createConversion: (ingredientId: number, unitId: number, body: ConversionDraft) => request<IngredientConversion>(`/admin/ingredients/${ingredientId}/unit-conversions/${unitId}`, json('POST', body)),
+  updateConversion: (ingredientId: number, unitId: number, body: ConversionDraft) => request<IngredientConversion>(`/admin/ingredients/${ingredientId}/unit-conversions/${unitId}`, json('PUT', body)),
+  setConversionActive: (ingredientId: number, unitId: number, active: boolean) => request<IngredientConversion>(`/admin/ingredients/${ingredientId}/unit-conversions/${unitId}/status`, json('PATCH', { active })),
+  saveVolumeConversions: (ingredientId: number, body: Omit<ConversionDraft, 'gramsPerUnit'> & { gramsPerMl: number }) => request<IngredientConversion[]>(`/admin/ingredients/${ingredientId}/volume-conversion`, json('PUT', body)),
+  setVolumeConversionsActive: (ingredientId: number, active: boolean) => request<IngredientConversion[]>(`/admin/ingredients/${ingredientId}/volume-conversion/status`, json('PATCH', { active })),
 };

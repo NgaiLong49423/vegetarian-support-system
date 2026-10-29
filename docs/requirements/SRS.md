@@ -1,6 +1,6 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v2.16.0
+> **Version:** v2.17.0
 > **Created:** 2026-09-11
 > **Last Updated:** 2026-10-29
 > **Status:** Active
@@ -118,10 +118,10 @@ Quyết định này thay thế phạm vi nhập tên nguyên liệu tự do đ�
 - Mọi dòng nguyên liệu trong bài công thức bắt buộc phải có số lượng số học ($> 0$) và đơn vị thuộc danh mục đơn vị hệ thống hỗ trợ (`UNIT`).
 - Bãi bỏ hoàn toàn các giá trị phi số lượng như "vừa đủ", "một ít", "nhiều", "tùy thích", "theo khẩu vị".
 - Phân biệt rõ các chiều đo lường (dimension):
-  - **MASS (Khối lượng):** g, kg (quy đổi nội bộ cố định: $1\text{ kg} = 1.000\text{ g}$).
-  - **VOLUME (Thể tích):** ml, L (quy đổi nội bộ cố định: $1\text{ L} = 1.000\text{ ml}$).
-  - **COUNT (Đếm):** quả, củ, tép, miếng, cây, lát, bó,...
-- Không giả định mọi đơn vị đều đổi trực tiếp sang gram. Việc quy đổi từ `COUNT` sang gram hoặc từ `VOLUME` sang gram (như 1 L dầu ăn sang gram) là quy đổi phụ thuộc vào từng nguyên liệu cụ thể (`INGREDIENT_UNIT_CONVERSION`) và mang tính chất xấp xỉ (`is_approximate = true`).
+  - **MASS (Khối lượng):** mg, g, kg (quy đổi nội bộ cố định: $1.000\text{ mg} = 1\text{ g}$ và $1\text{ kg} = 1.000\text{ g}$).
+  - **VOLUME (Thể tích):** ml, L, tsp (5 ml), tbsp (15 ml), cup (240 ml); tsp/tbsp/cup đổi nội bộ sang ml.
+  - **COUNT (Đếm):** quả, củ, miếng. Số đơn vị đếm khả dụng phụ thuộc từng nguyên liệu; không ép nguyên liệu có đủ mọi đơn vị đếm.
+- Không giả định mọi đơn vị đều đổi trực tiếp sang gram. Việc quy đổi từ `COUNT` sang gram hoặc từ `VOLUME` sang gram phụ thuộc hệ số được Admin cấu hình cho nguyên liệu tương ứng trong `INGREDIENT_UNIT_CONVERSION`; `is_approximate` cho biết hệ số có phải là giá trị xấp xỉ hay không.
 - **Ràng buộc kiểm tra xuất bản (Publish Blocking Rule):** Nếu nguyên liệu sử dụng đơn vị thuộc diện cần quy đổi (như đơn vị `COUNT` quả/củ hoặc `VOLUME` cần tính dinh dưỡng) mà nguyên liệu đó chưa tồn tại bản ghi quy đổi hợp lệ trong `INGREDIENT_UNIT_CONVERSION`, hệ thống chặn xuất bản ngay tại bước validation (Validation Error). Tác giả phải chuyển sang nhập theo đơn vị khối lượng trực tiếp (gram) hoặc Quản trị viên phải cập nhật bảng quy đổi trước. Quy định này bảo đảm 100% bài công thức đã công khai đều có dữ liệu định lượng khả toán để tính toán dinh dưỡng và đi chợ.
 
 ### 3.6 Một bài công thức, nhiều cách hiển thị và AI hỗ trợ soạn bài — cập nhật 18/09/2026

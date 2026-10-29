@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 @Table(name = "INGREDIENT_UNIT_CONVERSION")
 public class IngredientUnitConversionEntity {
     @EmbeddedId private IngredientUnitConversionId id;
-    @Column(name = "grams_per_unit", nullable = false, precision = 10, scale = 2) private BigDecimal gramsPerUnit;
+    @Column(name = "grams_per_unit", nullable = false, precision = 18, scale = 9) private BigDecimal gramsPerUnit;
     @Column(name = "is_approximate", nullable = false) private boolean approximate;
     @Column(name = "is_active", nullable = false) private boolean active;
     protected IngredientUnitConversionEntity() { }
@@ -21,6 +21,8 @@ public class IngredientUnitConversionEntity {
     public BigDecimal getGramsPerUnit() { return gramsPerUnit; }
     public boolean isApproximate() { return approximate; }
     public boolean isActive() { return active; }
-    public void update(BigDecimal gramsPerUnit, boolean approximate) { this.gramsPerUnit = gramsPerUnit; this.approximate = approximate; }
+    public void update(BigDecimal gramsPerUnit, boolean approximate) {
+        this.gramsPerUnit = gramsPerUnit; this.approximate = approximate;
+    }
     public void setActive(boolean active) { this.active = active; }
 }

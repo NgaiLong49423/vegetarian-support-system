@@ -13,6 +13,7 @@ import tech.mamxanh.common.exception.ApiException;
 import tech.mamxanh.common.response.PageResponse;
 import tech.mamxanh.nutrition.dto.request.CatalogStatusUpdateRequest;
 import tech.mamxanh.nutrition.dto.request.ConversionSaveRequest;
+import tech.mamxanh.nutrition.dto.request.VolumeConversionSaveRequest;
 import tech.mamxanh.nutrition.dto.request.IngredientNutritionRequest;
 import tech.mamxanh.nutrition.dto.request.IngredientSaveRequest;
 import tech.mamxanh.nutrition.dto.request.NutritionSupportUpdateRequest;
@@ -125,6 +126,8 @@ public class AdminCatalogService {
     public void deleteUnit(int id) { catalog.deleteUnit(id); }
     @Transactional(readOnly = true)
     public List<ConversionResponse> listConversions(Long ingredientId) { return catalog.listConversions(ingredientId); }
+    public List<ConversionResponse> saveVolumeConversions(long ingredientId, VolumeConversionSaveRequest request) { return catalog.saveVolumeConversions(ingredientId, request); }
+    public List<ConversionResponse> setVolumeConversionStatus(long ingredientId, CatalogStatusUpdateRequest request) { return catalog.setVolumeConversionStatus(ingredientId, request); }
     @Transactional
     public ConversionResponse createConversion(long ingredientId, int unitId, ConversionSaveRequest request) {
         return catalog.createConversion(ingredientId, unitId, request);
