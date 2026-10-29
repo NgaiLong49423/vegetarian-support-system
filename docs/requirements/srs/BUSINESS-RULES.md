@@ -2,7 +2,7 @@
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
 > **Version:** v2.14.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-27
+> **Last Updated:** 2026-10-29
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -22,7 +22,7 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-02 — Phân quyền tính năng AI cho gói Plus và Pro
 
 - **Mã quy tắc:** BR-02
-- **Nội dung:** Gói Plus và Pro mở quyền truy cập các tính năng AI nâng cao theo mô hình Feature-based Entitlement (không giới hạn số lượt request/ngày và không có chu kỳ reset 00:00). Gói Plus mở thêm tính năng AI hỗ trợ soạn nội dung Recipe Post (FR-21) và AI gợi ý biến tấu công thức (FR-47). Gói Pro mở toàn quyền tất cả tính năng AI của sản phẩm, bao gồm tính năng AI tự động lập thực đơn tuần 7 ngày (FR-36).
+- **Nội dung:** Gói Plus và Pro mở quyền truy cập các tính năng AI nâng cao theo mô hình Feature-based Entitlement (không giới hạn số lượt request/ngày và không có chu kỳ reset 00:00). Gói Plus mở thêm AI lập thực đơn tuần thông thường (UC-34.2/UC-34.3 thuộc FR-34), AI lập thực đơn theo dinh dưỡng (FR-36). Gói Pro kế thừa toàn bộ quyền Plus và mở thêm AI hỗ trợ soạn Recipe Post cho Chuyên gia (FR-21) cùng AI gợi ý món liên quan hoặc biến tấu (FR-47) và AI đề xuất điều chỉnh dinh dưỡng (FR-37). Ma trận quyền hiện hành áp dụng cả với gói đã mua còn hiệu lực, không đổi giá, mã gói hoặc thời hạn Subscription.
 
 ---
 
@@ -243,7 +243,7 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-31 — Không gọi AI khi thiếu dữ liệu bắt buộc
 
 - **Mã quy tắc:** BR-31
-- **Nội dung:** Backend không gửi yêu cầu Gemini khi thiếu dữ liệu được requirement của chức năng đó xác định là bắt buộc. Các FR có câu trả lời tùy chọn phải giữ giá trị chưa khai báo là `null`, không hiểu là xác nhận “Không có”. FR-36 không bắt buộc Member hoàn tất onboarding FR-31 hoặc trả lời mục tiêu/nguyên liệu tuần này; chỉ các ràng buộc đã khai báo mới được áp dụng và hệ thống phải giải thích giới hạn cá nhân hóa khi dữ liệu còn thiếu. Hồ sơ dinh dưỡng/eligibility FR-35/38 và Pro vẫn là điều kiện bắt buộc của FR-36.
+- **Nội dung:** Backend không gửi yêu cầu Gemini khi thiếu dữ liệu được requirement của chức năng đó xác định là bắt buộc. Các FR có câu trả lời tùy chọn phải giữ giá trị chưa khai báo là `null`, không hiểu là xác nhận “Không có”. FR-36 không bắt buộc Member hoàn tất onboarding FR-31 hoặc trả lời mục tiêu/nguyên liệu tuần này; chỉ các ràng buộc đã khai báo mới được áp dụng và hệ thống phải giải thích giới hạn cá nhân hóa khi dữ liệu còn thiếu. Hồ sơ dinh dưỡng/eligibility FR-35/38 và Plus hoặc Pro vẫn là điều kiện bắt buộc của FR-36.
 
 ---
 

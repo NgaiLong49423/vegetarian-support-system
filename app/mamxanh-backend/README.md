@@ -1,12 +1,15 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.50.0
+> **Version:** v0.51.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-28
+> **Last Updated:** 2026-10-29
 > **Status:** Active  
 
 # Backend Workspace
 
+Chatbot phân luồng yêu cầu rõ ràng về thực đơn tuần và hỗ trợ soạn Recipe Post trước provider: yêu cầu tuần kiểm tra Pro; soạn bài kiểm tra Expert và Plus/Pro. Guest nhận yêu cầu đăng nhập; Member thiếu gói nhận 403 kèm `requiredTier`/`upgradeUrl`. Tài khoản đủ quyền nhận liên kết workflow, không sinh thực đơn hoặc ghi bài từ chat và không phát usage event Gemini cho việc điều hướng. Hỏi đáp dinh dưỡng tổng quát và bản nháp công thức được yêu cầu rõ vẫn thuộc FR-51.
+
+Tìm món tiếp dùng câu hỏi và ngữ cảnh phiên, có thể lọc thể loại trước phân trang. Chỉ kiểm tra tối đa bốn trang, mỗi trang 50 bài và đưa tối đa 50 ứng viên hợp lệ cho AI. `history[].recommendedRecipeIds` chỉ dùng để tránh lặp khi hỏi món khác; Backend vẫn kiểm tra công khai, điều kiện ăn uống và dữ liệu thẻ hiện tại. Không suy ra toàn bộ database trống từ phạm vi tìm kiếm có giới hạn.
 ## Tổng hợp nguyên liệu — FR-54 / Issue #54
 
 `shopping/service/ShoppingAggregationService.aggregate(List<ShoppingAggregationLine>)` là biên tính toán nội bộ cho FR-53. Đầu vào gồm `ingredientId` (bắt buộc đối với dòng công thức; `null` chỉ dành cho mặt hàng thủ công), `customName`, `quantity` đã được caller tính theo khẩu phần, và `unitId`. Kết quả `ShoppingAggregationResult` chứa các nhóm danh mục, các dòng tổng hợp và cảnh báo có chỉ số dòng nguồn. Service không ghi Shopping List và không gọi AI/API ngoài.
@@ -36,6 +39,8 @@ Kiểm thử tập trung: `.\mvnw.cmd "-Dtest=ShoppingAggregationServiceTest,Sho
 Kiểm chứng ngày 2026-10-17 trên nhánh FR-54: 67/67 test tập trung đạt; toàn Backend `clean verify` đạt 881/881 test, không failure/error/skip. JaCoCo BUNDLE: Lines 94,87%, Branches 82,97%, Methods 93,42%, Instructions 94,31%; cả bốn đều vượt cổng `>80%`. Đây là bằng chứng local của bộ tổng hợp và baseline Backend, không thay thế required CI/review hoặc nghiệm thu sau merge.
 
 Thư mục này dành cho REST API Java 21 + Spring Boot, build bằng Maven và truy cập Microsoft SQL Server qua Spring Data JPA/Hibernate theo [Technology Stack](../../docs/architecture/TECHNOLOGY-STACK.md).
+
+Model hiện tại là `gemini-3.8-flash` theo Technology Stack. Ngày 27/10/2026, người dùng yêu cầu kết thúc thử nghiệm Flash-Lite và khôi phục model Confirmed để bàn giao trưởng nhóm kiểm thử AI. Giữ cùng model cho mọi gói tài khoản, kiểm tra entitlement tại Backend và deadline provider 9 giây cho toàn thao tác. SDK tắt retry nội bộ; ứng dụng chỉ thử lại một lần với HTTP 502/503/504 trả sớm, backoff 1–1,25 giây và giữ ít nhất 2 giây ngân sách cho lần gọi tiếp. Không retry quota HTTP 429 hoặc lỗi dữ liệu/quyền. Không tự chuyển model khi lỗi hoặc sửa cấu hình billing. Kiểm thử adapter với provider kiểm soát không thay thế kiểm thử sinh nội dung bằng API key hợp lệ của trưởng nhóm.
 
 > [!IMPORTANT]
 > **Quy chuẩn kiến trúc bắt buộc:** Mọi thành viên và AI agent khi triển khai mã nguồn Backend **bắt buộc phải tuân thủ nghiêm ngặt** cấu trúc package Modular Monolith, phân tầng MVC và ranh giới liên module được quy định tại [Backend Package Structure Specification](../../docs/architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md). Cấm inject chéo Repository giữa các module và không trả JPA Entity trực tiếp ra REST API.
@@ -303,6 +308,8 @@ Dừng bằng `Ctrl+C`. Container tự xóa vì dùng `--rm`. Khi source hoặc 
 - Subscription baseline dùng FREE 0, PLUS 49,000 và PRO 99,000 VND/tháng; verified activation, end-of-period expiry, no auto-renew/no partial refund và idempotent duplicate payment processing. Cổng thanh toán đã chốt là **payOS** (REST API qua Spring `RestClient` + Webhook HMAC-SHA256).
 - Gemini, Azure, Brevo SMTP và payOS credential chỉ đến từ cấu hình môi trường/secret store (local `.env`, GitHub Secrets, Azure App Service Settings); không commit giá trị thật. Maps chỉ được cấu hình nếu M11 được kích hoạt lại bằng quyết định scope mới.
 - API được mô tả bằng OpenAPI và trả lỗi nhất quán; không để frontend suy đoán business rule.
+
+Ma trận quyền AI hiện hành: PLUS mở lập thực đơn tuần thông thường (UC-34.2/UC-34.3) và theo dinh dưỡng (FR-36). PRO kế thừa PLUS, thêm AI soạn bài cho Chuyên gia (FR-21), AI gợi ý món liên quan/biến tấu (FR-47) và AI đề xuất điều chỉnh dinh dưỡng (FR-37). FREE giữ Chatbot, gợi ý nguyên liệu và hướng dẫn chế biến. Giá và thời hạn đã mua không đổi.
 
 ## Thanh toán xác minh — FR-13 / Issue #142
 

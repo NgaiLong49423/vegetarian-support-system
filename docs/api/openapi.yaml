@@ -1349,8 +1349,9 @@ paths:
       tags:
       - ai-menu-controller
       summary: Replace a member's entire week with selected AI preview meals
-      description: "Revalidates Pro, eligibility and every selected published nutrition-complete\
-        \ recipe. The operation is atomic; any invalid entry preserves the old week."
+      description: "Revalidates Plus or Pro, eligibility and every selected published\
+        \ nutrition-complete recipe. The operation is atomic; any invalid entry preserves\
+        \ the old week."
       operationId: apply
       requestBody:
         content:
@@ -1372,7 +1373,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "403":
-          description: Pro entitlement or nutrition eligibility is required.
+          description: Plus or Pro entitlement or nutrition eligibility is required.
           content:
             application/problem+json:
               schema:
@@ -2761,7 +2762,7 @@ paths:
       tags:
       - related-recipe-controller
       summary: Ask Gemini to select existing pairing or variation recipes
-      description: Active Customer/Expert with Plus/Pro required before calling Gemini.
+      description: Active Customer/Expert with Pro required before calling Gemini.
         No recipe or meal plan is written.
       operationId: recommend
       parameters:
@@ -2801,7 +2802,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "403":
-          description: Member role and active Plus/Pro required.
+          description: Member role and active Pro required.
           content:
             application/problem+json:
               schema:
@@ -2995,10 +2996,10 @@ paths:
       tags:
       - ai-recipe-controller
       summary: Generate a 7-day AI meal-plan preview
-      description: "Requires an active Pro Member and complete FR-31 profile. Ingredient\
-        \ filters are optional. Returns 21 slots from the public safety-filtered catalog\
-        \ without writing the member's Meal Plan. Recipe IDs may repeat, but adjacent\
-        \ slots cannot."
+      description: "Requires an active Plus or Pro Member and complete FR-31 profile.\
+        \ Ingredient filters are optional. Returns 21 slots from the public safety-filtered\
+        \ catalog without writing the member's Meal Plan. Recipe IDs may repeat, but\
+        \ adjacent slots cannot."
       operationId: weeklyMenu
       requestBody:
         content:
@@ -3014,7 +3015,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/AiWeeklyMenuPreviewResponse"
         "403":
-          description: An active Pro subscription is required.
+          description: An active Plus or Pro subscription is required.
           content:
             application/problem+json:
               schema:
@@ -3176,11 +3177,16 @@ paths:
       tags:
       - ai-chat-controller
       summary: Ask the vegetarian cooking assistant
-      description: Requires an active Member. General context or the latest public
-        RecipePost is loaded server-side. Recipe discovery selects only current public
-        RecipePosts from the Backend catalog; explicitly requested recipe drafts remain
-        chat text only. Conversation history is request-scoped and is not persisted.
-        Guest access will be enabled with FR-02 rate limiting.
+      description: Guest and active Member use the same chatbot. Guest must supply
+        a session-cookie UUID in anonymousViewerId; a rolling limit of 10 requests
+        per minute applies independently to cookie and peer IP. No daily quota. General
+        context or the latest public RecipePost is loaded server-side. Recipe discovery
+        selects only current public RecipePosts from the Backend catalog; explicitly
+        requested recipe drafts remain chat text only. Conversation history is request-scoped
+        and is not persisted. Guest has no account dietary context. Explicit weekly-menu
+        and recipe-authoring requests are checked for entitlement and routed to their
+        dedicated workflow without calling Gemini. Follow-up recipe searches use current
+        public data; assistant recipe IDs are untrusted exclusion hints only.
       operationId: answer
       requestBody:
         content:
@@ -3203,7 +3209,30 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
-          description: An authenticated Member session is required.
+          description: "Bearer token invalid/expired, or a Guest requests a Member-only\
+            \ workflow; no provider call."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "Account/role denied, or workflow requires a higher subscription.\
+            \ AI_SUBSCRIPTION_REQUIRED includes requiredTier and upgradeUrl; no provider\
+            \ call."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "429":
+          description: Guest exceeded the cookie or peer-IP limit; Retry-After gives
+            the wait in seconds.
+          headers:
+            Retry-After:
+              description: Seconds until Guest can try again.
+              style: simple
+              schema:
+                type: integer
+                minimum: 1
           content:
             application/problem+json:
               schema:
@@ -3226,21 +3255,15 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
-            \ this operation."
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
       security:
+      - {}
       - bearerAuth: []
   /api/v1/recipes/ai-assistance:
     post:
       tags:
       - recipe-post-controller
       summary: Generate editable AI-assisted recipe text
-      description: Requires an active Expert account with an active Plus or Pro subscription.
+      description: Requires an active Expert account with an active Pro subscription.
         Does not create or publish a recipe draft.
       operationId: generateAiAssistance
       requestBody:
@@ -3257,7 +3280,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecipeAiAssistanceResponse"
         "403":
-          description: Expert role or Plus/Pro entitlement is required.
+          description: Expert role or Pro entitlement is required.
           content:
             application/problem+json:
               schema:
@@ -3594,7 +3617,7 @@ paths:
       tags:
       - ai-menu-controller
       summary: Generate a nutrition-aware weekly meal-plan preview
-      description: "Requires an active Member, Pro entitlement, FR-38 eligibility\
+      description: "Requires an active Member, Plus or Pro entitlement, FR-38 eligibility\
         \ and a valid FR-35 profile. PROFILE uses the saved goal; THIS_WEEK uses optional\
         \ request-only preferences. Does not write Meal Plan entries."
       operationId: preview
@@ -3619,9 +3642,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "403":
-          description: Pro entitlement is required; nutrition eligibility must be
-            confirmed (NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED) and the account
-            must be eligible (NUTRITION_ELIGIBILITY_INELIGIBLE).
+          description: Plus or Pro entitlement is required; nutrition eligibility
+            must be confirmed (NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED) and the
+            account must be eligible (NUTRITION_ELIGIBILITY_INELIGIBLE).
           content:
             application/problem+json:
               schema:
@@ -7127,6 +7150,16 @@ components:
                 type: string
               message:
                 type: string
+        requiredTier:
+          type: string
+          description: Minimum paid tier for AI_SUBSCRIPTION_REQUIRED; role and other
+            feature prerequisites still apply.
+          enum:
+          - PLUS
+          - PRO
+        upgradeUrl:
+          type: string
+          description: Relative plan-information link for entitlement failures.
     ShoppingListItemResponse:
       type: object
       properties:
@@ -8753,6 +8786,11 @@ components:
             $ref: "#/components/schemas/Turn"
           maxItems: 8
           minItems: 0
+        anonymousViewerId:
+          type: string
+          description: Session-cookie UUID required for Guest rate limiting; ignored
+            for authenticated Members.
+          pattern: "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
       required:
       - contextType
       - question
@@ -8766,8 +8804,21 @@ components:
           - ASSISTANT
         content:
           type: string
-          maxLength: 1000
+          description: USER content is limited to 1000 characters; ASSISTANT content
+            may contain a complete answer up to 8000 characters.
+          maxLength: 8000
           minLength: 0
+        recommendedRecipeIds:
+          type: array
+          description: IDs of up to four recipe cards shown in this ASSISTANT turn.
+            Untrusted hints used only to avoid repeats; never authorization or recipe
+            data.
+          items:
+            type: integer
+            format: int64
+            minimum: 1
+          maxItems: 4
+          minItems: 0
       required:
       - content
       - speaker
@@ -8787,12 +8838,17 @@ components:
           type: string
           description: AI answer or explicitly requested draft. Treat as reference
             information.
+          maxLength: 8000
         recommendations:
           type: array
           description: Real public RecipePosts selected from the Backend catalog;
             empty when the user did not ask to find recipes.
           items:
             $ref: "#/components/schemas/RecipeRecommendation"
+        workflowUrl:
+          type: string
+          description: Optional local workflow link. Routing guidance is returned
+            without a Gemini call; currently /ke-hoach?view=for-you or /dang-cong-thuc.
     RecipeRecommendation:
       type: object
       properties:
@@ -8874,14 +8930,14 @@ components:
           type: string
         paymentLinkId:
           type: string
-        paymentSuccess:
-          type: boolean
         orderCode:
           type: integer
           format: int64
         amount:
           type: integer
           format: int32
+        paymentSuccess:
+          type: boolean
     ConfirmNutritionEligibilityRequest:
       type: object
       properties:

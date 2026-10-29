@@ -93,11 +93,14 @@ class SubscriptionServiceTest {
 
         PlanResponse plus = plans.get(1);
         assertThat(plus.tier()).isEqualTo("PLUS");
+        assertThat(plus.features()).contains("AI lập thực đơn tuần 7 ngày", "AI lập thực đơn theo dinh dưỡng cá nhân");
+        assertThat(plus.features()).noneMatch(feature -> feature.contains("soạn bài") || feature.contains("biến tấu"));
         assertThat(plus.priceVnd()).isEqualTo(49_000);
         assertThat(plus.billingPeriod()).contains("Tháng");
 
         PlanResponse pro = plans.get(2);
         assertThat(pro.tier()).isEqualTo("PRO");
+        assertThat(pro.features()).contains("Toàn bộ quyền lợi gói PLUS", "AI hỗ trợ soạn bài viết và công thức", "AI gợi ý biến tấu món chay sáng tạo");
         assertThat(pro.priceVnd()).isEqualTo(99_000);
         assertThat(pro.billingPeriod()).contains("Tháng");
 
@@ -148,6 +151,36 @@ class SubscriptionServiceTest {
         assertThat(response.active()).isTrue();
         assertThat(response.startsAt()).isEqualTo(startsAt);
         assertThat(response.unlockedFeatures()).contains("AI lập thực đơn tuần 7 ngày");
+    }
+
+    @Test
+    void futureSubscriptionDoesNotUnlockFeaturesOrCancelTheFuturePeriod() {
+        mockActiveUser(1L);
+        var now = LocalDateTime.now(clock);
+        var future = new SubscriptionEntity(1L, SubscriptionTier.PRO, now.plusDays(1), now.plusDays(31));
+        when(subscriptionRepository.findByUserIdAndStatus(1L, SubscriptionStatus.ACTIVE))
+                .thenReturn(Optional.of(future));
+
+        var response = subscriptionService.getMySubscription(1L);
+
+        assertThat(response.tier()).isEqualTo("FREE");
+        assertThat(response.unlockedFeatures()).doesNotContain("AI lập thực đơn tuần 7 ngày");
+        assertThat(future.getStatus()).isEqualTo(SubscriptionStatus.ACTIVE);
+        verify(subscriptionRepository, never()).save(any());
+    }
+
+    @Test
+    void subscriptionUnlocksAtItsExactStartAndExpiresAtItsExactEnd() {
+        mockActiveUser(1L);
+        var now = LocalDateTime.now(clock);
+        var starting = new SubscriptionEntity(1L, SubscriptionTier.PRO, now, now.plusDays(30));
+        var ending = new SubscriptionEntity(1L, SubscriptionTier.PRO, now.minusDays(30), now);
+        when(subscriptionRepository.findByUserIdAndStatus(1L, SubscriptionStatus.ACTIVE))
+                .thenReturn(Optional.of(starting), Optional.of(ending));
+
+        assertThat(subscriptionService.getMySubscription(1L).tier()).isEqualTo("PRO");
+        assertThat(subscriptionService.getMySubscription(1L).tier()).isEqualTo("FREE");
+        assertThat(ending.getStatus()).isEqualTo(SubscriptionStatus.EXPIRED);
     }
 
     @Test
@@ -233,7 +266,8 @@ class SubscriptionServiceTest {
         MySubscriptionResponse response = subscriptionService.getMySubscription(userId);
 
         assertThat(response.tier()).isEqualTo("PLUS");
-        assertThat(response.unlockedFeatures()).contains("AI hỗ trợ soạn bài viết và công thức");
+        assertThat(response.unlockedFeatures()).contains("AI lập thực đơn tuần 7 ngày", "AI lập thực đơn theo dinh dưỡng cá nhân")
+                .doesNotContain("AI đề xuất điều chỉnh dinh dưỡng", "AI hỗ trợ soạn bài viết và công thức", "AI gợi ý biến tấu món chay sáng tạo");
     }
 
     @Test

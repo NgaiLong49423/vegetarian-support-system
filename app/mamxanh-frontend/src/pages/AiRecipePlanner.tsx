@@ -1,3 +1,4 @@
+import { aiRequiredTier, aiUpgradeMessage, type AiPaidTier } from '../lib/aiUpgrade';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertCircle, CalendarDays, Check, ChefHat, ChevronRight, LoaderCircle, Search, Sparkles } from 'lucide-react';
@@ -30,7 +31,7 @@ function toDateKey(date: Date): string {
 function failureMessage(error: unknown, action: 'recommend' | 'weekly' | 'apply') {
   if (error instanceof ApiError) {
     if (error.code === 'DIETARY_PROFILE_INCOMPLETE') return 'Hoàn tất hồ sơ sở thích ăn uống để nhận gợi ý phù hợp.';
-    if (error.code === 'AI_SUBSCRIPTION_REQUIRED') return 'Tạo thực đơn tuần cần gói Pro đang hoạt động.';
+    if (error.code === 'AI_SUBSCRIPTION_REQUIRED') return aiUpgradeMessage(error, 'PLUS', 'AI lập thực đơn tuần');
     if (error.code === 'AI_MENU_UNAVAILABLE') return 'Chưa có đủ công thức phù hợp để tạo thực đơn. Hãy chọn thêm nguyên liệu khác.';
     if (error.code === 'MEAL_PLAN_RECIPE_DUPLICATE') return 'Một món trong preview đã có ở đúng ngày và bữa của tuần này. Chọn tuần khác hoặc tạo preview mới.';
     if (error.code === 'RECIPE_NOT_FOUND' && action === 'apply') return 'Có công thức vừa không còn công khai. Hãy tạo preview mới rồi thử lại.';
@@ -61,7 +62,7 @@ export function AiRecipePlanner({ weekStartDate, embedded = false, plannerMode =
   const [preview, setPreview] = useState<AiWeeklyMenuPreview | null>(null);
   const weekStart = weekStartDate ?? mondayOf(new Date());
   const [busy, setBusy] = useState<'recommend' | 'weekly' | 'apply' | null>(null);
-  const [error, setError] = useState<{ message: string; code?: string } | null>(null);
+  const [error, setError] = useState<{ message: string; code?: string; requiredTier?: AiPaidTier } | null>(null);
   const [applied, setApplied] = useState(false);
 
   useEffect(() => {
@@ -129,7 +130,7 @@ export function AiRecipePlanner({ weekStartDate, embedded = false, plannerMode =
       }
     } catch (cause) {
       const message = failureMessage(cause, action);
-      setError({ message, code: cause instanceof ApiError ? cause.code : undefined });
+      setError({ message, code: cause instanceof ApiError ? cause.code : undefined, requiredTier: cause instanceof ApiError ? aiRequiredTier(cause, 'PLUS') : undefined });
     } finally {
       setBusy(null);
     }
@@ -173,7 +174,7 @@ export function AiRecipePlanner({ weekStartDate, embedded = false, plannerMode =
       setApplied(true);
     } catch (cause) {
       const message = failureMessage(cause, 'apply');
-      setError({ message, code: cause instanceof ApiError ? cause.code : undefined });
+      setError({ message, code: cause instanceof ApiError ? cause.code : undefined, requiredTier: cause instanceof ApiError ? aiRequiredTier(cause, 'PLUS') : undefined });
     } finally {
       setBusy(null);
     }
@@ -229,7 +230,7 @@ export function AiRecipePlanner({ weekStartDate, embedded = false, plannerMode =
       </div>
     </section>
 
-    {error && <div role="alert" className="mt-5 flex items-start gap-2 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /><div>{error.message}{error.code === 'AI_SUBSCRIPTION_REQUIRED' && <Link to="/goi-ai" className="ml-1 font-semibold underline">Xem các gói</Link>}{error.code === 'DIETARY_PROFILE_INCOMPLETE' && <Link to="/ho-so/so-thich-an-uong" className="ml-1 font-semibold underline">Cập nhật hồ sơ</Link>}</div></div>}
+    {error && <div role="alert" className="mt-5 flex items-start gap-2 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /><div>{error.message}{error.code === 'AI_SUBSCRIPTION_REQUIRED' && <Link to="/goi-ai" className="ml-1 font-semibold underline">Nâng cấp gói AI {error.requiredTier ?? 'PLUS'}</Link>}{error.code === 'DIETARY_PROFILE_INCOMPLETE' && <Link to="/ho-so/so-thich-an-uong" className="ml-1 font-semibold underline">Cập nhật hồ sơ</Link>}</div></div>}
 
     {plannerMode === 'ingredients' && suggestions && <section className="mt-7" aria-labelledby="suggestions-title">
       <h2 id="suggestions-title" className="mb-4 text-xl font-bold text-ink">Công thức phù hợp</h2>

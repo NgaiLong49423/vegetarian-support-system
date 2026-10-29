@@ -1,6 +1,8 @@
 package tech.mamxanh.integration.ai;
 
 import com.google.genai.Client;
+import com.google.genai.errors.ApiException;
+import com.google.genai.types.HttpRetryOptions;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.HttpOptions;
 import com.google.genai.types.Content;
@@ -11,15 +13,32 @@ import com.google.genai.types.ThinkingConfig;
 import com.google.genai.types.ThinkingLevel;
 import java.util.List;
 import java.util.Map;
+import java.io.InterruptedIOException;
+import java.util.function.Supplier;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.ThreadLocalRandom;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 public class GeminiAiClient implements AiClient, AutoCloseable {
+    private static final Logger LOG = LoggerFactory.getLogger(GeminiAiClient.class);
+    // Reserve application overhead within the NFR-18 ten-second provider budget.
+    private static final int REQUEST_TIMEOUT_MS = 9_000;
+    private static final int MIN_RETRY_BUDGET_MS = 2_000;
+    // Confirmed model in TECHNOLOGY-STACK.md; shared by all account tiers.
     private static final String MODEL = "gemini-3.8-flash";
-    static final int DEFAULT_TIMEOUT_MILLIS = 60_000;
+    static final int DEFAULT_TIMEOUT_MILLIS = REQUEST_TIMEOUT_MS;
     private final Client client;
+    private final ExecutorService requests = Executors.newThreadPerTaskExecutor(
+            Thread.ofVirtual().name("gemini-request-", 0).factory());
 
     @Autowired
     public GeminiAiClient(@Value("${GEMINI_API_KEY:}") String apiKey) {
@@ -29,15 +48,15 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
     GeminiAiClient(String apiKey, HttpOptions httpOptions) {
         this.client = apiKey == null || apiKey.isBlank() ? null : Client.builder()
                 .apiKey(apiKey.strip())
-                .httpOptions(httpOptions)
+                .httpOptions(httpOptions.toBuilder()
+                        .timeout(Math.min(httpOptions.timeout().orElse(REQUEST_TIMEOUT_MS), REQUEST_TIMEOUT_MS))
+                        // The outer application deadline owns retries; disable independent SDK backoff.
+                        .retryOptions(HttpRetryOptions.builder().attempts(1).build()).build())
                 .build();
     }
 
     @Override
     public String generateRecipeText(String prompt, List<Long> allowedIngredientIds) {
-        if (client == null) {
-            throw new AiProviderException("Gemini is not configured");
-        }
         Schema textSchema = Schema.builder().type(Type.Known.STRING).build();
         Schema ingredientIdsSchema = Schema.builder().type(Type.Known.ARRAY)
                 .items(Schema.builder().type(Type.Known.INTEGER)).build();
@@ -54,26 +73,21 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                 .candidateCount(1)
                 .maxOutputTokens(8192)
                 .build();
-        try {
+        return request("RECIPE_TEXT", "Gemini request failed", () -> {
             var response = client.models.generateContent(MODEL,
                     prompt + "\nAllowed ingredient IDs: " + allowedIngredientIds, config);
             String finishReason = response.candidates().orElse(List.of()).stream().findFirst()
                     .flatMap(candidate -> candidate.finishReason()).map(Object::toString).orElse("STOP");
-            if (!"STOP".equals(finishReason)) {
-                throw new AiProviderException("Gemini recipe output is incomplete: " + finishReason);
-            }
+            if (!"STOP".equals(finishReason)) throw AiProviderException.invalidResponse("Gemini recipe output is incomplete");
             String text = response.text();
-            if (text == null || text.isBlank()) throw new AiProviderException("Gemini returned an empty response");
+            if (text == null || text.isBlank()) throw AiProviderException.invalidResponse("Gemini returned an empty response");
             return text;
-        } catch (AiProviderException exception) {
-            throw exception;
-        } catch (RuntimeException exception) {
-            throw new AiProviderException("Gemini request failed", exception);
-        }
+        });
     }
 
     @Override
     public void close() {
+        requests.shutdownNow();
         if (client != null) client.close();
     }
 
@@ -84,14 +98,14 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
 
     @Override
     public ChatResult answerChat(String systemInstruction, String prompt) {
-        if (client == null) throw new AiProviderException("Gemini is not configured");
         Schema recommendationSchema = Schema.builder().type(Type.Known.OBJECT)
                 .properties(Map.of("recipeId", Schema.builder().type(Type.Known.INTEGER).build(),
                         "reason", Schema.builder().type(Type.Known.STRING).build()))
                 .required(List.of("recipeId", "reason")).build();
         Schema schema = Schema.builder().type(Type.Known.OBJECT)
                 .properties(Map.of("action", Schema.builder().type(Type.Known.STRING).build(),
-                        "answer", Schema.builder().type(Type.Known.STRING).build(),
+                        "answer", Schema.builder().type(Type.Known.STRING)
+                                .maxLength((long) AiClient.MAX_CHAT_ANSWER_LENGTH).build(),
                         "recommendations", Schema.builder().type(Type.Known.ARRAY)
                                 .maxItems(4L).items(recommendationSchema).build()))
                 .required(List.of("action", "answer", "recommendations")).build();
@@ -103,24 +117,20 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                 .maxOutputTokens(2048)
                 .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build())
                 .build();
-        try {
+        return request("CHAT", "Gemini chat request failed", () -> {
             var response = client.models.generateContent(MODEL, prompt, config);
             String finishReason = response.candidates().orElse(List.of()).stream().findFirst()
                     .flatMap(candidate -> candidate.finishReason()).map(Object::toString).orElse("STOP");
             String text = response.text();
             if (!"STOP".equals(finishReason) || text == null || text.isBlank()) {
-                throw new AiProviderException("Gemini returned an incomplete chat response");
+                throw AiProviderException.invalidResponse("Gemini returned an incomplete chat response");
             }
             var usage = response.usageMetadata();
             return new ChatResult(null, text.strip(),
                     usage.flatMap(value -> value.promptTokenCount()).orElse(null),
                     usage.flatMap(value -> value.candidatesTokenCount()).orElse(null),
                     usage.flatMap(value -> value.totalTokenCount()).orElse(null));
-        } catch (AiProviderException exception) {
-            throw exception;
-        } catch (RuntimeException exception) {
-            throw new AiProviderException("Gemini chat request failed", exception);
-        }
+        });
     }
 
     @Override
@@ -129,7 +139,6 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
     }
 
     private RecommendationResult recommendSequence(String prompt, List<Long> allowedRecipeIds, int limit) {
-        if (client == null) throw new AiProviderException("Gemini is not configured");
         Schema schema = Schema.builder().type(Type.Known.OBJECT)
                 .properties(Map.of("recipeIds", Schema.builder().type(Type.Known.ARRAY)
                         .maxItems((long) limit).items(Schema.builder().type(Type.Known.INTEGER)).build()))
@@ -137,29 +146,24 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
         GenerateContentConfig config = GenerateContentConfig.builder().responseMimeType("application/json")
                 .responseSchema(schema).candidateCount(1).maxOutputTokens(2048)
                 .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build()).build();
-        try {
+        return request("RECOMMENDATIONS", "Gemini recommendation request failed", () -> {
             var response = client.models.generateContent(MODEL,
                     prompt + "\nChoose at most " + limit + " IDs from " + allowedRecipeIds, config);
             String finishReason = response.candidates().orElse(List.of()).stream().findFirst()
                     .flatMap(candidate -> candidate.finishReason()).map(Object::toString).orElse("STOP");
-            if (!"STOP".equals(finishReason)) throw new AiProviderException("Gemini recommendation output is incomplete");
+            if (!"STOP".equals(finishReason)) throw AiProviderException.invalidResponse("Gemini recommendation output is incomplete");
             String text = response.text();
-            if (text == null || text.isBlank()) throw new AiProviderException("Gemini returned an empty response");
+            if (text == null || text.isBlank()) throw AiProviderException.invalidResponse("Gemini returned an empty response");
             var usage = response.usageMetadata();
             return new RecommendationResult(text,
                     usage.flatMap(value -> value.promptTokenCount()).orElse(null),
                     usage.flatMap(value -> value.candidatesTokenCount()).orElse(null),
                     usage.flatMap(value -> value.totalTokenCount()).orElse(null));
-        } catch (AiProviderException exception) {
-            throw exception;
-        } catch (RuntimeException exception) {
-            throw new AiProviderException("Gemini recommendation request failed", exception);
-        }
+        });
     }
 
     @Override
     public RecommendationResult analyzeNutritionRecommendations(String prompt, List<Long> allowedRecipeIds, int limit) {
-        if (client == null) throw new AiProviderException("Gemini is not configured");
         Schema schema = Schema.builder().type(Type.Known.OBJECT)
                 .properties(Map.of(
                         "analysis", Schema.builder().type(Type.Known.STRING).build(),
@@ -169,27 +173,116 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
         GenerateContentConfig config = GenerateContentConfig.builder().responseMimeType("application/json")
                 .responseSchema(schema).candidateCount(1).maxOutputTokens(2048)
                 .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build()).build();
-        try {
+        return request("NUTRITION", "Gemini nutrition analysis failed", () -> {
             var response = client.models.generateContent(MODEL, prompt + "\nChoose at most " + limit
                     + " IDs from " + allowedRecipeIds, config);
             String finishReason = response.candidates().orElse(List.of()).stream().findFirst()
                     .flatMap(candidate -> candidate.finishReason()).map(Object::toString).orElse("STOP");
-            if (!"STOP".equals(finishReason)) throw new AiProviderException("Gemini nutrition analysis is incomplete");
+            if (!"STOP".equals(finishReason)) throw AiProviderException.invalidResponse("Gemini nutrition analysis is incomplete");
             String text = response.text();
-            if (text == null || text.isBlank()) throw new AiProviderException("Gemini returned an empty nutrition analysis");
+            if (text == null || text.isBlank()) throw AiProviderException.invalidResponse("Gemini returned an empty nutrition analysis");
             var usage = response.usageMetadata();
             return new RecommendationResult(text, usage.flatMap(value -> value.promptTokenCount()).orElse(null),
                     usage.flatMap(value -> value.candidatesTokenCount()).orElse(null),
                     usage.flatMap(value -> value.totalTokenCount()).orElse(null));
-        } catch (AiProviderException exception) {
-            throw exception;
-        } catch (RuntimeException exception) {
-            throw new AiProviderException("Gemini nutrition analysis failed", exception);
+        });
+    }
+
+    private <T> T request(String operation, String failureMessage, Supplier<T> action) {
+        long started = System.nanoTime();
+        try {
+            if (client == null) throw new AiProviderException("Gemini is not configured", null,
+                    FailureKind.CONFIGURATION, null);
+            // Both attempts and their backoff share one deadline; SDK retries remain disabled.
+            long deadline = started + TimeUnit.MILLISECONDS.toNanos(REQUEST_TIMEOUT_MS);
+            var pending = requests.submit(() -> attemptWithBoundedRetry(operation, action, deadline));
+            try {
+                return pending.get(Math.max(1, deadline - System.nanoTime()), TimeUnit.NANOSECONDS);
+            } catch (TimeoutException failure) {
+                pending.cancel(true);
+                throw new AiProviderException(failureMessage, null, FailureKind.TIMEOUT, null);
+            } catch (InterruptedException failure) {
+                pending.cancel(true);
+                Thread.currentThread().interrupt();
+                throw new AiProviderException(failureMessage, null, FailureKind.TRANSPORT, null);
+            } catch (ExecutionException failure) {
+                if (failure.getCause() instanceof RuntimeException runtime) throw runtime;
+                if (failure.getCause() instanceof Error error) throw error;
+                throw new AiProviderException(failureMessage, null, FailureKind.TRANSPORT, null);
+            }
+        } catch (RuntimeException failure) {
+            AiProviderException mapped = failure instanceof AiProviderException provider ? provider
+                    : new AiProviderException(failureMessage, failure, classify(failure), httpStatus(failure));
+            // SDK exception messages/stack traces may contain prompts, credentials or response bodies.
+            LOG.warn("Gemini request failed operation={} model={} category={} httpStatus={} elapsedMs={}",
+                    operation, MODEL, mapped.kind(), mapped.httpStatus(), (System.nanoTime() - started) / 1_000_000);
+            throw mapped;
         }
     }
 
+    private <T> T attemptWithBoundedRetry(String operation, Supplier<T> action, long deadline) {
+        for (int attempt = 1; ; attempt++) {
+            try {
+                return action.get();
+            } catch (RuntimeException failure) {
+                Integer status = httpStatus(failure);
+                long delayMillis = 1_000 + ThreadLocalRandom.current().nextLong(251);
+                boolean retryable = status != null && (status == 502 || status == 503 || status == 504);
+                // Leave at least two seconds for a useful second attempt. Never retry quota/validation errors.
+                if (attempt >= 2 || !retryable || Thread.currentThread().isInterrupted()
+                        || deadline - System.nanoTime() <= TimeUnit.MILLISECONDS.toNanos(delayMillis + MIN_RETRY_BUDGET_MS)) {
+                    throw failure;
+                }
+                LOG.info("Gemini transient failure; retrying operation={} model={} httpStatus={} attempt=2",
+                        operation, MODEL, status);
+                try {
+                    Thread.sleep(delayMillis);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw new AiProviderException("Gemini retry interrupted", null, FailureKind.TRANSPORT, null);
+                }
+                if (Thread.currentThread().isInterrupted()
+                        || deadline - System.nanoTime() < TimeUnit.MILLISECONDS.toNanos(MIN_RETRY_BUDGET_MS)) {
+                    throw failure;
+                }
+            }
+        }
+    }
+
+    private static FailureKind classify(Throwable failure) {
+        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            if (cause instanceof InterruptedIOException) return FailureKind.TIMEOUT;
+            if (cause instanceof ApiException) return FailureKind.HTTP;
+        }
+        return FailureKind.TRANSPORT;
+    }
+
+    private static Integer httpStatus(Throwable failure) {
+        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            if (cause instanceof ApiException api) return api.code();
+        }
+        return null;
+    }
+
+    public enum FailureKind { CONFIGURATION, TIMEOUT, HTTP, TRANSPORT, INVALID_RESPONSE }
+
     public static final class AiProviderException extends RuntimeException {
-        public AiProviderException(String message) { super(message); }
-        public AiProviderException(String message, Throwable cause) { super(message, cause); }
+        private final FailureKind kind;
+        private final Integer httpStatus;
+
+        public AiProviderException(String message) { this(message, null); }
+        public AiProviderException(String message, Throwable cause) {
+            this(message, cause, classify(cause), GeminiAiClient.httpStatus(cause));
+        }
+        private AiProviderException(String message, Throwable cause, FailureKind kind, Integer httpStatus) {
+            super(message, cause);
+            this.kind = kind;
+            this.httpStatus = httpStatus;
+        }
+        public static AiProviderException invalidResponse(String message) {
+            return new AiProviderException(message, null, FailureKind.INVALID_RESPONSE, null);
+        }
+        public FailureKind kind() { return kind; }
+        public Integer httpStatus() { return httpStatus; }
     }
 }

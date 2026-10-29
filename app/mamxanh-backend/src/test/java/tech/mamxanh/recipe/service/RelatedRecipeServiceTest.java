@@ -83,7 +83,7 @@ class RelatedRecipeServiceTest {
     @Test
     void entitlementIsCheckedBeforeReadingCatalogOrCallingProvider() {
         when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(7, Role.CUSTOMER));
-        doThrow(new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED)).when(entitlement).requirePlusOrPro(7);
+        doThrow(new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED)).when(entitlement).requirePro(7);
         assertThatThrownBy(() -> service.recommend(1, 6)).isInstanceOf(AppException.class);
         verifyNoInteractions(repository, recipes, ai);
     }

@@ -1,12 +1,17 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.61.0
+> **Version:** v1.62.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-28
+> **Last Updated:** 2026-10-29
 > **Status:** Active  
 
 # Mâm Xanh Frontend
 
+Chatbot gửi thêm ID của tối đa bốn thẻ công thức trong mỗi lượt ASSISTANT thuộc tám lượt lịch sử gần nhất để Backend xử lý “món khác”; dữ liệu chỉ ở phiên giao diện, không lưu lịch sử tài khoản. Khi Backend từ chối chức năng nâng cao, chat hiển thị đường dẫn đăng nhập hoặc xem gói và không mời retry nguyên yêu cầu thiếu quyền. Khi đủ quyền, liên kết workflow chỉ được hiển thị cho hai đường dẫn nội bộ đã biết: `/ke-hoach?view=for-you` và `/dang-cong-thuc`.
+
+Chatbot hiện dùng chung cho Guest và Member theo FR-10: Guest gửi định danh session cookie hiện có qua body, có hướng dẫn đăng ký và xử lý lỗi 429; không đọc hồ sơ tài khoản. Đổi tài khoản hoặc ngữ cảnh xóa hội thoại trên giao diện và bỏ qua phản hồi cũ đang chờ. Các luồng AI thiếu quyền dẫn tới `/goi-ai`, hướng dẫn Plus hoặc Pro theo tính năng; việc kiểm tra quyền và thời hạn gói thuộc Backend. Chi tiết giao tiếp và giới hạn bộ đếm Guest nằm trong [API Guide](../../docs/api/API.md#16-chatbot-hỏi-đáp-theo-ngữ-cảnh--fr-51). Đây là mô tả source, không phải xác nhận nghiệm thu Issue trên main.
+
+Modal “Soạn với Trợ lý AI” được giữ nguyên giao diện và logic từ develop theo yêu cầu người dùng ngày 29/10/2026. Luồng này sinh gợi ý tại trình duyệt bằng bảng dữ liệu và mẫu nội dung có sẵn, cho phép sửa định lượng và nạp vào biểu mẫu, không gọi Gemini. Hai nút gợi ý mô tả/hướng dẫn riêng trong biểu mẫu vẫn gọi API FR-21 và được Backend kiểm tra quyền Expert/PRO. API tạo bản xem trước công thức `/recipes/ai/draft` bổ sung trên nhánh FR-10 đã được gỡ.
 ### Sao chép và xuất TXT đi chợ — FR-55 / Issue #55
 
 - Toolbar `/di-cho` sao chép hoặc tải toàn bộ danh sách đang chọn, kể cả những mục bị ẩn bởi bộ lọc; giữ nhóm, số lượng, đơn vị và ký hiệu `[ ]`/`[x]` đã lưu. Không đưa thông tin tài khoản hoặc provenance công thức vào nội dung xuất.
@@ -149,6 +154,8 @@ Các màn hình này chuẩn bị trải nghiệm cho FR-13, FR-20, FR-26/27, FR
 - Dockerfile Frontend dùng để đồng bộ môi trường development giữa các thành viên, không dùng để deploy Frontend lên Vercel.
 
 ---
+
+Ma trận quyền AI hiện hành: PLUS mở lập thực đơn tuần thông thường (UC-34.2/UC-34.3) và theo dinh dưỡng (FR-36). PRO kế thừa PLUS, thêm AI soạn bài cho Chuyên gia (FR-21), AI gợi ý món liên quan/biến tấu (FR-47) và AI đề xuất điều chỉnh dinh dưỡng (FR-37). FREE giữ Chatbot, gợi ý nguyên liệu và hướng dẫn chế biến. Giá và thời hạn đã mua không đổi.
 
 ## Thanh toán xác minh — FR-13 / Issue #142
 

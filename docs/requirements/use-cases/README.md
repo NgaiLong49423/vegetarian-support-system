@@ -1,6 +1,6 @@
 > **Document:** Use Case Specification Index
 > **File:** `docs/requirements/use-cases/README.md`
-> **Version:** v2.4.1
+> **Version:** v2.6.0
 > **Created:** 2026-09-26
 > **Last Updated:** 2026-10-18
 > **Status:** Active
