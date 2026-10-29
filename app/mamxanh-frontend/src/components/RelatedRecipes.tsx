@@ -63,7 +63,7 @@ export function RelatedRecipes({ recipeId }: { recipeId: number }) {
       if (!alive.current) return;
       const upgrade = asApiError(cause).code === 'AI_SUBSCRIPTION_REQUIRED';
       setUpgradeRequired(upgrade);
-      setAiError(upgrade ? 'Gợi ý AI dành cho gói Plus và Pro.'
+      setAiError(upgrade ? 'Gợi ý AI dành cho gói Pro.'
         : 'Chưa thể lấy gợi ý từ AI. Bạn có thể thử lại hoặc xem các công thức liên quan bên dưới.');
     } finally {
       if (alive.current) setAiLoading(false);

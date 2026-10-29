@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M03
 > **File:** `docs/requirements/use-cases/recipe-contribution-and-community.md`
-> **Version:** v2.3.0
+> **Version:** v2.4.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-23
+> **Last Updated:** 2026-10-29
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -86,7 +86,7 @@ Detailed interaction flows for current-baseline requirements. Stable UC IDs are 
 
 <a id="uc-21-1"></a>
 ### UC-21.1 — AI gợi ý đoạn giới thiệu
-- **Goal / Primary Actor:** Expert gói Plus/Pro nhận draft text cho description; Gemini là supporting system.
+- **Goal / Primary Actor:** Expert gói Pro nhận draft text cho description; Gemini là supporting system.
 - **Trigger / Preconditions:** Actor chủ động bấm gợi ý và có input tên/nguyên liệu phù hợp.
 - **Main Flow:** Backend kiểm tra entitlement, gọi AI và đưa text vào form để actor chỉnh sửa.
 - **Alternative / Security:** Free/AI lỗi không chặn soạn bài; không lưu server draft và không tự thêm ingredient.
@@ -95,7 +95,7 @@ Detailed interaction flows for current-baseline requirements. Stable UC IDs are 
 
 <a id="uc-21-2"></a>
 ### UC-21.2 — AI gợi ý hướng dẫn chế biến
-- **Goal / Primary Actor:** Expert gói Plus/Pro nhận draft `instructions` có thể chỉnh sửa.
+- **Goal / Primary Actor:** Expert gói Pro nhận draft `instructions` có thể chỉnh sửa.
 - **Trigger / Preconditions:** Actor chủ động yêu cầu; ingredient/title context hợp lệ.
 - **Main Flow:** Backend kiểm tra entitlement, gọi AI và chèn kết quả vào form client.
 - **Alternative / Security:** Provider lỗi/timeout trả fallback; không auto-publish, không lưu nháp server.
@@ -273,7 +273,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-21).
 #### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
 - **Tiền điều kiện:**
   - Người dùng đã đăng nhập tài khoản Chuyên gia hợp lệ (FR-03, FR-04).
-  - Tài khoản Chuyên gia đang đăng ký gói Plus hoặc Pro còn hiệu lực (FR-10, BR-02, BR-03).
+  - Tài khoản Chuyên gia đang đăng ký gói Pro còn hiệu lực (FR-10, BR-02, BR-03).
   - Tác giả đã nhập ít nhất Tên món ăn và danh sách Nguyên liệu trong biểu mẫu (FR-16, FR-19).
 - **Kích hoạt (Trigger):**
   - Tác giả nhấn nút "Nhờ AI gợi ý giới thiệu" hoặc "Nhờ AI gợi ý hướng dẫn chế biến" trong trình soạn thảo.
@@ -296,7 +296,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-21).
   - Bước 10: Hệ thống không cung cấp persistent server-side Recipe Post draft trong baseline hiện tại.
 - **Luồng thay thế (Alternative Flows):**
   - *AF-21.1 (Tác giả không hài lòng với nội dung AI gợi ý):* Tác giả có thể nhấn nút "Xóa gợi ý" để quay về trạng thái trống hoặc tự gõ lại bằng tay.
-  - *AF-21.2 (Tài khoản thuộc gói Free):* Nếu tài khoản chưa nâng cấp lên gói Plus hoặc Pro, hệ thống hiển thị thông báo hướng dẫn nâng cấp gói dịch vụ để mở khóa tính năng AI hỗ trợ soạn bài (FR-10, BR-02), đồng thời gợi ý tác giả tự nhập nội dung bằng tay để tiếp tục đăng bài bình thường (BR-16).
+  - *AF-21.2 (Tài khoản thuộc gói Free hoặc Plus):* Nếu tài khoản chưa nâng cấp lên gói Pro, hệ thống hiển thị thông báo hướng dẫn nâng cấp gói dịch vụ để mở khóa tính năng AI hỗ trợ soạn bài (FR-10, BR-02), đồng thời gợi ý tác giả tự nhập nội dung bằng tay để tiếp tục đăng bài bình thường (BR-16).
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
   - *EF-21.1 (Lỗi kết nối dịch vụ AI hoặc timeout):* Nếu dịch vụ AI gặp sự cố hoặc quá thời gian phản hồi quy định tại NFR-03, hệ thống thông báo lỗi kỹ thuật thân thiện và giữ nguyên toàn bộ dữ liệu tác giả đã nhập trên form (BR-04, BR-16).
   - *SF-21.1 (Không lưu nháp Recipe Post trên máy chủ):* Hệ thống không cung cấp persistent server-side Recipe Post draft trong baseline hiện tại; nếu tác giả rời khỏi biểu mẫu trước khi bấm công khai, dữ liệu dở dang không được bảo đảm lưu trữ bền vững trên máy chủ.

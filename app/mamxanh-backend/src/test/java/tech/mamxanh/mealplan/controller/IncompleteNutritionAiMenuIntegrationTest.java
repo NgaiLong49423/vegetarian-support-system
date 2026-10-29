@@ -50,7 +50,7 @@ class IncompleteNutritionAiMenuIntegrationTest extends AbstractIntegrationTest {
                 """, MEMBER);
         memberId = jdbc.queryForObject("SELECT user_id FROM [USER] WHERE email = ?", Long.class, MEMBER);
         LocalDateTime now = LocalDateTime.now(clock);
-        jdbc.update("INSERT INTO [SUBSCRIPTION] (user_id, tier, status, starts_at, ends_at) VALUES (?, 'PRO', 'ACTIVE', ?, ?)",
+        jdbc.update("INSERT INTO [SUBSCRIPTION] (user_id, tier, status, starts_at, ends_at) VALUES (?, 'PLUS', 'ACTIVE', ?, ?)",
                 memberId, now.minusDays(1), now.plusDays(30));
 
         jdbc.update("INSERT INTO [USER] (email, display_name, role, account_status, email_verified) VALUES (?, N'Issue 45 Expert', 'EXPERT', 'ACTIVE', 1)", EXPERT);

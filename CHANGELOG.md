@@ -1,13 +1,54 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.111.1
+> **Version:** v2.113.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-28
+> **Last Updated:** 2026-10-29
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-29 — Restore the Recipe Assistant Form Layout
+
+**Status:** Working tree — not committed.
+
+**Scope:** Restore the develop-style recipe assistant dialog while retaining the real FR-21 API and Pro entitlement enforcement.
+
+### Added
+
+- Direct recipe-context and catalog ingredient editing inside the assistant dialog, sharing state with the publication form.
+- UI regression coverage for editing the real request context, distinct control identifiers, provider errors and upgrade handling. Verified 15 UI cases, the root Compose entitlement scenario, TypeScript and production build.
+
+### Changed
+
+- Restore the expert assistant title, advisory banner, form-oriented layout, primary AI action and close footer.
+- Keep description/instruction generation backed by the existing API, author review before publication, provider error handling and upgrade guidance. Calorie estimation and local mock generation remain outside this flow.
+
+### Fixed
+
+- Give the form and dialog ingredient controls distinct identifiers and preserve the existing 1–50 serving range.
+
+## 2026-10-29 — Rebalance Plus and Pro AI Feature Entitlements
+
+**Status:** Working tree — not committed.
+
+**Scope:** Apply the authorized entitlement change on the FR-10 branch, including the plan display previously implemented under FR-13. Prices, purchased periods and verified payment settlement remain unchanged.
+
+### Added
+
+- Regression coverage for both paid tiers routing to weekly planning, Free/Plus denial of Pro authoring, and API-backed and fallback plan displays.
+
+### Changed
+
+- Give Plus access to ordinary and nutrition-aware weekly planning, including preview and application. Pro inherits Plus and retains recipe authoring for Experts, related-recipe AI and nutrition-adjustment AI (FR-37).
+- Preserve the original benefit wording when moving it between Plus and Pro. Do not add an Expert qualifier or an extra FR-37 benefit row to the plan cards.
+- Align server guards, chatbot workflow routing, current-subscription features, plan descriptions, upgrade messages and maintained requirements/use cases. Apply the current matrix to existing active subscriptions without changing their stored tier or paid expiry.
+- Keep live Issue reconciliation pending separate authorization. Issue #16 still describes the previous matrix at the time of this local change.
+
+### Fixed
+
+- None.
 
 ## 2026-10-28 — Make FR-10 Integration Tests Independent of Local Setup ([PR #194](https://github.com/NgaiLong49423/vegetarian-support-system/pull/194))
 

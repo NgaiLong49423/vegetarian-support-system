@@ -152,7 +152,7 @@ function CreateRecipeForm() {
     } catch (cause) {
       const error = asApiError(cause);
       setAiError({ contentType, upgradeRequired: error.code === 'AI_SUBSCRIPTION_REQUIRED', message: error.code === 'AI_SUBSCRIPTION_REQUIRED'
-        ? 'Tính năng AI dành cho gói Plus/Pro. Bạn vẫn có thể tự viết và đăng công thức.'
+        ? 'Tính năng AI dành cho gói Pro. Bạn vẫn có thể tự viết và đăng công thức.'
         : error.code === 'AI_PROVIDER_UNAVAILABLE' || error.code === 'AI_RESPONSE_INVALID'
           ? 'AI hiện không tạo được nội dung hợp lệ. Bạn vẫn có thể tự viết và đăng công thức.'
           : error.message });
@@ -253,6 +253,45 @@ function CreateRecipeForm() {
 
   const errorFor = (field: string) => fieldErrors[field];
 
+  const renderIngredientFields = (idPrefix: string) => (<>
+            {ingredients.map((row, index) => (
+              <div key={row.key} className="rounded-xl border border-brand-100 p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wide text-brand-700">Nguyên liệu {index + 1}</span>
+                  {ingredients.length > 1 && <button type="button" onClick={() => setIngredients((current) => current.filter((item) => item.key !== row.key))} className="rounded-lg p-2 text-ink-muted hover:bg-red-50 hover:text-red-700" aria-label={`Xóa nguyên liệu ${index + 1}`}><Trash2 className="h-4 w-4" /></button>}
+                </div>
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_120px_180px]">
+                  <IngredientPicker
+                    value={row.search || row.ingredientName}
+                    selectedId={row.ingredientId}
+                    onTextChange={(search) => updateIngredient(row.key, { search, ingredientId: null, ingredientName: '' })}
+                    onSelect={(ingredient) => updateIngredient(row.key, { ingredientId: ingredient.ingredientId, ingredientName: ingredient.name, search: ingredient.name })}
+                    error={errorFor(`ingredients[${index}].ingredientId`)}
+                    rowNumber={index + 1}
+                    inputId={`${idPrefix}ingredient-${row.key}`}
+                  />
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-ink-soft" htmlFor={`quantity-${idPrefix}${row.key}`}>Số lượng *</label>
+                    <input id={`quantity-${idPrefix}${row.key}`} type="number" min="0.01" step={['g', 'kg'].includes(options?.units.find((unit) => unit.unitId === row.unitId)?.code ?? '') ? 'any' : '0.01'} value={row.quantity} onChange={(event) => updateIngredient(row.key, { quantity: event.target.value })} placeholder={options?.units.find((unit) => unit.unitId === row.unitId)?.code === 'g' ? '100' : '0'} className={inputClass} aria-label={`Số lượng nguyên liệu ${index + 1}`} />
+                    {errorFor(`ingredients[${index}].quantity`) && <p className={errorClass}>{errorFor(`ingredients[${index}].quantity`)}</p>}
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-ink-soft" htmlFor={`unit-${idPrefix}${row.key}`}>Đơn vị *</label>
+                    <select id={`unit-${idPrefix}${row.key}`} value={row.unitId ?? ''} onChange={(event) => updateIngredient(row.key, { unitId: event.target.value ? Number(event.target.value) : null })} className={inputClass} aria-label={`Đơn vị nguyên liệu ${index + 1}`}>
+                      <option value="">Chọn đơn vị</option>
+                      {(options?.units ?? []).map((unit) => <option key={unit.unitId} value={unit.unitId}>{unit.name} ({unit.code})</option>)}
+                    </select>
+                    {errorFor(`ingredients[${index}].unitId`) && <p className={errorClass}>{errorFor(`ingredients[${index}].unitId`)}</p>}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {errorFor('ingredients') && <p className={errorClass}>{errorFor('ingredients')}</p>}
+            <Button type="button" variant="outline" size="sm" onClick={() => setIngredients((current) => [...current, emptyIngredient()])} disabled={ingredients.length >= 50}>
+              <Plus className="h-4 w-4" /> Thêm nguyên liệu
+            </Button>
+  </>);
+
   return (
     <PageContainer className="py-8">
       <nav className="mb-4 text-sm text-ink-muted" aria-label="Breadcrumb">
@@ -317,41 +356,7 @@ function CreateRecipeForm() {
           <Card className="space-y-4 p-5 sm:p-6">
             <SectionHead number="2" title="Nguyên liệu và định lượng" />
             <p className="text-sm text-ink-muted">Chọn nguyên liệu trong danh mục và nhập số lượng lớn hơn 0. Đơn vị khác g/kg cần có tỷ lệ quy đổi sẵn.</p>
-            {ingredients.map((row, index) => (
-              <div key={row.key} className="rounded-xl border border-brand-100 p-3">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wide text-brand-700">Nguyên liệu {index + 1}</span>
-                  {ingredients.length > 1 && <button type="button" onClick={() => setIngredients((current) => current.filter((item) => item.key !== row.key))} className="rounded-lg p-2 text-ink-muted hover:bg-red-50 hover:text-red-700" aria-label={`Xóa nguyên liệu ${index + 1}`}><Trash2 className="h-4 w-4" /></button>}
-                </div>
-                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_120px_180px]">
-                  <IngredientPicker
-                    value={row.search || row.ingredientName}
-                    selectedId={row.ingredientId}
-                    onTextChange={(search) => updateIngredient(row.key, { search, ingredientId: null, ingredientName: '' })}
-                    onSelect={(ingredient) => updateIngredient(row.key, { ingredientId: ingredient.ingredientId, ingredientName: ingredient.name, search: ingredient.name })}
-                    error={errorFor(`ingredients[${index}].ingredientId`)}
-                    rowNumber={index + 1}
-                  />
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-ink-soft" htmlFor={`quantity-${row.key}`}>Số lượng *</label>
-                    <input id={`quantity-${row.key}`} type="number" min="0.01" step={['g', 'kg'].includes(options?.units.find((unit) => unit.unitId === row.unitId)?.code ?? '') ? 'any' : '0.01'} value={row.quantity} onChange={(event) => updateIngredient(row.key, { quantity: event.target.value })} placeholder={options?.units.find((unit) => unit.unitId === row.unitId)?.code === 'g' ? '100' : '0'} className={inputClass} aria-label={`Số lượng nguyên liệu ${index + 1}`} />
-                    {errorFor(`ingredients[${index}].quantity`) && <p className={errorClass}>{errorFor(`ingredients[${index}].quantity`)}</p>}
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-ink-soft" htmlFor={`unit-${row.key}`}>Đơn vị *</label>
-                    <select id={`unit-${row.key}`} value={row.unitId ?? ''} onChange={(event) => updateIngredient(row.key, { unitId: event.target.value ? Number(event.target.value) : null })} className={inputClass} aria-label={`Đơn vị nguyên liệu ${index + 1}`}>
-                      <option value="">Chọn đơn vị</option>
-                      {(options?.units ?? []).map((unit) => <option key={unit.unitId} value={unit.unitId}>{unit.name} ({unit.code})</option>)}
-                    </select>
-                    {errorFor(`ingredients[${index}].unitId`) && <p className={errorClass}>{errorFor(`ingredients[${index}].unitId`)}</p>}
-                  </div>
-                </div>
-              </div>
-            ))}
-            {errorFor('ingredients') && <p className={errorClass}>{errorFor('ingredients')}</p>}
-            <Button type="button" variant="outline" size="sm" onClick={() => setIngredients((current) => [...current, emptyIngredient()])} disabled={ingredients.length >= 50}>
-              <Plus className="h-4 w-4" /> Thêm nguyên liệu
-            </Button>
+            {renderIngredientFields('form-')}
           </Card>
 
           <Card className="space-y-4 p-5 sm:p-6">
@@ -435,7 +440,15 @@ function CreateRecipeForm() {
       <AiRecipeAssistantModal
         open={aiModalOpen}
         onClose={() => setAiModalOpen(false)}
-        title={title}
+        context={{ title, dishCategory, vegetarianType, servings }}
+        onContextChange={(patch) => {
+          if (patch.title !== undefined) setTitle(patch.title);
+          if (patch.dishCategory !== undefined) setDishCategory(patch.dishCategory);
+          if (patch.vegetarianType !== undefined) setVegetarianType(patch.vegetarianType);
+          if (patch.servings !== undefined) setServings(patch.servings);
+        }}
+        options={options}
+        ingredientFields={renderIngredientFields('assistant-')}
         description={description}
         instructions={instructions}
         loading={aiLoading}
@@ -446,13 +459,14 @@ function CreateRecipeForm() {
   );
 }
 
-function IngredientPicker({ value, selectedId, onTextChange, onSelect, error, rowNumber }: {
+function IngredientPicker({ value, selectedId, onTextChange, onSelect, error, rowNumber, inputId }: {
   value: string;
   selectedId: number | null;
   onTextChange: (value: string) => void;
   onSelect: (item: IngredientOption) => void;
   error?: string;
   rowNumber: number;
+  inputId: string;
 }) {
   const [suggestions, setSuggestions] = useState<IngredientOption[]>([]);
   const [open, setOpen] = useState(false);
@@ -473,8 +487,8 @@ function IngredientPicker({ value, selectedId, onTextChange, onSelect, error, ro
 
   return (
     <div className="relative">
-      <label className="mb-1 block text-xs font-semibold text-ink-soft" htmlFor={`ingredient-${rowNumber}`}>Nguyên liệu *</label>
-      <input id={`ingredient-${rowNumber}`} value={value} onFocus={() => setOpen(true)} onChange={(event) => onTextChange(event.target.value)} onBlur={() => window.setTimeout(() => setOpen(false), 120)} placeholder="Tìm nguyên liệu có sẵn" autoComplete="off" className={inputClass} aria-label={`Chọn nguyên liệu ${rowNumber}`} aria-expanded={open} />
+      <label className="mb-1 block text-xs font-semibold text-ink-soft" htmlFor={inputId}>Nguyên liệu *</label>
+      <input id={inputId} value={value} onFocus={() => setOpen(true)} onChange={(event) => onTextChange(event.target.value)} onBlur={() => window.setTimeout(() => setOpen(false), 120)} placeholder="Tìm nguyên liệu có sẵn" autoComplete="off" className={inputClass} aria-label={`Chọn nguyên liệu ${rowNumber}`} aria-expanded={open} />
       {open && <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-brand-200 bg-paper p-1 shadow-lg">
         {searchError && <p className="px-3 py-2 text-xs text-red-700">{searchError}</p>}
         {!searchError && suggestions.length === 0 && <p className="px-3 py-2 text-xs text-ink-muted">Nguyên liệu này hiện chưa được hỗ trợ.</p>}

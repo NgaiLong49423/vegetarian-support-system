@@ -124,13 +124,13 @@ public class AiChatService {
         if (userId == null) throw new AppException(ErrorCode.UNAUTHENTICATED,
                 "Bạn cần đăng nhập để sử dụng chức năng AI nâng cao và kiểm tra gói tài khoản.");
         if (workflow == AiChatIntent.Workflow.WEEKLY_MENU) {
-            entitlements.requirePro(userId);
+            entitlements.requirePlusOrPro(userId);
             return new AiChatResponse(request.contextType(), request.recipeId(),
                     "Bạn có thể lập thực đơn tuần trong Lịch ăn, mục Dành cho bạn. Hệ thống sẽ kiểm tra hồ sơ và các điều kiện ăn uống; bạn xem trước rồi chủ động xác nhận áp dụng.",
                     List.of(), "/ke-hoach?view=for-you");
         }
         users.requireActiveExpert();
-        entitlements.requirePlusOrPro(userId);
+        entitlements.requirePro(userId);
         return new AiChatResponse(request.contextType(), request.recipeId(),
                 "Bạn hãy mở biểu mẫu soạn công thức, chọn nguyên liệu và dùng Trợ lý AI để gợi ý mô tả hoặc bước làm. Nội dung vẫn cần bạn kiểm tra và chủ động công khai.",
                 List.of(), "/dang-cong-thuc");

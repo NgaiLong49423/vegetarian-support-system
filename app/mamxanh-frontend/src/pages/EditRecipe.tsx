@@ -118,7 +118,7 @@ export function EditRecipe() {
     } catch (cause) {
       const apiError = asApiError(cause);
       setAiError({ contentType, upgradeRequired: apiError.code === 'AI_SUBSCRIPTION_REQUIRED', message: apiError.code === 'AI_SUBSCRIPTION_REQUIRED'
-        ? 'Tính năng AI dành cho gói Plus/Pro. Bạn vẫn có thể tự sửa và lưu công thức.'
+        ? 'Tính năng AI dành cho gói Pro. Bạn vẫn có thể tự sửa và lưu công thức.'
         : apiError.code === 'AI_PROVIDER_UNAVAILABLE' || apiError.code === 'AI_RESPONSE_INVALID'
           ? 'AI hiện không tạo được nội dung hợp lệ. Bạn vẫn có thể tự sửa và lưu công thức.'
           : apiError.message });

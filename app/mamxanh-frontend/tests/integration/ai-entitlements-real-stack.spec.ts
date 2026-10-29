@@ -47,12 +47,12 @@ test('FR-10: real JWT and SQL subscription changes select the correct upgrade an
       })) };
     const denied = await request.post(`${backend}/recipes/ai-assistance`, { headers, data: assistance });
     expect(denied.status()).toBe(403);
-    expect(await denied.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PLUS', upgradeUrl: '/goi-ai' });
+    expect(await denied.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PRO', upgradeUrl: '/goi-ai' });
     const chatMenu = () => request.post(`${backend}/recipes/ai/chat`, { headers,
       data: { contextType: 'GENERAL', question: 'Lập thực đơn tuần 7 ngày theo dinh dưỡng cá nhân', history: [] } });
     const freeChat = await chatMenu();
     expect(freeChat.status()).toBe(403);
-    expect(await freeChat.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PRO', upgradeUrl: '/goi-ai' });
+    expect(await freeChat.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PLUS', upgradeUrl: '/goi-ai' });
     // A future paid period must agree between the account API and the paid-feature guard.
     sql(`INSERT INTO [SUBSCRIPTION] (user_id,tier,status,starts_at,ends_at)
       VALUES (${member},'PRO','ACTIVE',DATEADD(day,1,SYSUTCDATETIME()),DATEADD(day,31,SYSUTCDATETIME()))`);
@@ -62,18 +62,17 @@ test('FR-10: real JWT and SQL subscription changes select the correct upgrade an
     const futureWeekly = await request.post(`${backend}/recipes/ai/weekly-menu`, { headers,
       data: { ingredientIds: [ingredients[0].ingredientId] } });
     expect(futureWeekly.status()).toBe(403);
-    expect(await futureWeekly.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PRO' });
+    expect(await futureWeekly.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PLUS' });
     expect(sql(`SELECT COUNT(*) FROM [SUBSCRIPTION] WHERE user_id=${member} AND tier='PRO' AND status='ACTIVE'`)).toBe('1');
     sql(`DELETE FROM [SUBSCRIPTION] WHERE user_id=${member} AND tier='PRO'`);
     sql(`INSERT INTO [SUBSCRIPTION] (user_id,tier,status,starts_at,ends_at)
       VALUES (${member},'PLUS','ACTIVE',DATEADD(day,-1,SYSUTCDATETIME()),DATEADD(day,1,SYSUTCDATETIME()))`);
-    const weekly = await request.post(`${backend}/recipes/ai/weekly-menu`, { headers,
-      data: { ingredientIds: [ingredients[0].ingredientId] } });
-    expect(weekly.status()).toBe(403);
-    expect(await weekly.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PRO' });
+    const plusRelated = await request.post(`${backend}/recipes/${recipe}/related/ai`, { headers });
+    expect(plusRelated.status()).toBe(403);
+    expect(await plusRelated.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PRO' });
     const plusChat = await chatMenu();
-    expect(plusChat.status()).toBe(403);
-    expect(await plusChat.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PRO' });
+    expect(plusChat.status()).toBe(200);
+    expect(await plusChat.json()).toMatchObject({ workflowUrl: '/ke-hoach?view=for-you', recommendations: [] });
     sql(`UPDATE [SUBSCRIPTION] SET tier='PRO' WHERE user_id=${member}`);
     const proChat = await chatMenu();
     expect(proChat.status()).toBe(200);
@@ -87,10 +86,10 @@ test('FR-10: real JWT and SQL subscription changes select the correct upgrade an
     sql(`UPDATE [SUBSCRIPTION] SET ends_at=SYSUTCDATETIME() WHERE user_id=${member}`);
     const expiredChat = await chatMenu();
     expect(expiredChat.status()).toBe(403);
-    expect(await expiredChat.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PRO' });
+    expect(await expiredChat.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PLUS' });
     const section = page.getByRole('region', { name: 'Công thức liên quan' });
     await section.getByRole('button', { name: 'AI gợi ý món ăn kèm hoặc biến tấu' }).click();
-    await expect(section.getByRole('alert')).toContainText('gói Plus và Pro');
+    await expect(section.getByRole('alert')).toContainText('gói Pro');
     await expect(section.getByRole('link', { name: 'Xem các gói' })).toHaveAttribute('href', '/goi-ai');
     await page.screenshot({ path: testInfo.outputPath('fr10-upgrade.png') });
     // The modal must reach the same server guard after paid entitlement expires.
@@ -105,16 +104,16 @@ test('FR-10: real JWT and SQL subscription changes select the correct upgrade an
     await page.getByLabel('Số lượng nguyên liệu 1').fill(String(ingredients[0].quantity));
     await page.getByLabel('Đơn vị nguyên liệu 1').selectOption(String(ingredients[0].unitId));
     await page.getByRole('button', { name: 'Soạn với Trợ lý AI' }).click();
-    const dialog = page.getByRole('dialog', { name: 'Trợ lý AI hỗ trợ soạn nội dung' });
+    const dialog = page.getByRole('dialog', { name: 'Trợ lý AI đồng hành cùng Chuyên gia ẩm thực' });
     const rejectedAssistance = page.waitForResponse(response => response.url().endsWith('/recipes/ai-assistance')
       && response.request().method() === 'POST');
     await dialog.getByRole('button', { name: 'AI gợi ý viết mô tả' }).click();
     const rejection = await rejectedAssistance;
     expect(rejection.status()).toBe(403);
-    expect(await rejection.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PLUS' });
+    expect(await rejection.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PRO' });
     await expect(dialog.getByRole('link', { name: 'Xem các gói AI' })).toHaveAttribute('href', '/goi-ai');
     await page.screenshot({ path: testInfo.outputPath('fr10-modal-upgrade.png'), animations: 'disabled' });
-    await dialog.getByRole('button', { name: 'Trở lại biểu mẫu' }).click();
+    await dialog.getByRole('button', { name: 'Đóng và trở lại biểu mẫu' }).click();
     await expect(page.getByRole('textbox', { name: 'Mô tả' })).toHaveValue('');
     await expect(page.getByLabel('Số lượng nguyên liệu 1')).toHaveValue(String(ingredients[0].quantity));
     expect(sql(`SELECT COUNT(*) FROM [SUBSCRIPTION] WHERE user_id=${member} AND tier='PLUS'`)).toBe('1');

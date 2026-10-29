@@ -79,7 +79,7 @@ test('Free plan sees upgrade guidance while ordinary results stay available', as
   await page.goto('/cong-thuc/id/500');
   const section = page.getByRole('region', { name: 'Công thức liên quan' });
   await section.getByRole('button', { name: 'AI gợi ý món ăn kèm hoặc biến tấu' }).click();
-  await expect(section.getByText('Gợi ý AI dành cho gói Plus và Pro.')).toBeVisible();
+  await expect(section.getByText('Gợi ý AI dành cho gói Pro.')).toBeVisible();
   await expect(section.getByRole('link', { name: 'Xem các gói' })).toHaveAttribute('href', '/goi-ai');
   await expect(section.getByText('Canh rau liên quan')).toBeVisible();
 });

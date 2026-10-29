@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.30.0
+> **Version:** v2.31.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-27
+> **Last Updated:** 2026-10-29
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -714,8 +714,9 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
     |---|---|---|---|
     | **Guest Free** | 0 VNĐ | AI Chatbot hỏi đáp ẩm thực chay cơ bản (FR-51) | Giới hạn tần suất kỹ thuật (Rate Limiting theo cookie/IP, BR-01) |
     | **Free Member** | 0 VNĐ | AI Chatbot cơ bản (FR-51) + Gợi ý món theo nguyên liệu (`UC-34.1` thuộc FR-34) | Xác thực tài khoản Member; không giới hạn số lượt/ngày |
-    | **Plus Member** | 49.000 VNĐ / tháng | Toàn bộ quyền gói Free + AI Hỗ trợ soạn bài Recipe Post (FR-21) + AI Gợi ý công thức biến tấu (FR-47) | Xác thực gói Subscription hiệu lực; không giới hạn số lượt/ngày |
-    | **Pro Member** | 99.000 VNĐ / tháng | Toàn bộ quyền gói Plus + AI lập thực đơn tuần thông thường (`UC-34.2`/`UC-34.3` thuộc FR-34) và AI lập thực đơn theo dinh dưỡng cá nhân (FR-36) | Toàn quyền tất cả tính năng AI sản phẩm; không giới hạn số lượt/ngày |
+    | **Plus Member** | 49.000 VNĐ / tháng | Toàn bộ quyền gói Free + AI lập thực đơn tuần thông thường (`UC-34.2`/`UC-34.3` thuộc FR-34) + AI lập thực đơn theo dinh dưỡng (FR-36) | Xác thực gói Subscription hiệu lực; không giới hạn số lượt/ngày |
+    | **Pro Member** | 99.000 VNĐ / tháng | Toàn bộ quyền gói Plus + AI hỗ trợ soạn bài Recipe Post cho Chuyên gia (FR-21) + AI gợi ý món liên quan hoặc biến tấu (FR-47) + AI đề xuất điều chỉnh dinh dưỡng (FR-37) | Toàn quyền tất cả tính năng AI sản phẩm; không giới hạn số lượt/ngày |
+  - Ma trận quyền hiện hành áp dụng cho cả gói đã mua còn hiệu lực. Không đổi giá, mã gói, thời hạn đã thanh toán hoặc tự chuyển hạng Subscription. AI soạn bài vẫn yêu cầu vai trò Chuyên gia. Quyền gói không thay thế các điều kiện hồ sơ và eligibility.
   - Nguyên tắc kiểm soát: Backend bắt buộc xác thực Feature Entitlement trước khi gửi yêu cầu tới dịch vụ Gemini (BR-03); yêu cầu không đủ quyền bị từ chối ngay tại server và tuyệt đối không phát sinh request tới Gemini API.
 - **Phân loại Actor:**
   - Primary Actor: `Guest`, `Member` (Free, Plus, Pro).
@@ -754,15 +755,15 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *When* gọi tính năng AI Chatbot (FR-51) hoặc Gợi ý công thức theo nguyên liệu (UC-34.1 thuộc FR-34 đối với Member),
   - *Then* hệ thống xác thực hợp lệ và cho phép thực thi yêu cầu mà không giới hạn theo số lượt/ngày.
 - **AC-10.2 (Chặn Member Free khi gọi tính năng gói Plus):**
-  - *Given* Member thuộc gói Free gọi tính năng AI Hỗ trợ soạn bài (FR-21) hoặc Gợi ý món biến tấu (FR-47),
+  - *Given* Member thuộc gói Free gọi tính năng AI lập thực đơn tuần (UC-34.2/UC-34.3, FR-36),
   - *When* Backend tiếp nhận yêu cầu,
   - *Then* hệ thống từ chối yêu cầu với HTTP 403 và hiển thị thông báo hướng dẫn nâng cấp lên gói Plus.
 - **AC-10.3 (Quyền sử dụng AI cho gói Plus):**
   - *Given* Member có gói Plus đang hiệu lực,
-  - *When* gọi tính năng AI Hỗ trợ soạn bài (FR-21) hoặc Gợi ý biến tấu (FR-47),
+  - *When* gọi tính năng AI lập thực đơn tuần (UC-34.2/UC-34.3, FR-36),
   - *Then* hệ thống xác thực thành công và gửi yêu cầu tới Gemini AI.
-- **AC-10.4 (Chặn Member Plus khi gọi tính năng gói Pro):**
-  - *Given* Member thuộc gói Plus gọi tính năng AI Lập thực đơn tuần 7 ngày theo dinh dưỡng (FR-36),
+- **AC-10.4 (Chặn Member Free và Plus khi gọi tính năng gói Pro):**
+  - *Given* Member thuộc gói Free hoặc Plus gọi tính năng AI soạn bài (FR-21, đồng thời phải có vai trò Chuyên gia) hoặc AI gợi ý món liên quan/biến tấu (FR-47) hoặc AI đề xuất điều chỉnh dinh dưỡng (FR-37),
   - *When* Backend tiếp nhận yêu cầu,
   - *Then* hệ thống từ chối yêu cầu với HTTP 403 và hiển thị thông báo hướng dẫn nâng cấp lên gói Pro.
 - **AC-10.5 (Quyền toàn diện cho gói Pro):**
@@ -773,10 +774,10 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *Given* tài khoản không đủ quyền sử dụng tính năng AI yêu cầu,
   - *When* người dùng gửi request,
   - *Then* hệ thống chặn ngay tại tầng Backend Guard mà tuyệt đối không gửi bất kỳ HTTP request nào tới Google Gemini API (BR-03).
-- **AC-10.7 (Chặn gói Free và Plus khi yêu cầu thực đơn tuần FR-34):**
-  - *Given* Member đang thuộc gói Free hoặc Plus,
+- **AC-10.7 (Chặn gói Free khi yêu cầu thực đơn tuần FR-34):**
+  - *Given* Member đang thuộc gói Free,
   - *When* Member yêu cầu tạo thực đơn tuần thông thường theo `UC-34.2`,
-  - *Then* hệ thống từ chối yêu cầu và hướng dẫn nâng cấp lên gói Pro.
+  - *Then* hệ thống từ chối yêu cầu và hướng dẫn nâng cấp lên gói Plus.
 
 ---
 
@@ -865,8 +866,8 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
     | Gói dịch vụ | Mức giá niêm yết | Quyền tính năng AI (Feature Entitlement) | Thời hạn chu kỳ | Gia hạn tự động |
     |---|---|---|---|---|
     | **FREE** | **0 VNĐ / tháng** | AI Chatbot cơ bản (FR-51) + Gợi ý món theo nguyên liệu (`UC-34.1` thuộc FR-34) | Không thời hạn | Không |
-    | **PLUS** | **49.000 VNĐ / tháng** | Quyền gói Free + AI Soạn bài (FR-21) + AI Gợi ý biến tấu (FR-47) | Chu kỳ tháng (Monthly) | **Không (Thanh toán từng kỳ)** |
-    | **PRO** | **99.000 VNĐ / tháng** | Toàn bộ quyền gói Plus + AI lập thực đơn tuần thông thường (`UC-34.2`/`UC-34.3` thuộc FR-34) và AI lập thực đơn theo dinh dưỡng (FR-36) | Chu kỳ tháng (Monthly) | **Không (Thanh toán từng kỳ)** |
+    | **PLUS** | **49.000 VNĐ / tháng** | Quyền gói Free + AI lập thực đơn tuần (UC-34.2/UC-34.3, FR-36) | Chu kỳ tháng (Monthly) | **Không (Thanh toán từng kỳ)** |
+    | **PRO** | **99.000 VNĐ / tháng** | Toàn bộ quyền gói Plus + AI soạn bài cho Chuyên gia (FR-21) + AI gợi ý món liên quan hoặc biến tấu (FR-47) + AI đề xuất điều chỉnh dinh dưỡng (FR-37) | Chu kỳ tháng (Monthly) | **Không (Thanh toán từng kỳ)** |
   - Tiền tệ: Đồng Việt Nam (VNĐ) duy nhất.
   - Không hỗ trợ: Gói năm, coupon, giảm giá, trial, hoàn tiền một phần.
 - **Phân loại Actor:**
@@ -879,7 +880,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - `UC-13.2`: Khởi tạo đơn hàng và thanh toán nâng cấp gói dịch vụ (Plus 49.000 VNĐ hoặc Pro 99.000 VNĐ).
   - `UC-13.3`: Xem thông tin trạng thái gói dịch vụ hiện tại và ngày hết hạn chu kỳ đã trả phí.
 - **User Stories:**
-  - *Là một người dùng thường xuyên cần AI lên thực đơn*, tôi muốn nâng cấp lên gói Plus 49.000 VNĐ/tháng một cách an toàn và minh bạch để mở khóa các tính năng AI nâng cao hỗ trợ soạn bài và gợi ý món biến tấu mà không bị tự động trừ tiền âm thầm vào tháng sau.
+  - *Là một người dùng thường xuyên cần AI lên thực đơn*, tôi muốn nâng cấp lên gói Plus 49.000 VNĐ/tháng một cách an toàn và minh bạch để mở khóa các tính năng AI lập thực đơn tuần và hỗ trợ dinh dưỡng mà không bị tự động trừ tiền âm thầm vào tháng sau.
 
 #### Phân quyền & Ràng buộc phê duyệt
 - **Quyền hạn:** Member đã đăng nhập mới có quyền thực hiện giao dịch thanh toán nâng cấp.
@@ -905,7 +906,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **AC-13.2 (Kích hoạt quyền lợi chỉ sau khi thanh toán thành công):**
   - *Given* Member thanh toán gói Plus 49.000 VNĐ,
   - *When* hệ thống nhận được thông báo IPN thành công có chữ ký hợp lệ từ cổng thanh toán,
-  - *Then* trạng thái tài khoản chuyển sang gói Plus với quyền sử dụng FR-21 và FR-47 tương ứng với chu kỳ tháng đã thanh toán.
+  - *Then* trạng thái tài khoản chuyển sang gói Plus với quyền lập thực đơn tuần (UC-34.2/UC-34.3, FR-36) tương ứng với chu kỳ tháng đã thanh toán.
 - **AC-13.3 (Xử lý giao dịch lặp đảm bảo tính Idempotent):**
   - *Given* một giao dịch đã được hệ thống xử lý kích hoạt thành công,
   - *When* cổng thanh toán gửi lại bản tin IPN thứ hai cho cùng mã giao dịch đó,
@@ -1497,9 +1498,9 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **Use Case detail:** [Open interaction flows](../use-cases/recipe-contribution-and-community.md#fr-21).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cung cấp tính năng trợ lý AI tương tác thông minh hỗ trợ Chuyên gia trong quá trình tạo hoặc chỉnh sửa bài công thức nấu ăn: AI hỗ trợ gợi ý đoạn văn bản giới thiệu món ăn hấp dẫn (Description $\le 2.000$ ký tự) hoặc đề xuất nội dung hướng dẫn chế biến (văn bản từ 10 đến 5.000 ký tự theo FR-16, BR-19) dựa trên thông tin tác giả đã cung cấp (tên món, loại ăn chay, thể loại món `dish_category`, danh sách nguyên liệu và khẩu phần); AI tuyệt đối không tự ý thêm bất kỳ nguyên liệu mới nào ngoài danh sách tác giả đã nhập; kết quả do AI sinh ra được đưa trực tiếp vào các ô nhập liệu của biểu mẫu ở phía client (ô mô tả `description` hoặc ô hướng dẫn chế biến `instructions`) ở dạng có thể chỉnh sửa tự do và chỉ được công khai khi người dùng chủ động xem xét, xác nhận (BR-15); hệ thống không tự động công khai hoặc lưu persistent server-side Recipe Post draft trong baseline hiện tại; tính năng thuộc gói Plus và Pro (FR-10, BR-02); nếu AI gặp sự cố kỹ thuật hoặc tài khoản không thuộc gói Plus/Pro, tác giả vẫn có toàn quyền tiếp tục tự viết hướng dẫn chế biến và xuất bản bài viết bình thường (BR-16).
+- **Tóm tắt yêu cầu:** Cung cấp tính năng trợ lý AI tương tác thông minh hỗ trợ Chuyên gia trong quá trình tạo hoặc chỉnh sửa bài công thức nấu ăn: AI hỗ trợ gợi ý đoạn văn bản giới thiệu món ăn hấp dẫn (Description $\le 2.000$ ký tự) hoặc đề xuất nội dung hướng dẫn chế biến (văn bản từ 10 đến 5.000 ký tự theo FR-16, BR-19) dựa trên thông tin tác giả đã cung cấp (tên món, loại ăn chay, thể loại món `dish_category`, danh sách nguyên liệu và khẩu phần); AI tuyệt đối không tự ý thêm bất kỳ nguyên liệu mới nào ngoài danh sách tác giả đã nhập; kết quả do AI sinh ra được đưa trực tiếp vào các ô nhập liệu của biểu mẫu ở phía client (ô mô tả `description` hoặc ô hướng dẫn chế biến `instructions`) ở dạng có thể chỉnh sửa tự do và chỉ được công khai khi người dùng chủ động xem xét, xác nhận (BR-15); hệ thống không tự động công khai hoặc lưu persistent server-side Recipe Post draft trong baseline hiện tại; tính năng thuộc gói Pro (FR-10, BR-02); nếu AI gặp sự cố kỹ thuật hoặc tài khoản không thuộc gói Pro, tác giả vẫn có toàn quyền tiếp tục tự viết hướng dẫn chế biến và xuất bản bài viết bình thường (BR-16).
 - **Phạm vi nghiệp vụ:**
-  - Áp dụng cho: Chuyên gia đã đăng nhập và đang đăng ký gói Plus hoặc Pro còn hiệu lực (FR-03, FR-10, BR-02).
+  - Áp dụng cho: Chuyên gia đã đăng nhập và đang đăng ký gói Pro còn hiệu lực (FR-03, FR-10, BR-02).
   - Khả năng hỗ trợ:
     1. Gợi ý đoạn giới thiệu món ăn (Description $\le 2.000$ ký tự).
     2. Đề xuất nội dung hướng dẫn chế biến linh hoạt (`instructions`, từ 10 đến 5.000 ký tự).
@@ -1516,7 +1517,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *Là một Chuyên gia ẩm thực*, tôi muốn nhờ AI gợi ý giúp một đoạn mô tả món ăn hấp dẫn và hướng dẫn chế biến rõ ràng từ những nguyên liệu tôi đã chọn, để tôi có thể chỉnh sửa lại cho đúng bí quyết của mình và chủ động xác nhận đăng bài nhanh chóng hơn.
 
 #### Phân quyền & Ràng buộc phê duyệt
-- **Quyền hạn:** Chỉ Chuyên gia đã đăng nhập và đang sử dụng gói Plus hoặc Pro còn hiệu lực mới được sử dụng.
+- **Quyền hạn:** Chỉ Chuyên gia đã đăng nhập và đang sử dụng gói Pro còn hiệu lực mới được sử dụng.
 - **Ràng buộc an toàn:** AI không tự thêm nguyên liệu; kết quả AI phải ở dạng chỉnh sửa được; AI không tự ý công khai và không lưu persistent server-side Recipe Post draft trong baseline hiện tại; không chặn đăng bài khi AI lỗi (BR-16).
 
 #### Ma trận truy vết (Traceability Matrix)
@@ -1550,12 +1551,12 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *Given* tác giả sử dụng AI hỗ trợ soạn bài nhưng chưa nhấn nút "Đăng công thức",
   - *When* kiểm tra cơ sở dữ liệu hệ thống trên máy chủ,
   - *Then* không có bất kỳ bản ghi bài viết nháp nào được lưu trên server.
-- **AC-21.4 (Không chặn xuất bản bài viết khi AI lỗi hoặc tài khoản gói Free):**
+- **AC-21.4 (Không chặn xuất bản bài viết khi AI lỗi hoặc tài khoản gói Free hoặc Plus):**
   - *Given* tài khoản thuộc gói Free hoặc dịch vụ AI gặp sự cố,
   - *When* tác giả tự gõ hướng dẫn chế biến vào biểu mẫu và nhấn đăng bài đạt chuẩn,
   - *Then* hệ thống công khai bài viết thành công mà không có bất kỳ trở ngại nào (BR-16).
-- **AC-21.5 (Xác thực quyền gói Plus/Pro trước khi gọi AI):**
-  - *Given* Chuyên gia thuộc gói Plus hoặc Pro còn hiệu lực,
+- **AC-21.5 (Xác thực quyền gói Pro trước khi gọi AI):**
+  - *Given* Chuyên gia thuộc gói Pro còn hiệu lực,
   - *When* tác giả nhấn yêu cầu AI hỗ trợ soạn bài,
   - *Then* hệ thống xác thực quyền tính năng thành công và chuyển ngữ cảnh yêu cầu tới dịch vụ Google Gemini; đối với tài khoản gói Free, hệ thống chặn gọi AI và hướng dẫn nâng cấp gói (FR-10, BR-02, BR-03).
 
@@ -2352,7 +2353,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 
 #### Quy tắc phân quyền và bảo mật (Permissions & Security)
 - Guest không được phép sử dụng AI cá nhân hóa gợi ý món (BR-05).
-- Theo FR-10, Member Free được dùng gợi ý theo nguyên liệu ở UC-34.1 và hướng dẫn chế biến từ công thức công khai ở UC-34.4; các UC-34.2 và UC-34.3 về preview và áp dụng thực đơn tuần thông thường yêu cầu gói Pro. Phạm vi này khác FR-36, vốn tạo thực đơn tuần theo dữ liệu dinh dưỡng tin cậy.
+- Theo FR-10, Member Free được dùng gợi ý theo nguyên liệu ở UC-34.1 và hướng dẫn chế biến từ công thức công khai ở UC-34.4; các UC-34.2 và UC-34.3 về preview và áp dụng thực đơn tuần thông thường yêu cầu gói Plus hoặc Pro. Phạm vi này khác FR-36, vốn tạo thực đơn tuần theo dữ liệu dinh dưỡng tin cậy.
 - Ràng buộc chặt chẽ trong System Prompt và kiểm tra chéo ở Backend: chỉ chấp nhận ID bài viết hợp lệ đang ở trạng thái `PUBLISHED` từ cơ sở dữ liệu, loại bỏ bất kỳ món ăn nào không có trong hệ thống (NFR-08, NFR-10).
 
 #### Truy vết quy tắc nghiệp vụ và phi chức năng (Traceability)
@@ -2497,7 +2498,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 #### Mục đích & Phạm vi
 - **Tóm tắt yêu cầu:** Cung cấp trong trang Lịch ăn hai chế độ tạo thực đơn tham khảo bằng AI cho các ngày từ hôm nay đến hết tuần hiện tại. Ngày trước hôm nay được hiển thị là đã qua và không có đề xuất; ngày thuộc tuần khác không nằm trong phạm vi AI đề xuất. Chế độ “Dựa trên hồ sơ” đọc mục tiêu chung đã lưu trong FR-35 cùng BMI, dữ liệu nhân trắc học/dinh dưỡng và các ràng buộc ăn uống đã khai báo; nếu mục tiêu hoặc câu trả lời sở thích chưa có, giữ là `null`, không bắt hoàn tất onboarding và không suy đoán mục tiêu cân nặng. Chế độ “Theo mong muốn tuần này” nhận mục tiêu riêng cho lần tạo lịch hiện tại cùng nguyên liệu muốn có/cần tránh; mọi câu trả lời đều tùy chọn, chỉ có hiệu lực cho lần tạo lịch này, không lưu vào hồ sơ và không tự động áp dụng về sau. Nguyên liệu muốn có chỉ là ưu tiên mềm trong tập công thức hợp lệ; mọi công thức chứa nguyên liệu người dùng chọn tránh bị loại khỏi tập ứng viên và không thể được ưu tiên hoặc chọn, kể cả khi có nguyên liệu người dùng muốn có. Với cả hai chế độ, AI chỉ được lựa chọn từ các Recipe Post đang công khai trong hệ thống có dữ liệu định lượng dinh dưỡng tin cậy (100% nguyên liệu ánh xạ gram và có số liệu đầy đủ); AI không được tự tạo món ngoài cơ sở dữ liệu. Mỗi ngày trong phạm vi đề xuất có ba bữa cố định; mỗi bữa có thể gồm nhiều công thức, mỗi công thức một khẩu phần. Tổng kcal hướng tới phân bổ 25% cho sáng, 37,5% cho trưa và 37,5% cho tối theo tổng mục tiêu năng lượng ngày FR-35; mỗi tỷ lệ có dung sai ±5 điểm phần trăm, không cần trùng chính xác tỷ lệ trung tâm. Hệ thống phối hợp công thức để hướng tới phân bổ này và tối ưu các chỉ tiêu còn lại trong bộ chín chỉ tiêu cá nhân. BMI góp phần cá nhân hóa lựa chọn nhưng không tự thay đổi mục tiêu số FR-35. Member phải xem trước và xác nhận trước khi áp dụng; các bữa trước hôm nay được giữ nguyên. Preview chỉ trình bày tổng dinh dưỡng dự kiến, không phân loại thiếu/thừa. Mục tiêu tăng/giảm cân trong yêu cầu menu là ưu tiên lựa chọn món, không phải cam kết thay đổi cân nặng hay mục tiêu y tế; không tự suy ra mức thâm hụt/thặng dư calorie.
 - **Phạm vi nghiệp vụ:**
-  - Áp dụng cho: Member đã đăng nhập, có hồ sơ nhân trắc học hợp lệ và xác nhận đủ điều kiện (FR-35/FR-38), và có gói Pro hợp lệ cho AI lập thực đơn dinh dưỡng (FR-10). Onboarding sở thích FR-31 và mục tiêu chung là tùy chọn cho FR-36; câu trả lời chưa khai báo là `null`, không đồng nghĩa xác nhận “không có”. Nếu đã khai báo trường phái ăn chay hoặc nguyên liệu dị ứng/cần tránh, các dữ liệu đó là ràng buộc an toàn bắt buộc. BMI được dùng cùng dữ liệu hồ sơ để cá nhân hóa lựa chọn, không tự đặt hoặc thay đổi mục tiêu tham khảo. Câu trả lời của “Theo mong muốn tuần này” chỉ có trong request hiện tại.
+  - Áp dụng cho: Member đã đăng nhập, có hồ sơ nhân trắc học hợp lệ và xác nhận đủ điều kiện (FR-35/FR-38), và có gói Plus hoặc Pro hợp lệ cho AI lập thực đơn dinh dưỡng (FR-10). Onboarding sở thích FR-31 và mục tiêu chung là tùy chọn cho FR-36; câu trả lời chưa khai báo là `null`, không đồng nghĩa xác nhận “không có”. Nếu đã khai báo trường phái ăn chay hoặc nguyên liệu dị ứng/cần tránh, các dữ liệu đó là ràng buộc an toàn bắt buộc. BMI được dùng cùng dữ liệu hồ sơ để cá nhân hóa lựa chọn, không tự đặt hoặc thay đổi mục tiêu tham khảo. Câu trả lời của “Theo mong muốn tuần này” chỉ có trong request hiện tại.
   - Giới hạn: Quá trình tạo thực đơn chỉ mang tính tham khảo và hỗ trợ lên kế hoạch ăn uống; việc tối ưu hóa vi chất chuyên sâu theo bệnh lý nằm ngoài phạm vi MVP.
 - **Phân loại Actor:**
   - Primary Actor: `Member` (đã đăng nhập và đủ điều kiện).
@@ -2512,7 +2513,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - *Là một Member bận rộn*, tôi muốn nhờ AI đề xuất thực đơn các món chay từ hôm nay đến hết tuần hiện tại dựa trên nhu cầu dinh dưỡng của tôi và chỉ chọn từ những công thức đã có sẵn công thức nấu chuẩn, giúp tôi lên lịch cho các ngày còn lại trong tuần.
 
 #### Phân quyền & Ràng buộc phê duyệt
-- **Quyền hạn:** Member đã đăng nhập có gói Pro còn hiệu lực mới có quyền yêu cầu AI lập thực đơn dinh dưỡng. Guest, Free và Plus không có quyền này (FR-10, BR-02, BR-03).
+- **Quyền hạn:** Member đã đăng nhập có gói Plus hoặc Pro còn hiệu lực mới có quyền yêu cầu AI lập thực đơn dinh dưỡng. Guest và Free không có quyền này (FR-10, BR-02, BR-03).
 - **Ràng buộc nghiệp vụ:** AI chỉ đóng vai trò ghép nối công thức có sẵn; hệ thống cấm tuyệt đối việc tạo công thức ảo hoặc ghi đè số liệu dinh dưỡng không qua kiểm chứng (BR-38, BR-40, BR-41).
 - **Hai chế độ yêu cầu:** `PROFILE` dùng mục tiêu dinh dưỡng chung trong FR-35 nếu có; `THIS_WEEK` nhận `goal`, `preferredIngredientIds` và `avoidedIngredientIds` chỉ trong request hiện tại. Nguyên liệu dị ứng/cần tránh từ FR-31 và mọi nguyên liệu trong `avoidedIngredientIds` là hard exclusion; nguyên liệu trong `preferredIngredientIds` chỉ là ưu tiên mềm trong số công thức còn hợp lệ. Nếu cùng một nguyên liệu nằm trong cả hai danh sách, điều kiện tránh luôn thắng. Giá trị của chế độ `THIS_WEEK` không được lưu hoặc tái sử dụng cho request khác.
 - **Mức cá nhân hóa:** Mục tiêu được chuyển thành tiêu chí ưu tiên chọn công thức trong pool tin cậy. Tổng năng lượng và 9 chỉ tiêu của món/menu được tính từ dữ liệu RecipePost đã xác thực; mục tiêu tuần không làm thay đổi công thức mục tiêu FR-35, không yêu cầu cân nặng/thời hạn mục tiêu và không phải cam kết kết quả cân nặng.
@@ -2556,19 +2557,19 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - *Given* AI đã sinh bản xem trước thực đơn thành công,
   - *When* Member chưa nhấn nút "Lưu vào Lịch ăn",
   - *Then* hệ thống không tự động thay đổi bất kỳ mục nào trong Lịch ăn tuần hiện tại của Member; khi Member xác nhận, hệ thống chỉ thay các mục từ hôm nay đến hết Chủ nhật bằng các món được chọn trong preview trong một giao dịch nguyên tử, giữ nguyên mọi mục trước hôm nay. Nếu bất kỳ món nào không còn hợp lệ, toàn bộ thao tác rollback và lịch cũ được giữ nguyên.
-- **AC-36.5 (Kiểm tra quyền gói Pro trước khi gọi AI):**
-  - *Given* Member chỉ có gói Free hoặc Plus,
+- **AC-36.5 (Kiểm tra quyền gói Plus hoặc Pro trước khi gọi AI):**
+  - *Given* Member chỉ có gói Free,
   - *When* gửi yêu cầu tạo thực đơn dinh dưỡng bằng AI,
-  - *Then* Backend từ chối trước khi gọi Gemini và hướng dẫn nâng cấp lên Pro; không kiểm tra số dư lượt/ngày.
+  - *Then* Backend từ chối trước khi gọi Gemini và hướng dẫn nâng cấp lên Plus; không kiểm tra số dư lượt/ngày.
 - **AC-36.6 (Lỗi kỹ thuật không làm thay đổi quyền tính năng):**
-  - *Given* Member có gói Pro hợp lệ gửi yêu cầu tạo thực đơn AI,
+  - *Given* Member có gói Plus hoặc Pro hợp lệ gửi yêu cầu tạo thực đơn AI,
   - *When* dịch vụ AI gặp lỗi kết nối hoặc thời gian phản hồi vượt quá 8 giây,
-  - *Then* hệ thống thông báo lỗi tới người dùng và quyền gói Pro không đổi.
-- **AC-36.7 (Hai chế độ gợi ý trên trang Lịch ăn):** Member đủ điều kiện và có Pro chọn được “Dựa trên hồ sơ” hoặc “Theo mong muốn tuần này”; cả hai đều hiển thị bản xem trước trước khi áp dụng.
+  - *Then* hệ thống thông báo lỗi tới người dùng và quyền gói Plus hoặc Pro không đổi.
+- **AC-36.7 (Hai chế độ gợi ý trên trang Lịch ăn):** Member đủ điều kiện và có Plus hoặc Pro chọn được “Dựa trên hồ sơ” hoặc “Theo mong muốn tuần này”; cả hai đều hiển thị bản xem trước trước khi áp dụng.
 - **AC-36.8 (Mục tiêu hồ sơ có thể để trống):** Ở chế độ hồ sơ, mục tiêu đã lưu được dùng làm tiêu chí ưu tiên; nếu null, hệ thống vẫn tạo menu cân bằng theo dữ liệu hợp lệ khác, không buộc trả lời mục tiêu và không tự gán mục tiêu cân nặng.
 - **AC-36.9 (Câu trả lời tuần này chỉ có hiệu lực một lần):** Chế độ tuần này dùng mục tiêu cùng nguyên liệu muốn có/cần tránh chỉ cho request hiện tại; không ghi vào hồ sơ hoặc áp dụng sang tuần sau nếu Member không chọn lại. Ràng buộc an toàn đã khai báo từ FR-31 vẫn luôn được áp dụng. Mọi công thức có chứa nguyên liệu trong danh sách cần tránh của tuần bị loại khỏi candidate pool; quy tắc này luôn thắng nguyên liệu muốn có. Nguyên liệu muốn có chỉ xếp ưu tiên mềm trong các công thức còn lại.
 - **AC-36.10 (Không suy diễn mục tiêu định lượng hoặc hứa kết quả):** Mục tiêu giảm/tăng cân hoặc tăng cơ chỉ điều hướng lựa chọn công thức; năng lượng và 9 chỉ tiêu vẫn là dữ liệu tính được từ hồ sơ/RecipePost có nguồn, không tự thêm thâm hụt/thặng dư calorie hay cam kết cân nặng.
-- **AC-36.11 (Không ép hoàn tất hồ sơ sở thích):** Member đủ điều kiện FR-35/FR-38 và Pro nhưng chưa hoàn tất một hoặc nhiều câu hỏi FR-31 vẫn có thể tạo menu; dữ liệu chưa khai báo là `null`, mọi ràng buộc đã biết được áp dụng và UI giải thích rằng mức cá nhân hóa phụ thuộc thông tin đã cung cấp.
+- **AC-36.11 (Không ép hoàn tất hồ sơ sở thích):** Member đủ điều kiện FR-35/FR-38 và quyền gói Plus hoặc Pro nhưng chưa hoàn tất một hoặc nhiều câu hỏi FR-31 vẫn có thể tạo menu; dữ liệu chưa khai báo là `null`, mọi ràng buộc đã biết được áp dụng và UI giải thích rằng mức cá nhân hóa phụ thuộc thông tin đã cung cấp.
 - **AC-36.12 (Ba bữa trong các ngày còn lại và lặp món có kiểm soát):** Preview thành công bao gồm từng ngày từ hôm nay đến hết Chủ nhật với ba bữa cố định; các ngày trước hôm nay được ghi rõ là đã qua và AI không đề xuất món. Ngày thuộc tuần khác không có đề xuất. Mỗi bữa có thể có một hoặc nhiều công thức. Hệ thống được lặp công thức giữa các ngày/bữa khi pool không đủ đa dạng nhưng không lặp cùng công thức trong một bữa; ưu tiên tránh lặp ở các bữa liền kề. Member có thể bỏ chọn từng món trước khi xác nhận; các mục trước hôm nay được giữ nguyên khi áp dụng.
 - **AC-36.13 (Phối hợp nhiều món, mỗi món một khẩu phần):** Given Member yêu cầu AI tạo menu tuần, When xem preview hoặc áp dụng menu, Then mỗi ngày trong phạm vi có ba bữa cố định và mỗi bữa có thể chứa nhiều công thức công khai; mỗi công thức được đề xuất ở một khẩu phần. Hệ thống phối hợp nhiều công thức để hướng tới phân bổ kcal và tối ưu chín chỉ tiêu. Một công thức không bị lặp trong cùng một bữa.
 - **AC-36.14 (Tối ưu và trình bày tổng dinh dưỡng theo ngày):** Given hồ sơ có BMI và chín mức tham khảo cá nhân từ FR-35, When AI tạo menu, Then hệ thống tổng hợp dinh dưỡng dự kiến của toàn bộ công thức trong từng ngày, ưu tiên đạt mục tiêu kcal ngày và phân bổ ba bữa theo AC-36.15; trong các phương án có mức đáp ứng phân bổ năng lượng tương đương, tối đa hóa số trong tám chỉ tiêu dinh dưỡng còn lại đạt mức tham khảo, rồi ưu tiên phương án có tổng chênh lệch tương đối nhỏ hơn. BMI được dùng cùng hồ sơ để cá nhân hóa lựa chọn, không tự thay đổi các mức tham khảo. Preview chỉ hiển thị tổng dinh dưỡng ngày, không phân loại hoặc mô tả chỉ tiêu là thiếu hay thừa.
@@ -3132,10 +3133,10 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **Use Case detail:** [Open interaction flows](../use-cases/recipe-discovery-and-classification.md#fr-47).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cung cấp tính năng gợi ý các bài công thức nấu ăn liên quan ở chân trang chi tiết Recipe Post; mặc định hệ thống hiển thị danh sách gợi ý liên quan thông thường dựa trên tiêu chí đối khớp thuộc tính tĩnh (cùng danh mục món ăn, trùng khớp ít nhất một nguyên liệu chính, cùng trường phái ăn chay) mà hoàn toàn không sử dụng trí tuệ nhân tạo (AI) và không yêu cầu gói trả phí; đồng thời cung cấp nút tùy chọn chuyên biệt "Nhờ Trợ lý AI gợi ý món ăn kết hợp hoặc biến tấu" sử dụng Google Gemini AI; chỉ khi Member chủ động bấm vào nút tùy chọn AI này, hệ thống mới gửi yêu cầu tới Gemini cho các tài khoản thuộc gói Plus và Pro (FR-10, BR-02, BR-03); các gợi ý của AI cũng chỉ được chọn lọc từ các Recipe Post đang công khai trong hệ thống, không tự bịa công thức mới.
+- **Tóm tắt yêu cầu:** Cung cấp tính năng gợi ý các bài công thức nấu ăn liên quan ở chân trang chi tiết Recipe Post; mặc định hệ thống hiển thị danh sách gợi ý liên quan thông thường dựa trên tiêu chí đối khớp thuộc tính tĩnh (cùng danh mục món ăn, trùng khớp ít nhất một nguyên liệu chính, cùng trường phái ăn chay) mà hoàn toàn không sử dụng trí tuệ nhân tạo (AI) và không yêu cầu gói trả phí; đồng thời cung cấp nút tùy chọn chuyên biệt "Nhờ Trợ lý AI gợi ý món ăn kết hợp hoặc biến tấu" sử dụng Google Gemini AI; chỉ khi Member chủ động bấm vào nút tùy chọn AI này, hệ thống mới gửi yêu cầu tới Gemini cho các tài khoản thuộc gói Pro (FR-10, BR-02, BR-03); các gợi ý của AI cũng chỉ được chọn lọc từ các Recipe Post đang công khai trong hệ thống, không tự bịa công thức mới.
 - **Phạm vi nghiệp vụ:**
   - Gợi ý thông thường: Phục vụ cho mọi đối tượng người dùng (bao gồm Guest và Member) hoàn toàn miễn phí (BR-05).
-  - Tùy chọn gọi AI: Độc quyền cho Member đã đăng nhập thuộc gói Plus hoặc Pro còn hiệu lực (FR-10, BR-02, BR-03).
+  - Tùy chọn gọi AI: Độc quyền cho Member đã đăng nhập thuộc gói Pro còn hiệu lực (FR-10, BR-02, BR-03).
 - **Phân loại Actor:**
   - Primary Actor: `Guest / Member` (xem gợi ý thông thường), `Member` (chủ động yêu cầu AI gợi ý).
   - Supporting Actor: `Hệ thống truy vấn công thức nội bộ`, `Google Gemini AI` (khi được gọi).
@@ -3155,7 +3156,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - *Là một người tìm kiếm món ăn*, tôi muốn xem nhanh các món ăn tương tự hoặc cùng nguyên liệu ở cuối bài để có thêm sự lựa chọn, và khi cần ý tưởng độc đáo thì có thể nhờ AI gợi ý kết hợp món ăn kèm hoàn hảo.
 
 #### Phân quyền & Ràng buộc phê duyệt
-- **Quyền hạn:** Gợi ý thông thường mở cho tất cả mọi người (Guest và Member). Gợi ý AI chỉ dành cho Member đã đăng nhập thuộc gói Plus hoặc Pro.
+- **Quyền hạn:** Gợi ý thông thường mở cho tất cả mọi người (Guest và Member). Gợi ý AI chỉ dành cho Member đã đăng nhập thuộc gói Pro.
 - **Ràng buộc kỹ thuật:** Tách biệt rạch ròi giữa thuật toán lọc cơ sở dữ liệu thông thường và cuộc gọi AI; cấm tự động gọi AI khi chỉ xem trang để tránh lãng phí chi phí vận hành (BR-03).
 
 #### Ma trận truy vết (Traceability Matrix)
@@ -3179,17 +3180,17 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - *When* khối công thức liên quan thông thường được hiển thị,
   - *Then* hệ thống hiển thị danh sách bài viết từ cơ sở dữ liệu nội bộ mà không tạo request tới dịch vụ AI và không yêu cầu gói dịch vụ nâng cao.
 - **AC-47.2 (Chỉ gọi AI khi có thao tác bấm chủ động của Member có quyền gói):**
-  - *Given* Member có gói Plus hoặc Pro đang ở trang chi tiết bài công thức,
+  - *Given* Member có gói Pro đang ở trang chi tiết bài công thức,
   - *When* Member chủ động nhấn nút "Nhờ AI gợi ý món ăn kèm / biến tấu",
   - *Then* hệ thống mới bắt đầu kết nối tới Google Gemini và hiển thị kết quả gợi ý AI thành công.
 - **AC-47.3 (AI chỉ đề xuất công thức có sẵn trong hệ thống):**
   - *Given* Member yêu cầu AI gợi ý món ăn kèm,
   - *When* kết quả gợi ý được trả về từ AI,
   - *Then* tất cả các món ăn được đề xuất đều có liên kết hợp lệ tới các Recipe Post đang công khai trong hệ thống, không chứa công thức giả định không tồn tại.
-- **AC-47.4 (Xác thực quyền gói Plus/Pro trước khi gọi AI):**
-  - *Given* Member đăng nhập bằng tài khoản gói Free nhấn nút "Nhờ AI gợi ý món ăn kèm / biến tấu",
+- **AC-47.4 (Xác thực quyền gói Pro trước khi gọi AI):**
+  - *Given* Member đăng nhập bằng tài khoản gói Free hoặc Plus nhấn nút "Nhờ AI gợi ý món ăn kèm / biến tấu",
   - *When* hệ thống kiểm tra quyền tính năng (Feature Entitlement),
-  - *Then* hệ thống từ chối gọi AI, hiển thị thông báo yêu cầu nâng cấp gói Plus hoặc Pro (FR-10, BR-02, BR-03), và giữ nguyên trạng thái trang.
+  - *Then* hệ thống từ chối gọi AI, hiển thị thông báo yêu cầu nâng cấp gói Pro (FR-10, BR-02, BR-03), và giữ nguyên trạng thái trang.
 
 ---
 

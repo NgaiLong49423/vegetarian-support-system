@@ -30,7 +30,7 @@ function toDateKey(date: Date): string {
 function failureMessage(error: unknown, action: 'recommend' | 'weekly' | 'apply') {
   if (error instanceof ApiError) {
     if (error.code === 'DIETARY_PROFILE_INCOMPLETE') return 'Hoàn tất hồ sơ sở thích ăn uống để nhận gợi ý phù hợp.';
-    if (error.code === 'AI_SUBSCRIPTION_REQUIRED') return 'Tạo thực đơn tuần cần gói Pro đang hoạt động.';
+    if (error.code === 'AI_SUBSCRIPTION_REQUIRED') return 'Tạo thực đơn tuần cần gói Plus hoặc Pro đang hoạt động.';
     if (error.code === 'AI_MENU_UNAVAILABLE') return 'Chưa có đủ công thức phù hợp để tạo thực đơn. Hãy chọn thêm nguyên liệu khác.';
     if (error.code === 'MEAL_PLAN_RECIPE_DUPLICATE') return 'Một món trong preview đã có ở đúng ngày và bữa của tuần này. Chọn tuần khác hoặc tạo preview mới.';
     if (error.code === 'RECIPE_NOT_FOUND' && action === 'apply') return 'Có công thức vừa không còn công khai. Hãy tạo preview mới rồi thử lại.';

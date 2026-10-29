@@ -377,9 +377,9 @@ class AiChatServiceTest {
     }
 
     @Test
-    void weeklyMenuIsDeniedBeforePreferencesCatalogProviderOrUsageAndAllowedProIsRoutedWithoutGeneration() {
-        doThrow(new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED).withProperty("requiredTier", "PRO"))
-                .when(entitlements).requirePro(7L);
+    void weeklyMenuIsDeniedBeforePreferencesCatalogProviderOrUsageAndAllowedPaidMemberIsRoutedWithoutGeneration() {
+        doThrow(new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED).withProperty("requiredTier", "PLUS"))
+                .when(entitlements).requirePlusOrPro(7L);
         assertThatThrownBy(() -> service.answer(chat("Lập thực đơn tuần 7 ngày theo dinh dưỡng cá nhân cho tôi.")))
                 .isInstanceOf(AppException.class).extracting("errorCode").isEqualTo(ErrorCode.AI_SUBSCRIPTION_REQUIRED);
         verifyNoInteractions(preferences, recipes, recipePosts, ai, events);
@@ -387,7 +387,7 @@ class AiChatServiceTest {
         var routed = service.answer(chat("Lập thực đơn tuần"));
         assertThat(routed.workflowUrl()).isEqualTo("/ke-hoach?view=for-you");
         assertThat(routed.recommendations()).isEmpty();
-        verify(entitlements).requirePro(7L);
+        verify(entitlements).requirePlusOrPro(7L);
         verifyNoInteractions(preferences, recipes, recipePosts, ai, events);
     }
 
@@ -400,10 +400,10 @@ class AiChatServiceTest {
     }
 
     @Test
-    void recipePostAuthoringRechecksRoleAndPlusBeforeReturningTheDedicatedForm() {
+    void recipePostAuthoringRechecksRoleAndProBeforeReturningTheDedicatedForm() {
         var routed = service.answer(chat("Viết mô tả cho bài đăng công thức"));
         verify(users).requireActiveExpert();
-        verify(entitlements).requirePlusOrPro(7L);
+        verify(entitlements).requirePro(7L);
         assertThat(routed.workflowUrl()).isEqualTo("/dang-cong-thuc");
         verifyNoInteractions(ai, events);
     }

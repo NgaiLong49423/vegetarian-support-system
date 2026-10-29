@@ -1,5 +1,5 @@
 schema_version: 1
-last_updated: 2026-10-27
+last_updated: 2026-10-29
 # BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
 # BUG-066 được cấp khi đồng bộ PR #161 ngày 2026-10-25 vì BUG-065 đã được dùng cho lỗi OpenAPI.
@@ -82,7 +82,7 @@ bugs:
     area: Frontend/Recipe/AI entitlement
     file: .agents/outputs/bugs/BUG-077.md
     created: 2026-10-25
-    updated: 2026-10-27
+    updated: 2026-10-29
     related_issue: 16
   - id: BUG-069
     title: Chatbot chuyển yêu cầu lập thực đơn tuần tới AI mà chưa kiểm tra quyền gói

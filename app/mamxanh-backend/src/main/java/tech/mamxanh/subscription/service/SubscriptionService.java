@@ -83,8 +83,8 @@ public class SubscriptionService {
                         SubscriptionTier.PLUS.description(),
                         List.of(
                                 "Toàn bộ quyền lợi gói FREE",
-                                "AI hỗ trợ soạn bài viết và công thức",
-                                "AI gợi ý biến tấu món chay sáng tạo"
+                                "AI lập thực đơn tuần 7 ngày",
+                                "AI lập thực đơn theo dinh dưỡng cá nhân"
                         ),
                         "Tháng (không tự động gia hạn)"
                 ),
@@ -95,8 +95,8 @@ public class SubscriptionService {
                         SubscriptionTier.PRO.description(),
                         List.of(
                                 "Toàn bộ quyền lợi gói PLUS",
-                                "AI lập thực đơn tuần 7 ngày",
-                                "AI lập thực đơn theo dinh dưỡng cá nhân"
+                                "AI hỗ trợ soạn bài viết và công thức",
+                                "AI gợi ý biến tấu món chay sáng tạo"
                         ),
                         "Tháng (không tự động gia hạn)"
                 )
@@ -197,8 +197,8 @@ public class SubscriptionService {
                 : List.of(
                         "AI Chatbot hỗ trợ ẩm thực chay",
                         "Gợi ý món theo nguyên liệu sẵn có",
-                        "AI hỗ trợ soạn bài viết và công thức",
-                        "AI gợi ý biến tấu món chay sáng tạo"
+                        "AI lập thực đơn tuần 7 ngày",
+                        "AI lập thực đơn theo dinh dưỡng cá nhân"
                 );
 
         return new MySubscriptionResponse(

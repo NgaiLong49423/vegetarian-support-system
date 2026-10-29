@@ -16,19 +16,19 @@ const mockPlans = [
     name: 'PLUS',
     priceVnd: 49000,
     billingPeriod: 'Hàng tháng',
-    description: 'Dành cho người ăn chay muốn sáng tạo thực đơn',
-    features: ['Toàn bộ quyền của FREE', 'AI hỗ trợ soạn bài viết và công thức', 'AI gợi ý biến tấu món chay sáng tạo'],
+    description: 'Dành cho người ăn chay chuyên sâu & tối ưu dinh dưỡng',
+    features: ['Toàn bộ quyền của FREE', 'AI lập thực đơn tuần 7 ngày', 'AI lập thực đơn theo dinh dưỡng cá nhân'],
   },
   {
     tier: 'PRO',
     name: 'PRO',
     priceVnd: 99000,
     billingPeriod: 'Hàng tháng',
-    description: 'Dành cho người ăn chay chuyên sâu & tối ưu dinh dưỡng',
+    description: 'Dành cho người ăn chay muốn sáng tạo thực đơn',
     features: [
       'Toàn bộ quyền của PLUS',
-      'AI lập thực đơn tuần 7 ngày theo dinh dưỡng cá nhân',
-      'Phân tích vi chất và tối ưu hoá calo chuyên sâu',
+      'AI hỗ trợ soạn bài viết và công thức',
+      'AI gợi ý biến tấu món chay sáng tạo',
     ],
   },
 ];
@@ -223,3 +223,29 @@ test.describe('[FR-13] Gói AI & Thanh toán payOS', () => {
     await expect(page.getByText('Đã hủy')).toBeVisible();
   });
 });
+
+for (const fallback of [false, true]) {
+  test(`Ma trận quyền mới trên bảng giá ${fallback ? 'dự phòng trên mobile' : 'từ API trên desktop'}`, async ({ page }, testInfo) => {
+    await setupMockSubscriptionApis(page, mockFreeSubscription);
+    if (fallback) {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.route('**/api/v1/subscriptions/plans', route => route.abort());
+    }
+    await page.goto('/goi-ai');
+    const plus = page.locator('[data-tier="PLUS"]');
+    const pro = page.locator('[data-tier="PRO"]');
+    await expect(plus).toContainText('49.000');
+    await expect(plus).toContainText('AI lập thực đơn tuần 7 ngày');
+    await expect(plus).toContainText('AI lập thực đơn theo dinh dưỡng cá nhân');
+    await expect(plus).not.toContainText('soạn bài');
+    await expect(plus).not.toContainText('biến tấu');
+    await expect(plus).not.toContainText('AI đề xuất điều chỉnh dinh dưỡng');
+    await expect(pro).toContainText('99.000');
+    await expect(pro).toContainText('Toàn bộ quyền');
+    await expect(pro).not.toContainText('Chuyên gia');
+    await expect(pro).toContainText('AI gợi ý biến tấu món chay sáng tạo');
+    await expect(pro).not.toContainText('AI đề xuất điều chỉnh dinh dưỡng');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath(`plans-${fallback ? 'mobile-fallback' : 'desktop-api'}.png`), fullPage: true, animations: 'disabled' });
+  });
+}

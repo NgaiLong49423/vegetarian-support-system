@@ -113,13 +113,13 @@ class AiChatFailureContractTest {
         when(users.findAuthenticatedUserId()).thenReturn(Optional.of(7L));
         when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(7, tech.mamxanh.auth.entity.Role.CUSTOMER));
             doThrow(new tech.mamxanh.common.exception.AppException(tech.mamxanh.common.exception.ErrorCode.AI_SUBSCRIPTION_REQUIRED,
-                    "Hãy nâng cấp lên Pro để lập thực đơn tuần.").withProperty("requiredTier", "PRO").withProperty("upgradeUrl", "/goi-ai"))
-                    .when(entitlements).requirePro(7L);
+                    "Hãy nâng cấp lên Plus để lập thực đơn tuần.").withProperty("requiredTier", "PLUS").withProperty("upgradeUrl", "/goi-ai"))
+                    .when(entitlements).requirePlusOrPro(7L);
             mvc.perform(post("/api/v1/recipes/ai/chat")
                             .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("7").roles("CUSTOMER"))
                             .contentType(MediaType.APPLICATION_JSON).content(new JsonMapper().writeValueAsString(Map.of(
                                     "contextType", "GENERAL", "question", "Lập thực đơn tuần 7 ngày", "history", List.of()))))
-                    .andExpect(status().isForbidden()).andExpect(jsonPath("$.requiredTier").value("PRO"))
+                    .andExpect(status().isForbidden()).andExpect(jsonPath("$.requiredTier").value("PLUS"))
                     .andExpect(jsonPath("$.upgradeUrl").value("/goi-ai"));
         verifyNoInteractions(ai, preferences, posts, recipes);
     }
@@ -133,7 +133,7 @@ class AiChatFailureContractTest {
                         .contentType(MediaType.APPLICATION_JSON).content("{\"contextType\":\"GENERAL\",\"question\":\"Lên menu cho tuần này\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.workflowUrl").value("/ke-hoach?view=for-you"))
                 .andExpect(jsonPath("$.recommendations").isEmpty());
-        verify(entitlements).requirePro(7L);
+        verify(entitlements).requirePlusOrPro(7L);
         verifyNoInteractions(ai, preferences);
     }
 

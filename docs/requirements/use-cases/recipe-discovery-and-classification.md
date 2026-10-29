@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M04
 > **File:** `docs/requirements/use-cases/recipe-discovery-and-classification.md`
-> **Version:** v2.8.0
+> **Version:** v2.9.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-23
+> **Last Updated:** 2026-10-29
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -424,10 +424,10 @@ Kết quả gợi ý tham chiếu tới Recipe Post công khai thực tế; hệ
 ### UC-34.2 — Yêu cầu AI tạo preview thực đơn tuần
 
 #### Goal
-Cho Member Pro yêu cầu Gemini đề xuất thực đơn tuần dựa trên kho công thức công khai và hồ sơ ăn uống.
+Cho Member Plus hoặc Pro yêu cầu Gemini đề xuất thực đơn tuần dựa trên kho công thức công khai và hồ sơ ăn uống.
 
 #### Primary Actor
-`Member` thuộc gói Pro.
+`Member` thuộc gói Plus hoặc Pro.
 
 #### Supporting Actors
 Google Gemini AI.
@@ -436,7 +436,7 @@ Google Gemini AI.
 Member chọn “AI lập thực đơn tuần mới”.
 
 #### Preconditions
-Member đã đăng nhập, hoàn tất hồ sơ sở thích tối thiểu và có quyền Pro theo FR-10.
+Member đã đăng nhập, hoàn tất hồ sơ sở thích tối thiểu và có quyền Plus hoặc Pro theo FR-10.
 
 #### Main Flow
 1. Hệ thống lấy công thức công khai, lọc theo trường phái ăn chay và loại trừ dị ứng Member đã khai báo.
@@ -452,7 +452,7 @@ Preview được hiển thị; chưa có thay đổi nào được ghi vào Meal
 
 #### Traceability
 - **Parent FR:** [FR-34](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34).
-- **Related FR:** [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) (Pro entitlement); [FR-31](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-31) (hồ sơ tối thiểu); [FR-09](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) (đích áp dụng sau xác nhận).
+- **Related FR:** [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) (Plus/Pro entitlement); [FR-31](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-31) (hồ sơ tối thiểu); [FR-09](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) (đích áp dụng sau xác nhận).
 - **Relevant BR:** [BR-31](../srs/BUSINESS-RULES.md#br-31) (chặn khi thiếu hồ sơ); [BR-38](../srs/BUSINESS-RULES.md#br-38) (chỉ dùng công thức công khai).
 - **Relevant NFR:** [NFR-03](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03); [NFR-18](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-18); [NFR-25](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-25).
 
@@ -460,7 +460,7 @@ Preview được hiển thị; chưa có thay đổi nào được ghi vào Meal
 - [AC-34.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) — Tuân thủ loại ăn chay và danh sách dị ứng.
 - [AC-34.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) — Preview chưa làm thay đổi Lịch ăn khi chưa xác nhận.
 - [AC-34.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) — Chặn yêu cầu khi thiếu hồ sơ tối thiểu.
-- [AC-10.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Chỉ gói Pro được yêu cầu thực đơn tuần thông thường FR-34.
+- [AC-10.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Chỉ gói Plus hoặc Pro được yêu cầu thực đơn tuần thông thường FR-34.
 
 ---
 
@@ -471,7 +471,7 @@ Preview được hiển thị; chưa có thay đổi nào được ghi vào Meal
 Cho Member chủ động quyết định lưu preview AI vào một Lịch ăn tuần đã chọn.
 
 #### Primary Actor
-`Member` thuộc gói Pro.
+`Member` thuộc gói Plus hoặc Pro.
 
 #### Trigger
 Member nhấn “Xác nhận áp dụng vào Lịch ăn” trên preview đã xem.
@@ -571,10 +571,10 @@ Khối công thức liên quan thông thường được hiển thị cho ngư�
 ### UC-47.2 — Yêu cầu Gemini gợi ý món ăn kèm hoặc biến tấu
 
 #### Goal
-Cho Member có entitlement Plus/Pro nhận gợi ý món ăn kèm hoặc biến tấu từ kho Recipe Post công khai.
+Cho Member có entitlement Pro nhận gợi ý món ăn kèm hoặc biến tấu từ kho Recipe Post công khai.
 
 #### Primary Actor
-`Member` thuộc gói Plus hoặc Pro.
+`Member` thuộc gói Pro.
 
 #### Supporting Actors
 Google Gemini AI.
@@ -593,7 +593,7 @@ Member đang xem Recipe Post công khai và có quyền AI tương ứng theo FR
 
 #### Exception Flows
 - **EF-47.1 — Guest yêu cầu AI:** Hệ thống yêu cầu đăng nhập.
-- **EF-47.2 — Member Free yêu cầu AI:** Hệ thống thông báo cần Plus/Pro và điều hướng tới trang gói dịch vụ.
+- **EF-47.2 — Member Free hoặc Plus yêu cầu AI:** Hệ thống thông báo cần Pro và điều hướng tới trang gói dịch vụ.
 - **EF-47.3 — Gemini lỗi hoặc timeout:** Hệ thống thông báo lỗi thân thiện và ghi error log theo BR-04.
 
 #### Postconditions
@@ -608,6 +608,6 @@ Khi yêu cầu hợp lệ và Gemini thành công, kết quả xuất hiện tro
 #### Acceptance Coverage
 - [AC-47.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-47) — Chỉ gọi AI sau thao tác chủ động và entitlement hợp lệ.
 - [AC-47.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-47) — Chỉ đề xuất công thức có sẵn.
-- [AC-47.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-47) — Xác thực quyền Plus/Pro trước khi gọi AI.
+- [AC-47.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-47) — Xác thực quyền Pro trước khi gọi AI.
 
 ---

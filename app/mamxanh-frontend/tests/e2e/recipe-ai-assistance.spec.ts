@@ -101,7 +101,7 @@ test('a Free plan error leaves the recipe fields available for manual entry', as
   await page.getByLabel('Số lượng nguyên liệu 1').fill('200');
   await page.getByLabel('Đơn vị nguyên liệu 1').selectOption('1');
   await page.getByRole('button', { name: 'AI gợi ý viết mô tả' }).click();
-  await expect(page.getByRole('alert')).toContainText('gói Plus/Pro');
+  await expect(page.getByRole('alert')).toContainText('gói Pro');
   await expect(page.getByRole('alert').getByRole('link', { name: 'Xem các gói AI' })).toHaveAttribute('href', '/goi-ai');
   expect(assistanceRequests).toBe(1);
   await expect(page.getByRole('textbox', { name: 'Mô tả' })).toBeEnabled();
@@ -167,7 +167,7 @@ async function prepareModal(page: import('@playwright/test').Page) {
   await page.getByLabel('Số lượng nguyên liệu 1').fill('200');
   await page.getByLabel('Đơn vị nguyên liệu 1').selectOption('1');
   await page.getByRole('button', { name: 'Soạn với Trợ lý AI' }).click();
-  return page.getByRole('dialog', { name: 'Trợ lý AI hỗ trợ soạn nội dung' });
+  return page.getByRole('dialog', { name: 'Trợ lý AI đồng hành cùng Chuyên gia ẩm thực' });
 }
 
 test('assistant modal sends selected form ingredients to the guarded API and preserves manual publication', async ({ page }) => {
@@ -187,13 +187,14 @@ test('assistant modal sends selected form ingredients to the guarded API and pre
   expect(requests).toHaveLength(0);
   await dialog.getByRole('button', { name: 'AI gợi ý viết mô tả' }).click();
   await expect(dialog.getByText('Mô tả từ API.', { exact: true })).toBeVisible();
+  await dialog.getByRole('radio', { name: 'Hướng dẫn chế biến', exact: true }).check();
   await dialog.getByRole('button', { name: 'AI gợi ý viết hướng dẫn chế biến' }).click();
   await expect(dialog.getByText('Kho đậu hũ đã chọn cho chín đều.', { exact: true })).toBeVisible();
   expect(requests).toEqual(['DESCRIPTION', 'INSTRUCTIONS'].map(contentType => ({
     contentType, title: 'Đậu hũ kho', dishCategory: 'BRAISED', vegetarianType: 'VEGAN', servings: 2,
     ingredients: [{ ingredientId: 11, unitId: 1, quantity: 200 }],
   })));
-  await dialog.getByRole('button', { name: 'Trở lại biểu mẫu' }).click();
+  await dialog.getByRole('button', { name: 'Đóng và trở lại biểu mẫu' }).click();
   await expect(page.getByRole('textbox', { name: 'Mô tả' })).toHaveValue('Mô tả từ API.');
   await expect(page.getByLabel('Hướng dẫn * (10–5.000 ký tự)')).toHaveValue('Kho đậu hũ đã chọn cho chín đều.');
   await expect(page.getByLabel('Số lượng nguyên liệu 1')).toHaveValue('200');
@@ -207,14 +208,14 @@ test('Free Expert cannot obtain modal AI content after the Backend denies entitl
   await page.route('**/api/v1/recipes/ai-assistance', (route) => {
     requests++;
     return route.fulfill({ status: 403, contentType: 'application/problem+json', json: {
-      status: 403, code: 'AI_SUBSCRIPTION_REQUIRED', detail: 'Plus or Pro required', requiredTier: 'PLUS', upgradeUrl: '/goi-ai',
+      status: 403, code: 'AI_SUBSCRIPTION_REQUIRED', detail: 'Plus or Pro required', requiredTier: 'PRO', upgradeUrl: '/goi-ai',
     } });
   });
   const dialog = await prepareModal(page);
   await dialog.getByRole('button', { name: 'AI gợi ý viết mô tả' }).click();
-  await expect(dialog.getByRole('alert')).toContainText('gói Plus/Pro');
+  await expect(dialog.getByRole('alert')).toContainText('gói Pro');
   await expect(dialog.getByRole('link', { name: 'Xem các gói AI' })).toHaveAttribute('href', '/goi-ai');
-  await dialog.getByRole('button', { name: 'Trở lại biểu mẫu' }).click();
+  await dialog.getByRole('button', { name: 'Đóng và trở lại biểu mẫu' }).click();
   await expect(page.getByRole('textbox', { name: 'Mô tả' })).toHaveValue('');
   await expect(page.getByRole('textbox', { name: 'Mô tả' })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Xuất bản công thức' })).toBeEnabled();
@@ -232,12 +233,14 @@ test('modal preserves author text across provider failures and retries through t
       : route.fulfill({ json: { contentType: 'INSTRUCTIONS', content: 'Kho đậu hũ chín đều rồi tắt bếp.' } });
   });
   const dialog = await prepareModal(page);
-  await dialog.getByRole('button', { name: 'Trở lại biểu mẫu' }).click();
+  await dialog.getByRole('button', { name: 'Đóng và trở lại biểu mẫu' }).click();
   await page.getByLabel('Hướng dẫn * (10–5.000 ký tự)').fill('Hướng dẫn do tác giả tự viết.');
   await page.getByRole('button', { name: 'Soạn với Trợ lý AI' }).click();
+  await dialog.getByRole('radio', { name: 'Hướng dẫn chế biến', exact: true }).check();
   await dialog.getByRole('button', { name: 'AI gợi ý viết hướng dẫn chế biến' }).click();
   await expect(dialog.getByRole('alert')).toContainText('AI hiện không tạo được nội dung hợp lệ');
   await expect(dialog.getByText('Hướng dẫn do tác giả tự viết.', { exact: true })).toBeVisible();
+  await dialog.getByRole('radio', { name: 'Hướng dẫn chế biến', exact: true }).check();
   await dialog.getByRole('button', { name: 'AI gợi ý viết hướng dẫn chế biến' }).click();
   await expect(dialog.getByText('Kho đậu hũ chín đều rồi tắt bếp.', { exact: true })).toBeVisible();
   expect(requests).toBe(2);
@@ -262,8 +265,35 @@ test('mobile modal validates form context before requesting AI and can return to
   const box = await dialog.boundingBox();
   expect(box!.x).toBeGreaterThanOrEqual(0);
   expect(box!.x + box!.width).toBeLessThanOrEqual(360);
+  await dialog.evaluate(element => { element.scrollTop = 0; });
+  await dialog.screenshot({ path: testInfo.outputPath('assistant-form-mobile.png'), animations: 'disabled' });
   await testInfo.attach('fr10-assistant-mobile', { body: await page.screenshot({ animations: 'disabled' }), contentType: 'image/png' });
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
   await expect(page.getByLabel('Tên món *')).toBeEnabled();
+});
+
+test('restored assistant form edits actual recipe context and quantities before calling the API', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  const requests: Record<string, unknown>[] = [];
+  await page.route('**/api/v1/recipes/ai-assistance', route => {
+    requests.push(route.request().postDataJSON());
+    return route.fulfill({ json: { contentType: 'DESCRIPTION', content: 'Mô tả thật từ API cho món đã chỉnh.' } });
+  });
+  const dialog = await prepareModal(page);
+  await dialog.getByLabel('Tên món hoặc ý tưởng chế biến *', { exact: true }).fill('Đậu hũ kho tiêu');
+  await dialog.getByLabel('Số khẩu phần ăn *', { exact: true }).fill('3');
+  await dialog.getByLabel('Số lượng nguyên liệu 1', { exact: true }).fill('300');
+  const inputIds = await dialog.locator('input[id], select[id]').evaluateAll(elements => elements.map(element => element.id));
+  for (const id of inputIds) await expect(page.locator(`[id="${id}"]`)).toHaveCount(1);
+  await dialog.evaluate(element => { element.scrollTop = 0; });
+  await dialog.screenshot({ path: testInfo.outputPath('assistant-form-desktop.png'), animations: 'disabled' });
+  await dialog.getByRole('button', { name: 'AI gợi ý viết mô tả' }).click();
+  await expect(dialog.getByText('Mô tả thật từ API cho món đã chỉnh.', { exact: true })).toBeVisible();
+  expect(requests).toEqual([{ contentType: 'DESCRIPTION', title: 'Đậu hũ kho tiêu', dishCategory: 'BRAISED', vegetarianType: 'VEGAN', servings: 3,
+    ingredients: [{ ingredientId: 11, unitId: 1, quantity: 300 }] }]);
+  await dialog.getByRole('button', { name: 'Đóng và trở lại biểu mẫu' }).click();
+  await expect(page.getByLabel('Tên món *', { exact: true })).toHaveValue('Đậu hũ kho tiêu');
+  await expect(page.getByLabel('Số lượng nguyên liệu 1', { exact: true })).toHaveValue('300');
+  await expect(page.getByRole('textbox', { name: 'Mô tả', exact: true })).toHaveValue('Mô tả thật từ API cho món đã chỉnh.');
 });
