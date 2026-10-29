@@ -1,8 +1,8 @@
 > **Document:** Non-Functional Requirements Specification
 > **File:** `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.1.3
+> **Version:** v2.1.5
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-10-21
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`
 
@@ -152,12 +152,12 @@ This document contains only requirements included in Requirements / Implementati
 - **Mã yêu cầu:** NFR-10
 - **Nhóm chất lượng:** Security
 - **Mô tả yêu cầu:** Bảo vệ hệ thống trước các nguy cơ tấn công bảo mật web phổ biến từ dữ liệu đầu vào của người dùng, kiểm soát IDOR và ngăn chặn gian lận thao tác dữ liệu.
-- **Nghiệp vụ liên quan:** Toàn hệ thống (đặc biệt là `FR-14`, `FR-16`, `FR-19`, `FR-25`, `FR-44`, `FR-57`, `FR-58`).
+- **Nghiệp vụ liên quan:** Toàn hệ thống (đặc biệt là `FR-05`, `FR-14`, `FR-16`, `FR-19`, `FR-25`, `FR-44`, `FR-57`, `FR-58`).
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Lỗ hổng mã độc:* Không tồn tại các lỗ hổng SQL Injection (sử dụng ORM/Hibernate parameterized queries), Cross-Site Scripting (XSS - sanitize input/escape HTML trên React) và Cross-Site Request Forgery (CSRF).
   - *Kiểm soát IDOR & Quyền tác giả:* 100% endpoint chỉnh sửa Recipe Post và ảnh minh họa (`RECIPE_MEDIA`) bắt buộc kiểm tra quyền sở hữu tác giả (`authorId == currentUserId`); nội dung hướng dẫn chế biến thuộc trường `RECIPE_POST.instructions` và được bảo vệ cùng quyền chỉnh sửa Recipe Post (FR-16, FR-44); tác giả bị chặn không được tự bình chọn bài viết của chính mình (BR-69).
   - *Chống gian lận số liệu (Anti-tampering):* `like_count`, `dislike_count` và `view_count` chỉ được cập nhật/kiểm soát ở tầng máy chủ; `like_percentage` được tính khi đọc từ số lượt Like/Dislike và không nhận từ client. Client không được gửi trực tiếp các bộ đếm hoặc tỷ lệ này (FR-57, FR-58, BR-69, BR-70).
-  - *Thẩm định tính hợp lệ tải tệp & dữ liệu:* Thẩm định chặt chẽ tệp tải lên (0–5 ảnh, định dạng JPEG/PNG/WebP, dung lượng $\le 5$ MB); kiểm tra tính khả dụng của quy tắc chuyển đổi đơn vị (`INGREDIENT_UNIT_CONVERSION`) trước khi lưu trữ hoặc xuất bản.
+  - *Thẩm định tính hợp lệ tải tệp & dữ liệu:* Thẩm định chặt chẽ ảnh công thức (0–5 ảnh JPEG/PNG/WebP, mỗi ảnh $\le 5$ MB); tài liệu chứng chỉ/văn bằng chuyên môn của đơn Chuyên gia (tối đa 1 PDF/JPEG/PNG, $\le 5$ MB) và ảnh thẻ chân dung khung 3:4 riêng của đơn (tối đa 1 JPEG/PNG/WebP, $\le 2$ MB). Backend xác minh chữ ký nội dung, từ chối dữ liệu không khớp hoặc vượt giới hạn và không để lại bản ghi/tệp một phần. Tệp đơn được lưu riêng tư, truy cập có xác thực và phân quyền qua Backend, không trả URL công khai; kiểm tra tính khả dụng của quy tắc chuyển đổi đơn vị (`INGREDIENT_UNIT_CONVERSION`) trước khi lưu trữ hoặc xuất bản.
 - **Phương pháp kiểm chứng (Verification Method):** Sử dụng công cụ quét bảo mật tĩnh (SAST/SonarQube) hoặc quét động (OWASP ZAP); viết integration test kiểm tra chặn IDOR và gian lận tham số.
 
 ---

@@ -1,9 +1,9 @@
 schema_version: 1
-last_updated: 2026-10-24
+last_updated: 2026-10-30
 # BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
-# BUG-060–064 đã được cấp trên nhánh fix/158-recipe-image-storage; không cấp trùng ID.
-next_id: 66
+# BUG-066 được cấp khi đồng bộ PR #161 ngày 2026-10-25 vì BUG-065 đã được dùng cho lỗi OpenAPI.
+next_id: 71
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -11,23 +11,113 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
-  - id: BUG-065
+  - id: BUG-070
     title: Chatbot dùng timeout Gemini chung 60 giây vượt giới hạn 10 giây
     status: RESOLVED
     severity: Unknown
     area: Backend/AI/Chatbot
-    file: .agents/outputs/bugs/BUG-065.md
+    file: .agents/outputs/bugs/BUG-070.md
     created: 2026-10-24
     updated: 2026-10-24
     related_issue: 10
+  - id: BUG-069
+    title: Script kiểm chứng fixture không đọc danh sách recipe dạng JSON
+    status: RESOLVED
+    severity: Low
+    area: Database/Demo/Verification
+    file: .agents/outputs/bugs/BUG-069.md
+    created: 2026-10-29
+    updated: 2026-10-29
+    related_issue: Unknown
+  - id: BUG-068
+    title: Migration V26 lỗi khi tạo ràng buộc cho cột nguồn quy đổi
+    status: TRACKING
+    severity: Low
+    area: Backend/Database/Flyway
+    file: .agents/outputs/bugs/BUG-068.md
+    created: 2026-10-27
+    updated: 2026-10-27
+    related_issue: Unknown
+  - id: BUG-067
+    title: Form tạo công thức cho chọn đơn vị chưa quy đổi được cho nguyên liệu
+    status: TRACKING
+    severity: Low
+    area: Frontend/Recipe ingredient units
+    file: .agents/outputs/bugs/BUG-067.md
+    created: 2026-10-27
+    updated: 2026-10-27
+    related_issue: Unknown
+  - id: BUG-065
+    title: OpenAPI báo sai mã thành công khi gửi báo cáo công thức
+    status: RECORDED
+    severity: Unknown
+    area: Backend/Recipe Report/OpenAPI
+    file: .agents/outputs/bugs/BUG-065.md
+    created: 2026-10-25
+    updated: 2026-10-25
+    related_issue: 187
+  - id: BUG-066
+    title: Chuyển món trong Lịch ăn đôi khi làm mất focus thay vì trả về tiêu đề "Lịch ăn của bạn"
+    status: RECORDED
+    severity: Low
+    area: Frontend/Lịch ăn
+    file: .agents/outputs/bugs/BUG-066.md
+    created: 2026-10-19
+    updated: 2026-10-19
+    related_issue: 38
+  - id: BUG-064
+    title: Khám phá bỏ qua nguyên liệu được chuyển từ danh mục hoặc trang chi tiết
+    status: RESOLVED
+    severity: Unknown
+    area: Frontend/Ingredient discovery
+    file: .agents/outputs/bugs/BUG-064.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-063
+    title: Thêm công thức vào đi chợ trả 400 khi một nguyên liệu có nhiều đơn vị
+    status: RESOLVED
+    severity: Unknown
+    area: Frontend/Shopping recipe selection
+    file: .agents/outputs/bugs/BUG-063.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-062
+    title: Khám phá ẩn huy hiệu tỷ lệ Like và nhãn Mới trên thẻ công thức
+    status: RESOLVED
+    severity: Unknown
+    area: Frontend/Explore/Recipe card
+    file: .agents/outputs/bugs/BUG-062.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-061
+    title: Dependency follow-redirects trong lockfile có cảnh báo bảo mật mức cao
+    status: RECORDED
+    severity: High
+    area: Frontend/Dependencies
+    file: .agents/outputs/bugs/BUG-061.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-060
+    title: Snapshot OpenAPI thiếu API hướng dẫn nấu đã có trên develop
+    status: RECORDED
+    severity: Unknown
+    area: Backend/AI/OpenAPI
+    file: .agents/outputs/bugs/BUG-060.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
   - id: BUG-059
     title: Thêm nguyên liệu từ 0 giờ đến 7 giờ sáng (giờ Việt Nam) bị từ chối vì ngày tham khảo mặc định "ở tương lai"
-    status: RECORDED
+    status: RESOLVED
     severity: Medium
     area: Frontend/Backend Quản trị danh mục nguyên liệu
     file: .agents/outputs/bugs/BUG-059.md
     created: 2026-10-16
-    updated: 2026-10-16
+    updated: 2026-10-26
     related_issue: 46
   - id: BUG-058
     title: Kiểm tra mã lỗi API không tương thích với kiểu TypeScript tùy chọn
@@ -128,6 +218,15 @@ bugs:
     created: 2026-10-17
     updated: '2026-10-20'
     related_issue: 142
+  - id: BUG-047
+    title: Upload ảnh trả thành công bằng URL giả khi Azure chưa được cấu hình
+    status: RESOLVED
+    severity: Unknown
+    area: Backend/Frontend/Docker/Azure Storage
+    file: .agents/outputs/bugs/BUG-047.md
+    created: 2026-10-19
+    updated: 2026-10-19
+    related_issue: 158
   - id: BUG-040
     title: Seed bật hỗ trợ tính dinh dưỡng cho số liệu minh họa
     status: RECORDED
@@ -364,12 +463,12 @@ bugs:
     related_issue: 31
   - id: BUG-014
     title: Integration test gửi báo cáo để sót Recipe Post trong SQL Server
-    status: RESOLVED
+    status: TRACKING
     severity: Medium
     area: Backend/Test cleanup
     file: .agents/outputs/bugs/BUG-014.md
     created: 2026-10-06
-    updated: 2026-10-06
+    updated: 2026-10-29
     related_issue: 31
   - id: BUG-013
     title: Backend chấp nhận link YouTube thiếu mã video

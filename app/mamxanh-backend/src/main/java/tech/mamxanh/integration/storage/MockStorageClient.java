@@ -10,8 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Fallback / mock storage client for local development and offline automated testing (FR-14).
- * Generates deterministic pseudo-blob URLs and keeps track of uploads in memory without cloud dependencies.
+ * Explicit mock for offline automated tests (FR-14); never registered by runtime StorageConfig.
+ * Generates pseudo-blob URLs and tracks metadata in memory; it does not store image bytes.
  */
 public class MockStorageClient implements StorageClient {
 
@@ -19,6 +19,7 @@ public class MockStorageClient implements StorageClient {
 
     private final String containerName;
     private final ConcurrentMap<String, String> uploadedBlobs = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, byte[]> privateApplicationFiles = new ConcurrentHashMap<>();
 
     public MockStorageClient(String containerName) {
         this.containerName = StringUtils.hasText(containerName) ? containerName : "mamxanh-recipes";
@@ -49,11 +50,34 @@ public class MockStorageClient implements StorageClient {
     }
 
     @Override
+    public String uploadPrivateApplicationFile(byte[] content, String mimeType, String extension) {
+        String blobKey = EXPERT_APPLICATION_FOLDER + "/" + UUID.randomUUID() + extension;
+        privateApplicationFiles.put(blobKey, content.clone());
+        return blobKey;
+    }
+
+    @Override
+    public byte[] downloadPrivateApplicationFile(String blobKey) {
+        byte[] content = privateApplicationFiles.get(blobKey);
+        if (content == null) throw new IllegalArgumentException("Private application file not found");
+        return content.clone();
+    }
+
+    @Override
+    public void deletePrivateApplicationFile(String blobKey) {
+        if (blobKey != null) privateApplicationFiles.remove(blobKey);
+    }
+
+    @Override
     public boolean isCloudStorageConfigured() {
         return false;
     }
 
     public boolean containsBlob(String blobUrl) {
         return uploadedBlobs.containsKey(blobUrl);
+    }
+
+    public boolean containsPrivateApplicationFile(String blobKey) {
+        return privateApplicationFiles.containsKey(blobKey);
     }
 }

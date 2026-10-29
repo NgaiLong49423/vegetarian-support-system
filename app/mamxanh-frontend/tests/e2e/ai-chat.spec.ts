@@ -85,7 +85,7 @@ test('chat window can be resized with its accessible keyboard handle', async ({ 
 });
 
 for (const actor of ['Guest', 'Member']) {
-test(`${actor} recipe detail opens the same chat with recipe ID context`, async ({ page }) => {
+test(`${actor} recipe detail opens the same chat with recipe title and ID context`, async ({ page }) => {
   if (actor === 'Member') await signInAsMember(page);
   let chatRequest: Record<string, unknown> | null = null;
   await page.route('**/api/v1/recipes/42', (route) => route.fulfill({ json: {
@@ -104,7 +104,14 @@ test(`${actor} recipe detail opens the same chat with recipe ID context`, async 
   await page.goto('/cong-thuc/id/42');
   await page.getByRole('button', { name: 'Hỏi AI về công thức này' }).click();
   await expect(page).toHaveURL('/cong-thuc/id/42');
-  await expect(page.getByText('Đang hỗ trợ theo công thức #42')).toBeVisible();
+  await expect(page.getByText('Đang hỏi về: Đậu hũ kho tiêu')).toBeVisible();
+  await expect(page.getByText('Bạn muốn hỏi về công thức “Đậu hũ kho tiêu” phải không?')).toBeVisible();
+  const embeddedRecipe = page.getByRole('article', { name: 'Bài công thức: Đậu hũ kho tiêu' });
+  await expect(embeddedRecipe).toBeVisible();
+  await expect(embeddedRecipe.getByRole('heading', { name: 'Nguyên liệu', exact: true })).toBeVisible();
+  await expect(embeddedRecipe.getByText('Cách chế biến')).toBeVisible();
+  await expect(embeddedRecipe.getByText('Kho đậu hũ.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Công thức này gồm những nguyên liệu nào?' })).toBeVisible();
   await page.getByLabel('Câu hỏi của bạn').fill('Bài viết ghi cách nấu thế nào?');
   await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
   await expect(page.getByText('Bài viết hướng dẫn kho đậu hũ.')).toBeVisible();

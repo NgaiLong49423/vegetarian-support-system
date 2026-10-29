@@ -673,13 +673,13 @@ export function AiRecipeAssistantModal({
     <Modal open={open} onClose={onClose} title="Trợ lý AI đồng hành cùng Chuyên gia ẩm thực" size="lg">
       <div className="space-y-5">
         {/* Lời dẫn & Tuyên bố miễn trừ chuyên môn: Không khẳng định AI luôn đúng, tôn trọng chuyên môn chuyên gia */}
-        <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 text-xs text-amber-950 leading-relaxed flex items-start gap-2.5">
-          <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+        <div className="flex items-start gap-2.5 rounded-xl border border-amber-300 bg-amber-50 p-3.5 text-xs leading-relaxed text-amber-950 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-100">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
           <div className="space-y-1">
-            <p className="font-bold text-amber-900">
+            <p className="font-bold text-amber-950 dark:text-amber-200">
               Khuyến nghị tham khảo dinh dưỡng — Chuyên gia ẩm thực giữ quyền quyết định
             </p>
-            <p className="text-amber-800/90">
+            <p className="text-amber-900 dark:text-amber-100/90">
               Trợ lý AI ước tính calo và đề xuất định lượng nguyên liệu dựa trên dữ liệu thành phần thực phẩm tiêu chuẩn (Viện Dinh dưỡng & USDA). AI không khẳng định công thức luôn chính xác 100% hay thay thế chỉ định y tế. Bạn luôn có toàn quyền điều chỉnh định lượng, gia vị và phương pháp chế biến theo phong cách và kinh nghiệm chuyên môn của mình.
             </p>
           </div>
@@ -700,8 +700,8 @@ export function AiRecipeAssistantModal({
                 onClick={() => handleApplyTemplate(tmpl)}
                 className={`rounded-lg border px-2.5 py-1 text-xs transition-all ${
                   dishIdea === tmpl.name
-                    ? 'border-brand-500 bg-brand-50 font-bold text-brand-800'
-                    : 'border-brand-200 bg-paper text-ink-muted hover:border-brand-300 hover:text-ink'
+                    ? 'border-brand-500 bg-brand-50 font-bold text-brand-800 dark:border-amber-500 dark:bg-amber-950/60 dark:text-amber-200'
+                    : 'border-brand-200 bg-paper text-ink-soft hover:border-brand-400 hover:text-ink dark:hover:border-amber-500'
                 }`}
               >
                 {tmpl.name} ({tmpl.cal} kcal)
@@ -726,7 +726,7 @@ export function AiRecipeAssistantModal({
                   className={`flex flex-col items-center justify-center rounded-xl border p-2.5 text-center transition-all ${
                     active
                       ? 'border-brand-500 bg-paper shadow-sm ring-2 ring-brand-200 font-bold text-brand-900'
-                      : 'border-brand-200 bg-paper/70 hover:bg-paper text-ink-soft hover:border-brand-300'
+                      : 'border-brand-200 bg-paper text-ink-soft hover:border-brand-400 hover:bg-raised dark:hover:border-brand-400'
                   }`}
                 >
                   <span className="text-xs">{sessionItem.badgeText.split(' ')[0]}</span>
@@ -860,14 +860,14 @@ export function AiRecipeAssistantModal({
                 <h3 className="text-base font-extrabold text-ink">{generatedResult.title}</h3>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-lg bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-bold text-emerald-800 flex items-center gap-1">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                <span className="flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                   Độ khớp calo: {jsonExportData?.do_khop_calo_phan_tram}
                 </span>
-                <span className="rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800">
+                <span className="rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
                   {Math.round(generatedResult.totalCalories / generatedResult.servings)} kcal / phần
                 </span>
-                <span className="rounded-lg bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-700">
+                <span className="rounded-lg bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-700 dark:bg-brand-950/50 dark:text-brand-200">
                   {generatedResult.servings} người
                 </span>
               </div>
@@ -875,14 +875,14 @@ export function AiRecipeAssistantModal({
 
             {/* Trạng thái xác thực & phân định rõ ràng giữa AI và Chuyên gia */}
             <div className="flex flex-wrap items-center gap-2 rounded-xl bg-raised border border-brand-200/80 p-2.5 text-xs">
-              <span className="inline-flex items-center gap-1 rounded-lg bg-blue-50 border border-blue-200 px-2.5 py-1 font-semibold text-blue-700">
-                <Sparkles className="h-3.5 w-3.5 text-blue-600" /> Gợi ý đề xuất bởi AI (Tham khảo)
+              <span className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 font-semibold text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-200">
+                <Sparkles className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" /> Gợi ý đề xuất bởi AI (Tham khảo)
               </span>
-              <span className="inline-flex items-center gap-1 rounded-lg bg-amber-50 border border-amber-200 px-2.5 py-1 font-semibold text-amber-700">
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-600" /> Chưa xác minh dinh dưỡng y khoa
+              <span className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 font-semibold text-amber-700 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" /> Chưa xác minh dinh dưỡng y khoa
               </span>
-              <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 border border-emerald-200 px-2.5 py-1 font-semibold text-emerald-800">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Chờ chuyên gia xác nhận & nạp
+              <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> Chờ chuyên gia xác nhận & nạp
               </span>
             </div>
 

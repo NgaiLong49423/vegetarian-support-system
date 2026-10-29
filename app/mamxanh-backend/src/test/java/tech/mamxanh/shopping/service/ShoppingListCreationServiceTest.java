@@ -4,19 +4,18 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -51,7 +50,8 @@ class ShoppingListCreationServiceTest {
     ShoppingListCreationService service;
 
     @BeforeEach void setup() {
-        service = new ShoppingListCreationService(users, plans, recipes, aggregation, lists, items, checklists, entityManager);
+        service = new ShoppingListCreationService(users, plans, recipes, aggregation, lists, items, checklists, entityManager,
+                Clock.fixed(Instant.parse("2026-10-24T05:00:00Z"), ZoneOffset.UTC));
         when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(17, Role.CUSTOMER));
     }
 
@@ -109,15 +109,15 @@ class ShoppingListCreationServiceTest {
         @SuppressWarnings("unchecked") ArgumentCaptor<List<ShoppingListItemEntity>> rows=ArgumentCaptor.forClass(List.class);
         verify(items).saveAllAndFlush(rows.capture());
         assertThat(rows.getValue()).singleElement().satisfies(row -> {
-            assertThat(row.getQuantity()).isEqualByComparingTo("0.67");assertThat(row.isBought()).isFalse();
+            assertThat(row.getQuantity()).isEqualByComparingTo("0.673333");assertThat(row.isBought()).isFalse();
             assertThat(row.getShoppingListId()).isEqualTo(20);
         });
     }
 
     @Test void rejectsUnderflowAndOverflowBeforeWritingAnyList() {
-        prepareOutput("0.00001");
+        prepareOutput("0.0000001");
         assertThatThrownBy(() -> service.createFromMealPlan(new CreateMealPlanShoppingListRequest(monday,null))).isInstanceOf(AppException.class);
-        when(aggregation.aggregate(anyList())).thenReturn(output("100000000",false,List.of()));
+        when(aggregation.aggregate(anyList())).thenReturn(output("1000000000000",false,List.of()));
         assertThatThrownBy(() -> service.createFromMealPlan(new CreateMealPlanShoppingListRequest(monday,null))).isInstanceOf(AppException.class);
         verifyNoInteractions(lists,items,entityManager);
     }
@@ -150,38 +150,16 @@ class ShoppingListCreationServiceTest {
         verifyNoInteractions(plans,recipes,aggregation,lists,items);
     }
 
-    @ParameterizedTest
-    @MethodSource("mealDateNames")
-    void persistsTheRequestedMealDatesInTheListName(LocalDate start, List<LocalDate> selected, String expected) {
-        var dates = selected == null ? List.of(start) : selected;
-        when(plans.getWeek(start)).thenReturn(new MealPlanWeekResponse(start,
-                dates.stream().map(date -> entry(1, date)).toList()));
+    @Test void namesMealPlanListsWithCreationDateInsteadOfMealDates() {
+        when(plans.getWeek(monday)).thenReturn(new MealPlanWeekResponse(monday,
+                List.of(entry(1, monday), entry(2, monday.plusDays(1)))));
         when(recipes.findShoppingSources(List.of(8L))).thenReturn(Map.of(8L, recipe(BigDecimal.ONE)));
         when(aggregation.aggregate(anyList())).thenReturn(output("1", false, List.of()));
         persist();
-        service.createFromMealPlan(new CreateMealPlanShoppingListRequest(start, selected));
+        service.createFromMealPlan(new CreateMealPlanShoppingListRequest(monday, null));
         var saved = ArgumentCaptor.forClass(tech.mamxanh.shopping.entity.ShoppingListEntity.class);
         verify(lists).saveAndFlush(saved.capture());
-        assertThat(saved.getValue().getName()).isEqualTo(expected);
-    }
-
-    static Stream<Arguments> mealDateNames() {
-        LocalDate october = LocalDate.of(2026, 10, 19);
-        LocalDate monthEnd = LocalDate.of(2026, 10, 26);
-        LocalDate yearEnd = LocalDate.of(2026, 12, 28);
-        return Stream.of(
-                Arguments.of(october, null, "Đi chợ · thực đơn tuần 19–25/10/2026"),
-                Arguments.of(october, List.of(october), "Đi chợ · thực đơn 19/10/2026"),
-                Arguments.of(october, List.of(october.plusDays(2)), "Đi chợ · thực đơn 21/10/2026"),
-                Arguments.of(october, List.of(october.plusDays(2), october, october.plusDays(1)), "Đi chợ · thực đơn 19–21/10/2026"),
-                Arguments.of(october, List.of(october.plusDays(4), october, october.plusDays(2)), "Đi chợ · thực đơn 19, 21, 23/10/2026"),
-                Arguments.of(october, Stream.iterate(october, date -> date.plusDays(1)).limit(7).toList(), "Đi chợ · thực đơn 19–25/10/2026"),
-                Arguments.of(monthEnd, null, "Đi chợ · thực đơn tuần 26/10–01/11/2026"),
-                Arguments.of(monthEnd, List.of(monthEnd.plusDays(6), monthEnd.plusDays(5)), "Đi chợ · thực đơn 31/10–01/11/2026"),
-                Arguments.of(monthEnd, List.of(monthEnd.plusDays(6), monthEnd), "Đi chợ · thực đơn 26/10/2026, 01/11/2026"),
-                Arguments.of(yearEnd, null, "Đi chợ · thực đơn tuần 28/12/2026–03/01/2027"),
-                Arguments.of(yearEnd, List.of(yearEnd.plusDays(4), yearEnd.plusDays(3)), "Đi chợ · thực đơn 31/12/2026–01/01/2027"),
-                Arguments.of(yearEnd, List.of(yearEnd.plusDays(6), yearEnd), "Đi chợ · thực đơn 28/12/2026, 03/01/2027"));
+        assertThat(saved.getValue().getName()).isEqualTo("Danh sách mua sắm 24/10/2026");
     }
 
     void week(List<MealPlanWeekResponse.Entry> entries) {when(plans.getWeek(monday)).thenReturn(new MealPlanWeekResponse(monday,entries));}

@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.42.0
+> **Version:** v0.48.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-24
+> **Last Updated:** 2026-10-30
 > **Status:** Active
 
 # API Integration Guide
@@ -147,6 +147,12 @@ Hai endpoint công khai, không cần Bearer token (UC-03.6, UC-03.7, AC-03.14, 
 
 Frontend: `/quen-mat-khau` gửi email và hiển thị nguyên văn `message` trung tính; `/dat-lai-mat-khau` đọc `token` từ URL, giữ trong bộ nhớ và xóa khỏi thanh địa chỉ trước khi người dùng nhập mật khẩu mới.
 
+### Upload ảnh công thức — FR-14 / fix #158
+
+`POST /api/v1/recipes/media/upload` nhận multipart trường `file`, yêu cầu Expert và trả `201` với envelope `data.blobUrl`, `data.mimeType`, `data.sizeBytes` sau khi lưu Azure thành công. Thiếu cấu hình, khởi tạo storage thất bại hoặc upload Azure lỗi trả `503 MEDIA_STORAGE_UNAVAILABLE` dưới dạng `application/problem+json`; không trả URL mock. Các tính năng không dùng storage vẫn khởi động. Storage dùng chung cho avatar cũng từ chối upload khi Azure không khả dụng.
+
+Root Compose truyền `AZURE_STORAGE_CONNECTION_STRING` và `AZURE_STORAGE_CONTAINER_NAME` từ env file Backend. Container lưu ảnh công khai cần cho phép đọc Blob để trình duyệt mở URL ảnh; connection string chỉ nằm ở Backend. Ảnh cũ chỉ có URL mock cần tải lại vì chưa có nội dung tệp trên Azure.
+
 ### 3.6 Định danh lượt xem công thức — FR-58
 
 Luồng FR-58 dùng `POST /api/v1/recipes/{recipeId}/views`. Gửi sự kiện sau khi nội dung chi tiết công thức công khai tải thành công; GET chi tiết và GET danh sách không tự tạo sự kiện. Schema/status chi tiết lấy từ generated OpenAPI. Transaction/Flyway và persistence phải được kiểm chứng bằng test SQL Server/Compose; kiểm thử với mock không thay bằng chứng này.
@@ -219,8 +225,14 @@ Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36).
 | `UNSUPPORTED_IMAGE_TYPE` | 400 | Tệp ảnh không phải JPEG, PNG hoặc WebP; với ảnh đại diện, nội dung tệp (chữ ký đầu tệp) phải khớp `Content-Type`. |
 | `INGREDIENT_PREFERENCE_CONFLICT` | 400 | `PUT /nutrition/dietary-preferences` có cùng một tên (không phân biệt hoa/thường) ở cả danh sách cần tránh và danh sách không thích. |
 | `DIETARY_PROFILE_INCOMPLETE` | 409 | Cổng AI cá nhân hóa (BR-31) chặn yêu cầu vì hồ sơ thiếu nhóm thông tin tối thiểu; body có thêm `missing` (`VEGETARIAN_TYPE`, `AVOID_INGREDIENTS`, `DISLIKED_INGREDIENTS`). |
+| `REPORT_ALREADY_OPEN` | 409 | `POST /recipes/{recipeId}/reports` khi tài khoản đã có báo cáo `OPEN` hoặc `IN_REVIEW` trên bài đó, kể cả khi gửi đồng thời (SRS 3.14); body có thêm `reportId` của báo cáo đang mở (AC-30.2). Xem mục 22. |
+| `REPORT_NOT_OPEN` | 409 | `POST /me/reports/{reportId}/supplements` khi báo cáo đã `RESOLVED`. Xem mục 22. |
+| `REPORT_SUPPLEMENT_LIMIT` | 409 | `POST /me/reports/{reportId}/supplements` khi báo cáo đã có 5 phần bổ sung. Xem mục 22. |
 | `UNAUTHENTICATED` | 401 | Gọi endpoint cần đăng nhập mà không có Bearer token, hoặc token sai chữ ký, sai issuer, hết hạn hay thuộc tài khoản không còn tồn tại. |
 | `ACCESS_DENIED` | 403 | Đã xác thực nhưng không đủ quyền. |
+| `REPORT_NOT_FOUND` | 404 | `/me/reports/{reportId}` (mục 22) hoặc `/admin/reports/{reportId}` (mục 21) với ID không phải báo cáo Recipe Post. |
+| `REPORT_STATUS_CONFLICT` | 409 | Tiếp nhận báo cáo không còn `OPEN`, hoặc ghi kết luận khi báo cáo chưa được chính Administrator đó tiếp nhận hay đã `RESOLVED`. Xem mục 21. |
+| `REPORT_DECISION_NOT_APPLICABLE` | 409 | Kết luận `HIDE_RECIPE` cho bài tác giả đã xóa, hoặc `LOCK_AUTHOR` khi tác giả là Administrator. Báo cáo giữ `IN_REVIEW`. Xem mục 21. |
 | `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `UNSUPPORTED_MEDIA_TYPE` | 404, 405, 415 | Lỗi định tuyến/định dạng do framework phát hiện. |
 | `INTERNAL_ERROR` | 500 | Lỗi không mong đợi; `detail` không chứa thông tin nội bộ. |
 
@@ -244,10 +256,10 @@ Eligibility và hồ sơ dinh dưỡng là hai thao tác Backend riêng. Client 
 
 - `GET /nutrition/profile/eligibility` trả trạng thái hiện tại (`NOT_CONFIRMED`, `ELIGIBLE`, `INELIGIBLE`) và `confirmedAt`. Trạng thái ban đầu là `NOT_CONFIRMED`, timestamp `null`.
 - `PUT /nutrition/profile/eligibility` nhận trạng thái xác nhận `ELIGIBLE` hoặc `INELIGIBLE`. Chỉ request xác nhận chủ động mới cập nhật Database; Backend ghi trạng thái và thời điểm xác nhận thành công gần nhất trong cùng giao dịch. `NOT_CONFIRMED` không phải trạng thái được gửi để xác nhận. Lỗi validation/Backend không cập nhật giá trị cũ. Endpoint này tách biệt với lưu hồ sơ và `health_data_consent_at`; không có draft/autosave hoặc lịch sử xác nhận.
-- `GET /nutrition/profile`, `PUT /nutrition/profile` và `POST /nutrition/profile/calculate` yêu cầu `ELIGIBLE`. `NOT_CONFIRMED` và `INELIGIBLE` bị chặn ở Backend trước khi đọc, lưu hay tính hồ sơ cá nhân; `INELIGIBLE` vẫn được gọi API eligibility để xác nhận lại. Khi trở lại `ELIGIBLE`, quyền truy cập được khôi phục theo phân quyền hiện hành, không tự động tính lại dữ liệu cũ.
+- `GET /nutrition/profile`, `PUT /nutrition/profile` và `POST /nutrition/profile/calculate` yêu cầu `ELIGIBLE`. `NOT_CONFIRMED` và `INELIGIBLE` bị chặn ở Backend trước khi đọc, lưu hay tính hồ sơ cá nhân; `INELIGIBLE` vẫn được gọi API eligibility để xác nhận lại. Khi trở lại `ELIGIBLE`, quyền truy cập được khôi phục theo phân quyền hiện hành.
 - Guard trả `403 NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED` cho `NOT_CONFIRMED` và `403 NUTRITION_ELIGIBILITY_INELIGIBLE` cho `INELIGIBLE`.
 - `PUT /nutrition/profile` lưu hồ sơ FR-35 và đồng thuận xử lý dữ liệu sức khỏe theo hợp đồng FR-35. `nutritionGoal` có thể là `null`; các giá trị được hỗ trợ gồm `MAINTAIN_WEIGHT`, `LOSE_WEIGHT`, `GAIN_WEIGHT`, `BUILD_MUSCLE`, `IMPROVE_HEALTH` và `SUPPORT_TRAINING`. Việc này không tự xác nhận hoặc đổi trạng thái eligibility.
-- `POST /nutrition/profile/calculate` trả BMI cùng 8 thành phần dinh dưỡng (9 chỉ tiêu khi tính cả năng lượng) khi hồ sơ lưu hợp lệ. Phản hồi tính toán không được lưu thành lịch sử theo dõi.
+- `PUT /nutrition/profile` tính và lưu BMI trong cùng hồ sơ khi Member lưu/cập nhật chiều cao hoặc cân nặng. `GET /nutrition/profile` trả lại BMI đã lưu và các mức tham khảo từ hồ sơ; mở lại trang không tính lại BMI. `POST /nutrition/profile/calculate` cũng dùng BMI đã lưu cùng 8 thành phần dinh dưỡng (9 chỉ tiêu khi tính cả năng lượng). Không lưu lịch sử tính toán.
 - FR-36 dùng trạng thái `ELIGIBLE` đã xác nhận trước khi tạo hoặc áp dụng menu. Nếu chưa xác nhận, API trả `403 NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED`; người dùng có thể xác nhận chủ động qua `PUT /nutrition/profile/eligibility` trước khi thử lại.
 - Guard dinh dưỡng cá nhân FR-37 cần được tích hợp tại API do FR đó sở hữu; chỉ endpoint đã tồn tại và được bảo vệ mới có bằng chứng nghiệm thu.
 - Response hiển thị số dạng xấp xỉ. Đây là tham khảo, không phải chẩn đoán/điều trị/kê đơn, tư vấn y tế, chứng nhận hay giám sát liên tục.
@@ -405,9 +417,10 @@ Gợi ý món, preview thực đơn và hướng dẫn nấu chi tiết phát `A
 
 Generated `/v3/api-docs` là hợp đồng runtime chi tiết cho hai endpoint dưới đây. Cả hai yêu cầu Bearer token của Member đang hoạt động, gói Pro còn hiệu lực, trạng thái dinh dưỡng `ELIGIBLE` và hồ sơ nhân trắc học FR-35 hợp lệ. FR-31 onboarding không bắt buộc; ràng buộc an toàn đã khai báo vẫn được áp dụng.
 
-- `POST /api/v1/meal-plans/ai-menu/previews` nhận `weekStartDate` (Thứ Hai), `mode` (`PROFILE` hoặc `THIS_WEEK`), `goal` tùy chọn, `preferredIngredientIds` và `avoidedIngredientIds` tùy chọn. PROFILE dùng mục tiêu FR-35 đã lưu; THIS_WEEK dùng câu trả lời chỉ trong request hiện tại. Response có 21 món theo thứ tự ngày/bữa, cover, 9 giá trị dinh dưỡng mỗi khẩu phần và lý do chọn. Preview không được lưu và không sửa Meal Plan.
+- `POST /api/v1/meal-plans/ai-menu/previews` nhận `weekStartDate` (Thứ Hai), `mode` (`PROFILE` hoặc `THIS_WEEK`), `goal` tùy chọn, `preferredIngredientIds` và `avoidedIngredientIds` tùy chọn. PROFILE dùng mục tiêu FR-35 đã lưu; THIS_WEEK dùng câu trả lời chỉ trong request hiện tại. Response chỉ có các ngày từ hôm nay đến Chủ nhật của tuần hiện tại; mỗi bữa có thể chứa nhiều công thức, mỗi công thức một khẩu phần, cùng cover, 9 giá trị dinh dưỡng mỗi khẩu phần và lý do chọn. Ngày đã qua không có món và UI ghi rõ AI không đề xuất; tuần trước hoặc tuần tương lai không sinh món. Preview không được lưu và không sửa Meal Plan.
 - Backend chỉ chọn tối đa 50 công thức `PUBLISHED`, có mọi nguyên liệu ánh xạ gram và đủ 9 chỉ tiêu dinh dưỡng. Dị ứng/nguyên liệu cần tránh từ FR-31 và `avoidedIngredientIds` của tuần này là điều kiện loại trừ cứng trước khi gọi Gemini; mọi công thức chứa một trong các nguyên liệu đó không thuộc pool. `preferredIngredientIds` chỉ là ưu tiên mềm trong số công thức còn hợp lệ và không thể ghi đè điều kiện tránh. Gemini chỉ trả ID; Backend xác minh ID, tính lại dinh dưỡng và từ chối kết quả sai, ngoài pool hoặc lặp cùng món ở hai bữa liền kề. Pool có thể lặp công thức khác vị trí liền kề nếu không đủ 21 món khác nhau.
-- `PUT /api/v1/meal-plans/ai-menu` nhận `weekStartDate`, mode và các giá trị tuần cần để tái xác minh, cùng danh sách 1–21 ô được chọn (`mealDate`, `mealType`, `recipeId`). Khi gọi API, Backend tái kiểm tra Pro, eligibility, hồ sơ, công thức công khai, pool dinh dưỡng và ràng buộc an toàn; trong một transaction, thay toàn bộ entries của tuần bằng các ô đã chọn. Bất kỳ lỗi nào rollback và giữ nguyên tuần cũ. FE phải cảnh báo rõ rằng tuần cũ sẽ bị thay trước khi gửi PUT.
+- `PUT /api/v1/meal-plans/ai-menu` nhận `weekStartDate`, mode và các giá trị tuần cần để tái xác minh, cùng danh sách món được chọn (`mealDate`, `mealType`, `recipeId`) trong khoảng hôm nay đến Chủ nhật hiện tại. Khi gọi API, Backend tái kiểm tra Pro, eligibility, hồ sơ, công thức công khai, pool dinh dưỡng, ràng buộc an toàn và giới hạn ngày; trong một transaction, chỉ thay các entries từ hôm nay đến hết tuần hiện tại, giữ nguyên entries của ngày đã qua. Bất kỳ lỗi nào rollback và giữ nguyên lịch cũ. FE phải cảnh báo rõ phạm vi cập nhật trước khi gửi PUT.
+- Backend không gọi bước xếp hạng Gemini và trả preview rỗng nếu khoảng tuần đang yêu cầu không giao với hôm nay đến Chủ nhật hiện tại; thao tác áp dụng các món ngoài khoảng ngày này bị từ chối.
 - Mục tiêu chỉ điều hướng lựa chọn món, không làm thay đổi mục tiêu số FR-35, không tự suy ra thâm hụt/thặng dư năng lượng và không đảm bảo kết quả sức khỏe. Dữ liệu câu trả lời tuần không được lưu/tái sử dụng. Không gửi số đo nhân trắc học hoặc mục tiêu cá nhân chi tiết vào telemetry; không ghi prompt hay câu trả lời cá nhân vào log.
 - Nếu chưa xác nhận trạng thái dinh dưỡng, API trả `403 NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED`; nếu người dùng đã xác nhận không đủ điều kiện, trả `403 NUTRITION_ELIGIBILITY_INELIGIBLE`. Hồ sơ nhân trắc học chưa lưu trả `409 NUTRITION_PROFILE_REQUIRED`.
 
@@ -510,6 +523,7 @@ Generated OpenAPI là contract chi tiết. Guest và Member có thể đọc dan
 | `GET /api/v1/ingredients` | Danh sách phân trang chỉ gồm catalog `ACTIVE`, có tìm kiếm và lọc nhóm; mỗi mục trả `ingredientId`, `name`, `ingredientGroup`, `imageUrl`. FE tải các trang để duyệt/tìm/chọn nhiều nguyên liệu. |
 | `GET /api/v1/ingredients/groups` | Tên và số nguyên liệu đang hoạt động trong từng nhóm. |
 | `GET /api/v1/ingredients/{ingredientId}` | Chi tiết nguyên liệu đang hoạt động, bổ sung `nutrition` với giá trị trên 100 g. ID không tồn tại và nguyên liệu `INACTIVE` đều trả `404 INGREDIENT_NOT_FOUND`; ID không hợp lệ trả `400 VALIDATION_FAILED`. |
+| `GET /api/v1/ingredients/{ingredientId}/units` | Danh sách đơn vị công thức đang hỗ trợ cho nguyên liệu active: `mg/g/kg` luôn có; `ml/L/tsp/tbsp/cup` và `quả/củ/miếng` chỉ có khi conversion active. Trả `id`, `code`, `name`, `dimension`, `gramsPerUnit`, `approximate`. Dùng dữ liệu này cho bộ chọn đơn vị trong công thức và công cụ quy đổi hai chiều ở `/nguyen-lieu/:ingredientId`; Backend vẫn xác thực lại khi lưu công thức. |
 
 `nutrition` giữ các chỉ tiêu và đơn vị sau; không nhân theo khẩu phần món hoặc tự suy diễn tỷ lệ quy đổi:
 
@@ -527,3 +541,36 @@ Generated OpenAPI là contract chi tiết. Guest và Member có thể đọc dan
 - Lỗi dịch vụ/kết nối cho phép thử lại; `404` cho biết nguyên liệu không còn khả dụng và cung cấp đường về danh mục.
 - Lưới bài viết trên chi tiết gọi `GET /api/v1/recipes/discovery` với `ingredientIds` bằng đúng ID đang xem, `size=9`, `page` tăng từ 0 và `sort=MOST_LIKED` hoặc `NEWEST`; Xem thêm theo `hasNext`, không tự hiển thị tổng số bài khi response không cung cấp tổng.
 - Các nhãn loại ăn chay dùng `vegetarianTypes` của `GET /api/v1/recipes/form-options`; chọn nhãn gửi thêm `vegetarianType` nhưng vẫn giữ `ingredientIds`. Đây là nhãn của công thức; API không khai báo độ phù hợp chế độ ăn của riêng nguyên liệu.
+
+## 21. Xử lý báo cáo của Administrator — FR-28
+
+Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dùng chung. Mọi endpoint dưới `/api/v1/admin/reports` cần Bearer token của Administrator; Guest nhận `401`, Customer/Expert nhận `403 ACCESS_DENIED` (NFR-09). Chỉ báo cáo Recipe Post (`REPORT.recipe_id`) nằm trong hàng đợi này; báo cáo bình luận thuộc FR-48.
+
+| Endpoint | Cách tích hợp |
+| --- | --- |
+| `GET /api/v1/admin/reports?status=&recipeId=&page=&size=` | `PageResponse<AdminReportResponse>`, mới nhất trước. `status` là `OPEN`, `IN_REVIEW`, `RESOLVED` hoặc bỏ trống. `recipeId` (từ 1, tùy chọn) chỉ lấy báo cáo của một bài để xem từng phản ánh trong nhóm (AC-30.4). `page` từ 0, `size` 1–100 (mặc định 20). |
+| `GET /api/v1/admin/reports/groups?status=&query=&sort=&page=&size=` | `PageResponse<AdminReportGroupResponse>`: mỗi bài có báo cáo là một nhóm (AC-30.4). Có cùng `status`, `page`, `size` như danh sách; phân trang đếm theo bài, không theo báo cáo. `query` (tối đa 200 ký tự, bỏ khoảng trắng đầu cuối, không phân biệt hoa thường) giữ các bài có tiêu đề, tên hoặc email tác giả chứa chuỗi này; ký tự `%`, `_`, `[` được so khớp nguyên văn. `sort` là `NEWEST` (mặc định, bài có báo cáo khớp bộ lọc mới nhất đứng trước) hoặc `MOST_REPORTED` (bài có nhiều báo cáo khớp bộ lọc nhất đứng trước, bằng nhau thì bài có báo cáo mới hơn đứng trước) (UC-06.1). Sai `sort` hoặc `query` quá dài trả `400 VALIDATION_FAILED`. |
+| `GET /api/v1/admin/reports/status-counts` | Số báo cáo ở từng trạng thái: `open`, `inReview`, `resolved`. |
+| `GET /api/v1/admin/reports/{reportId}` | Chi tiết một báo cáo, `404 REPORT_NOT_FOUND` khi không có. |
+| `POST /api/v1/admin/reports/{reportId}/claim` | Không có body. Chuyển `OPEN` sang `IN_REVIEW` và ghi người gọi vào `handledBy` (AC-28.1). Báo cáo đã có người tiếp nhận hoặc đã giải quyết trả `409 REPORT_STATUS_CONFLICT`. Hai Administrator tiếp nhận cùng lúc thì đúng một người thành công vì Backend khóa dòng `REPORT`. |
+| `POST /api/v1/admin/reports/{reportId}/resolve` | Body `{ "decision", "reason" }`. Chỉ Administrator đang giữ báo cáo `IN_REVIEW` được gọi; trả báo cáo `RESOLVED`. |
+
+`AdminReportResponse` gồm `id`, `status`, `reasonCode`, `description`, `createdAt`, `updatedAt`, `recipe` (`id`, `title`, `status`), `reporter` và `author` (`id`, `displayName`, `email`, `role`, `accountStatus`), `handledBy` (`id`, `displayName`, `null` khi chưa ai tiếp nhận), `decision`, `decisionReason`, `handledAt`, `supplements` (các lần người gửi bổ sung, cũ trước: `supplementId`, `content`, `createdAt`, mảng rỗng khi chưa có, FR-30). Response này chỉ dành cho Administrator vì có danh tính người báo cáo (FR-29, BR-28). Thời gian là UTC không kèm múi giờ, Frontend hiển thị theo giờ Việt Nam.
+
+- `decision` là một trong `NO_VIOLATION` (bài giữ nguyên), `WARN_AUTHOR` (bài giữ nguyên, tác giả nhận cảnh báo), `HIDE_RECIPE` (bài chuyển `HIDDEN`, không còn ở API công khai, tìm kiếm và gợi ý) hoặc `LOCK_AUTHOR` (tài khoản tác giả chuyển `LOCKED`, mọi Bearer token đã cấp nhận `403 ACCOUNT_LOCKED` ngay ở request kế tiếp).
+- `AdminReportGroupResponse` gồm `recipe` (`id`, `title`, `status`), `author`, `reportCount` (số báo cáo khớp `status`, hoặc mọi báo cáo khi bỏ trống), `statusCounts` (`open`, `inReview`, `resolved` của mọi báo cáo trên bài), `latestReportAt` (báo cáo khớp bộ lọc mới nhất), `topReasonCode` và `topReasonCount` (lý do xuất hiện nhiều nhất trong các báo cáo khớp bộ lọc và số báo cáo có lý do đó; bằng nhau thì lấy lý do được báo cáo gần nhất, UC-06.1). Nhóm không thay báo cáo: mỗi báo cáo vẫn giữ người gửi, trạng thái và kết luận riêng (SRS 3.14), xem qua `recipeId` hoặc `GET /api/v1/admin/reports/{reportId}`.
+- `reason` bỏ khoảng trắng đầu cuối, bắt buộc 10–500 ký tự với mọi kết luận (AC-28.5, BR-26). Sai `decision` hoặc `reason` trả `400 VALIDATION_FAILED` với `errors[].field` là `decision` hoặc `reason`, báo cáo giữ `IN_REVIEW`.
+- Báo cáo `RESOLVED` không đổi được nữa: không có endpoint sửa, `claim` và `resolve` đều trả `409`. Bản ghi báo cáo (`decision`, `decision_reason`, `handled_by`, `handled_at`) là audit của quyết định (SRS 3.12, NFR-08). Báo cáo `IN_REVIEW` cũ chưa có `handledBy` (đổi từ `PROCESSING` ở V9) vẫn tiếp nhận được.
+- Số lượng báo cáo không tự tạo chế tài; mỗi báo cáo cần một quyết định riêng (BR-26, BR-58). Kết luận của một báo cáo không tự đổi các báo cáo khác trên cùng bài.
+- Khi giải quyết, Backend ghi `NOTIFICATION` trong cùng transaction: người báo cáo nhận `REPORT_RESULT` (kết quả chung, không nêu chế tài cụ thể), tác giả nhận `MODERATION_DECISION` với lý do của Administrator khi kết luận là cảnh báo, ẩn bài hoặc khóa tài khoản. Nội dung thông báo không chứa tên, email hay mô tả của người báo cáo (AC-49.4). Email kết quả kiểm duyệt chưa gửi trong bản này.
+
+## 22. Báo cáo công thức — FR-26/27, FR-30
+
+Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dùng chung. Báo cáo lưu trong `REPORT` (V1, V9); filtered unique index `UQ_REPORT_open_recipe` giữ tối đa một báo cáo `OPEN`/`IN_REVIEW` cho mỗi cặp người gửi – bài.
+
+- `POST /api/v1/recipes/{recipeId}/reports` (cần Bearer token) body `{ "reasonCode", "description"? }`, trả `201` `RecipeReportResponse` (`reportId`, `status = OPEN`, `message`). Chỉ bài `PUBLISHED`, khác thì `404 RECIPE_NOT_FOUND`. `reasonCode` là một trong `RECIPE_INFO_OR_DIET_LABEL`, `FOOD_SAFETY_HAZARD`, `SPAM_ADVERTISING`, `INAPPROPRIATE_CONTENT`, `COPYRIGHT_VIOLATION`, `OTHER`. `description` bỏ khoảng trắng đầu cuối, tối đa 500 ký tự; với `OTHER` bắt buộc 10–500 ký tự.
+- Tài khoản đã có báo cáo `OPEN`/`IN_REVIEW` trên bài thì nhận `409 REPORT_ALREADY_OPEN`, body có `reportId` của báo cáo đó để Frontend dẫn người gửi tới báo cáo hiện có (AC-30.2). Request đồng thời của cùng tài khoản trên cùng bài được tuần tự hóa bằng khóa dòng `RECIPE_POST`: đúng một request tạo báo cáo, các request còn lại nhận `409` kèm `reportId` (SRS 3.14).
+- Báo cáo lại sau khi báo cáo trước của chính tài khoản trên bài đó đã `RESOLVED` bắt buộc có `description` 10–500 ký tự với mọi `reasonCode` (AC-30.3, SRS 3.14); thiếu hoặc quá ngắn thì `400 VALIDATION_FAILED` với `field = description` và không tạo báo cáo.
+- `GET /api/v1/me/reports/{reportId}` (cần Bearer token) trả `MyReportResponse` cho chính người gửi: `reportId`, `status`, `reasonCode`, `description`, `createdAt`, `recipe` (`id`, `title`), `supplements` (cũ trước) và `supplementLimit` (5). Không có danh tính người gửi hay ghi chú xử lý. Tài khoản khác nhận `403 ACCESS_DENIED` (NFR-09), ID không phải báo cáo Recipe Post nhận `404 REPORT_NOT_FOUND`. Frontend gọi endpoint này với `reportId` trong body `409 REPORT_ALREADY_OPEN` để mở báo cáo hiện có (AC-30.2).
+- `POST /api/v1/me/reports/{reportId}/supplements` body `{ "content" }` trả `201` `ReportSupplementResponse` (`supplementId`, `content`, `createdAt`) (AC-30.1). `content` bỏ khoảng trắng đầu cuối, 10–500 ký tự, sai thì `400 VALIDATION_FAILED` với `errors[].field = content`. Chỉ người gửi (`403 ACCESS_DENIED` với tài khoản khác), chỉ khi báo cáo còn `OPEN`/`IN_REVIEW` (`409 REPORT_NOT_OPEN`), tối đa 5 lần mỗi báo cáo (`409 REPORT_SUPPLEMENT_LIMIT`). Request đồng thời được tuần tự hóa bằng khóa dòng `REPORT` nên không vượt giới hạn. Phần bổ sung lưu trong `REPORT_SUPPLEMENT` (V22), chỉ thêm, không sửa hay xóa, `REPORT.description` giữ nguyên.
+- Administrator xem báo cáo gom theo bài qua `GET /api/v1/admin/reports/groups` và từng phản ánh của một bài qua `GET /api/v1/admin/reports?recipeId=` (AC-30.4); `AdminReportResponse.supplements` cho Administrator thấy các lần bổ sung. Xem mục 21.

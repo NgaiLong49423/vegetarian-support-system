@@ -34,7 +34,6 @@ import tech.mamxanh.shopping.dto.response.ShoppingAggregationResult.Warning;
  */
 @Service
 public class ShoppingAggregationService {
-    private static final BigDecimal THOUSAND = new BigDecimal("1000");
     private final IngredientCatalogLookupService catalog;
     private final IngredientConversionLookupService conversions;
 
@@ -101,7 +100,8 @@ public class ShoppingAggregationService {
             warnings.add(new Warning(index, "INVALID_MANUAL_NAME", "Bỏ qua mặt hàng thủ công có tên không hợp lệ."));
             return null;
         }
-        return new Row(new Identity(null, name.toLowerCase(Locale.ROOT)), name, "Nhóm khác", unit, source.quantity(), index);
+        String normalizedName = name.replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+        return new Row(new Identity(null, normalizedName), name, "Nhóm khác", unit, source.quantity(), index);
     }
 
     private List<Item> combine(List<Row> rows, Collection<UnitResponse> units, Map<RateKey, BigDecimal> rates, List<Warning> warnings) {
@@ -126,8 +126,8 @@ public class ShoppingAggregationService {
 
     private void mergeWithOfficialRates(Map<String, Bucket> buckets, Collection<UnitResponse> units,
             Map<RateKey, BigDecimal> rates, List<Warning> warnings) {
-        UnitResponse massUnit = units.stream().filter(unit -> family(unit).equals("MASS"))
-                .min(Comparator.comparing(this::factor).thenComparing(UnitResponse::id)).orElse(null);
+        UnitResponse massUnit = units.stream().filter(unit -> family(unit).equals("MASS") && unit.code().equals("g"))
+                .findFirst().orElse(null);
         if (massUnit == null) return;
         List<String> convertible = new ArrayList<>();
         BigDecimal totalGrams = BigDecimal.ZERO;
@@ -163,22 +163,22 @@ public class ShoppingAggregationService {
 
     private UnitResponse standardTarget(String family, UnitResponse original, Collection<UnitResponse> units) {
         if (!family.equals("MASS") && !family.equals("VOLUME")) return original;
+        if (family.equals("MASS")) return units.stream().filter(unit -> unit.code().equals("g")).findFirst().orElse(original);
         return units.stream().filter(unit -> family(unit).equals(family))
                 .min(Comparator.comparing(this::factor).thenComparing(UnitResponse::id)).orElse(original);
     }
 
-    /** Only the explicitly approved g/kg and ml/L pairs have automatic within-family conversion. */
+    /** Standard mass and volume units convert within their family; counts remain ingredient-specific. */
     private String family(UnitResponse unit) {
         String code = unit.code().toLowerCase(Locale.ROOT);
-        if (unit.dimension() == MeasurementDimension.MASS && (code.equals("g") || code.equals("kg"))) return "MASS";
-        if (unit.dimension() == MeasurementDimension.VOLUME && (code.equals("ml") || code.equals("l"))) return "VOLUME";
+        if (unit.dimension() == MeasurementDimension.MASS && List.of("mg", "g", "kg").contains(code)) return "MASS";
+        if (unit.dimension() == MeasurementDimension.VOLUME && List.of("ml", "l", "tsp", "tbsp", "cup").contains(code)) return "VOLUME";
         return "UNIT:" + unit.id();
     }
 
     private BigDecimal factor(UnitResponse unit) {
         String code = unit.code().toLowerCase(Locale.ROOT);
-        return (family(unit).equals("MASS") && code.equals("kg")) || (family(unit).equals("VOLUME") && code.equals("l"))
-                ? THOUSAND : BigDecimal.ONE;
+        return unit.baseFactor();
     }
 
     private static <K, V> Map<K, V> index(List<V> values, Function<V, K> key) {

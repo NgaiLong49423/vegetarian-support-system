@@ -4,11 +4,13 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.Clock;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,16 +25,15 @@ import tech.mamxanh.shopping.dto.response.ShoppingListCreationResponse;
 import tech.mamxanh.shopping.dto.response.ShoppingListCreationResponse.Warning;
 import tech.mamxanh.shopping.entity.ShoppingListEntity;
 import tech.mamxanh.shopping.entity.ShoppingListItemEntity;
+import tech.mamxanh.shopping.entity.ShoppingRecipeContributionEntity;
 import tech.mamxanh.shopping.repository.ShoppingListItemRepository;
 import tech.mamxanh.shopping.repository.ShoppingListRepository;
 
 /** FR-53 AC-53.1: create a new, independent checklist from the current Member's meal plan. */
 @Service
 public class ShoppingListCreationService {
-    private static final BigDecimal MAX_QUANTITY = new BigDecimal("99999999.99");
+    private static final BigDecimal MAX_QUANTITY = new BigDecimal("999999999999.999999");
     private static final DateTimeFormatter FULL_DATE = DateTimeFormatter.ofPattern("dd/MM/uuuu", Locale.ROOT);
-    private static final DateTimeFormatter DAY_MONTH = DateTimeFormatter.ofPattern("dd/MM", Locale.ROOT);
-    private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd", Locale.ROOT);
     private final CurrentUserService users;
     private final MealPlanReadService mealPlans;
     private final RecipeService recipes;
@@ -41,10 +42,11 @@ public class ShoppingListCreationService {
     private final ShoppingListItemRepository items;
     private final ShoppingListService checklists;
     private final EntityManager entityManager;
+    private final Clock clock;
 
     public ShoppingListCreationService(CurrentUserService users, MealPlanReadService mealPlans,
             RecipeService recipes, ShoppingAggregationService aggregation, ShoppingListRepository lists,
-            ShoppingListItemRepository items, ShoppingListService checklists, EntityManager entityManager) {
+            ShoppingListItemRepository items, ShoppingListService checklists, EntityManager entityManager, Clock clock) {
         this.users = users;
         this.mealPlans = mealPlans;
         this.recipes = recipes;
@@ -53,6 +55,7 @@ public class ShoppingListCreationService {
         this.items = items;
         this.checklists = checklists;
         this.entityManager = entityManager;
+        this.clock = clock;
     }
 
     @Transactional
@@ -68,12 +71,14 @@ public class ShoppingListCreationService {
         var warnings = new ArrayList<Warning>();
         var lines = new ArrayList<ShoppingAggregationLine>();
         var origins = new ArrayList<Origin>();
+        var contributions = new ArrayList<ShoppingRecipeContributionEntity>();
         for (var entry : entries) {
             var recipe = sources.get(entry.recipeId());
             if (recipe == null) {
                 warnings.add(new Warning("UNAVAILABLE_RECIPE", "Bỏ qua công thức không còn công khai.", entry.entryId(), entry.recipeId()));
                 continue;
             }
+            UUID sourceId = UUID.randomUUID();
             for (var line : recipe.ingredients()) {
                 if (line.ingredientId() == null) {
                     warnings.add(new Warning("INVALID_RECIPE_INGREDIENT", "Bỏ qua nguyên liệu công thức không có mã catalog.", entry.entryId(), entry.recipeId()));
@@ -83,6 +88,19 @@ public class ShoppingListCreationService {
                         .divide(BigDecimal.valueOf(recipe.servings()), MathContext.DECIMAL128);
                 lines.add(new ShoppingAggregationLine(line.ingredientId(), null, quantity, line.unitId()));
                 origins.add(new Origin(entry.entryId(), entry.recipeId()));
+                var contribution = new ShoppingRecipeContributionEntity();
+                contribution.setSourceId(sourceId);
+                contribution.setRecipeId(entry.recipeId());
+                contribution.setSourceKind("RECIPE");
+                contribution.setExpectedIngredientCount(recipe.ingredients().size());
+                contribution.setIngredientId(line.ingredientId());
+                contribution.setUnitId(line.unitId());
+                contribution.setQuantity(quantity);
+                contribution.setServings(entry.plannedServings());
+                contribution.setMealPlanEntryId(entry.entryId());
+                contribution.setMealDate(entry.mealDate());
+                contribution.setMealType(entry.mealType());
+                contributions.add(contribution);
             }
         }
         var result = aggregation.aggregate(lines);
@@ -95,12 +113,12 @@ public class ShoppingListCreationService {
         var rows = new ArrayList<ShoppingListItemEntity>();
         for (var item : aggregated) {
             // Only round after all source contributions have been summed. Never persist zero or overflow.
-            BigDecimal quantity = item.quantity().setScale(2, RoundingMode.HALF_UP);
+            BigDecimal quantity = item.quantity().setScale(6, RoundingMode.HALF_UP);
             if (quantity.signum() <= 0 || quantity.compareTo(MAX_QUANTITY) > 0) {
                 throw invalid("Định lượng sau tổng hợp vượt giới hạn lưu trữ hoặc quá nhỏ: " + item.name());
             }
             if (quantity.compareTo(item.quantity()) != 0) {
-                warnings.add(new Warning("QUANTITY_ROUNDED", "Lượng " + item.name() + " được làm tròn đến hai chữ số thập phân khi lưu.", null, null));
+                warnings.add(new Warning("QUANTITY_ROUNDED", "Lượng " + item.name() + " được làm tròn đến sáu chữ số thập phân khi lưu.", null, null));
             }
             var row = new ShoppingListItemEntity();
             row.setIngredientId(item.ingredientId());
@@ -111,42 +129,27 @@ public class ShoppingListCreationService {
         }
         var list = new ShoppingListEntity();
         list.setUserId(owner);
-        list.setName(mealPlanListName(request));
+        list.setName("Danh sách mua sắm " + clock.instant()
+                .atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDate().format(FULL_DATE));
         lists.saveAndFlush(list);
         entityManager.refresh(list); // read database-generated timestamps, rather than fabricate response values
         rows.forEach(row -> row.setShoppingListId(list.getId()));
         items.saveAllAndFlush(rows);
+        for (int i = 0; i < aggregated.size(); i++) {
+            var target = rows.get(i);
+            for (int sourceIndex : aggregated.get(i).sourceIndices()) {
+                var contribution = contributions.get(sourceIndex);
+                contribution.setShoppingListId(list.getId());
+                contribution.setShoppingListItemId(target.getId());
+                entityManager.persist(contribution);
+            }
+        }
+        entityManager.flush();
         var incompatible = new ArrayList<Long>();
         for (int i = 0; i < rows.size(); i++) {
             if (aggregated.get(i).incompatibleUnits()) incompatible.add(rows.get(i).getId());
         }
         return new ShoppingListCreationResponse(checklists.get(list.getId()), warnings, incompatible);
-    }
-
-    private String mealPlanListName(CreateMealPlanShoppingListRequest request) {
-        if (request.selectedDates() == null) {
-            return "Đi chợ · thực đơn tuần " + dateRange(request.weekStartDate(), request.weekStartDate().plusDays(6));
-        }
-        var dates = request.selectedDates().stream().sorted().toList();
-        LocalDate first = dates.getFirst();
-        LocalDate last = dates.getLast();
-        if (dates.size() == 1) return "Đi chợ · thực đơn " + first.format(FULL_DATE);
-        if (last.equals(first.plusDays(dates.size() - 1L))) {
-            return "Đi chợ · thực đơn " + dateRange(first, last);
-        }
-        // Compact dates only within the same month/year; never hide a month or year boundary.
-        boolean sameMonth = first.getYear() == last.getYear() && first.getMonthValue() == last.getMonthValue();
-        var labels = new ArrayList<String>();
-        for (int i = 0; i < dates.size(); i++) {
-            labels.add(dates.get(i).format(sameMonth && i < dates.size() - 1 ? DAY : FULL_DATE));
-        }
-        return "Đi chợ · thực đơn " + String.join(", ", labels);
-    }
-
-    private String dateRange(LocalDate first, LocalDate last) {
-        DateTimeFormatter startFormat = first.getYear() != last.getYear() ? FULL_DATE
-                : first.getMonthValue() != last.getMonthValue() ? DAY_MONTH : DAY;
-        return first.format(startFormat) + "–" + last.format(FULL_DATE);
     }
 
     private void validateDates(CreateMealPlanShoppingListRequest request) {

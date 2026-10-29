@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -39,10 +40,16 @@ class RecipeMediaAuthorizationIntegrationTest extends AbstractIntegrationTest {
     private long recipeId;
     private long hiddenRecipeId;
 
-    @BeforeEach
-    void prepareDatabaseFixtures() {
+    /** Keep this suite's recipe fixtures from leaking into Auth tests sharing the container. */
+    @AfterEach
+    void cleanupFixtures() {
         jdbcTemplate.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue11-%@test.local')");
         jdbcTemplate.update("DELETE FROM [USER] WHERE email LIKE 'issue11-%@test.local'");
+    }
+
+    @BeforeEach
+    void prepareDatabaseFixtures() {
+        cleanupFixtures();
 
         ownerId = insertUser("issue11-owner@test.local", "EXPERT");
         otherExpertId = insertUser("issue11-other@test.local", "EXPERT");
@@ -107,9 +114,11 @@ class RecipeMediaAuthorizationIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void theExpertAuthorCanUploadReplaceAndDeleteTheirRecipeImages() throws Exception {
+    void unconfiguredStorageRejectsExpertUploadsWhileExistingMediaCanStillBeManaged() throws Exception {
         mockMvc.perform(multipart("/api/v1/recipes/media/upload").file(jpeg()).with(principal(ownerId, "ROLE_EXPERT")))
-                .andExpect(status().isCreated());
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("MEDIA_STORAGE_UNAVAILABLE"))
+                .andExpect(jsonPath("$.data").doesNotExist());
 
         mockMvc.perform(put("/api/v1/recipes/{recipeId}/media", recipeId).with(principal(ownerId, "ROLE_EXPERT"))
                         .contentType(MediaType.APPLICATION_JSON).content(REPLACE_BODY))

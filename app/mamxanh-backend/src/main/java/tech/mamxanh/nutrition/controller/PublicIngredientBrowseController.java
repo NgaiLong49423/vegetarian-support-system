@@ -18,6 +18,7 @@ import tech.mamxanh.common.response.PageResponse;
 import tech.mamxanh.nutrition.dto.response.PublicIngredientGroupResponse;
 import tech.mamxanh.nutrition.dto.response.PublicIngredientDetailResponse;
 import tech.mamxanh.nutrition.dto.response.PublicIngredientResponse;
+import tech.mamxanh.nutrition.dto.response.IngredientUnitOptionResponse;
 import tech.mamxanh.nutrition.service.IngredientCatalogService;
 
 /** Public read-only browsing of active ingredient groups and their catalog entries (FR-62). */
@@ -28,6 +29,12 @@ public class PublicIngredientBrowseController {
     private final IngredientCatalogService service;
 
     public PublicIngredientBrowseController(IngredientCatalogService service) { this.service = service; }
+
+    @GetMapping("/{ingredientId}/units")
+    @Operation(summary = "List recipe units supported by an active ingredient")
+    public List<IngredientUnitOptionResponse> units(@PathVariable @Positive long ingredientId) {
+        return service.listRecipeUnits(ingredientId);
+    }
 
     @GetMapping("/groups")
     @Operation(summary = "List active ingredient groups")

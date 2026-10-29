@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -42,8 +43,9 @@ class RecipePostManagementIntegrationTest extends AbstractIntegrationTest {
     private long ingredientId;
     private int gramUnitId;
 
-    @BeforeEach
-    void prepareDatabaseFixtures() {
+    /** Keep this suite's recipe fixtures from leaking into Auth tests sharing the container. */
+    @AfterEach
+    void cleanupFixtures() {
         jdbcTemplate.update("DELETE FROM [MEAL_PLAN] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue47-%@test.local')");
         jdbcTemplate.update("DELETE FROM [SAVED_RECIPE] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue47-%@test.local')");
         jdbcTemplate.update("DELETE FROM [RECIPE_REACTION] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue47-%@test.local'))");
@@ -52,6 +54,11 @@ class RecipePostManagementIntegrationTest extends AbstractIntegrationTest {
         jdbcTemplate.update("DELETE FROM [USER] WHERE email LIKE 'issue47-%@test.local'");
         jdbcTemplate.update("DELETE FROM [INGREDIENT_UNIT_CONVERSION] WHERE ingredient_id IN (SELECT ingredient_id FROM [INGREDIENT] WHERE name = ?)", INGREDIENT_NAME);
         jdbcTemplate.update("DELETE FROM [INGREDIENT] WHERE name = ?", INGREDIENT_NAME);
+    }
+
+    @BeforeEach
+    void prepareDatabaseFixtures() {
+        cleanupFixtures();
 
         ownerId = insertUser(OWNER_EMAIL, "EXPERT", "ACTIVE");
         otherExpertId = insertUser(OTHER_EXPERT_EMAIL, "EXPERT", "ACTIVE");

@@ -1,8 +1,8 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v2.11.0
+> **Version:** v2.14.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-20
+> **Last Updated:** 2026-10-27
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -110,7 +110,7 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-14 — Quy tắc định lượng nguyên liệu số học và tổng hợp Shopping List an toàn theo đơn vị chuẩn
 
 - **Mã quy tắc:** BR-14
-- **Nội dung:** Bãi bỏ hoàn toàn khái niệm "vừa đủ" hoặc để trống định lượng. Mọi dòng nguyên liệu bắt buộc phải có số lượng số học dương (`quantity > 0`) và đơn vị đo lường hợp lệ thuộc danh mục `UNIT` (`MASS`, `VOLUME`, `COUNT`). Shopping List chỉ gom các dòng cùng `ingredientId`. Tự động quy đổi trong cùng thứ nguyên: `g ↔ kg` ($1\text{ kg} = 1.000\text{ g}$) và `ml ↔ l` ($1\text{ l} = 1.000\text{ ml}$). Quy đổi khác thứ nguyên (ví dụ `COUNT` dạng quả/củ hoặc `VOLUME` dạng muỗng/thìa/ml sang khối lượng `g`) BẮT BUỘC phải dựa trên bảng tỷ lệ quy đổi cụ thể của nguyên liệu đó trong `INGREDIENT_UNIT_CONVERSION`. Nếu nguyên liệu chưa có tỷ lệ quy đổi trong hệ thống, xem BR-73 về quy tắc chặn xuất bản; trên Shopping List nếu có các dòng không quy đổi được, hệ thống giữ nguyên các dòng riêng rẽ, tuyệt đối không suy diễn tùy tiện hay cộng dồn sai lệch.
+- **Nội dung:** Bãi bỏ hoàn toàn khái niệm "vừa đủ" hoặc để trống định lượng. Bộ đơn vị công thức chuẩn gồm `mg/g/kg`, `ml/L/tsp/tbsp/cup` và `quả/củ/miếng`; quy đổi trong khối lượng/thể tích dùng hệ số chuẩn (1.000 mg = 1 g; 1 kg = 1.000 g; 1 L = 1.000 ml; 1 tsp = 5 ml; 1 tbsp = 15 ml; 1 cup = 240 ml). Thể tích và số đếm chỉ khả dụng theo từng nguyên liệu khi có conversion active; không suy ra rằng các đơn vị đếm khác nhau tương đương. Shopping List chỉ gom cùng `ingredientId`; lượng nhỏ được lưu đến 6 chữ số thập phân để không làm tròn thành 0.
 
 ---
 
@@ -154,7 +154,7 @@ This document contains only requirements included in Requirements / Implementati
   1. Tiêu đề (`title`): 3–120 ký tự.
   2. Thể loại món (`dish_category`): Bắt buộc chọn 1 giá trị chuẩn hóa thuộc danh mục thể loại món (`món nước`, `món xào`, `món lẩu`, `món kho`, `món canh`, `món chiên`, `món hấp`, `món gỏi / salad`, `món cuốn`, `món nướng`, `món tráng miệng / chè`). Không sử dụng bảng `CATEGORY` hay `RECIPE_CATEGORY` đa tầng động mà lưu trực tiếp thuộc tính chuẩn hóa trên Recipe Post.
   3. Nguyên liệu (`ingredients`): 1–50 dòng. Mỗi dòng bắt buộc: tên/liên kết nguyên liệu, định lượng số học dương (`quantity > 0`), và đơn vị đo lường hợp lệ thuộc `UNIT`. Cấm tuyệt đối giá trị phi số học ("vừa đủ").
-  4. Ràng buộc quy đổi đơn vị: Nếu nguyên liệu sử dụng đơn vị cần quy đổi sang gam (để tính dinh dưỡng hoặc tổng hợp danh sách mua sắm) mà chưa có tỷ lệ quy đổi tương ứng trong `INGREDIENT_UNIT_CONVERSION` (ví dụ: dùng đơn vị đếm `COUNT` dạng quả/củ/trái hoặc đơn vị thể tích dạng muỗng/thìa/ml sang gam mà nguyên liệu chưa được cấu hình hệ số), hệ thống **BẮT BUỘC CHẶN XUẤT BẢN (Validation Error)**. Không cho phép công khai bài viết khi thiếu dữ liệu quy đổi (BR-73).
+  4. Ràng buộc quy đổi đơn vị: Công thức mới chỉ dùng các mã chuẩn `mg`, `g`, `kg`, `ml`, `L`, `tsp`, `tbsp`, `cup`, `quả`, `củ`, `miếng`; `mg/g/kg` có hệ số khối lượng cố định, các đơn vị khác phải có quy đổi active đúng nguyên liệu. Đơn vị legacy vẫn được đọc từ bài cũ nhưng không được chọn cho bài mới. Backend kiểm tra lại khi lưu (BR-73).
   5. Hướng dẫn chuẩn bị/chế biến: Người đăng **không bắt buộc phải viết từng bước nấu ăn** vào bài viết. Tác giả có thể nhập nội dung hướng dẫn chế biến dưới dạng văn bản tự do/tổng thể (`instructions`) từ 10 đến 5.000 ký tự hoặc chia theo bước tùy ý; hệ thống không ép buộc phải phân rã thành các bước độc lập hay quản lý theo chế độ step-to-step, giúp giảm rào cản nhập liệu.
   6. Khẩu phần (`serving`): 1–50.
   7. Thời gian: `prepTime` và `cookTime` mỗi giá trị 0–1.440 phút, tổng thời gian > 0 (`cookTime = 0` hợp lệ nếu `prepTime > 0`).
@@ -307,7 +307,7 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-39 — Vai trò tham khảo của chỉ số BMI
 
 - **Mã quy tắc:** BR-39
-- **Nội dung:** BMI hoặc mục tiêu cân nặng không được dùng một mình để tự kê calorie/macro target hay đánh giá sức khỏe; BMI chỉ là chỉ số tham khảo trong hồ sơ rộng hơn. FR-36 được phép dùng mục tiêu hồ sơ hoặc mục tiêu riêng cho tuần hiện tại để ưu tiên lựa chọn món trong pool công thức tin cậy. Mục tiêu đó không tự thay đổi các mức năng lượng/dưỡng chất FR-35, không được Gemini tự chuyển thành thâm hụt/thặng dư calorie, và không phải chỉ định hay cam kết kết quả cân nặng.
+- **Nội dung:** BMI/phân loại BMI là thông tin tham khảo trong hồ sơ cá nhân và được FR-36 sử dụng cùng hồ sơ nhân trắc học, các mức tham khảo chín chỉ tiêu FR-35 và ràng buộc ăn uống để cá nhân hóa lựa chọn, phối hợp công thức và khẩu phần. BMI hoặc mục tiêu cân nặng không được dùng riêng để đánh giá sức khỏe, tự kê hoặc thay đổi mục tiêu calorie/dưỡng chất. Mục tiêu hồ sơ hoặc mục tiêu riêng của tuần chỉ hướng dẫn lựa chọn món; Gemini không được tự suy ra thâm hụt/thặng dư calorie. Kết quả không phải chỉ định hay cam kết thay đổi cân nặng.
 
 ---
 
@@ -379,9 +379,9 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-48 — Xử lý nguyên liệu thiếu số liệu dinh dưỡng và chặn công khai khi thiếu quy đổi đơn vị
 
 - **Mã quy tắc:** BR-48
-- **Nội dung:**
+  - **Nội dung:**
   - Dinh dưỡng món ăn được tính từ lượng khối lượng (gam) của từng nguyên liệu nhân với bảng giá trị dinh dưỡng trên 100g.
-  - **Ràng buộc quy đổi đơn vị (Publish Gate):** Đơn vị đo lường của nguyên liệu bắt buộc phải quy đổi được ra gam. Nếu đơn vị nguyên liệu chưa có tỷ lệ quy đổi ra gam trong `INGREDIENT_UNIT_CONVERSION` (và không phải là đơn vị khối lượng `MASS` g/kg), hệ thống **BẮT BUỘC CHẶN CÔNG KHAI BÀI VIẾT (Validation Error)** theo BR-19 và BR-73, tuyệt đối không cho phép công khai khi thiếu tỷ lệ quy đổi.
+  - **Ràng buộc quy đổi đơn vị (Publish Gate):** Đơn vị `mg/g/kg` dùng hệ số cố định. Mọi đơn vị thể tích hoặc đếm ngoài bộ công thức chuẩn phải có tỷ lệ active trong `INGREDIENT_UNIT_CONVERSION` cho đúng nguyên liệu; đơn vị legacy không được dùng để tạo/sửa bài mới. Backend kiểm tra lại theo BR-19 và BR-73.
   - **Dữ liệu dinh dưỡng trong catalog:** Trường hợp nguyên liệu đã có định lượng và quy đổi gam hợp lệ nhưng chưa có hồ sơ hoặc còn chỉ tiêu `NULL`, hệ thống vẫn cho phép công khai bài viết (BR-50), gắn cờ "Chưa đủ dữ liệu dinh dưỡng", không đưa bài vào thực đơn AI theo mục tiêu dinh dưỡng (BR-40), và không gán dữ liệu thiếu bằng 0.
 
 ---
@@ -550,11 +550,12 @@ This document contains only requirements included in Requirements / Implementati
 - **Mã quy tắc:** BR-73
 - **Nội dung:**
   - Hệ thống quản lý danh mục đơn vị đo lường chuẩn hóa `UNIT`, phân loại theo 3 thứ nguyên đo lường:
-    1. Khối lượng (`MASS`): gam (g), kilogam (kg) với tỷ lệ quy đổi cố định $1\text{ kg} = 1.000\text{ g}$.
-    2. Thể tích (`VOLUME`): mililit (ml), lít (l) với tỷ lệ quy đổi cố định $1\text{ l} = 1.000\text{ ml}$.
-    3. Đếm số lượng (`COUNT`): quả, củ, trái, tép, bìa, gói, lát, muỗng canh, thìa cà phê,...
-  - Bảng quy đổi nguyên liệu `INGREDIENT_UNIT_CONVERSION` lưu trữ tỷ lệ quy đổi cụ thể từ một đơn vị đo lường (thuộc `COUNT` hoặc `VOLUME`) sang khối lượng gam (`MASS` in grams) cho từng nguyên liệu cụ thể (ví dụ: 1 quả chuối tiêu $\approx 120\text{ g}$, 1 bìa đậu phụ $\approx 150\text{ g}$, 1 muỗng canh dầu thực vật $\approx 14\text{ g}$).
-  - **Quy tắc chặn xuất bản nghiêm ngặt (Strict Validation Gate):** Khi Chuyên gia tạo hoặc chỉnh sửa bài công thức, nếu bất kỳ nguyên liệu nào sử dụng đơn vị đo lường mà nguyên liệu đó chưa được định nghĩa tỷ lệ quy đổi sang gam trong `INGREDIENT_UNIT_CONVERSION` (và không phải là đơn vị khối lượng `MASS` g/kg đã biết tỷ lệ), Backend **BẮT BUỘC TỪ CHỐI LƯU VÀ CHẶN CÔNG KHAI**, trả về lỗi validation: `"Đơn vị đo lường [Tên đơn vị] của nguyên liệu [Tên nguyên liệu] chưa có tỷ lệ quy đổi sang gam. Vui lòng chọn đơn vị khối lượng (gam/kg) hoặc liên hệ quản trị viên."`
+    1. Khối lượng (`MASS`): `mg`, `g`, `kg` với hệ số cố định: $1.000\text{ mg} = 1\text{ g}$ và $1\text{ kg} = 1.000\text{ g}$.
+    2. Thể tích (`VOLUME`): `ml`, `L`, `tsp`, `tbsp`, `cup`, với $1\text{ L}=1.000\text{ ml}$, $1\text{ tsp}=5\text{ ml}$, $1\text{ tbsp}=15\text{ ml}$ và $1\text{ cup}=240\text{ ml}$.
+    3. Đếm số lượng (`COUNT`): `quả`, `củ`, `miếng`; đơn vị đếm khả dụng được cấu hình riêng cho từng nguyên liệu.
+  - `INGREDIENT_UNIT_CONVERSION` lưu gram trên một đơn vị đếm hoặc gram trên 1 ml cho nguyên liệu cụ thể. Thể tích chuẩn hóa qua gram trên 1 ml rồi Backend đồng bộ hệ số cho cả năm đơn vị thể tích; mọi hệ số phải ứng với trạng thái nguyên liệu cụ thể (ví dụ nguyên quả không dùng mật độ nước ép).
+  - Admin nhập trực tiếp hệ số gram trên một đơn vị đếm hoặc gram trên 1 ml. Hệ thống không yêu cầu loại nguồn, tên/URL/ngày tham khảo hoặc ghi chú nguồn; `is_approximate` dùng để đánh dấu hệ số xấp xỉ.
+  - **Quy tắc chặn xuất bản nghiêm ngặt:** Chuyên gia chỉ được chọn các đơn vị chuẩn đang hoạt động và được hỗ trợ cho đúng nguyên liệu. Backend phải kiểm tra lại khi lưu; đơn vị legacy chỉ giữ để đọc công thức cũ và không được chọn cho công thức mới.
   - Cấm hoàn toàn việc dùng chữ "vừa đủ" hoặc để trống định lượng số học. Mọi dòng nguyên liệu bắt buộc phải có số lượng số học dương (`quantity > 0`) và đơn vị đo lường hợp lệ.
 
 ---
@@ -565,7 +566,7 @@ This document contains only requirements included in Requirements / Implementati
 - **Mã quy tắc:** BR-74
 - **Nội dung:**
   - Người dùng có vai trò `CUSTOMER` được phép nộp đơn đăng ký Chuyên gia (`EXPERT_APPLICATION`) thông qua biểu mẫu format văn bản có cấu trúc (kinh nghiệm ẩm thực $\ge 20$ ký tự, trường phái chay, tóm tắt công thức sở trường $\ge 30$ ký tự, đúng một link HTTP/HTTPS tham khảo tùy chọn).
-  - Đây là quy trình xét duyệt tư cách Chuyên gia và quyền đăng bài dựa trên thông tin tự khai, không phải xác minh danh tính/KYC hoặc xác thực bằng cấp. Hệ thống tuyệt đối không yêu cầu hoặc lưu trữ giấy tờ tùy thân, tệp chứng chỉ hay bằng cấp vật lý.
+  - Đây là quy trình xét duyệt tư cách Chuyên gia và quyền đăng bài, không phải xác minh danh tính/KYC hoặc xác thực tính xác thực ngoài hệ thống. Customer có thể tự nguyện đính kèm một tài liệu chứng chỉ/văn bằng chuyên môn (PDF/JPEG/PNG, tối đa 5 MB) và một ảnh thẻ chân dung khung 3:4 riêng của đơn (JPEG/PNG/WebP, tối đa 2 MB); không nhận giấy tờ tùy thân. Backend xác minh chữ ký nội dung và dung lượng, lưu trong Azure Blob riêng tư; chỉ Administrator truy cập/tải tệp qua Backend để thẩm định. Ảnh không thay đổi avatar hồ sơ công khai.
   - **Quy tắc chặn nộp trùng (Single Open Application Rule):** Mỗi tài khoản Customer chỉ được phép sở hữu tối đa một bản ghi đơn đăng ký ở trạng thái chờ duyệt (`PENDING`). Nếu gửi thêm đơn trong khi đơn cũ chưa được xử lý, Backend từ chối với mã lỗi `HTTP 409 Conflict`.
   - Customer được xem lịch sử các đơn của chính mình theo thứ tự mới nhất trước nhưng không được rút/hủy đơn `PENDING` trong MVP; không được xem đơn của tài khoản khác.
   - **Quy tắc phê duyệt và chuyển đổi vai trò (Instant Role Promotion):** Chỉ khi đơn vẫn `PENDING` và tài khoản nộp vẫn `ACTIVE` với vai trò `CUSTOMER`, Administrator mới được phê duyệt. Hệ thống cập nhật trạng thái đơn thành `APPROVED`, đồng thời cập nhật vai trò người dùng trong `USER` thành `EXPERT`, làm mới trạng thái phân quyền để mở khóa quyền tạo bài viết tại `FR-04` và gửi thông báo in-app.

@@ -108,15 +108,15 @@ class IngredientCatalogDatabaseIntegrationTest extends AbstractIntegrationTest {
         String suffix = UUID.randomUUID().toString();
         IngredientEntity ingredient = ingredientRepository.saveAndFlush(new IngredientEntity(
                 "Nguyên liệu quy đổi " + suffix, "Rau củ", "Nguồn kiểm thử", null, LocalDate.now()));
-        UnitEntity unit = unitRepository.saveAndFlush(new UnitEntity(
-                "q" + suffix.replace("-", "").substring(0, 12), "quả kiểm thử", MeasurementDimension.COUNT, BigDecimal.ONE));
+        UnitEntity unit = unitRepository.findByActiveTrue().stream()
+                .filter(candidate -> "quả".equals(candidate.getCode())).findFirst().orElseThrow();
 
         var conversion = catalogService.createConversion(
                 ingredient.getId(), unit.getId(), new ConversionSaveRequest(new BigDecimal("120.00"), true));
 
         assertThat(conversion.gramsPerUnit()).isEqualByComparingTo("120.00");
         assertThat(catalogService.findActiveGramsPerUnit(ingredient.getId(), unit.getId()))
-                .contains(new BigDecimal("120.00"));
+                .hasValueSatisfying(value -> assertThat(value).isEqualByComparingTo("120.00"));
 
         ingredient.setActive(false);
         ingredientRepository.saveAndFlush(ingredient);

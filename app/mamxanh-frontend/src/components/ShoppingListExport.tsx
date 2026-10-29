@@ -13,11 +13,13 @@ export function ShoppingListExport({
   listName,
   disabled,
   onNotice,
+  compact = false,
 }: {
   items: ShoppingExportItem[];
   listName: string;
   disabled: boolean;
   onNotice: (message: string) => void;
+  compact?: boolean;
 }) {
   const [fallback, setFallback] = useState<string | null>(null);
   const [copying, setCopying] = useState(false);
@@ -60,10 +62,11 @@ export function ShoppingListExport({
   }
   return (
     <>
-      <div className="flex gap-2">
+      <div className={compact ? "flex flex-col gap-1" : "flex gap-2"}>
         <Button
-          variant="outline"
+          variant={compact ? "ghost" : "outline"}
           size="sm"
+          className={compact ? "justify-start" : undefined}
           onClick={() => void copy()}
           disabled={blocked}
           title={!items.length ? "Danh sách trống" : "Sao chép vào Clipboard"}
@@ -72,8 +75,9 @@ export function ShoppingListExport({
           {copying ? "Đang sao chép…" : "Sao chép"}
         </Button>
         <Button
-          variant="outline"
+          variant={compact ? "ghost" : "outline"}
           size="sm"
+          className={compact ? "justify-start" : undefined}
           disabled={blocked}
           title={!items.length ? "Danh sách trống" : "Xuất file .txt"}
           onClick={() => {
@@ -89,13 +93,13 @@ export function ShoppingListExport({
           }}
         >
           <Download className="h-4 w-4" />
-          TXT
+          Xuất TXT
         </Button>
       </div>
       <Modal
         open={fallback !== null}
         onClose={close}
-        title="Sao chép danh sách đi chợ"
+        title="Sao chép danh sách mua sắm"
         trapFocus
       >
         <p className="mb-3 text-sm text-ink-muted">
@@ -104,7 +108,7 @@ export function ShoppingListExport({
         </p>
         <textarea
           ref={text}
-          aria-label="Nội dung danh sách đi chợ"
+          aria-label="Nội dung danh sách mua sắm"
           readOnly
           value={fallback ?? ""}
           className="h-48 w-full rounded-xl border border-brand-200 bg-paper p-3 font-mono text-xs text-ink focus-visible:outline-2 focus-visible:outline-brand-400"

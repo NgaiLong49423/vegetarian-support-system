@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Collection;
 import tech.mamxanh.nutrition.dto.response.IngredientResponse;
 import tech.mamxanh.nutrition.dto.response.UnitResponse;
+import tech.mamxanh.nutrition.dto.response.IngredientUnitOptionResponse;
 
 /**
  * Read-only catalog boundary for recipe authoring. Only active records may be selected for new
@@ -20,4 +21,6 @@ public interface IngredientCatalogLookupService {
     List<IngredientResponse> findIngredientReferences(Collection<Long> ids);
 
     List<UnitResponse> findUnitReferences(Collection<Integer> ids);
+
+    List<IngredientUnitOptionResponse> findActiveIngredientUnits(long ingredientId);
 }

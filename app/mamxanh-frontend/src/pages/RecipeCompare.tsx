@@ -319,7 +319,7 @@ function NutritionTable({ first, second }: { first: RecipeDetail; second: Recipe
           {' '}{second.title} có {second.servings} khẩu phần gốc.
         </p>
         <p>
-          Chênh lệch = công thức đầu tiên − công thức thứ hai, theo cùng đơn vị; khẩu phần của hai món có thể không có cùng
+          Chênh lệch = công thức đầu tiên − công thức thứ hai, theo cùng đơn vị, khẩu phần của hai món có thể không có cùng
           khối lượng thành phẩm.
         </p>
       </div>
@@ -355,7 +355,7 @@ function NutritionTable({ first, second }: { first: RecipeDetail; second: Recipe
       ))}
       <p className="mt-4 flex items-start gap-2 text-xs leading-5 text-ink-muted">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" aria-hidden="true" />
-        Số liệu là ước tính từ danh mục nguyên liệu, chỉ để đối chiếu; Mâm Xanh không chấm điểm hay xếp hạng công thức
+        Số liệu là ước tính từ danh mục nguyên liệu, chỉ để đối chiếu, Mâm Xanh không chấm điểm hay xếp hạng công thức
         và không thay thế tư vấn của chuyên gia dinh dưỡng.
       </p>
     </SectionCard>

@@ -18,6 +18,14 @@ export const test = base.extend({
     await context.route((url) => url.pathname === '/api/v1/saved-recipes', (route) => route.fulfill({ json: {
       content: [], page: 0, size: 50, totalElements: 0, totalPages: 0,
     } }));
+    // Recipe forms now load valid units per selected ingredient. Older mocked E2E
+    // pages only provided form-options, so supply a deterministic catalog response
+    // unless a page-level fixture explicitly overrides it.
+    await context.route((url) => /^\/api\/v1\/ingredients\/\d+\/units$/.test(url.pathname), (route) => route.fulfill({ json: [
+      { id: 1, code: 'g', name: 'gram', dimension: 'MASS', gramsPerUnit: 1, approximate: false },
+      { id: 2, code: 'kg', name: 'kilogram', dimension: 'MASS', gramsPerUnit: 1000, approximate: false },
+      { id: 3, code: 'quả', name: 'quả', dimension: 'COUNT', gramsPerUnit: 100, approximate: true },
+    ] }));
     let snapshot = 0;
     const pendingWrites = new Set<Promise<void>>();
     const coverageDirectory = path.join(process.cwd(), '.nyc_output');

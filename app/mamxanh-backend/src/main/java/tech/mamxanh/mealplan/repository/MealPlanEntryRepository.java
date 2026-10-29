@@ -21,4 +21,9 @@ public interface MealPlanEntryRepository extends JpaRepository<MealPlanEntryEnti
     @Modifying
     @Query("delete from MealPlanEntryEntity entry where entry.mealPlanId = :mealPlanId")
     int deleteAllByMealPlanId(@Param("mealPlanId") long mealPlanId);
+
+    @Modifying
+    @Query("delete from MealPlanEntryEntity entry where entry.mealPlanId = :mealPlanId and entry.mealDate >= :fromDate")
+    int deleteAllByMealPlanIdAndMealDateGreaterThanEqual(@Param("mealPlanId") long mealPlanId,
+            @Param("fromDate") LocalDate fromDate);
 }

@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M10
 > **File:** `docs/requirements/use-cases/nutrition.md`
-> **Version:** v2.10.0
+> **Version:** v2.13.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-20
+> **Last Updated:** 2026-10-27
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -63,7 +63,7 @@ Hồ sơ hợp lệ được lưu với `date_of_birth`; tuổi không được 
 ### UC-35.2 — Xem BMI và phân loại thể trạng tham khảo
 
 #### Goal
-Cho Member xem BMI tham khảo được tính từ hồ sơ đã lưu, không coi đó là chẩn đoán y tế.
+Cho Member xem BMI tham khảo đã lưu cùng hồ sơ, không coi đó là chẩn đoán y tế.
 
 #### Primary Actor
 `Member` đã đăng nhập.
@@ -80,11 +80,11 @@ Member đã xác nhận đủ điều kiện; hồ sơ có chiều cao và cân 
 #### Main Flow
 1. Member mở hồ sơ dinh dưỡng.
 2. Hệ thống hiển thị tuyên bố từ chối trách nhiệm y tế.
-3. Hệ thống tính BMI từ cân nặng và chiều cao, làm tròn một chữ số thập phân.
-4. Hệ thống hiển thị BMI cùng phân loại thể trạng tham khảo và cảnh báo đây không phải chẩn đoán.
+3. Hệ thống đọc BMI đã lưu cùng hồ sơ và hiển thị với phân loại thể trạng tham khảo; khi Member lưu hoặc cập nhật chiều cao/cân nặng, hệ thống tính và lưu BMI mới.
+4. Hệ thống cảnh báo BMI không phải chẩn đoán y tế.
 
 #### Postconditions
-BMI và phân loại tham khảo được hiển thị riêng tư cho Member; dữ liệu hồ sơ không bị thay đổi.
+BMI đã lưu và phân loại tham khảo được hiển thị riêng tư cho Member; việc xem không tính lại hoặc thay đổi BMI đã lưu.
 
 #### Traceability
 - **Parent FR:** [FR-35](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-35).
@@ -162,16 +162,17 @@ Member chọn yêu cầu tạo thực đơn dinh dưỡng từ Lịch ăn tuần
 - Member có gói Pro còn hiệu lực cho tính năng này (FR-10).
 
 #### Main Flow
-1. Member chọn khu vực “Dành cho bạn” trong trang Lịch ăn, chọn tuần đích và một trong hai chế độ: “Dựa trên hồ sơ” hoặc “Theo mong muốn tuần này”.
+1. Member chọn khu vực “Dành cho bạn” trong trang Lịch ăn của tuần hiện tại và một trong hai chế độ: “Dựa trên hồ sơ” hoặc “Theo mong muốn tuần này”.
 2. Với “Dựa trên hồ sơ”, hệ thống đọc mục tiêu chung đã lưu nếu có; nếu mục tiêu null, hệ thống chỉ dùng các dữ liệu hồ sơ và ràng buộc hiện có để tạo menu cân bằng, không hỏi thêm mục tiêu.
 3. Với “Theo mong muốn tuần này”, Member chọn mục tiêu kế hoạch ăn và tùy chọn nguyên liệu muốn có/cần tránh. Câu trả lời chỉ dùng trong request này, không được ghi vào FR-35 hoặc tự động tái sử dụng cho tuần khác.
 4. Backend xác minh entitlement Pro, eligibility FR-38 và hồ sơ dinh dưỡng hợp lệ trước khi gọi Gemini.
 5. Hệ thống lấy các Recipe Post công khai có dữ liệu dinh dưỡng đáng tin cậy, phù hợp với loại ăn chay và dị ứng/cần tránh của Member. Trong chế độ tuần này, công thức chứa bất kỳ nguyên liệu nào trong danh sách cần tránh bị loại khỏi pool trước khi gọi Gemini; nguyên liệu muốn có chỉ được ưu tiên mềm trong pool còn lại. Nếu một công thức có cả nguyên liệu muốn có và nguyên liệu cần tránh, công thức đó vẫn bị loại.
-6. Hệ thống gửi cho Gemini các ứng viên nội bộ và chỉ phần dữ liệu cần thiết để đề xuất thực đơn; yêu cầu chỉ chọn ID công thức có sẵn. Gemini không được tính hoặc phát minh chỉ tiêu dinh dưỡng.
-7. Gemini trả đúng 21 ID theo thứ tự ngày/bữa. Nếu thiếu công thức khác nhau, có thể lặp nhưng không lặp cùng món ở hai bữa liền kề. Backend kiểm tra lại toàn bộ ID, trạng thái công khai, ràng buộc và dinh dưỡng trước khi trả preview để tiếp tục UC-36.2.
+6. Hệ thống dùng BMI cùng hồ sơ và mức tham khảo chín chỉ tiêu để cá nhân hóa việc xếp hạng/phối hợp món. Hệ thống chỉ gửi cho Gemini danh sách công thức hợp lệ, dữ liệu dinh dưỡng cần thiết và yêu cầu xếp hạng ID; không gửi chiều cao, cân nặng hoặc BMI nếu không cần thiết cho xử lý.
+7. Backend lấy thứ hạng công thức do Gemini trả về và phối hợp một hoặc nhiều công thức công khai, mỗi công thức một khẩu phần, cho từng bữa từ hôm nay đến hết Chủ nhật hiện tại. Mỗi ngày trong khoảng đề xuất vẫn có ba bữa cố định. Nếu thiếu công thức khác nhau, có thể lặp giữa các bữa nhưng không lặp cùng món trong cùng một bữa; ưu tiên giảm lặp liên tiếp. Các ngày trước hôm nay được đánh dấu đã qua, không có món AI đề xuất; tuần tương lai nằm ngoài phạm vi tạo menu.
+8. Backend kiểm tra toàn bộ ID, trạng thái công khai, ràng buộc và dinh dưỡng, rồi tính lại tổng mỗi ngày và kcal từng bữa từ dữ liệu tin cậy. Hệ thống ưu tiên đạt mục tiêu kcal ngày và phân bổ 25%/37,5%/37,5% cho sáng/trưa/tối, chấp nhận ±5 điểm phần trăm cho từng bữa; không cần khớp chính xác tỷ lệ trung tâm. Nếu pool không đáp ứng được cả ba khoảng, hệ thống chọn phương án có độ lệch phân bổ nhỏ nhất. Trong các phương án có mức đáp ứng phân bổ năng lượng tương đương, hệ thống tối đa hóa số trong tám chỉ tiêu dinh dưỡng còn lại đạt mức tham khảo; nếu bằng nhau, ưu tiên phương án có tổng chênh lệch tương đối nhỏ hơn. Preview chỉ hiển thị tổng dinh dưỡng theo ngày và kcal/tỷ lệ mỗi bữa, không phân loại thiếu/thừa. BMI không tự thay đổi các mức mục tiêu FR-35.
 
 #### Alternative Flows
-- Nếu pool không có công thức phù hợp, hệ thống báo không thể tạo menu và không gọi bước ghi lịch. Nếu pool có ít hơn 21 công thức, hệ thống được lặp món nhưng tránh lặp ở hai bữa liền kề.
+- Nếu pool không có công thức phù hợp, hệ thống báo không thể tạo menu và không gọi bước ghi lịch. Nếu pool tin cậy không đủ phối hợp để đáp ứng các mức tham khảo, hệ thống vẫn có thể trả phương án phù hợp nhất nhưng phải nêu rõ chênh lệch; không bịa món hoặc số liệu để lấp khoảng thiếu.
 
 #### Exception/Security Flows
 - Nếu entitlement không hợp lệ, Backend từ chối trước khi gọi Gemini và hướng dẫn nâng cấp.
@@ -184,7 +185,7 @@ Khi tạo thành công, có kết quả đề xuất cần được hệ thống
 
 #### Traceability
 - **Parent FR:** [FR-36](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36).
-- **Relevant BR:** [BR-02](../srs/BUSINESS-RULES.md#br-02), [BR-03](../srs/BUSINESS-RULES.md#br-03), [BR-30](../srs/BUSINESS-RULES.md#br-30), [BR-31](../srs/BUSINESS-RULES.md#br-31), [BR-40](../srs/BUSINESS-RULES.md#br-40), [BR-50](../srs/BUSINESS-RULES.md#br-50).
+- **Relevant BR:** [BR-02](../srs/BUSINESS-RULES.md#br-02), [BR-03](../srs/BUSINESS-RULES.md#br-03), [BR-30](../srs/BUSINESS-RULES.md#br-30), [BR-31](../srs/BUSINESS-RULES.md#br-31), [BR-39](../srs/BUSINESS-RULES.md#br-39), [BR-40](../srs/BUSINESS-RULES.md#br-40), [BR-50](../srs/BUSINESS-RULES.md#br-50).
 - **Relevant NFR:** [NFR-04](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-04), [NFR-08](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08), [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09), [NFR-20](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-20).
 
 #### Acceptance Coverage
@@ -214,8 +215,8 @@ Hệ thống đã nhận được phản hồi AI cho yêu cầu hợp lệ.
 #### Main Flow
 1. Hệ thống kiểm tra mỗi món được đề xuất khớp với Recipe Post đang công khai trong candidate pool và phù hợp các ràng buộc cứng.
 2. Hệ thống loại bỏ mục không hợp lệ.
-3. Hệ thống trình bày đủ 21 vị trí theo ngày/bữa, hình ảnh, tên công thức, dinh dưỡng mỗi khẩu phần và tổng hợp do Backend tính từ dữ liệu có nguồn. Mục tiêu tuần chỉ giải thích ưu tiên lựa chọn món; không hứa hẹn thay đổi cân nặng và không thay đổi mức mục tiêu FR-35.
-4. Member xem, giữ lại hoặc bỏ từng món; nếu muốn lưu, Member tiếp tục UC-36.3.
+3. Hệ thống trình bày bảy ngày trong tuần đang xem. Ngày trước hôm nay được ghi rõ là đã qua và AI không đề xuất món; chỉ các ngày từ hôm nay đến hết tuần hiện tại có bữa ăn AI. Mỗi bữa có thể chứa nhiều món, mỗi món một khẩu phần, dinh dưỡng mỗi món và tổng chín chỉ tiêu của ngày do Backend tính từ dữ liệu có nguồn. Chỉ hiển thị tổng dinh dưỡng từng ngày; với kcal, hiển thị thêm mục tiêu, tỷ lệ và mức thực tế của từng bữa so với tổng mục tiêu ngày. Tỷ lệ hướng tới 25%/37,5%/37,5% cho sáng/trưa/tối, dung sai ±5 điểm phần trăm. BMI cùng hồ sơ giúp cá nhân hóa lựa chọn nhưng không tự thay đổi mức mục tiêu FR-35; kết quả không hứa hẹn thay đổi cân nặng.
+4. Member xem, giữ lại hoặc bỏ từng món trong bữa; nếu muốn lưu, Member tiếp tục UC-36.3.
 
 #### Alternative Flows
 - Member đóng bản xem trước hoặc hủy đề xuất; Meal Plan không thay đổi.
@@ -234,6 +235,8 @@ Member đã xem kết quả; trạng thái Meal Plan không đổi cho tới khi
 - [AC-36.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36) — Kết quả dựa trên ứng viên đủ điều kiện.
 - [AC-36.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36) — Loại bỏ công thức ngoài hệ thống.
 - [AC-36.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36) — Kết quả tuân thủ ràng buộc ăn chay/dị ứng.
+- [AC-36.13, AC-36.14](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36) — Phối hợp nhiều món và tối ưu chín chỉ tiêu theo ngày.
+- [AC-36.15](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36) — Phân bổ năng lượng theo ba bữa với dung sai ±5 điểm phần trăm.
 
 <a id="uc-36-3"></a>
 ### UC-36.3 — Xác nhận áp dụng thực đơn gợi ý vào Lịch ăn tuần
@@ -251,14 +254,14 @@ Member xác nhận lưu các món trong bản xem trước.
 Member đang xem kết quả hợp lệ từ UC-36.2 và có quyền cập nhật Meal Plan của chính mình.
 
 #### Main Flow
-1. Member xem cảnh báo rằng xác nhận sẽ thay toàn bộ món trong tuần đích, rồi xác nhận các vị trí đã chọn.
-2. Hệ thống chuyển các vị trí đã xác nhận qua ranh giới cập nhật Meal Plan tuần mà FR-09 sở hữu.
-3. Trong một giao dịch, Backend kiểm tra lại entitlement, eligibility, ràng buộc an toàn và trạng thái công khai/dữ liệu dinh dưỡng của từng công thức; sau đó thay toàn bộ entries của tuần bằng các vị trí được chọn.
+1. Member xem cảnh báo rằng xác nhận sẽ thay các mục từ hôm nay đến hết tuần hiện tại, còn các ngày đã qua được giữ nguyên; sau đó xác nhận các món đã chọn trong từng bữa.
+2. Hệ thống chuyển các món và khẩu phần đã xác nhận qua ranh giới cập nhật Meal Plan tuần mà FR-09 sở hữu.
+3. Trong một giao dịch, Backend kiểm tra lại entitlement, eligibility, ràng buộc an toàn và trạng thái công khai/dữ liệu dinh dưỡng của từng công thức; sau đó thay toàn bộ entries của tuần bằng các món đã chọn.
 4. Nếu kiểm tra hoặc ghi bất kỳ vị trí nào thất bại, giao dịch rollback, giữ nguyên lịch cũ và trả lỗi. Nếu thành công, hệ thống thông báo việc thay lịch hoàn tất.
 
 #### Alternative Flows
 - Member chưa xác nhận hoặc hủy thao tác: không ghi hoặc thay đổi Meal Plan.
-- Member bỏ chọn một số ô: chỉ các ô còn chọn được ghi; không còn món cũ nào của tuần đích được giữ lại.
+- Member bỏ chọn một số món: chỉ các món còn chọn được ghi; không còn món cũ nào của tuần đích được giữ lại.
 
 #### Postconditions
 Chỉ các món được Member xác nhận mới được áp dụng; entries cũ của toàn tuần được thay nguyên tử theo luồng chung FR-09. Thất bại không để lại cập nhật một phần.

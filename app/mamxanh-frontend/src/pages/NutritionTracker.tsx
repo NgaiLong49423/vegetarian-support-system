@@ -14,6 +14,12 @@ import { useAuth } from '../components/AuthContext';
 
 type Scope = 'day' | 'week';
 const mealNames = { BREAKFAST: 'Bữa sáng', LUNCH: 'Bữa trưa', DINNER: 'Bữa tối' } as const;
+const mealBadgeTones = { BREAKFAST: 'amber', LUNCH: 'leaf', DINNER: 'brand' } as const;
+const mealColorClasses: Record<keyof typeof mealNames, string> = {
+  BREAKFAST: 'bg-amber-500',
+  LUNCH: 'bg-leaf-600',
+  DINNER: 'bg-brand-600',
+};
 const numberFormat = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 });
 const todayKey = () => {
   const today = new Date();
@@ -29,6 +35,7 @@ export function NutritionTracker() {
   const [selectedDate, setSelectedDate] = useState(todayKey);
   const [scope, setScope] = useState<Scope>('day');
   const [data, setData] = useState<NutritionData | null>(null);
+  const [recipeCovers, setRecipeCovers] = useState<Record<number, string | null>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ApiError | null>(null);
   const [retry, setRetry] = useState(0);
@@ -48,6 +55,12 @@ export function NutritionTracker() {
     setLoading(true);
     setError(null);
     setData(null);
+    setRecipeCovers({});
+    mealPlanApi.getWeek(weekStart)
+      .then((plan) => {
+        if (active) setRecipeCovers(Object.fromEntries(plan.entries.map((entry) => [entry.entryId, entry.recipeCoverUrl])));
+      })
+      .catch(() => { if (active) setRecipeCovers({}); });
     mealPlanApi.nutrition(weekStart)
       .then((result) => { if (active) setData(result); })
       .catch((cause) => { if (active) setError(asApiError(cause)); })
@@ -90,7 +103,8 @@ export function NutritionTracker() {
   const targets = data?.targets ?? [];
   const dailyNutrients = selectedDay?.nutrients ?? {};
   const values = scope === 'day' ? dailyNutrients : data?.weeklyAverage ?? {};
-  const macroKeys = ['ENERGY_KCAL', 'PROTEIN_G', 'CARBOHYDRATE_G', 'TOTAL_FAT_G'];
+  const primaryKeys = ['ENERGY_KCAL', 'PROTEIN_G', 'CARBOHYDRATE_G', 'TOTAL_FAT_G'];
+  const micronutrientKeys = ['FIBER_G', 'CALCIUM_MG', 'IRON_MG', 'VITAMIN_B12_MCG', 'ZINC_MG'];
   const toneFor = (index: number) => index % 2 === 0 ? 'brand' as const : 'leaf' as const;
   const meals = selectedDay?.entries ?? [];
   const energyByMeal = Object.fromEntries(Object.keys(mealNames).map((mealType) => [
@@ -318,15 +332,20 @@ export function NutritionTracker() {
               <div>
                 <strong>Một phần dữ liệu dinh dưỡng còn thiếu.</strong>
                 <p className="mt-1 text-xs leading-relaxed text-amber-800">
-                  Các số liệu tính được vẫn được hiển thị và đưa vào báo cáo; xem danh sách món thiếu dữ liệu trong phần phân tích.
+                  Các số liệu tính được vẫn được hiển thị và đưa vào báo cáo, xem danh sách món thiếu dữ liệu trong phần phân tích.
                 </p>
               </div>
             </div>
           )}
 
-          {/* 6. Four Main Macronutrient Cards */}
-          <div className="mb-6 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
-            {macroKeys.map((key, index) => {
+          {/* 6. Main nutrition metrics and compact micronutrients */}
+          <section aria-label="Tổng quan dinh dưỡng" className="mb-6 space-y-4">
+            <div>
+              <h3 className="text-base font-extrabold text-ink">Chỉ tiêu chính</h3>
+              <p className="mt-1 text-xs text-ink-muted">{scope === 'week' ? 'Giá trị trung bình mỗi ngày trong 7 ngày.' : 'Tổng từ khẩu phần dự kiến đã lên lịch trong ngày.'}</p>
+            </div>
+            <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+            {primaryKeys.map((key, index) => {
               const metric = targets.find((target) => target.key === key);
               if (!metric) return null;
               const actual = values[key];
@@ -336,10 +355,10 @@ export function NutritionTracker() {
                 <Card
                   key={key}
                   hover
-                  className="flex flex-col justify-between p-5 border-brand-100/90 shadow-2xs transition-all duration-200"
+                  className="h-full min-h-48 p-5 border-brand-100/90 shadow-2xs transition-all duration-200"
                 >
-                  <div>
-                    <div className="mb-2.5 flex items-start justify-between gap-2">
+                  <div className="flex h-full flex-col">
+                    <div className="mb-2.5 flex min-h-7 items-center justify-between gap-2">
                       <p className="text-xs sm:text-sm font-bold text-ink-soft uppercase tracking-wider">{metric.label}</p>
                       {goal != null && (
                         <Badge tone={toneFor(index)} soft={pct === 0} className="font-extrabold text-[11px]">
@@ -347,33 +366,53 @@ export function NutritionTracker() {
                         </Badge>
                       )}
                     </div>
-                    <div className="mt-1 flex items-baseline gap-1.5 flex-wrap">
-                      <span className="text-2xl sm:text-3xl font-black tracking-tight text-ink">
+                    <div className="flex min-h-10 items-end">
+                      <span className="text-2xl leading-tight font-black tracking-tight text-ink sm:text-3xl">
                         {displayValue(actual, metric.unit)}
                       </span>
-                      {goal != null && (
-                        <span className="text-xs font-semibold text-ink-muted">
-                          / {numberFormat.format(goal)} {metric.unit}
-                        </span>
-                      )}
                     </div>
-                    {goal != null && (
-                      <div className="my-3">
-                        <ProgressBar pct={pct} tone={toneFor(index)} />
-                      </div>
-                    )}
+                    <p className="mt-1 min-h-5 text-xs font-semibold text-ink-muted">
+                      {goal == null ? 'Chưa có mức tham khảo' : `/ ${numberFormat.format(goal)} ${metric.unit}`}
+                    </p>
+                    <div className="mt-3">
+                      {goal != null ? <ProgressBar pct={pct} tone={toneFor(index)} /> : <div aria-hidden="true" className="h-2 rounded-full bg-brand-100" />}
+                    </div>
                   </div>
-                  <p className="text-xs leading-normal text-ink-muted border-t border-brand-50/80 pt-2.5 mt-1">
-                    {actual == null
-                      ? 'Chưa đủ dữ liệu để tổng hợp chỉ tiêu này.'
-                      : scope === 'week'
-                      ? 'Trung bình mỗi ngày trong 7 ngày.'
-                      : 'Tổng từ khẩu phần đã lên lịch trong ngày.'}
-                  </p>
                 </Card>
               );
             })}
-          </div>
+            </div>
+            <Card className="p-4 sm:p-5 border-brand-100/90 shadow-2xs">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 className="font-bold text-ink">Chất xơ &amp; vi chất</h3>
+                  <p className="mt-0.5 text-xs text-ink-muted">Các chỉ tiêu bổ sung theo khẩu phần đã lên lịch.</p>
+                </div>
+                <span className="rounded-full bg-raised px-2.5 py-1 text-[11px] font-semibold text-ink-muted">{micronutrientKeys.length} chỉ tiêu</span>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+                {micronutrientKeys.map((key) => {
+                  const metric = targets.find((target) => target.key === key);
+                  if (!metric) return null;
+                  const actual = values[key];
+                  const goal = metric.minimum;
+                  const hasGoal = goal != null && goal > 0;
+                  const pct = actual == null || !hasGoal ? null : Math.min(100, Math.round(actual / goal * 100));
+                  return <div key={key} className="min-w-0 rounded-xl border border-brand-100 bg-raised/45 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-xs font-semibold text-ink-soft">{metric.label}</p>
+                      {pct != null && <span className="shrink-0 text-[11px] font-bold text-brand-700">{pct}%</span>}
+                    </div>
+                    <p className="mt-2 truncate text-base font-extrabold text-ink" title={actual == null ? 'Chưa đủ dữ liệu' : `${numberFormat.format(actual)} ${metric.unit}`}>
+                      {actual == null ? 'Chưa đủ dữ liệu' : `${numberFormat.format(actual)} ${metric.unit}`}
+                    </p>
+                    {hasGoal && <p className="mt-0.5 text-[11px] text-ink-muted">Mức tham khảo: {numberFormat.format(goal)} {metric.unit}</p>}
+                    {pct != null && <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-brand-100"><div className="h-full rounded-full bg-leaf-600" style={{ width: `${pct}%` }} /></div>}
+                  </div>;
+                })}
+              </div>
+            </Card>
+          </section>
 
           {/* 7. Energy Distribution Panel */}
           <Card className="mb-6 p-5 sm:p-6 border-brand-100/90 shadow-2xs">
@@ -387,21 +426,21 @@ export function NutritionTracker() {
             {knownMealEnergy > 0 ? (
               <>
                 <div className="flex h-4 overflow-hidden rounded-full shadow-inner bg-raised">
-                  {Object.entries(energyByMeal).map(([mealType, amount], index) => (
+                  {Object.entries(energyByMeal).map(([mealType, amount]) => (
                     <div
                       key={mealType}
-                      className={index === 0 ? 'bg-amber-400' : index === 1 ? 'bg-brand-500' : 'bg-brand-700'}
+                      className={mealColorClasses[mealType as keyof typeof mealNames]}
                       style={{ width: `${amount / knownMealEnergy * 100}%` }}
                     />
                   ))}
                 </div>
                 <div className="mt-3.5 flex flex-wrap gap-x-6 gap-y-2 text-xs text-ink-muted">
-                  {Object.entries(mealNames).map(([type, label], index) => {
+                  {Object.entries(mealNames).map(([type, label]) => {
                     const amount = energyByMeal[type as keyof typeof mealNames] || 0;
                     const pct = Math.round(amount / knownMealEnergy * 100);
                     return (
                       <span key={type} className="inline-flex items-center gap-1.5 font-medium">
-                        <span className={`inline-block h-2.5 w-2.5 rounded-full ${index === 0 ? 'bg-amber-400' : index === 1 ? 'bg-brand-500' : 'bg-brand-700'}`} />
+                        <span className={`inline-block h-2.5 w-2.5 rounded-full ${mealColorClasses[type as keyof typeof mealNames]}`} />
                         <span>{label} · {displayValue(amount || null, 'kcal')} ({pct}%)</span>
                       </span>
                     );
@@ -438,12 +477,13 @@ export function NutritionTracker() {
             <div className="mb-6 grid gap-4 md:grid-cols-3">
               {meals.map((meal) => (
                 <Card key={meal.entryId} hover className="overflow-hidden border-brand-100/90 shadow-2xs">
-                  <div className="flex h-36 items-center justify-center bg-raised text-ink-muted">
+                  <div className="relative flex h-36 items-center justify-center bg-raised text-ink-muted">
                     <Utensils className="h-8 w-8" />
+                    {recipeCovers[meal.entryId] && <img src={recipeCovers[meal.entryId]!} alt={meal.recipeTitle} loading="lazy" className="absolute inset-0 h-full w-full object-cover" onError={(event) => event.currentTarget.remove()} />}
                   </div>
                   <div className="p-4">
                     <div className="mb-2">
-                      <Badge tone="brand" soft={false}>{mealNames[meal.mealType]}</Badge>
+                      <Badge tone={mealBadgeTones[meal.mealType]} soft={false}>{mealNames[meal.mealType]}</Badge>
                     </div>
                     <p className="line-clamp-2 font-bold text-ink">{meal.recipeTitle}</p>
                     <p className="mt-2 text-sm text-ink-muted">{numberFormat.format(meal.plannedServings)} phần dự kiến</p>
@@ -454,7 +494,7 @@ export function NutritionTracker() {
                       </Link>
                     </div>
                     {!meal.complete && (
-                      <p className="mt-2 text-xs text-amber-800">Một số chỉ tiêu còn thiếu; số liệu hiện có vẫn được dùng.</p>
+                      <p className="mt-2 text-xs text-amber-800">Một số chỉ tiêu còn thiếu, số liệu hiện có vẫn được dùng.</p>
                     )}
                   </div>
                 </Card>

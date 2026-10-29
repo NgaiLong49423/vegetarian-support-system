@@ -3,6 +3,7 @@ import { guestChatIdentity } from '../lib/guestChat';
 
 export type Choice = { code: string; label: string };
 export type RecipeUnitOption = { unitId: number; code: string; name: string; dimension: string };
+export type IngredientRecipeUnit = { id: number; code: string; name: string; dimension: string; gramsPerUnit: number; approximate: boolean };
 export type IngredientOption = { ingredientId: number; name: string };
 
 export interface RecipeFormOptions {
@@ -210,13 +211,26 @@ export interface AiMenuMeal {
   recipeId: number;
   recipeTitle: string;
   coverUrl: string | null;
+  plannedServings: number;
   nutritionPerServing: Record<string, number>;
   reason: string;
+}
+export interface AiMenuNutritionTarget {
+  key: string;
+  label: string;
+  minimum: number | null;
+  maximum: number | null;
+  unit: string;
+  referenceType: string;
 }
 export interface AiMenuPreview {
   weekStartDate: string;
   mode: AiMenuMode;
   goal: AiMenuGoal | null;
+  energyTargetKcal: number;
+  bmi: number;
+  bmiCategory: string;
+  dailyTargets: AiMenuNutritionTarget[];
   meals: AiMenuMeal[];
   nutritionDisclaimer: string;
 }
@@ -327,6 +341,7 @@ export const recipesApi = {
     () => apiClient.post<{ items: RecipePost[] }>(`/recipes/${recipeId}/related/ai`, undefined, { timeout: 60_000 }),
   ),
   getFormOptions: () => request(() => apiClient.get<RecipeFormOptions>('/recipes/form-options')),
+  getIngredientUnits: (ingredientId: number) => request(() => apiClient.get<IngredientRecipeUnit[]>(`/ingredients/${ingredientId}/units`)),
   searchIngredients: (query: string) => request(
     () => apiClient.get<IngredientOption[]>('/recipes/ingredient-options', { params: { query } }),
   ),
@@ -372,7 +387,9 @@ export const recipeApi = {
       '/recipes/mine', { params: { page, size } },
     )).data,
   getForAuthor: async (recipeId: number) => (await apiClient.get<RecipePost>(`/recipes/${recipeId}/manage`)).data,
-  getReferenceData: async () => (await apiClient.get<RecipeReferenceData>('/recipes/reference-data')).data,
+  getReferenceData: async (keyword?: string) => (await apiClient.get<RecipeReferenceData>('/recipes/reference-data', {
+    params: keyword ? { keyword } : undefined,
+  })).data,
   update: async (recipeId: number, payload: UpdateRecipePost) =>
     (await apiClient.put<RecipePost>(`/recipes/${recipeId}`, payload)).data,
   delete: (recipeId: number) => apiClient.delete<void>(`/recipes/${recipeId}`),

@@ -1,14 +1,13 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.103.1
+> **Version:** v2.124.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-25
+> **Last Updated:** 2026-10-30
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
-
 
 ## 2026-10-24 — Guest Chatbot Access and Technical Rate Limiting
 
@@ -32,6 +31,498 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Limit chatbot Gemini calls to a separate ten-second provider timeout without changing other AI workflows.
 - Discard pending chat responses after an account or recipe context changes.
 
+## 2026-10-28 — Track Recipe Sources and Item Provenance in Shopping Lists
+
+**Status:** Committed — `2d04630c3cef07fb79e1a5fda3d2c0575c60a8f1`.
+
+**Scope:** Show recipes contributing to each shopping list and let Members adjust combined servings without changing Meal Plan entries.
+
+### Added
+
+- Store per-occurrence recipe source, serving count, and optional meal date/type; show a horizontal recipe carousel with one image, title, and combined serving total per recipe. Open the recipe detail from a card, adjust the combined servings alongside its ingredients, and return to the refreshed shopping list after saving.
+- Record each manually added contribution separately and require a selected catalog result before assigning a supported ingredient identity. Incomplete recipes are omitted from the recipe carousel; removing an aggregated ingredient removes all its list contributions while preserving recipe history as incomplete.
+
+### Changed
+
+- Group repeated recipe appearances into one card without displaying meal dates/types; distribute adjusted total servings proportionally across saved occurrences and recalculate their ingredient contributions. The recipe detail supports shopping-list context without changing Meal Plan behavior. Replace always-visible per-item source lines with a circular details control and a grouped recipe-contribution dialog showing the combined recipe servings.
+- Require Members to confirm a shopping-list item addition or quantity change before saving, with a confirmation that names the item and describes the quantity increase or decrease when conversion is safe; manual contribution edits also confirm the named item and the amount change. Let Members edit the total amount of a recipe-linked ingredient while preserving a recipe-required minimum; show an immediate inline warning and disable saving below that minimum without displaying a routine amount breakdown. The Backend also rejects totals below the minimum. Keep the recipe unit fixed while editing that total; manual-only items remain editable. Deleting a whole item removes both recipe and manual amounts. Add catalog search and limit supported items to units returned for the selected ingredient; free-text items remain custom and have no catalog image.
+- Classify surviving sibling contributions from an incomplete recipe occurrence as `UNKNOWN`. Keep them in the list total and item detail, but exclude them from the recipe carousel and required minimum. When reducing a total, consume `UNKNOWN` before Member-added amounts; increases remain Member-added. Deleting the item itself removes its own contributions. Extend FR-53 and add Flyway V29 for this lifecycle.
+- Consolidate all `UNKNOWN` contributions for one ingredient into a single total row in its detail dialog. Refresh the full shopping checklist after deleting an item so recipe cards update immediately without a page reload.
+- Add a three-dot menu to each shopping-list recipe card for quick serving changes and removing all occurrences of that recipe from the current list. Confirmations preview affected ingredient amounts; removal recalculates shared rows and deletes rows that no longer have any source, without changing the blog post or meal plan.
+- Extend FR-53 and FR-54 acceptance criteria for recipe provenance and quantity recalculation. Existing lists without recoverable source data remain unchanged.
+- Remove the duplicate serving-count input from the meal-plan recipe panel so the serving control appears only once.
+
+### Fixed
+
+- None.
+
+## 2026-10-28 — Improve AI Meal-Planning Preview Readability
+
+**Status:** Committed — `2d04630c3cef07fb79e1a5fda3d2c0575c60a8f1`.
+
+**Scope:** Put the current and upcoming dates before past dates in the nutrition-based AI menu preview.
+
+### Changed
+
+- Order the preview with today and future dates first, then show one “NGÀY ĐÃ QUA” divider before past dates. Applying the preview still uses each meal's original date and selection.
+- Improve contrast for the AI recipe assistant's labels and controls in dark mode.
+
+### Fixed
+
+- None.
+
+## 2026-10-28 — Seed the Demo Expert Nutrition Profile
+
+**Status:** Committed — `2d04630c3cef07fb79e1a5fda3d2c0575c60a8f1`.
+
+**Scope:** Populate profile fields for `demo-expert@mamxanh.local` in the local demonstration database.
+
+### Added
+
+- Add an idempotent local demo-profile fixture that fills the demo Expert's missing nutrition-profile fields without overwriting an already completed profile; the fixture does not describe a real person.
+
+### Fixed
+
+- None.
+
+## 2026-10-27 — Add Ingredient Unit Conversion to Public Detail
+
+**Status:** Committed — `c4794dba98b0a3d9e0a150ee08e8c7611ece3a67`.
+
+**Scope:** Let Guests and Members convert between units supported by the ingredient they are viewing.
+
+### Added
+
+- Add a two-way ingredient unit converter using per-ingredient gram factors, with retry and estimated-value guidance.
+
+### Changed
+
+- Extend FR-62 and its API integration guidance with the public unit conversion behavior.
+
+### Fixed
+
+- None.
+
+## 2026-10-27 — Standardize Ingredient Recipe Units
+
+**Status:** Committed — `c4794dba98b0a3d9e0a150ee08e8c7611ece3a67`.
+
+**Scope:** Add per-ingredient support for standardized recipe units and precise shopping aggregation.
+
+### Added
+
+- Add the `mg` unit, per-ingredient unit options, and grouped volume conversion management.
+
+### Changed
+
+- Limit new recipe unit choices to supported standard units, let administrators enter ingredient conversion factors directly without source metadata, and preserve sub-gram shopping quantities to six decimal places.
+
+### Fixed
+
+- Prevent legacy units and unsupported conversions from being selected for new recipe ingredients.
+
+## 2026-10-27 — Fix AI Chat Questions About the Current Recipe
+
+**Status:** Committed — `b294a28ebc1b2a8e1fce65f00b5dec3561b43325`.
+
+**Scope:** Let members ask ordinary questions about the recipe currently open without entering recipe discovery mode.
+
+### Added
+
+- Add regression tests for current-recipe questions and explicit requests to find another recipe.
+
+### Changed
+
+- Exclude questions that refer to the current recipe from catalog discovery unless the member explicitly requests another recipe or dish.
+
+### Fixed
+
+- Return direct answers to current-recipe questions instead of the generic invalid AI response error.
+
+## 2026-10-27 — Add Recipe Context to AI Chat
+
+**Status:** Committed — `dac525d5`.
+
+**Scope:** Help members start a focused conversation about the recipe they are viewing.
+
+### Added
+
+- Show the recipe title, a contextual welcome message and recipe-specific question suggestions when opening AI chat from a recipe detail page.
+- Embed the current recipe article in the chat with its cover image, author, description, servings, preparation details, full ingredient list and instructions.
+
+### Changed
+
+- Pass the recipe article preview through the frontend chat context while keeping the existing recipe ID request contract authoritative for AI responses.
+
+### Fixed
+
+- Replace the empty, generic recipe-chat state with a useful opening prompt.
+
+## 2026-10-27 — Limit Nutrition AI Menus to the Current Week ([PR #193](https://github.com/NgaiLong49423/vegetarian-support-system/pull/193))
+
+**Status:** Committed — `cc719355`.
+
+**Scope:** Keep FR-36 proposals relevant to the remaining days of the current week and preserve entries for days that have passed.
+
+### Added
+
+- Compose multiple trusted, one-serving recipes per meal to pursue the member's daily energy shares and nutrition targets.
+- Mark past days in the preview and show daily nutrient totals with each meal's kcal share.
+
+### Changed
+
+- Generate suggestions from today through Sunday only; reject applying meals outside that range and preserve past meal-plan entries.
+- Show nutrition totals without classifying nutrients as deficient or excessive.
+
+### Fixed
+
+- None.
+## 2026-10-26 — Accept Today's Vietnam Date as an Ingredient Reference Date (Issue #159)
+
+**Status:** Committed — `ed9cd29`.
+
+**Scope:** Fix BUG-059 in the FR-41 ingredient catalog: from 0:00 to 6:59 in Vietnam, adding an ingredient with the default reference date failed with `400` because the browser counted the day in Vietnam time while the Backend in a UTC container was still on the previous day.
+
+### Added
+
+- Add SQL Server integration tests that move the application clock to 00:30 in Vietnam, including a check that the validation clock follows the application clock, and Playwright tests that open the add form in UTC, America/Los_Angeles and Asia/Ho_Chi_Minh with a fixed clock.
+
+### Changed
+
+- Judge Bean Validation date rules such as `@PastOrPresent` by the application `Clock` in Vietnam time instead of the server clock; this covers the ingredient `referenceDate` and the nutrition profile `dateOfBirth`.
+
+### Fixed
+
+- Accept today's Vietnam date as the ingredient `referenceDate` at any hour, default the add form to the Vietnam date in every browser time zone, and explain a future date in Vietnamese.
+## 2026-10-26 — Rank and Search Reported Posts on the Moderation Page (Issue #12)
+
+**Status:** Committed — `c24ae67`, `f15680e`.
+
+**Scope:** Deliver the Recipe Post side of FR-06 on the grouped report board of Issue #35: Administrators rank reported posts by report count, see the most common reason of each post and find a post by its title or author (UC-06.1, US-06.1). Hiding a post and locking its author stay the FR-28 decisions already on `/admin/bao-cao` (AC-06.2, AC-06.3). Comment reports wait for FR-48, as proposed in question Q71 on Issue #12.
+
+### Added
+
+- Add `query` (title, author name or author email, at most 200 characters, LIKE wildcards matched literally) and `sort` (`NEWEST` or `MOST_REPORTED`) to `GET /api/v1/admin/reports/groups`, and `topReasonCode`/`topReasonCount` to `AdminReportGroupResponse`; a tie goes to the reason reported most recently.
+- Add a search box and a sort select to the "Theo bài viết" view of `/admin/bao-cao`, and the most common reason with its count to each post card.
+- Add SQL Server integration tests for the ranking, the most common reason, the search and its validation, and for a new post that publishes at once while other reports are open or in review (AC-06.4), plus Playwright tests for the search, the sort and the reason line.
+
+### Changed
+
+- Rename the page and its admin menu entry to "Hậu kiểm nội dung", and document the new parameters in `docs/api/API.md` section 21 and the Backend and Frontend READMEs.
+## 2026-10-26 — Persist Nutrition Profile BMI
+
+**Status:** Committed — `d28503ca`.
+
+**Scope:** Keep each Member's saved BMI available when reopening their private nutrition profile.
+
+### Added
+
+- Add Flyway migration `V25__persist_nutrition_bmi.sql` and update the SQL Server schema snapshot to store BMI with the existing `USER` nutrition profile.
+- Backfill BMI once for existing profiles that consented to health-data storage.
+
+### Changed
+
+- Calculate and store BMI when a Member first saves or changes height/weight; return the saved BMI with current reference values when the profile is reopened.
+- Update FR-35 acceptance criteria and UC-35.2 to specify reading saved BMI and refreshing it only after height or weight changes.
+
+### Fixed
+
+- Keep the BMI panel populated after refreshing or revisiting the nutrition profile.
+
+## 2026-10-26 — Group Recipe Reports by Post for Administrators (Issue #35)
+
+**Status:** Committed — `fdcbf11`, `9972d22`.
+
+**Scope:** Deliver AC-30.4 of FR-30 on the FR-28 queue of Issue #33: Administrators see the reports on one Recipe Post as one group with its report count, then open each report with its reporter, status, decision and supplements (SRS 3.14).
+
+### Added
+
+- Add `GET /api/v1/admin/reports/groups` with one group per reported Recipe Post: the report count for the status filter, the count in each status, the newest matching report time and the author. Pages count posts, and the post with the newest matching report comes first.
+- Add the optional `recipeId` filter to `GET /api/v1/admin/reports` and `supplements` (oldest first) to `AdminReportResponse`, loaded in one query per page.
+- Open `/admin/bao-cao` grouped by post with one "Xem N báo cáo" button per post, keep the single-report queue under "Từng báo cáo" (`?xem=bao-cao`), and list the supplements in the report detail dialog.
+- Add the local-only demo seed `R__demo_sample_data_67_report_groups.sql` with two more reports on the post of seed 60, so the board shows a group of three reports from three accounts.
+- Add SQL Server integration tests for groups, the status filter, paging, the recipe filter, supplements and access, and Playwright tests for the grouped board and the supplements in the detail dialog.
+
+### Changed
+
+- Open the FR-28 Playwright and real-stack specs on the single-report view, and document the endpoints in `docs/api/API.md` sections 21 and 22, the seed in `database/README.md` and the board in the Backend and Frontend READMEs.
+
+### Fixed
+
+- Point the FR-30 line of the Backend README to `docs/api/API.md` section 22, which the develop sync in `d34c59b` left at section 21.
+
+## 2026-10-25 — Let Reporters Add Information to an Open Recipe Report (Issue #35)
+
+**Status:** Committed — `785f81f`, `87fffea`, `86a06ad`.
+
+**Scope:** Complete the Member side of FR-30 with the proposals of questions Q67 and Q68: reporters keep adding information to the report that is still open instead of filing another one, and the real recipe page can now send reports (AC-30.1, AC-30.2, SRS 3.14). The Administrator view of supplements and of reports grouped by recipe (AC-30.4) builds on the FR-28 queue of Issue #33 and is not part of this entry.
+
+### Added
+
+- Add `GET /api/v1/me/reports/{reportId}` so the reporter reads their own report with its supplements, and `POST /api/v1/me/reports/{reportId}/supplements` to add 10–500 characters while the report is `OPEN` or `IN_REVIEW`, at most five times; other accounts get `403 ACCESS_DENIED`.
+- Add migration `V23__report_supplement.sql` with the append-only `REPORT_SUPPLEMENT` table and the matching `database/schema.sql` snapshot.
+- Add the local-only demo seed `R__demo_sample_data_66_report_supplements.sql` with two supplements on the open demo report from seed 60, so its reporter sees them on the recipe page.
+- Add the "Báo cáo công thức" action and dialog to the real recipe page: six reasons, description rules, a sign-in prompt for Guests, and on `409 REPORT_ALREADY_OPEN` the open report with its supplements and a form to add more.
+- Add SQL Server integration tests for supplements, ownership, the limit under concurrent requests and the resolved state, Playwright tests for the dialog and a real-stack test from a duplicate report to a stored supplement.
+
+### Changed
+
+- Document the endpoints and error codes in `docs/api/API.md` section 22, the migration in `database/README.md` and the flow in the Backend and Frontend READMEs.
+- Keep one report form on the recipe page after syncing PR #189: `RecipeReportButton` and `reportsApi` stay, the unused `recipesApi.submitReport` is removed, and the PR #189 Playwright spec checks the shared dialog.
+
+### Fixed
+
+- None.
+
+## 2026-10-25 — Let Administrators Handle Recipe Post Reports (Issue #33)
+
+**Status:** Committed — `5c53627`, `fab3605`.
+
+**Scope:** Deliver FR-28 for Recipe Post reports: Administrators take a report into review, record one decision with a mandatory reason and apply the chosen sanction, while the report row keeps who decided what and when (SRS 3.12, BR-26, NFR-08). Comment reports (FR-48), account unlock and the moderation-outcome email stay out of this change.
+
+### Added
+
+- Add `GET /api/v1/admin/reports`, `GET /api/v1/admin/reports/status-counts`, `GET /api/v1/admin/reports/{reportId}`, `POST /api/v1/admin/reports/{reportId}/claim` and `POST /api/v1/admin/reports/{reportId}/resolve` for Administrators only, returning reporter and author accounts for review (AC-29.3).
+- Move an `OPEN` report to `IN_REVIEW` under the claiming Administrator with a row lock, so concurrent claims give one `200` and one `409 REPORT_STATUS_CONFLICT` (AC-28.1).
+- Resolve only a report held by the caller with `NO_VIOLATION`, `WARN_AUTHOR`, `HIDE_RECIPE` or `LOCK_AUTHOR` and a 10–500 character reason; hiding sets the post to `HIDDEN` and removes it from public reads and search, locking sets the author to `LOCKED` so existing tokens get `403 ACCOUNT_LOCKED` (AC-28.2–AC-28.5).
+- Write in-app notifications on resolution: a general result for the reporter and, for a sanction, the Administrator reason for the author, never containing the reporter name, email or report text (AC-49.4, BR-28).
+- Add migration `V22__report_handling_by_admin.sql` with `REPORT.handled_by` (FK to `USER`) and `CK_REPORT_decision`, and the matching `database/schema.sql` snapshot.
+- Add the local-only demo seed `R__demo_sample_data_65_report_moderation.sql`: one `OPEN` report, one `IN_REVIEW` report held by the demo Administrator and three `RESOLVED` reports (`NO_VIOLATION`, `WARN_AUTHOR`, and `HIDE_RECIPE` on a dedicated post) with the matching in-app notifications, without locking any demo account.
+- Replace the `/admin/bao-cao` preview with a page backed by these endpoints: status filters with counts, claim, detail, decision form with client-side checks before sending, and view-only display for reports held by another Administrator or already resolved.
+- Add SQL Server integration tests for each Acceptance Criterion, permissions, concurrent claims and immutable resolved reports, Playwright tests for the page and a real-stack test from a submitted report to the hidden post.
+
+### Changed
+
+- Remove the report module and its tests from the Admin preview, which now covers accounts and transactions only.
+- Document the endpoints and error codes in `docs/api/API.md` section 21, the migration in `database/README.md` and the flow in the Backend and Frontend READMEs.
+
+### Fixed
+
+- None.
+
+## 2026-10-24 — Refine Shopping List Workflow ([PR #185](https://github.com/NgaiLong49423/vegetarian-support-system/pull/185))
+
+**Status:** Committed — `c4822f9`.
+
+**Scope:** Make shopping-list creation, item management and review more consistent across recipe, meal-plan and shopping-list screens.
+
+### Added
+
+- Allow selecting recipe ingredients and adding manual items in the shopping-list dialog, with duplicate-name checks and numbered names for same-day lists.
+- Add shopping-list export actions and a compact menu for list-level actions.
+
+### Changed
+
+- Use the creation date for meal-plan shopping lists, order lists newest first and remove internal list codes from the interface.
+- Refine shopping-list layout, colors, controls and spacing across the page; use icon-only edit and delete actions for items.
+
+### Fixed
+
+- Normalize whitespace when aggregating manual item names so equivalent names are combined consistently.
+
+## 2026-10-24 — Deduplicate Recipe Ingredient Selections
+
+**Status:** Committed — `95a05ee`.
+
+**Scope:** Keep recipe-to-shopping-list additions valid when one ingredient appears in multiple recipe lines with different units.
+
+### Added
+
+- Add Frontend and Backend regression coverage for repeated ingredient IDs, selected ingredients, and manual-only additions.
+
+### Changed
+
+- Submit each selected ingredient ID once while preserving every matching recipe line and unit in the shopping list.
+
+### Fixed
+
+- Prevent duplicate selected IDs from causing a validation error when adding a recipe to a shopping list.
+
+## 2026-10-23 — Remove Recipe Card Status Badges
+
+**Status:** Committed — `c0c1aff`.
+
+**Scope:** Remove the “Mới” and Like percentage badges from recipe imagery and rating headings.
+
+### Added
+
+- None.
+
+### Changed
+
+- Remove the recipe status and Like percentage badge from public recipe cards and the detail-page reaction heading.
+- Keep recipe voting controls, accessible Like ratio progress, and reaction counts.
+
+### Fixed
+
+- None.
+
+## 2026-10-23 — Center Ingredient Directory Content
+
+**Status:** Committed — `c0c1aff`.
+
+**Scope:** Align the ingredient directory header and catalog within one centered content column.
+
+### Added
+
+- None.
+
+### Changed
+
+- Center the directory content wrapper so the heading, search controls and ingredient grid share the same alignment.
+
+### Fixed
+
+- Correct the left-heavy layout caused by a narrow catalog section aligned to the page container edge.
+
+## 2026-10-23 — Show All Core Nutrients in Daily Summary
+
+**Status:** Committed — `c0c1aff`.
+
+**Scope:** Show all nine core metrics in a clearer hierarchy on the nutrition tracker.
+
+### Added
+
+- Show fiber, calcium, iron, vitamin B12 and zinc alongside energy, protein, carbohydrate and fat.
+
+### Changed
+
+- Keep energy, protein, carbohydrate and fat as primary cards; group fiber and four micronutrients in a compact section.
+- Align primary metric values, reference amounts and progress bars in a consistent card layout.
+
+### Fixed
+
+- None.
+
+## 2026-10-23 — Distinguish Meal Labels in Nutrition Tracker
+
+**Status:** Committed — `c0c1aff`.
+
+**Scope:** Improve the visual distinction between meal labels and energy distribution on the nutrition tracker.
+
+### Added
+
+- Add an amber badge tone for meal labels.
+
+### Changed
+
+- Use matching amber, green and brand-orange colors for breakfast, lunch and dinner labels, energy-bar segments and legend dots.
+
+### Fixed
+
+- None.
+
+## 2026-10-23 — Restore Recipe Images in Nutrition Tracker
+
+**Status:** Committed — `c0c1aff`.
+
+**Scope:** Show scheduled recipe cover images on the daily meal cards in nutrition tracking.
+
+### Added
+
+- Load cover URLs from the existing weekly meal-plan response and match them to nutrition entries.
+
+### Changed
+
+- Render each available recipe cover above its nutrition summary while keeping the utensil placeholder for missing or failed images.
+
+### Fixed
+
+- Replace the permanent image placeholder on scheduled recipe cards when a cover image is available.
+
+## 2026-10-23 — Move Recipe Comparison into Card Menu
+
+**Status:** Committed — `c0c1aff`.
+
+**Scope:** Keep recipe-card actions compact by placing comparison in the existing overflow menu.
+
+### Added
+
+- Add a comparison action to the recipe-card three-dot menu.
+
+### Changed
+
+- Remove the standalone comparison link below public recipe cards.
+
+### Fixed
+
+- None.
+
+## 2026-10-23 — Apply Ingredient Filters from Catalog
+
+**Status:** Committed — `c0c1aff`.
+
+**Scope:** Carry selected ingredient filters from the public ingredient catalog and detail page into recipe discovery.
+
+### Added
+
+- Initialize recipe discovery with ingredient IDs and names passed in the URL.
+
+### Changed
+
+- Keep ingredient selection in the URL as filters are changed and clear those parameters when resetting the search.
+
+### Fixed
+
+- Apply the selected ingredient IDs to recipe discovery requests after navigating from ingredient pages.
+
+## 2026-10-23 — Fix Recipe Ingredient Editing
+
+**Status:** Committed — `c0c1aff`.
+
+**Scope:** Ensure recipe editing can resolve existing ingredients beyond the initial reference-data result limit.
+
+### Added
+
+- None.
+
+### Changed
+
+- Search the existing ingredient reference-data endpoint for recipe ingredients missing from the initial options and merge the valid units into the editor.
+
+### Fixed
+
+- Stop presenting ingredients omitted by the initial result cap as unsupported; clarify the warning for ingredients that remain unavailable after lookup.
+
+## 2026-10-23 — Correct Demo Ingredient Groups
+
+**Status:** Committed — `c0c1aff`.
+
+**Scope:** Replace the default or inconsistent groups on seeded demo ingredients with food-appropriate categories.
+
+### Added
+
+- Add an idempotent local demo seed that assigns consistent groups to all 209 illustrated ingredients.
+
+### Changed
+
+- Document the ingredient-group fixture and its limited effect on demo catalog group labels.
+
+### Fixed
+
+- Categorize vegetables, mushrooms, fruit, grains, legumes, nuts and seeds, seasonings, dairy and eggs, seaweed, plant protein, and prepared vegetarian foods under appropriate groups.
+
+## 2026-10-23 — Fix Integration Regressions After Develop Synchronization ([PR #162](https://github.com/NgaiLong49423/vegetarian-support-system/pull/162))
+
+**Status:** Committed — `4968e40`.
+
+**Scope:** Restore discovery badges and safe shopping-list ingredient selection after integrating the current baseline.
+
+### Added
+
+- Cover ingredient subsets, manual-only shopping items, duplicate ingredient selections, serving scaling, and atomic rollback through HTTP and SQL integration tests.
+- Add browser regressions for selecting one ingredient represented by multiple units from discovery and saved recipes.
+
+### Changed
+
+- Align shopping browser assertions with the current ingredient-selection and manual-item request contract.
+
+### Fixed
+
+- Restore the Like percentage or New badge on discovery cards required by FR-17.
+- Deduplicate initially selected ingredient IDs so recipes using multiple units do not produce rejected shopping-list requests.
+- Preserve ingredient filters when navigating from the ingredient directory or detail page into discovery.
+
 ## 2026-10-23 — Improve Ingredient and Shopping Workflows
 
 **Status:** Committed — `f58b0e1`.
@@ -50,6 +541,26 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - None.
+
+## 2026-10-23 — Keep Recipe Search Ingredients in Sync with the URL (Issue #70)
+
+**Status:** Committed — `2e03550`, `e42b65f`.
+
+**Scope:** Finish the FR-62 ingredient links in the shared `RecipeSearch` module used by Explore and the FR-60 picker: PR #185 reads `ingredientId`/`ingredientName` from the URL, but removed or reset ingredients stayed in the URL and came back on the next URL change or reload. Also keep the FR-60 picker within a phone-width page.
+
+### Added
+
+- Add Playwright coverage for an ingredient preset on the picker, removing it before another filter changes, resetting all filters, and a picker card with a long dish category label on a 360 px wide screen.
+
+### Changed
+
+- None.
+
+### Fixed
+
+- Write the selected ingredients back to the URL when one is added or removed, so a removed preset no longer comes back when the page is reloaded or reopened from the browser history.
+- Remove `ingredientId`/`ingredientName` from the URL when the filters are reset.
+- Keep picker result cards inside a phone-width page when a recipe has a long category label such as "Món tráng miệng / chè": the result grid uses one shrinkable column below the `sm` breakpoint (AC-60.8).
 
 ## 2026-10-23 — Fix AI Recipe Guidance Generation ([PR #181](https://github.com/NgaiLong49423/vegetarian-support-system/pull/181))
 
@@ -342,6 +853,28 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Permit guest reads of the documented public recipe-statistics endpoint.
 - Preserve Vietnamese characters when binding ingredient search patterns on SQL Server.
 
+## 2026-10-21 — Expert Application Attachments
+
+**Status:** Committed — `fbaf8e4`.
+
+**Scope:** Extend FR-05 so applicants can attach a certificate and an application-only 3:4 portrait, with private storage and Admin-only retrieval.
+
+### Added
+
+- Add optional certificate and application-only 3:4 portrait uploads with server-side type, signature, and size validation; store attachment metadata through Flyway V24 after develop used V23 for report supplements.
+- Add an Admin-only attachment download endpoint backed by a private Azure Blob Storage container.
+
+### Changed
+
+- Update FR-05, BR-74, NFR-10, architecture, database guidance, and the application form to describe the approved attachment behavior.
+- Focus the first-time application view on the submission form and group optional uploads into a compact section.
+- Identify the application portrait as a 3:4 photo, add an explicit Admin download action, and improve the review dialog's hierarchy, attachment cards, status, and responsive scrolling.
+- Keep the existing JSON submission endpoint and public account avatar flow unchanged.
+
+### Fixed
+
+- Bind Azure storage configuration through its canonical constructor so the Backend can start with the new private-container property.
+
 ## 2026-10-20 — Remove Standalone Meal Plan Export (Issue #152)
 
 **Status:** Committed — `5ac1614`.
@@ -408,6 +941,26 @@ None.
 - Seed core recipe ingredients before applying catalog nutrition so supported entries such as sweet potato are enriched correctly.
 
 - Fill the remaining macro, fiber and B12 estimates for all AI-estimated demo ingredients so those fixtures no longer have missing nutrition metrics.
+
+## 2026-10-19 — Store Recipe Images in Azure (Issue #158) ([PR #162](https://github.com/NgaiLong49423/vegetarian-support-system/pull/162))
+
+**Status:** Committed — `c3a5155`.
+
+**Scope:** Fix misleading upload success when Azure storage is missing or unavailable ([Issue #158](https://github.com/NgaiLong49423/vegetarian-support-system/issues/158)).
+
+### Added
+
+- Add unavailable-storage tests, browser upload-state regression checks, and an opt-in Azure/Compose integration test.
+
+### Changed
+
+- Forward Backend Azure configuration through the root Compose stack and document the image storage setup.
+- Regenerate OpenAPI to describe upload success as HTTP 201 and storage failure as HTTP 503.
+
+### Fixed
+
+- Reject uploads with `MEDIA_STORAGE_UNAVAILABLE` instead of returning fabricated storage URLs; sanitize storage failure diagnostics.
+- Label failed previews, count only successful uploads, and block publication while uploads are pending or failed.
 
 ## 2026-10-19 — Expert and Ingredient Discovery (FR-61/FR-62) and Social Recipe Profiles ([PR #163](https://github.com/NgaiLong49423/vegetarian-support-system/pull/163))
 
@@ -478,6 +1031,27 @@ None.
 
 - Preserve API-backed recipe comments, reactions, views and meal-plan serving updates after synchronizing develop.
 - Keep tall registration forms scrollable, retain ingredient JSON preview/copy, and use the actual vegetarian-type label in recipe details.
+
+## 2026-10-19 — Point Duplicate Recipe Reports to the Open Report and Require New Details After Resolution (Issue #35)
+
+**Status:** Committed — `03ae27a`.
+
+**Scope:** Deliver the FR-30 rules that do not depend on the open supplement-storage and report-form decisions (Q67, Q68): a duplicate report now tells the client which open report to continue, and a report filed after an earlier one was resolved must describe the new problem (SRS 3.14, AC-30.2, AC-30.3).
+
+### Added
+
+- Add `reportId` of the reporter's open report to the `409 REPORT_ALREADY_OPEN` problem body of `POST /api/v1/recipes/{recipeId}/reports`.
+- Add SQL Server integration tests for duplicate reports, four concurrent submissions by the same member (one `201`, three `409` with the created `reportId`), re-reporting after `RESOLVED`, and a first report with a non-`OTHER` reason and no description.
+- Record BUG-065: moving a meal-plan entry sometimes leaves keyboard focus on the page body instead of the "Lịch ăn của bạn" heading (FR-33, AC-33.4; 6 of 28 isolated runs of `meal-plan-management.spec.ts:120` failed on `develop` `0e98048`).
+
+### Changed
+
+- Require a 10–500 character description for every reason when the member's previous report on the same recipe is `RESOLVED`; otherwise return `400 VALIDATION_FAILED` with `field = description`.
+- Document report submission, the duplicate rule and the re-report rule in `docs/api/API.md` section 22 and the Backend README.
+
+### Fixed
+
+- None.
 
 ## 2026-10-18 — Repair CI Contract and Recipe-Card Checks ([PR #148](https://github.com/NgaiLong49423/vegetarian-support-system/pull/148))
 
@@ -557,7 +1131,7 @@ None.
 
 ## 2026-10-17 — Add Safe Shopping Ingredient Aggregation ([PR #150](https://github.com/NgaiLong49423/vegetarian-support-system/pull/150), Issue #54)
 
-**Status:** Committed — `748947f` (implementation); PR #150 is closed and has not been merged or accepted.
+**Status:** Committed — `748947f` (implementation); PR #150 is open and has not been merged or accepted.
 
 **Scope:** Implement and test the internal FR-54 aggregation engine independently of the unmerged FR-53 checklist work. Creating/persisting lists, Frontend integration and main acceptance remain outstanding.
 

@@ -52,8 +52,7 @@ public class NutritionProfileService {
         if (!reasons.isEmpty()) {
             return new NutritionProfileResponse(true, false, reasons, null, null);
         }
-        return new NutritionProfileResponse(true, false, List.of(),
-                new Profile(user.getDateOfBirth(), user.getBiologicalSex(), user.getHeightCm(), user.getWeightKg(), user.getActivityLevel(), user.getNutritionGoal()), null);
+        return response(user, age);
     }
 
     @Transactional(readOnly = true)
@@ -106,6 +105,11 @@ public class NutritionProfileService {
                     "Không thể lưu hồ sơ dinh dưỡng hoặc hiển thị chỉ số cho trường hợp ngoài phạm vi hỗ trợ: " + String.join(", ", reasons));
         }
 
+        if (user.getNutritionBmi() == null || user.getHeightCm() == null || user.getWeightKg() == null
+                || user.getHeightCm().compareTo(request.heightCm()) != 0
+                || user.getWeightKg().compareTo(request.weightKg()) != 0) {
+            user.setNutritionBmi(calculations.bmi(request.weightKg(), request.heightCm()));
+        }
         user.setDateOfBirth(request.dateOfBirth());
         user.setBiologicalSex(request.biologicalSex());
         user.setHeightCm(request.heightCm());
@@ -185,12 +189,15 @@ public class NutritionProfileService {
             throw new NutritionProfileException(HttpStatus.UNPROCESSABLE_ENTITY, "NUTRITION_PROFILE_OUT_OF_SCOPE",
                     "Hồ sơ hiện nằm ngoài phạm vi hỗ trợ dinh dưỡng.");
         }
+        var results = response(user, age).results();
         return new MenuNutritionContext(user.getNutritionGoal(), user.getBiologicalSex(), user.getHeightCm(),
-                user.getWeightKg(), user.getActivityLevel(), age);
+                user.getWeightKg(), user.getActivityLevel(), age, results.bmi(), results.bmiCategory(),
+                results.energyKcal(), results.dailyTargets());
     }
 
     public record MenuNutritionContext(String nutritionGoal, String biologicalSex, java.math.BigDecimal heightCm,
-            java.math.BigDecimal weightKg, String activityLevel, int age) { }
+            java.math.BigDecimal weightKg, String activityLevel, int age, java.math.BigDecimal bmi,
+            String bmiCategory, java.math.BigDecimal energyKcal, List<NutritionProfileResponse.Target> dailyTargets) { }
 
     private void requireEligible(NutritionProfileEntity user) {
         if (user.getNutritionEligibilityStatus() == NutritionEligibilityStatus.ELIGIBLE) return;
@@ -226,7 +233,7 @@ public class NutritionProfileService {
     }
 
     private NutritionProfileResponse response(NutritionProfileEntity user, int age) {
-        var bmi = calculations.bmi(user.getWeightKg(), user.getHeightCm());
+        var bmi = user.getNutritionBmi();
         var energy = calculations.energyKcal(age, user.getBiologicalSex(), user.getHeightCm(), user.getWeightKg(), user.getActivityLevel());
         var profile = new Profile(user.getDateOfBirth(), user.getBiologicalSex(), user.getHeightCm(), user.getWeightKg(), user.getActivityLevel(), user.getNutritionGoal());
         var results = new Results(bmi, calculations.bmiCategory(bmi), energy,

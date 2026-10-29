@@ -23,6 +23,10 @@ function addDays(value: string, days: number): Date {
   return date;
 }
 
+function toDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 function failureMessage(error: unknown, action: 'recommend' | 'weekly' | 'apply') {
   if (error instanceof ApiError) {
     if (error.code === 'DIETARY_PROFILE_INCOMPLETE') return 'Hoàn tất hồ sơ sở thích ăn uống để nhận gợi ý phù hợp.';
@@ -83,11 +87,22 @@ export function AiRecipePlanner({ weekStartDate, embedded = false, plannerMode =
     return () => window.clearTimeout(timer);
   }, [query]);
 
-  const slotsByDay = useMemo(() => Array.from({ length: 7 }, (_, dayOffset) => ({
-    dayOffset,
-    date: addDays(weekStart, dayOffset),
-    slots: allMeals.map((mealType) => preview?.slots.find((slot) => slot.dayOffset === dayOffset && slot.mealType === mealType) ?? null),
-  })), [weekStart, preview]);
+  const slotsByDay = useMemo(() => {
+    const raw = Array.from({ length: 7 }, (_, dayOffset) => ({
+      dayOffset,
+      date: addDays(weekStart, dayOffset),
+      slots: allMeals.map((mealType) => preview?.slots.find((slot) => slot.dayOffset === dayOffset && slot.mealType === mealType) ?? null),
+    }));
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayKey = toDateKey(today);
+    const isCurrentWeek = weekStart === mondayOf(new Date());
+    const todayIndex = raw.findIndex((item) => toDateKey(item.date) === todayKey);
+    if (isCurrentWeek && todayIndex > 0) {
+      return [...raw.slice(todayIndex), ...raw.slice(0, todayIndex)];
+    }
+    return raw;
+  }, [weekStart, preview]);
 
   const chooseIngredient = (option: IngredientOption) => {
     setSelected((current) => current.some((item) => item.ingredientId === option.ingredientId) ? current : [...current, option]);
@@ -201,7 +216,7 @@ export function AiRecipePlanner({ weekStartDate, embedded = false, plannerMode =
       <div className="mt-3 flex min-h-8 flex-wrap gap-2">
         {selected.map((ingredient) => <button key={ingredient.ingredientId} type="button" onClick={() => { setSelected((items) => items.filter((item) => item.ingredientId !== ingredient.ingredientId)); setSuggestions(null); setPreview(null); setApplied(false); }} className="rounded-full bg-brand-50 px-3 py-1.5 text-sm font-medium text-brand-800 hover:bg-brand-100" aria-label={`Bỏ ${ingredient.name}`}>{ingredient.name} <span aria-hidden="true">×</span></button>)}
         {!selected.length && <p className="text-sm text-ink-muted">{plannerMode === 'weekly'
-          ? 'Có thể bỏ trống để AI chọn từ toàn bộ công thức công khai phù hợp; chọn nguyên liệu để giới hạn món theo nguyên liệu đó.'
+          ? 'Có thể bỏ trống để AI chọn từ toàn bộ công thức công khai phù hợp. Chọn nguyên liệu để giới hạn món theo nguyên liệu đó.'
           : 'Chọn ít nhất một nguyên liệu.'}</p>}
       </div>
       <div className="mt-5 flex flex-wrap gap-3">
@@ -249,7 +264,12 @@ export function AiRecipePlanner({ weekStartDate, embedded = false, plannerMode =
     </section>}
     {plannerMode === 'weekly' && preview && <section className="mt-8" aria-labelledby="preview-title">
       <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-brand-100 bg-paper p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div><h2 id="preview-title" className="text-xl font-bold text-ink">Thực đơn tuần dành cho bạn</h2><p className="mt-1 text-sm text-ink-muted">Xem lại thực đơn theo từng ngày. Thực đơn chỉ được thêm vào Lịch ăn sau khi bạn xác nhận.</p></div>
+        <div>
+          <h2 id="preview-title" className="text-xl font-bold text-ink">Thực đơn tuần dành cho bạn</h2>
+          <p className="mt-1 text-sm text-ink-muted">
+            Đề xuất từ hôm nay tới tương lai. Bữa trưa cân chỉnh kết hợp món chính và món phụ dinh dưỡng.
+          </p>
+        </div>
         <p className="text-sm font-medium text-ink">Tuần bắt đầu {new Date(`${weekStart}T12:00:00`).toLocaleDateString('vi-VN')}</p>
         <button type="button" onClick={() => { setPreview(null); setApplied(false); setError(null); }} className="text-sm font-semibold text-ink-muted underline hover:text-ink">Bỏ preview</button>
       </div>
@@ -257,8 +277,25 @@ export function AiRecipePlanner({ weekStartDate, embedded = false, plannerMode =
         {slotsByDay.map(({ dayOffset, date, slots }) => <article key={dayOffset} className="rounded-xl border border-brand-100 bg-paper p-4">
           <h3 className="mb-3 font-semibold capitalize text-ink">{date.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
           <div className="divide-y divide-brand-100">{slots.map((slot, index) => <div key={allMeals[index]} className="flex min-h-16 items-center gap-3 py-2">
-            <p className="w-20 shrink-0 text-sm font-medium text-ink-muted">{mealLabels[allMeals[index]]}</p>
-            {slot ? <Link to={`/cong-thuc/id/${slot.recipeId}`} className="flex min-w-0 items-center gap-3 text-sm font-semibold text-ink hover:text-brand-700">{slot.coverUrl && <img src={slot.coverUrl} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />}<span>{slot.recipeTitle}</span></Link> : <p className="text-sm text-ink-muted">Chưa có món</p>}
+            <div className="w-20 shrink-0">
+              <p className="text-sm font-medium text-ink-muted">{mealLabels[allMeals[index]]}</p>
+              {allMeals[index] === 'LUNCH' && (
+                <span className="text-[10px] font-medium text-amber-700">Đủ món trưa</span>
+              )}
+            </div>
+            {slot ? (
+              <div className="flex flex-1 flex-wrap items-center justify-between gap-2">
+                <Link to={`/cong-thuc/id/${slot.recipeId}`} className="flex min-w-0 items-center gap-3 text-sm font-semibold text-ink hover:text-brand-700">
+                  {slot.coverUrl && <img src={slot.coverUrl} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />}
+                  <span>{slot.recipeTitle}</span>
+                </Link>
+                {allMeals[index] === 'LUNCH' && (
+                  <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800 border border-amber-200">
+                    Gợi ý: Món chính + Canh/Rau
+                  </span>
+                )}
+              </div>
+            ) : <p className="text-sm text-ink-muted">Chưa có món</p>}
           </div>)}</div>
         </article>)}
       </div>

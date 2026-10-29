@@ -20,6 +20,7 @@ import tech.mamxanh.nutrition.dto.request.IngredientNutritionRequest;
 import tech.mamxanh.nutrition.dto.request.IngredientSaveRequest;
 import tech.mamxanh.nutrition.dto.request.NutritionSupportUpdateRequest;
 import tech.mamxanh.nutrition.dto.request.UnitSaveRequest;
+import tech.mamxanh.nutrition.dto.request.VolumeConversionSaveRequest;
 import tech.mamxanh.nutrition.dto.response.ConversionResponse;
 import tech.mamxanh.nutrition.dto.response.IngredientNutritionResponse;
 import tech.mamxanh.nutrition.dto.response.IngredientResponse;
@@ -27,6 +28,7 @@ import tech.mamxanh.nutrition.dto.response.PublicIngredientGroupResponse;
 import tech.mamxanh.nutrition.dto.response.PublicIngredientDetailResponse;
 import tech.mamxanh.nutrition.dto.response.PublicIngredientResponse;
 import tech.mamxanh.nutrition.dto.response.UnitResponse;
+import tech.mamxanh.nutrition.dto.response.IngredientUnitOptionResponse;
 import tech.mamxanh.nutrition.entity.IngredientEntity;
 import tech.mamxanh.nutrition.entity.IngredientUnitConversionEntity;
 import tech.mamxanh.nutrition.entity.IngredientUnitConversionId;
@@ -59,7 +61,10 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
         List<IngredientEntity> ingredients = (query == null || query.isBlank())
                 ? ingredientRepository.findAll()
                 : ingredientRepository.findByNameContainingIgnoreCaseOrIngredientGroupContainingIgnoreCase(query.trim(), query.trim());
-        return ingredients.stream().sorted(Comparator.comparing(IngredientEntity::getName)).map(this::toResponse).toList();
+        return ingredients.stream()
+                .sorted(Comparator.comparing(IngredientEntity::getCreatedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
@@ -71,7 +76,7 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
         String pattern = normalizedQuery == null ? null : "%" + normalizedQuery + "%";
         var results = ingredientRepository.search(pattern, normalizeFilter(ingredientGroup),
                 status, nutritionSupported,
-                PageRequest.of(page, size, Sort.by(Sort.Order.asc("name"), Sort.Order.asc("id"))));
+                PageRequest.of(page, size, Sort.by(Sort.Order.desc("createdAt"))));
         return PageResponse.of(results.getContent().stream().map(this::toResponse).toList(),
                 results.getNumber(), results.getSize(), results.getTotalElements());
     }
@@ -262,6 +267,10 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
     @Transactional
     public UnitResponse updateUnit(int id, UnitSaveRequest request) {
         UnitEntity unit = requireUnit(id); String code = request.code().trim();
+        if (isRecipeStandardCode(unit.getCode()) && (!unit.getCode().equals(code)
+                || unit.getDimension() != request.dimension() || unit.getBaseFactor().compareTo(request.baseFactor()) != 0)) {
+            throw conflict("STANDARD_UNIT_FIXED", "Không thể đổi mã, thứ nguyên hoặc hệ số của đơn vị công thức chuẩn.");
+        }
         if (!unit.getCode().equalsIgnoreCase(code) && unitRepository.existsByCodeIgnoreCase(code)) throw conflict("UNIT_CODE_EXISTS", "Ký hiệu đơn vị đã tồn tại.");
         if (unit.getDimension() != request.dimension() && conversionRepository.existsByIdUnitId(id)) {
             throw conflict("UNIT_HAS_INGREDIENT_CONVERSIONS", "Không thể đổi thứ nguyên khi đơn vị đã có tỷ lệ quy đổi theo nguyên liệu.");
@@ -276,12 +285,50 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
     }
 
     @Transactional
-    public UnitResponse setUnitStatus(int id, CatalogStatusUpdateRequest request) { UnitEntity unit = requireUnit(id); unit.setActive(request.active()); return toResponse(unit); }
+    public UnitResponse setUnitStatus(int id, CatalogStatusUpdateRequest request) {
+        UnitEntity unit = requireUnit(id);
+        if (isRecipeStandardCode(unit.getCode()) && !request.active()) {
+            throw conflict("STANDARD_UNIT_REQUIRED", "Không thể ngừng đơn vị thuộc bộ chuẩn công thức.");
+        }
+        unit.setActive(request.active()); return toResponse(unit);
+    }
 
     @Transactional(readOnly = true)
     public List<ConversionResponse> listConversions(Long ingredientId) {
         List<IngredientUnitConversionEntity> conversions = ingredientId == null ? conversionRepository.findAll() : conversionRepository.findByIdIngredientId(ingredientId);
         return conversions.stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<IngredientUnitOptionResponse> listRecipeUnits(long ingredientId) {
+        IngredientEntity ingredient = ingredientRepository.findByIdAndStatus(ingredientId, CatalogStatus.ACTIVE)
+                .orElseThrow(() -> notFound("INGREDIENT_NOT_FOUND", "Không tìm thấy nguyên liệu."));
+        var conversions = conversionRepository.findByIdIngredientId(ingredient.getId()).stream().filter(IngredientUnitConversionEntity::isActive)
+                .collect(java.util.stream.Collectors.toMap(c -> c.getId().getUnitId(), java.util.function.Function.identity()));
+        return unitRepository.findByActiveTrue().stream()
+                .filter(unit -> java.util.Set.of("mg", "g", "kg", "ml", "L", "tsp", "tbsp", "cup", "quả", "củ", "miếng").contains(unit.getCode()))
+                .filter(unit -> unit.getDimension() == MeasurementDimension.MASS || conversions.containsKey(unit.getId()))
+                .sorted(Comparator.comparingInt(unit -> recipeUnitOrder(unit.getCode())))
+                .map(unit -> {
+                    IngredientUnitConversionEntity conversion = conversions.get(unit.getId());
+                    BigDecimal grams = unit.getDimension() == MeasurementDimension.MASS ? unit.getBaseFactor() : conversion.getGramsPerUnit();
+                    return new IngredientUnitOptionResponse(unit.getId(), unit.getCode(), unit.getName(), unit.getDimension(), grams,
+                            conversion != null && conversion.isApproximate());
+                }).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<IngredientUnitOptionResponse> findActiveIngredientUnits(long ingredientId) {
+        return listRecipeUnits(ingredientId);
+    }
+
+    private int recipeUnitOrder(String code) {
+        return List.of("mg", "g", "kg", "ml", "L", "tsp", "tbsp", "cup", "quả", "củ", "miếng").indexOf(code);
+    }
+
+    private boolean isRecipeStandardCode(String code) {
+        return List.of("mg", "g", "kg", "ml", "L", "tsp", "tbsp", "cup", "quả", "củ", "miếng").contains(code);
     }
 
     @Transactional
@@ -299,7 +346,8 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
             }
             throw exception;
         }
-        return toResponse(new IngredientUnitConversionEntity(id, request.gramsPerUnit(), request.approximate()));
+        IngredientUnitConversionEntity created = new IngredientUnitConversionEntity(id, request.gramsPerUnit(), request.approximate());
+        return toResponse(created);
     }
 
     @Transactional
@@ -313,12 +361,54 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
     @Transactional
     public ConversionResponse setConversionStatus(long ingredientId, int unitId, CatalogStatusUpdateRequest request) {
         IngredientUnitConversionEntity conversion = requireConversion(ingredientId, unitId);
-        if (request.active()) requireConvertibleUnit(requireUnit(unitId));
+        requireConvertibleUnit(requireUnit(unitId));
         conversion.setActive(request.active());
         return toResponse(conversion);
     }
 
-    public void rejectHardDelete(String resource) { throw conflict("HARD_DELETE_NOT_SUPPORTED", "Không hỗ trợ xóa vĩnh viễn " + resource + "; hãy chuyển sang trạng thái ngừng sử dụng."); }
+    @Transactional
+    public List<ConversionResponse> saveVolumeConversions(long ingredientId, VolumeConversionSaveRequest request) {
+        requireActiveIngredient(ingredientId);
+        var units = unitRepository.findByActiveTrue().stream().filter(u -> List.of("ml", "L", "tsp", "tbsp", "cup").contains(u.getCode())).toList();
+        if (units.size() != 5) throw conflict("STANDARD_VOLUME_UNITS_INCOMPLETE", "Thiếu một hoặc nhiều đơn vị thể tích chuẩn.");
+        List<ConversionResponse> results = new ArrayList<>();
+        for (UnitEntity unit : units) {
+            BigDecimal grams = request.gramsPerMl().multiply(unit.getBaseFactor());
+            var id = new IngredientUnitConversionId(ingredientId, unit.getId());
+            var existing = conversionRepository.findById(id);
+            if (existing.isPresent()) {
+                var conversion = existing.get();
+                conversion.update(grams, request.approximate());
+                conversion.setActive(true);
+                results.add(toResponse(conversion));
+            } else {
+                conversionRepository.insertNew(ingredientId, unit.getId(), grams, request.approximate());
+                var created = new IngredientUnitConversionEntity(id, grams, request.approximate());
+                results.add(toResponse(created));
+            }
+        }
+        return results;
+    }
+
+    @Transactional
+    public List<ConversionResponse> setVolumeConversionStatus(long ingredientId, CatalogStatusUpdateRequest request) {
+        requireActiveIngredient(ingredientId);
+        var ids = unitRepository.findByActiveTrue().stream().filter(u -> List.of("ml", "L", "tsp", "tbsp", "cup").contains(u.getCode()))
+                .map(UnitEntity::getId).toList();
+        var existing = conversionRepository.findByIdIngredientId(ingredientId).stream()
+                .collect(java.util.stream.Collectors.toMap(c -> c.getId().getUnitId(), java.util.function.Function.identity()));
+        List<ConversionResponse> result = new ArrayList<>();
+        for (Integer id : ids) {
+            if (existing.containsKey(id)) {
+                var conversion = existing.get(id);
+                conversion.setActive(request.active());
+                result.add(toResponse(conversion));
+            }
+        }
+        return result;
+    }
+
+    public void rejectHardDelete(String resource) { throw conflict("HARD_DELETE_NOT_SUPPORTED", "Không hỗ trợ xóa vĩnh viễn " + resource + ". Hãy chuyển sang trạng thái ngừng sử dụng."); }
 
     @Override @Transactional(readOnly = true)
     public Optional<BigDecimal> findActiveGramsPerUnit(long ingredientId, int unitId) {
@@ -348,6 +438,10 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
     private void requireConvertibleUnit(UnitEntity unit) {
         if (unit.getDimension() == MeasurementDimension.MASS) {
             throw conflict("MASS_CONVERSION_NOT_ALLOWED", "Không thể cấu hình quy đổi riêng cho đơn vị khối lượng.");
+        }
+        if (unit.getDimension() == MeasurementDimension.VOLUME
+                && List.of("ml", "L", "tsp", "tbsp", "cup").contains(unit.getCode())) {
+            throw conflict("VOLUME_GROUP_REQUIRED", "Cấu hình đơn vị thể tích qua hệ số gram trên 1 ml để đồng bộ cả nhóm.");
         }
     }
     private IngredientUnitConversionEntity requireConversion(long ingredientId, int unitId) { return conversionRepository.findById(new IngredientUnitConversionId(ingredientId, unitId)).orElseThrow(() -> notFound("CONVERSION_NOT_FOUND", "Không tìm thấy tỷ lệ quy đổi.")); }

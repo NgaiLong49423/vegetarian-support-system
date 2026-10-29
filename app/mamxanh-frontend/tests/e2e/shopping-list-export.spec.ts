@@ -125,13 +125,20 @@ async function clipboard(page: Page) {
   );
 }
 
+async function openOtherActions(page: Page) {
+  const details = page.locator("details").filter({ hasText: "Thao tác khác" });
+  if (!(await details.evaluate((element) => (element as HTMLDetailsElement).open))) {
+    await details.locator("summary").click();
+  }
+}
+
 for (const [name, expected] of [
-  ["Đi chợ · thực đơn 23/10/2026", "Ngày thực đơn: 23/10/2026"],
-  ["Đi chợ · thực đơn tuần 19–25/10/2026", "Ngày thực đơn: 19/10/2026–25/10/2026"],
-  ["Đi chợ · thực đơn 20, 23, 25/10/2026", "Ngày thực đơn: 20/10/2026, 23/10/2026, 25/10/2026"],
-  ["Đi chợ · thực đơn 28/10–03/11/2026", "Ngày thực đơn: 28/10/2026–03/11/2026"],
-  ["Đi chợ · thực đơn 28/12/2026–03/01/2027", "Ngày thực đơn: 28/12/2026–03/01/2027"],
-  ["Đi chợ · thực đơn 28/12/2026, 01/01/2027", "Ngày thực đơn: 28/12/2026, 01/01/2027"],
+  ["Danh sách mua sắm · thực đơn 23/10/2026", "Ngày thực đơn: 23/10/2026"],
+  ["Danh sách mua sắm · thực đơn tuần 19–25/10/2026", "Ngày thực đơn: 19/10/2026–25/10/2026"],
+  ["Danh sách mua sắm · thực đơn 20, 23, 25/10/2026", "Ngày thực đơn: 20/10/2026, 23/10/2026, 25/10/2026"],
+  ["Danh sách mua sắm · thực đơn 28/10–03/11/2026", "Ngày thực đơn: 28/10/2026–03/11/2026"],
+  ["Danh sách mua sắm · thực đơn 28/12/2026–03/01/2027", "Ngày thực đơn: 28/12/2026–03/01/2027"],
+  ["Danh sách mua sắm · thực đơn 28/12/2026, 01/01/2027", "Ngày thực đơn: 28/12/2026, 01/01/2027"],
   ["Danh sách cá nhân từ công thức", "Nguồn: Công thức đã chọn — không gắn ngày thực đơn"],
   ["Đi chợ tuần 2026-10-19", "Ngày thực đơn: Chưa có thông tin ngày trong danh sách này."],
 ]) {
@@ -139,12 +146,14 @@ for (const [name, expected] of [
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.clock.setFixedTime(new Date(2026, 9, 20, 12));
     await setup(page, "normal", name);
+    await openOtherActions(page);
     await page.getByRole("button", { name: "Sao chép", exact: true }).click();
     await expect(page.getByRole("status")).toHaveText("Đã sao chép danh sách vào khay nhớ tạm.");
     const copied = await clipboard(page);
     expect(copied).toContain(`Ngày xuất: 20/10/2026\n${expected}\n`);
     const event = page.waitForEvent("download");
-    await page.getByRole("button", { name: "TXT", exact: true }).click();
+    await openOtherActions(page);
+    await page.getByRole("button", { name: "Xuất TXT", exact: true }).click();
     const download = await event;
     expect(download.suggestedFilename()).toBe("Danh_sach_mua_sam_20261020.txt");
     const stream = await download.createReadStream(), chunks: Buffer[] = [];
@@ -159,6 +168,7 @@ test("AC-55.1/3: exports every saved item across filters with groups, exact unit
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   const state = await setup(page);
   await page.getByRole("button", { name: /^Cần mua/ }).click();
+  await openOtherActions(page);
   await page.getByRole("button", { name: "Sao chép", exact: true }).click();
   await expect(page.getByRole("status")).toHaveText(
     "Đã sao chép danh sách vào khay nhớ tạm.",
@@ -187,20 +197,24 @@ test("AC-55.2/3: UTF-8 BOM download matches clipboard, filename and saved bought
   await page
     .getByRole("button", { name: "Đánh dấu Đậu hũ g", exact: true })
     .click();
+  await page.getByRole("button", { name: /Tất cả \(/ }).click();
   await expect(
     page.getByRole("button", { name: "Đánh dấu Đậu hũ g", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await page.reload();
+  await page.getByRole("button", { name: /Tất cả \(/ }).click();
   await expect(
     page.getByRole("button", { name: "Đánh dấu Đậu hũ g", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
+  await openOtherActions(page);
   await page.getByRole("button", { name: "Sao chép", exact: true }).click();
   await expect(page.getByRole("status")).toHaveText(
     "Đã sao chép danh sách vào khay nhớ tạm.",
   );
   const content = await clipboard(page);
   const downloaded = page.waitForEvent("download");
-  await page.getByRole("button", { name: "TXT", exact: true }).click();
+  await openOtherActions(page);
+  await page.getByRole("button", { name: "Xuất TXT", exact: true }).click();
   const file = await downloaded;
   expect(file.suggestedFilename()).toMatch(/^Danh_sach_mua_sam_\d{8}\.txt$/);
   const stream = await file.createReadStream(),
@@ -216,11 +230,12 @@ test("AC-55.4: empty saved checklist disables both exports", async ({
   page,
 }) => {
   await setup(page, "empty");
+  await openOtherActions(page);
   await expect(
     page.getByRole("button", { name: "Sao chép", exact: true }),
   ).toBeDisabled();
   await expect(
-    page.getByRole("button", { name: "TXT", exact: true }),
+    page.getByRole("button", { name: "Xuất TXT", exact: true }),
   ).toBeDisabled();
 });
 for (const failure of ["missing", "denied"] as const) {
@@ -244,12 +259,13 @@ for (const failure of ["missing", "denied"] as const) {
       failure,
     );
     const state = await setup(page);
+    await openOtherActions(page);
     await page.getByRole("button", { name: "Sao chép", exact: true }).click();
     const dialog = page.getByRole("dialog", {
-      name: "Sao chép danh sách đi chợ",
+      name: "Sao chép danh sách mua sắm",
     });
     const textarea = dialog.getByRole("textbox", {
-      name: "Nội dung danh sách đi chợ",
+      name: "Nội dung danh sách mua sắm",
     });
     await expect(textarea).toBeFocused();
     expect(await textarea.inputValue()).toContain("[x] Nấm rơm: 125,5 g");
@@ -286,11 +302,13 @@ test("export uses only the currently selected list and is unavailable on foreign
 }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await setup(page);
+  await page.locator("nav[aria-label='Danh sách đã lưu']").getByRole("button", { name: "Thao tác với Đi chợ đã lưu" }).click();
   await page
     .getByRole("navigation", { name: "Danh sách đã lưu" })
-    .getByRole("button", { name: "Danh sách thứ hai" })
+    .getByRole("button", { name: "Danh sách thứ hai", exact: true })
     .click();
   await expect(page.getByText("Danh sách khác", { exact: true })).toBeVisible();
+  await openOtherActions(page);
   await page.getByRole("button", { name: "Sao chép", exact: true }).click();
   await expect(page.getByRole("status")).toHaveText(
     "Đã sao chép danh sách vào khay nhớ tạm.",
@@ -303,13 +321,13 @@ test("export uses only the currently selected list and is unavailable on foreign
     page.getByText("Không tìm thấy danh sách.", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "TXT", exact: true }),
+    page.getByRole("button", { name: "Xuất TXT", exact: true }),
   ).toHaveCount(0);
   const guest = await context.newPage();
   await guest.goto("/di-cho");
   await expect(
     guest.getByText(
-      "Vui lòng đăng nhập để tạo và lưu danh sách đi chợ theo tài khoản.",
+      "Vui lòng đăng nhập để tạo và lưu danh sách mua sắm theo tài khoản.",
     ),
   ).toBeVisible();
   await expect(
@@ -326,7 +344,8 @@ test("download preparation failure reports retry without changing the checklist"
       throw new Error("No blob URL available");
     };
   });
-  await page.getByRole("button", { name: "TXT", exact: true }).click();
+  await openOtherActions(page);
+  await page.getByRole("button", { name: "Xuất TXT", exact: true }).click();
   await expect(page.getByRole("status")).toHaveText(
     "Chưa thể tạo tệp TXT. Vui lòng thử lại hoặc sao chép danh sách.",
   );

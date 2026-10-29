@@ -228,7 +228,7 @@
   right: 0;
   top: 1px;
   bottom: 1px;
-  background: var(--color-raised);
+  background: var(--color-brand-100);
   opacity: 0;
   transition: opacity 0.2s var(--ux-ease);
   pointer-events: none;
@@ -240,14 +240,14 @@
 
 .u030-cell.s::before,
 .u030-cell:nth-child(7n+1).in::before {
-  border-top-left-radius: 8px;
-  border-bottom-left-radius: 8px;
+  border-top-left-radius: 14px;
+  border-bottom-left-radius: 14px;
 }
 
 .u030-cell.e::before,
 .u030-cell:nth-child(7n).in::before {
-  border-top-right-radius: 8px;
-  border-bottom-right-radius: 8px;
+  border-top-right-radius: 14px;
+  border-bottom-right-radius: 14px;
 }
 
 /* Day button */

@@ -32,7 +32,8 @@ class ShoppingAggregationServiceTest {
     final List<UnitResponse> units = List.of(unit(1,"g",MeasurementDimension.MASS),unit(2,"kg",MeasurementDimension.MASS),
             unit(3,"ml",MeasurementDimension.VOLUME),unit(4,"L",MeasurementDimension.VOLUME),
             unit(5,"quả",MeasurementDimension.COUNT),unit(6,"bìa",MeasurementDimension.COUNT),
-            unit(7,"tbsp",MeasurementDimension.VOLUME));
+            unit(7,"tbsp",MeasurementDimension.VOLUME),unit(8,"mg",MeasurementDimension.MASS),
+            unit(9,"tsp",MeasurementDimension.VOLUME),unit(10,"cup",MeasurementDimension.VOLUME));
     final List<IngredientResponse> ingredients = List.of(ingredient(1,"Đậu phụ","Đậu"),ingredient(2,"Nước tương","Gia vị"),
             ingredient(3,"Bơ","Rau củ"),ingredient(4,"Đậu phụ","Đậu"));
 
@@ -59,6 +60,21 @@ class ShoppingAggregationServiceTest {
     @Test void ac542CombinesMillilitersAndLiters() {
         assertThat(items(service.aggregate(List.of(line(2,3,"500"),line(2,4,"0.75")))))
                 .singleElement().satisfies(i -> { assertThat(i.quantity()).isEqualByComparingTo("1250"); assertThat(i.unitCode()).isEqualTo("ml"); });
+    }
+
+    @Test void convertsMilligramsToGramsWithoutLosingTheSmallAmount() {
+        assertThat(items(service.aggregate(List.of(line(1,8,"1"),line(1,1,"1")))))
+                .singleElement().satisfies(i -> { assertThat(i.unitCode()).isEqualTo("g"); assertThat(i.quantity()).isEqualByComparingTo("1.001"); });
+    }
+
+    @Test void oneThousandMilligramsEqualOneGram() {
+        assertThat(items(service.aggregate(List.of(line(1,8,"1000")))))
+                .singleElement().satisfies(i -> { assertThat(i.unitCode()).isEqualTo("g"); assertThat(i.quantity()).isEqualByComparingTo("1"); });
+    }
+
+    @Test void convertsKitchenVolumeUnitsToMilliliters() {
+        assertThat(items(service.aggregate(List.of(line(2,9,"2"),line(2,3,"1")))))
+                .singleElement().satisfies(i -> { assertThat(i.unitCode()).isEqualTo("ml"); assertThat(i.quantity()).isEqualByComparingTo("11"); });
     }
 
     @Test void ac543NeverAssumesMassVolumeDensity() {
@@ -125,12 +141,63 @@ class ShoppingAggregationServiceTest {
     }
 
     @Test void manualNamesIgnoreCaseButRequireTheSameUnitAndStaySeparateFromCatalog() {
-        var rows = List.of(manual("  KHĂN GIẤY  ",1,"1"),manual("khăn giấy",1,"2"),manual("Khăn giấy",2,"1"),
+        var rows = List.of(manual("  KHĂN GIẤY  ",1,"1"),manual("khăn giấy",1,"2"),manual("Khăn  giấy",1,"3"),manual("Khăn giấy",2,"1"),
                 manual("Đậu phụ",1,"50"),line(1,1,"100"));
         var output = items(service.aggregate(rows));
         assertThat(output).hasSize(4);
         assertThat(output).filteredOn(i -> i.ingredientId()==null && i.unitId()==1 && i.name().contains("KHĂN"))
-                .singleElement().satisfies(i -> assertThat(i.quantity()).isEqualByComparingTo("3"));
+                .singleElement().satisfies(i -> assertThat(i.quantity()).isEqualByComparingTo("6"));
+    }
+
+    @Test void manualNamesRejectBlankOverlongAndControlCharacterValues() {
+        var result = service.aggregate(List.of(manual("   ",1,"1"), manual("x".repeat(201),1,"1"),
+                manual("Tên\u0001không hợp lệ",1,"1"), new ShoppingAggregationLine(null,null,BigDecimal.ONE,1)));
+        assertThat(items(result)).isEmpty();
+        assertThat(result.warnings()).extracting(ShoppingAggregationResult.Warning::code)
+                .containsExactly("INVALID_MANUAL_NAME","INVALID_MANUAL_NAME","INVALID_MANUAL_NAME","INVALID_MANUAL_NAME");
+    }
+
+    @Test void equivalentVolumeRatesMergeAndInvalidOfficialRatesAreIgnored() {
+        rates.add(new ConversionResponse(2L,3,new BigDecimal("9000"),false,true));
+        rates.add(new ConversionResponse(2L,3,null,false,true));
+        rates.add(rate(2,3,"0",true));
+        rates.add(rate(2,3,"1.25",true));
+        rates.add(rate(2,4,"1250",true));
+        var result = service.aggregate(List.of(line(2,1,"300"),line(2,3,"200"),line(2,4,"0.2")));
+        assertThat(items(result)).singleElement().satisfies(item -> {
+            assertThat(item.quantity()).isEqualByComparingTo("800");
+            assertThat(item.unitCode()).isEqualTo("g");
+            assertThat(item.incompatibleUnits()).isFalse();
+        });
+        assertThat(result.warnings()).isEmpty();
+    }
+
+    @Test void keepsConvertibleBucketsSeparateWhenNoMassTargetUnitExists() {
+        when(catalog.findActiveUnits()).thenReturn(List.of());
+        rates.add(rate(2,3,"1.25",true));
+        rates.add(rate(2,7,"15",true));
+        var output = items(service.aggregate(List.of(line(2,3,"100"),line(2,7,"2"))));
+        assertThat(output).singleElement().satisfies(item -> {
+            assertThat(item.unitCode()).isEqualTo("ml");
+            assertThat(item.quantity()).isEqualByComparingTo("130");
+            assertThat(item.incompatibleUnits()).isFalse();
+        });
+    }
+
+    @Test void retainsAConvertibleBucketWhenAnotherBucketHasNoOfficialRate() {
+        var result = service.aggregate(List.of(line(2,1,"100"),line(2,3,"200")));
+        assertThat(items(result)).hasSize(2).allSatisfy(item -> assertThat(item.incompatibleUnits()).isTrue());
+        assertThat(result.warnings()).isEmpty();
+    }
+
+    @Test void nullManualNamesAreRejectedAndNonBreakingSpacesNormalizeForMatching() {
+        var result = service.aggregate(List.of(manual(null,1,"1"),manual("Đậu\u00a0hũ",1,"2"),manual("đậu hũ",1,"3")));
+        assertThat(items(result)).singleElement().satisfies(item -> {
+            assertThat(item.name()).isEqualTo("Đậu hũ");
+            assertThat(item.quantity()).isEqualByComparingTo("5");
+        });
+        assertThat(result.warnings()).extracting(ShoppingAggregationResult.Warning::code)
+                .containsExactly("INVALID_MANUAL_NAME");
     }
 
     @Test void rejectsInvalidRowsWithSourceIndexedWarningsAndKeepsValidRows() {
@@ -147,8 +214,9 @@ class ShoppingAggregationServiceTest {
                 .singleElement().satisfies(i -> assertThat(i.quantity()).isEqualByComparingTo("0.3"));
     }
 
-    @Test void tablespoonsNeverAutomaticallyConvertThroughTheCatalogBaseFactor() {
-        assertThat(items(service.aggregate(List.of(line(2,7,"1"),line(2,3,"15"))))).hasSize(2);
+    @Test void tablespoonsConvertToMillilitersUsingTheStandardVolumeFactor() {
+        assertThat(items(service.aggregate(List.of(line(2,7,"1"),line(2,3,"15")))))
+                .singleElement().satisfies(item -> { assertThat(item.unitCode()).isEqualTo("ml"); assertThat(item.quantity()).isEqualByComparingTo("30"); });
     }
 
     @Test void conflictingVolumeRulesStaySeparateFromMassAndProduceWarning() {
@@ -195,5 +263,8 @@ class ShoppingAggregationServiceTest {
     private ConversionResponse rate(long id,int unit,String quantity,boolean active) {return new ConversionResponse(id,unit,new BigDecimal(quantity),false,active);}
     private List<Item> items(ShoppingAggregationResult result) {return result.groups().stream().flatMap(g -> g.items().stream()).toList();}
     private static IngredientResponse ingredient(long id,String name,String group) {return new IngredientResponse(id,name,group,null,null,null,false,true);}
-    private static UnitResponse unit(int id,String code,MeasurementDimension dimension) {return new UnitResponse(id,code,code,dimension,new BigDecimal(code.equals("kg")||code.equals("L")?"1000":"1"),true);}
+    private static UnitResponse unit(int id,String code,MeasurementDimension dimension) {
+        String factor = switch (code) { case "mg" -> "0.001"; case "kg", "L" -> "1000"; case "tsp" -> "5"; case "tbsp" -> "15"; case "cup" -> "240"; default -> "1"; };
+        return new UnitResponse(id,code,code,dimension,new BigDecimal(factor),true);
+    }
 }
