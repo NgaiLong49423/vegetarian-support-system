@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.125.0
+> **Version:** v2.126.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-29
 > **Status:** Active
@@ -8,6 +8,26 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-29 — Align AI Integration Fixtures with Pro Entitlements
+
+**Status:** Working tree — not committed.
+
+**Scope:** Correct the five Backend CI failures caused by integration fixtures still granting PLUS access to features moved to PRO in the approved tier matrix.
+
+### Added
+
+- Explicit HTTP/SQL checks that active PLUS accounts cannot call the authoring or related-recipe provider and receive `requiredTier: PRO` with the upgrade link.
+
+### Changed
+
+- Use active PRO subscriptions for successful authoring and related-recipe AI tests, provider-failure tests and visibility revalidation tests. Exercise both Customer and Expert roles under PRO.
+- Test expiration with a formerly eligible PRO subscription rather than an already-ineligible PLUS tier.
+- Verify the full Backend with `clean verify`: 1,268 tests passed with no failures, errors or skips. Strict JaCoCo gates passed for Lines (94.7%), Branches (81.2%), Methods (92.9%) and Instructions (94.0%).
+
+### Fixed
+
+- Correct the entitlement-fixture mismatch observed in Backend job `123448799248` of CI run `40874230953`. Production guards, provider behavior and coverage thresholds are unchanged.
 
 ## 2026-10-29 — Name the Minimum Required AI Upgrade Plan
 
