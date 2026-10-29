@@ -17,8 +17,8 @@ class SubscriptionEntitlementServiceTest {
     private final SubscriptionEntitlementService service = new SubscriptionEntitlementService(repository, clock);
 
     @Test void deniedCallsExplainTheActualMinimumTierAndKeepTheStableErrorCode() {
-        assertUpgrade(() -> service.requirePlusOrPro(7), "PLUS", "Plus");
-        assertUpgrade(() -> service.requirePro(7), "PRO", "Pro");
+        assertUpgrade(() -> service.requirePlusOrPro(7), "PLUS", "gói AI PLUS");
+        assertUpgrade(() -> service.requirePro(7), "PRO", "gói AI PRO");
     }
 
     @Test void everyCallRechecksCurrentSubscriptionWithoutADailyCounterOrCachedEntitlement() {
@@ -27,8 +27,8 @@ class SubscriptionEntitlementServiceTest {
         when(repository.hasActiveProSubscription(7, now)).thenReturn(true, false);
         service.requirePlusOrPro(7);
         service.requirePro(7);
-        assertUpgrade(() -> service.requirePlusOrPro(7), "PLUS", "Plus");
-        assertUpgrade(() -> service.requirePro(7), "PRO", "Pro");
+        assertUpgrade(() -> service.requirePlusOrPro(7), "PLUS", "gói AI PLUS");
+        assertUpgrade(() -> service.requirePro(7), "PRO", "gói AI PRO");
         verify(repository, times(2)).hasActivePaidSubscription(7, now);
         verify(repository, times(2)).hasActiveProSubscription(7, now);
         verifyNoMoreInteractions(repository);

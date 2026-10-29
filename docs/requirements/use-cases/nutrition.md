@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M10
 > **File:** `docs/requirements/use-cases/nutrition.md`
-> **Version:** v2.13.0
+> **Version:** v2.14.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-27
+> **Last Updated:** 2026-10-29
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -159,13 +159,13 @@ Member chọn yêu cầu tạo thực đơn dinh dưỡng từ Lịch ăn tuần
 
 #### Preconditions
 - Member có hồ sơ dinh dưỡng hợp lệ (FR-35), trạng thái eligibility `ELIGIBLE` (FR-38). Hồ sơ sở thích FR-31, mục tiêu và nguyên liệu muốn có/cần tránh đều có thể chưa khai báo; ràng buộc nào đã khai báo thì được áp dụng.
-- Member có gói Pro còn hiệu lực cho tính năng này (FR-10).
+- Member có gói Plus hoặc Pro còn hiệu lực cho tính năng này (FR-10).
 
 #### Main Flow
 1. Member chọn khu vực “Dành cho bạn” trong trang Lịch ăn của tuần hiện tại và một trong hai chế độ: “Dựa trên hồ sơ” hoặc “Theo mong muốn tuần này”.
 2. Với “Dựa trên hồ sơ”, hệ thống đọc mục tiêu chung đã lưu nếu có; nếu mục tiêu null, hệ thống chỉ dùng các dữ liệu hồ sơ và ràng buộc hiện có để tạo menu cân bằng, không hỏi thêm mục tiêu.
 3. Với “Theo mong muốn tuần này”, Member chọn mục tiêu kế hoạch ăn và tùy chọn nguyên liệu muốn có/cần tránh. Câu trả lời chỉ dùng trong request này, không được ghi vào FR-35 hoặc tự động tái sử dụng cho tuần khác.
-4. Backend xác minh entitlement Pro, eligibility FR-38 và hồ sơ dinh dưỡng hợp lệ trước khi gọi Gemini.
+4. Backend xác minh entitlement Plus hoặc Pro, eligibility FR-38 và hồ sơ dinh dưỡng hợp lệ trước khi gọi Gemini.
 5. Hệ thống lấy các Recipe Post công khai có dữ liệu dinh dưỡng đáng tin cậy, phù hợp với loại ăn chay và dị ứng/cần tránh của Member. Trong chế độ tuần này, công thức chứa bất kỳ nguyên liệu nào trong danh sách cần tránh bị loại khỏi pool trước khi gọi Gemini; nguyên liệu muốn có chỉ được ưu tiên mềm trong pool còn lại. Nếu một công thức có cả nguyên liệu muốn có và nguyên liệu cần tránh, công thức đó vẫn bị loại.
 6. Hệ thống dùng BMI cùng hồ sơ và mức tham khảo chín chỉ tiêu để cá nhân hóa việc xếp hạng/phối hợp món. Hệ thống chỉ gửi cho Gemini danh sách công thức hợp lệ, dữ liệu dinh dưỡng cần thiết và yêu cầu xếp hạng ID; không gửi chiều cao, cân nặng hoặc BMI nếu không cần thiết cho xử lý.
 7. Backend lấy thứ hạng công thức do Gemini trả về và phối hợp một hoặc nhiều công thức công khai, mỗi công thức một khẩu phần, cho từng bữa từ hôm nay đến hết Chủ nhật hiện tại. Mỗi ngày trong khoảng đề xuất vẫn có ba bữa cố định. Nếu thiếu công thức khác nhau, có thể lặp giữa các bữa nhưng không lặp cùng món trong cùng một bữa; ưu tiên giảm lặp liên tiếp. Các ngày trước hôm nay được đánh dấu đã qua, không có món AI đề xuất; tuần tương lai nằm ngoài phạm vi tạo menu.
@@ -191,7 +191,7 @@ Khi tạo thành công, có kết quả đề xuất cần được hệ thống
 #### Acceptance Coverage
 - [AC-36.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36) — Chỉ dùng ứng viên công khai, đủ dữ liệu dinh dưỡng.
 - [AC-36.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36) — Tuân thủ loại ăn chay và dị ứng.
-- [AC-36.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36) — Kiểm tra Pro trước khi gọi Gemini.
+- [AC-36.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36) — Kiểm tra Plus hoặc Pro trước khi gọi Gemini.
 - [AC-36.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36) — Xử lý lỗi provider mà không đổi entitlement.
 
 <a id="uc-36-2"></a>

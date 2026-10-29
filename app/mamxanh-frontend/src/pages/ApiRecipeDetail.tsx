@@ -36,6 +36,7 @@ import { MemberAvatar } from '../components/MemberAvatar';
 import { RelatedRecipes } from '../components/RelatedRecipes';
 import { RecipeComments } from '../components/RecipeComments';
 import { MealPlanRecipeServings } from './MealPlanRecipeServings';
+import { ShoppingListRecipeServings } from './ShoppingListRecipeServings';
 import { useAiChat } from '../components/AiChatContext';
 import { AddRecipeShoppingDialog } from '../components/AddRecipeShoppingDialog';
 import { useAuth } from '../components/AuthContext';
@@ -118,8 +119,15 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
   const { account } = useAuth();
   const [searchParams] = useSearchParams();
   const fromMealPlan = searchParams.has('mealPlanWeek') || searchParams.has('mealPlanEntryId');
+  const fromShoppingList = searchParams.has('shoppingListId');
+  const shoppingListId = Number(searchParams.get('shoppingListId'));
   const planContextKey = `${recipeId}:${searchParams.get('mealPlanWeek')}:${searchParams.get('mealPlanEntryId')}`;
-  const backTarget = fromMealPlan ? `/ke-hoach?weekStartDate=${encodeURIComponent(searchParams.get('mealPlanWeek') ?? '')}&mealDate=${encodeURIComponent(searchParams.get('mealDate') ?? '')}` : '/kham-pha';
+  const shoppingContextKey = `${recipeId}:${searchParams.get('shoppingListId')}`;
+  const backTarget = fromShoppingList
+    ? `/di-cho?listId=${encodeURIComponent(searchParams.get('shoppingListId') ?? '')}`
+    : fromMealPlan
+      ? `/ke-hoach?weekStartDate=${encodeURIComponent(searchParams.get('mealPlanWeek') ?? '')}&mealDate=${encodeURIComponent(searchParams.get('mealDate') ?? '')}`
+      : '/kham-pha';
   const [recipe, setRecipe] = useState<RecipeDetail | null>(null);
   const [error, setError] = useState('');
   const [selectedMedia, setSelectedMedia] = useState(0);
@@ -184,8 +192,8 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
         <Card className="mx-auto max-w-xl p-8 text-center">
           <h1 className="text-xl font-bold text-ink">Không thể mở công thức</h1>
           <p role="alert" className="mt-2 text-sm text-ink-muted">{error}</p>
-          <Link to="/kham-pha" className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-brand-700">
-            <ArrowLeft className="h-4 w-4" />Quay lại khám phá
+          <Link to={backTarget} className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-brand-700">
+            <ArrowLeft className="h-4 w-4" />{fromShoppingList ? 'Về danh sách mua sắm' : fromMealPlan ? 'Về lịch ăn' : 'Quay lại khám phá'}
           </Link>
         </Card>
       </PageContainer>
@@ -225,7 +233,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
         className="inline-flex items-center gap-2 rounded-full border border-brand-300/40 bg-paper px-3.5 py-1.5 text-sm font-semibold text-ink shadow-xs transition-all hover:border-brand-500 hover:text-brand-700 hover:shadow-sm dark:border-brand-800 dark:bg-surface"
       >
         <ArrowLeft className="h-4 w-4 text-brand-600 shrink-0" />
-        {fromMealPlan ? 'Về lịch ăn' : 'Khám phá'}
+        {fromShoppingList ? 'Về danh sách mua sắm' : fromMealPlan ? 'Về lịch ăn' : 'Khám phá'}
       </Link>
       <div className="flex flex-wrap items-center gap-2">
         <SaveRecipeButton recipeId={recipe.recipeId} size="sm" />
@@ -457,7 +465,9 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-700">Chuẩn bị vào bếp</p>
               <h2 className="mt-1 text-xl font-extrabold text-ink">Nguyên liệu &amp; Định lượng</h2>
             </div>
-            {fromMealPlan ? (
+            {fromShoppingList ? (
+              <ShoppingListRecipeServings key={shoppingContextKey} listId={shoppingListId} recipeId={recipeId} servings={servings} onChange={setServings} />
+            ) : fromMealPlan ? (
               <MealPlanRecipeServings key={planContextKey} recipeId={recipeId} servings={servings} onChange={setServings} />
             ) : (
               <div className="recipe-detail-no-print flex items-center gap-2 rounded-xl bg-brand-50 p-1">

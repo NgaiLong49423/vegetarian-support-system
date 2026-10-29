@@ -1,3 +1,4 @@
+import { aiRequiredTier, aiUpgradeMessage, type AiPaidTier } from '../lib/aiUpgrade';
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -36,7 +37,7 @@ export function EditRecipe() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState<RecipeAiContentType | null>(null);
-  const [aiError, setAiError] = useState<{ contentType: RecipeAiContentType; message: string; upgradeRequired?: boolean } | null>(null);
+  const [aiError, setAiError] = useState<{ contentType: RecipeAiContentType; message: string; upgradeRequired?: boolean; requiredTier?: AiPaidTier } | null>(null);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -117,8 +118,8 @@ export function EditRecipe() {
       setField(contentType === 'DESCRIPTION' ? 'description' : 'instructions', result.content);
     } catch (cause) {
       const apiError = asApiError(cause);
-      setAiError({ contentType, upgradeRequired: apiError.code === 'AI_SUBSCRIPTION_REQUIRED', message: apiError.code === 'AI_SUBSCRIPTION_REQUIRED'
-        ? 'Tính năng AI dành cho gói Plus/Pro. Bạn vẫn có thể tự sửa và lưu công thức.'
+      setAiError({ contentType, upgradeRequired: apiError.code === 'AI_SUBSCRIPTION_REQUIRED', requiredTier: aiRequiredTier(apiError, 'PRO'), message: apiError.code === 'AI_SUBSCRIPTION_REQUIRED'
+        ? aiUpgradeMessage(apiError, 'PRO', 'AI soạn nội dung công thức') + ' Bạn vẫn có thể tự sửa và lưu công thức.'
         : apiError.code === 'AI_PROVIDER_UNAVAILABLE' || apiError.code === 'AI_RESPONSE_INVALID'
           ? 'AI hiện không tạo được nội dung hợp lệ. Bạn vẫn có thể tự sửa và lưu công thức.'
           : apiError.message });
@@ -130,6 +131,13 @@ export function EditRecipe() {
   const save = async (event: FormEvent) => {
     event.preventDefault();
     if (!form) return;
+    const invalidIndex = form.ingredients.findIndex((ingredient) => !references?.ingredients.some((option) =>
+      option.ingredientId === ingredient.ingredientId && option.unitId === ingredient.unitId));
+    if (invalidIndex >= 0) {
+      setFieldErrors({ [`ingredients[${invalidIndex}].unitId`]: 'Đơn vị này đã ngừng hỗ trợ. Chọn đơn vị mới và kiểm tra lại số lượng.' });
+      setError('Hãy thay các đơn vị cũ hoặc không còn được hỗ trợ trước khi lưu.');
+      return;
+    }
     setSaving(true);
     setError('');
     setFieldErrors({});
@@ -190,7 +198,7 @@ export function EditRecipe() {
         <Card className="space-y-4 p-5 sm:p-6">
           <h2 className="text-lg font-bold text-ink">Thông tin công thức</h2>
           <label className={label}>Tên món *<input className={input} required minLength={3} maxLength={120} value={form.title} onChange={(e) => setField('title', e.target.value)} />{fieldError('title')}</label>
-          <div><label className={label}>Mô tả<textarea className={input} rows={3} maxLength={2000} value={form.description} onChange={(e) => setField('description', e.target.value)} /></label><RecipeAiAssistance upgradeRequired={aiError?.upgradeRequired} contentType="DESCRIPTION" loading={aiLoading} error={aiError?.contentType === 'DESCRIPTION' ? aiError.message : ''} onGenerate={generateWithAi} /></div>
+          <div><label className={label}>Mô tả<textarea className={input} rows={3} maxLength={2000} value={form.description} onChange={(e) => setField('description', e.target.value)} /></label><RecipeAiAssistance requiredTier={aiError?.requiredTier} upgradeRequired={aiError?.upgradeRequired} contentType="DESCRIPTION" loading={aiLoading} error={aiError?.contentType === 'DESCRIPTION' ? aiError.message : ''} onGenerate={generateWithAi} /></div>
           <div className="grid gap-4 sm:grid-cols-2">
             <label className={label}>Loại món<select className={input} value={form.dishCategory} onChange={(e) => setField('dishCategory', e.target.value)}>{categories.map(([value, name]) => <option key={value} value={value}>{name}</option>)}</select></label>
             <label className={label}>Chế độ chay<select className={input} value={form.vegetarianType} onChange={(e) => setField('vegetarianType', e.target.value)}>{diets.map(([value, name]) => <option key={value} value={value}>{name}</option>)}</select></label>
@@ -204,7 +212,7 @@ export function EditRecipe() {
             <label className={label}>Thời gian chuẩn bị (phút)<input className={input} type="number" min={0} max={1440} required value={form.prepTimeMin} onChange={(e) => setField('prepTimeMin', Number(e.target.value))} /></label>
             <label className={label}>Thời gian nấu (phút)<input className={input} type="number" min={0} max={1440} required value={form.cookTimeMin} onChange={(e) => setField('cookTimeMin', Number(e.target.value))} /></label>
           </div>
-          <div><label className={label}>Hướng dẫn nấu *<textarea className={input} rows={8} minLength={10} maxLength={5000} required value={form.instructions} onChange={(e) => setField('instructions', e.target.value)} /><span className="mt-1 block text-right text-xs font-normal text-ink-muted">{form.instructions.length}/5000</span>{fieldError('instructions')}</label><RecipeAiAssistance upgradeRequired={aiError?.upgradeRequired} contentType="INSTRUCTIONS" loading={aiLoading} error={aiError?.contentType === 'INSTRUCTIONS' ? aiError.message : ''} onGenerate={generateWithAi} /></div>
+          <div><label className={label}>Hướng dẫn nấu *<textarea className={input} rows={8} minLength={10} maxLength={5000} required value={form.instructions} onChange={(e) => setField('instructions', e.target.value)} /><span className="mt-1 block text-right text-xs font-normal text-ink-muted">{form.instructions.length}/5000</span>{fieldError('instructions')}</label><RecipeAiAssistance requiredTier={aiError?.requiredTier} upgradeRequired={aiError?.upgradeRequired} contentType="INSTRUCTIONS" loading={aiLoading} error={aiError?.contentType === 'INSTRUCTIONS' ? aiError.message : ''} onGenerate={generateWithAi} /></div>
           <label className={label}>Video YouTube (không bắt buộc)<input className={input} type="url" value={form.youtubeUrl} onChange={(e) => setField('youtubeUrl', e.target.value)} placeholder="https://youtu.be/..." /></label>
         </Card>
         <Card className="p-5 sm:p-6"><div className="mb-4 flex items-center justify-between"><div><h2 className="text-lg font-bold text-ink">Nguyên liệu</h2><p className="text-xs text-ink-muted">Giữ nguyên mã nguyên liệu và đơn vị hiện tại, chỉnh tên hiển thị và số lượng.</p></div></div>
@@ -212,6 +220,8 @@ export function EditRecipe() {
             const matchingOptions = references.ingredients.filter((item) => item.ingredientId === ingredient.ingredientId);
             const allowedUnits = matchingOptions.map((item) => ({ unitId: item.unitId, code: item.unitCode, name: item.unitName }));
             const currentIngredient = recipe.ingredients.find((item) => item.ingredientId === ingredient.ingredientId);
+            const currentUnit = recipe.ingredients.find((item) => item.ingredientId === ingredient.ingredientId && item.unitId === ingredient.unitId);
+            const unitStillSupported = allowedUnits.some((unit) => unit.unitId === ingredient.unitId);
             return <div key={`${ingredient.ingredientId}-${index}`} className="grid gap-3 rounded-xl bg-brand-50/70 p-3 sm:grid-cols-[minmax(0,1fr)_120px_120px_auto] sm:items-start">
             <div>
               <label htmlFor={`edit-ingredient-${index}`} className="mb-1 block text-xs font-semibold text-ink-soft">Nguyên liệu</label>
@@ -224,7 +234,8 @@ export function EditRecipe() {
             </div>
             <div>
               <label htmlFor={`edit-unit-${index}`} className="mb-1 block text-xs font-semibold text-ink-soft">Đơn vị</label>
-              <select id={`edit-unit-${index}`} aria-label="Đơn vị" className={input} value={ingredient.unitId} onChange={(e) => setField('ingredients', form.ingredients.map((item, i) => i === index ? { ...item, unitId: Number(e.target.value) } : item))}>{allowedUnits.map((unit) => <option key={unit.unitId} value={unit.unitId}>{unit.name} ({unit.code})</option>)}</select>
+              <select id={`edit-unit-${index}`} aria-label="Đơn vị" required className={input} value={ingredient.unitId} onChange={(e) => setField('ingredients', form.ingredients.map((item, i) => i === index ? { ...item, unitId: Number(e.target.value) } : item))}>{!unitStillSupported && currentUnit && <option value={ingredient.unitId} disabled>{currentUnit.unitName} ({currentUnit.unitCode}) · đơn vị cũ, cần chọn lại</option>}{allowedUnits.map((unit) => <option key={unit.unitId} value={unit.unitId}>{unit.name} ({unit.code}){unit.code === 'cup' ? ' = 240 ml' : ''}</option>)}</select>
+              {!unitStillSupported && <span className="mt-1 block text-xs text-amber-800">Đơn vị của bài cũ không còn được hỗ trợ. Chọn đơn vị mới và kiểm tra lại số lượng trước khi lưu.</span>}
             </div>
             <div className="flex items-center pt-2 sm:pt-7 sm:justify-center">
               <BinButton size={28} disabled={form.ingredients.length === 1} aria-label="Xóa nguyên liệu" title="Xóa nguyên liệu" onClick={() => setField('ingredients', form.ingredients.filter((_, i) => i !== index))} />

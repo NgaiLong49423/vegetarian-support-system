@@ -1,10 +1,11 @@
+import { aiRequiredTier, aiUpgradeMessage, type AiPaidTier } from "../lib/aiUpgrade"
 import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { Button } from "../components/ui"
 import { mealPlanApi, type MealPlanNutrition as NutritionData, type MealPlanNutritionRecommendations, type MealPlanWeek } from "../api/recipes"
 import { asApiError, asApiErrorAsync, type ApiError } from "../lib/apiClient"
 
-const disclaimer = "Thông tin dinh dưỡng trong báo cáo chỉ mang tính tham khảo, được ước tính từ thực đơn dự kiến; không phải kết quả khám, chẩn đoán hay điều trị y tế, và không thay thế tư vấn của bác sĩ hoặc chuyên gia dinh dưỡng. Kết quả không có giá trị pháp lý hoặc y tế."
+const disclaimer = "Thông tin dinh dưỡng trong báo cáo chỉ mang tính tham khảo, được ước tính từ thực đơn dự kiến, không phải kết quả khám, chẩn đoán hay điều trị y tế, và không thay thế tư vấn của bác sĩ hoặc chuyên gia dinh dưỡng. Kết quả không có giá trị pháp lý hoặc y tế."
 const mealLabels = { BREAKFAST: "Sáng", LUNCH: "Trưa", DINNER: "Tối" }
 function fmt(value: number | null | undefined, unit: string) {
   return value == null ? "Chưa đủ dữ liệu" : `${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 }).format(value)} ${unit}`
@@ -22,6 +23,7 @@ export function MealPlanNutrition({ plan, initialDay, initialScope, onEntryRepla
   const [exportError, setExportError] = useState<ApiError | null>(null)
   const [exporting, setExporting] = useState(false)
   const [aiError, setAiError] = useState("")
+  const [aiUpgradeTier, setAiUpgradeTier] = useState<AiPaidTier>("PRO")
   const [aiUpgradeRequired, setAiUpgradeRequired] = useState(false)
   const [aiLoading, setAiLoading] = useState<number | null>(null)
   const [recommendations, setRecommendations] = useState<MealPlanNutritionRecommendations | null>(null)
@@ -60,7 +62,7 @@ export function MealPlanNutrition({ plan, initialDay, initialScope, onEntryRepla
   async function askAi(entryId: number) {
     setAiLoading(entryId); setAiError(""); setAiUpgradeRequired(false); setRecommendations(null)
     try { setRecommendations(await mealPlanApi.nutritionRecommendations(plan.weekStartDate, entryId)) }
-    catch (cause) { const error = asApiError(cause); setAiError(error.message); setAiUpgradeRequired(error.code === "AI_SUBSCRIPTION_REQUIRED") }
+    catch (cause) { const error = asApiError(cause); setAiError(error.code === "AI_SUBSCRIPTION_REQUIRED" ? aiUpgradeMessage(error, "PRO", "AI đề xuất điều chỉnh dinh dưỡng") : error.message); setAiUpgradeTier(aiRequiredTier(error, "PRO")); setAiUpgradeRequired(error.code === "AI_SUBSCRIPTION_REQUIRED") }
     finally { setAiLoading(null) }
   }
 
@@ -70,7 +72,7 @@ export function MealPlanNutrition({ plan, initialDay, initialScope, onEntryRepla
       const saved = await mealPlanApi.replaceEntry(plan.weekStartDate, entryId, recipeId)
       onEntryReplaced(saved)
       setRecommendations(null); setRetry((value) => value + 1)
-    } catch (cause) { const error = asApiError(cause); setAiError(error.message); setAiUpgradeRequired(error.code === "AI_SUBSCRIPTION_REQUIRED") }
+    } catch (cause) { const error = asApiError(cause); setAiError(error.code === "AI_SUBSCRIPTION_REQUIRED" ? aiUpgradeMessage(error, "PRO", "AI đề xuất điều chỉnh dinh dưỡng") : error.message); setAiUpgradeTier(aiRequiredTier(error, "PRO")); setAiUpgradeRequired(error.code === "AI_SUBSCRIPTION_REQUIRED") }
     finally { setAccepting(null) }
   }
 
@@ -102,9 +104,9 @@ export function MealPlanNutrition({ plan, initialDay, initialScope, onEntryRepla
           <tbody>{metrics.map((metric) => { const values = scope === "week" ? data.days.map((item) => item.nutrients[metric.key]) : [data.days[0]?.nutrients[metric.key]]; const ref = targetMap.get(metric.key); const status = (value: number | null | undefined) => value == null || ref?.minimum == null ? "bg-paper" : ref.referenceType === "AMDR" ? (value >= ref.minimum && (ref.maximum == null || value <= ref.maximum) ? "bg-emerald-50 text-emerald-900" : "bg-amber-50 text-amber-900") : (value >= ref.minimum ? "bg-emerald-50 text-emerald-900" : "bg-amber-50 text-amber-900"); return <tr key={metric.key} className="border-t border-brand-100"><th scope="row" className="sticky left-0 bg-paper p-2 text-left font-medium">{metric.label}</th>{values.map((value, index) => <td key={index} className={`p-2 tabular-nums ${status(value)}`}>{fmt(value, metric.unit)}</td>)}<td className="p-2 tabular-nums">{scope === "week" ? fmt(average(metric.key), metric.unit) : fmt(ref?.minimum, metric.unit)}</td><td className="p-2">{ref ? `${ref.referenceType} · ${ref.source}` : "Chưa có mức tham khảo"}</td></tr>})}</tbody></table>
       </div>
       {scope === "week" && <section aria-label="Tỷ lệ ngày đạt tham khảo" className="space-y-2"><h3 className="text-sm font-semibold">Tỷ lệ ngày đạt theo từng chỉ tiêu</h3>{metrics.map((metric) => { const values = data.days.map((item) => item.nutrients[metric.key]); const known = values.filter((value): value is number => value != null); const passed = data.attainmentDays[metric.key] ?? 0; return <p key={metric.key} className="text-xs text-ink-muted">{metric.label}: {known.length === 7 ? `${passed}/7 ngày (${Math.round(passed / 7 * 100)}%)` : `Chưa đủ dữ liệu (${known.length}/7 ngày)`}</p>})}</section>}
-      {scope === "day" && entries.length > 0 && <section className="space-y-2"><h3 className="text-sm font-semibold">Giải thích chênh lệch bằng AI</h3><p className="text-xs text-ink-muted">Dành cho gói Pro. AI chỉ chọn công thức có sẵn; số liệu lấy từ catalog dinh dưỡng.</p>{entries.map((entry) => <div key={entry.entryId} className="rounded-lg border border-brand-100 p-3"><p className="text-sm">{mealLabels[entry.mealType]} · {entry.recipeTitle ?? "Công thức không còn khả dụng"}</p><Button size="sm" variant="ghost" disabled={aiLoading != null || !entry.recipeTitle} onClick={() => void askAi(entry.entryId)}>{aiLoading === entry.entryId ? "Đang phân tích…" : "Phân tích và gợi ý món"}</Button></div>)}</section>}
+      {scope === "day" && entries.length > 0 && <section className="space-y-2"><h3 className="text-sm font-semibold">Giải thích chênh lệch bằng AI</h3><p className="text-xs text-ink-muted">Dành cho gói AI PRO. AI chỉ chọn công thức có sẵn, số liệu lấy từ catalog dinh dưỡng.</p>{entries.map((entry) => <div key={entry.entryId} className="rounded-lg border border-brand-100 p-3"><p className="text-sm">{mealLabels[entry.mealType]} · {entry.recipeTitle ?? "Công thức không còn khả dụng"}</p><Button size="sm" variant="ghost" disabled={aiLoading != null || !entry.recipeTitle} onClick={() => void askAi(entry.entryId)}>{aiLoading === entry.entryId ? "Đang phân tích…" : "Phân tích và gợi ý món"}</Button></div>)}</section>}
       {recommendations && <section className="space-y-2 rounded-xl bg-raised p-3"><h3 className="text-sm font-semibold">Phân tích của AI</h3><p className="text-sm leading-6 text-ink-soft">{recommendations.analysis}</p><p className="text-xs text-ink-muted">Mức và số liệu chi tiết được lấy từ bảng dinh dưỡng nội bộ.</p><h4 className="pt-2 text-sm font-semibold">Món được gợi ý</h4>{recommendations.recommendations.length ? recommendations.recommendations.map((item) => <div key={item.recipeId} className="flex flex-wrap items-center justify-between gap-2 border-t border-brand-100 py-2"><span>{item.title}{!item.complete && <span className="block text-xs text-ink-muted">Thiếu dữ liệu dinh dưỡng</span>}</span><Button size="sm" disabled={accepting != null} onClick={() => void acceptSuggestion(recommendations.entryId, item.recipeId)}>{accepting === item.recipeId ? "Đang thay…" : "Thay món này"}</Button></div>) : <p className="text-sm text-ink-muted">Chưa có món phù hợp trong kho công thức.</p>}</section>}
-      {aiError && <p role="alert" className="text-sm text-red-700">{aiError} {aiUpgradeRequired && <Link to="/goi-ai" className="font-semibold underline">Nâng cấp gói Pro.</Link>} Bảng dinh dưỡng vẫn có thể xem; bạn có thể thử lại sau.</p>}
+      {aiError && <p role="alert" className="text-sm text-red-700">{aiError} {aiUpgradeRequired && <Link to="/goi-ai" className="font-semibold underline">Nâng cấp gói AI {aiUpgradeTier}</Link>} Bảng dinh dưỡng vẫn có thể xem; bạn có thể thử lại sau.</p>}
     </>}
     <p className="text-xs leading-5 text-ink-muted">{disclaimer}</p>
   </div>

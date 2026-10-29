@@ -65,8 +65,8 @@ class AiMenuServiceTest {
     }
 
     @Test
-    void deniesNonProBeforeReadingHealthProfileOrCallingAi() {
-        doThrow(new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED)).when(entitlements).requirePro(17L);
+    void deniesFreeBeforeReadingHealthProfileOrCallingAi() {
+        doThrow(new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED)).when(entitlements).requirePlusOrPro(17L);
         assertThatThrownBy(() -> service.createPreview(new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null)))
                 .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_SUBSCRIPTION_REQUIRED);
         verifyNoInteractions(profiles, dietary, recipes, ai);

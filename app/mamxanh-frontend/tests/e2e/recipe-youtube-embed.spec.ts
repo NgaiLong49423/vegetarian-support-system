@@ -114,7 +114,7 @@ test.describe('Issue #21 [FR-15] — Nhúng trình phát YouTube trong bài côn
     await page.getByLabel('Chọn nguyên liệu 1').fill('Đậu');
     await page.getByRole('button', { name: 'Đậu hũ', exact: true }).click();
     await page.getByLabel('Số lượng nguyên liệu 1').fill('200');
-    await page.getByLabel('Đơn vị nguyên liệu 1').selectOption({ label: 'gram (g)' });
+    await page.getByLabel('Đơn vị nguyên liệu 1').selectOption('1');
     await page.getByLabel('Hướng dẫn * (10–5.000 ký tự)').fill('Hướng dẫn chế biến món ăn ngon lành chuẩn vị.');
     await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
     await expect(page).toHaveURL(/\/cong-thuc\/2199$/);

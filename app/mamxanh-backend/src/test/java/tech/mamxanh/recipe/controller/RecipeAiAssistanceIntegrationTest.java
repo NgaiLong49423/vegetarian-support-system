@@ -28,7 +28,7 @@ class RecipeAiAssistanceIntegrationTest extends AbstractIntegrationTest {
     @Autowired private JdbcTemplate jdbcTemplate;
     @Autowired private JsonMapper jsonMapper;
     @MockitoBean private AiClient aiClient;
-    private long plusExpertId;
+    private long proExpertId;
     private long freeExpertId;
     private long ingredientId;
     private int unitId;
@@ -38,14 +38,14 @@ class RecipeAiAssistanceIntegrationTest extends AbstractIntegrationTest {
         jdbcTemplate.update("DELETE FROM [SUBSCRIPTION] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?)", PREFIX + "%");
         jdbcTemplate.update("DELETE FROM [INGREDIENT] WHERE name = ?", "FR21 integration tofu");
         jdbcTemplate.update("DELETE FROM [USER] WHERE email LIKE ?", PREFIX + "%");
-        plusExpertId = insertUser("plus", "EXPERT");
+        proExpertId = insertUser("pro", "EXPERT");
         freeExpertId = insertUser("free", "EXPERT");
         jdbcTemplate.update("INSERT INTO [INGREDIENT] (name, source_name, reference_date) VALUES (?, ?, '2026-09-28')",
                 "FR21 integration tofu", "FR21 test fixture");
         ingredientId = jdbcTemplate.queryForObject("SELECT ingredient_id FROM [INGREDIENT] WHERE name = ?", Long.class, "FR21 integration tofu");
         unitId = jdbcTemplate.queryForObject("SELECT unit_id FROM [UNIT] WHERE code = N'g'", Integer.class);
-        jdbcTemplate.update("INSERT INTO [SUBSCRIPTION] (user_id, tier, status, starts_at, ends_at) VALUES (?, 'PLUS', 'ACTIVE', ?, ?)",
-                plusExpertId, LocalDateTime.of(2026, 1, 1, 0, 0), LocalDateTime.of(2027, 1, 1, 0, 0));
+        jdbcTemplate.update("INSERT INTO [SUBSCRIPTION] (user_id, tier, status, starts_at, ends_at) VALUES (?, 'PRO', 'ACTIVE', ?, ?)",
+                proExpertId, LocalDateTime.of(2026, 1, 1, 0, 0), LocalDateTime.of(2027, 1, 1, 0, 0));
         when(aiClient.generateRecipeContent(anyString(), anyList())).thenReturn(new AiClient.RecommendationResult("""
                 {"description":"Mô tả công thức thử nghiệm.","steps":[
                   {"text":"Chuẩn bị dụng cụ và nguyên liệu.","ingredientIds":[%1$d]},
@@ -69,22 +69,34 @@ class RecipeAiAssistanceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void activePlusSubscriptionCallsGeminiAndReturnsEditableTextWithoutSavingDraft() throws Exception {
-        mockMvc.perform(post("/api/v1/recipes/ai-assistance").with(principal(plusExpertId))
+    void activePlusSubscriptionRequiresProBeforeCallingGemini() throws Exception {
+        jdbcTemplate.update("UPDATE [SUBSCRIPTION] SET tier='PLUS' WHERE user_id=?", proExpertId);
+        mockMvc.perform(post("/api/v1/recipes/ai-assistance").with(principal(proExpertId))
+                        .contentType(MediaType.APPLICATION_JSON).content(request()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("AI_SUBSCRIPTION_REQUIRED"))
+                .andExpect(jsonPath("$.requiredTier").value("PRO"))
+                .andExpect(jsonPath("$.upgradeUrl").value("/goi-ai"));
+        verify(aiClient, never()).generateRecipeText(anyString(), anyList());
+    }
+
+    @Test
+    void activeProSubscriptionCallsGeminiAndReturnsEditableTextWithoutSavingDraft() throws Exception {
+        mockMvc.perform(post("/api/v1/recipes/ai-assistance").with(principal(proExpertId))
                         .contentType(MediaType.APPLICATION_JSON).content(request()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.contentType").value("INSTRUCTIONS"))
                 .andExpect(jsonPath("$.content").value(org.hamcrest.Matchers.containsString("FR21 integration tofu")));
         org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM [RECIPE_POST] WHERE author_id = ?", Integer.class, plusExpertId)).isZero();
+                "SELECT COUNT(*) FROM [RECIPE_POST] WHERE author_id = ?", Integer.class, proExpertId)).isZero();
     }
 
     @Test
     void expiredSubscriptionIsDeniedByTheSqlServerEntitlementQuery() throws Exception {
         jdbcTemplate.update("UPDATE [SUBSCRIPTION] SET ends_at = ? WHERE user_id = ?",
-                LocalDateTime.of(2026, 9, 1, 0, 0), plusExpertId);
+                LocalDateTime.of(2026, 9, 1, 0, 0), proExpertId);
 
-        mockMvc.perform(post("/api/v1/recipes/ai-assistance").with(principal(plusExpertId))
+        mockMvc.perform(post("/api/v1/recipes/ai-assistance").with(principal(proExpertId))
                         .contentType(MediaType.APPLICATION_JSON).content(request()))
                 .andExpect(status().isForbidden());
         verify(aiClient, never()).generateRecipeContent(anyString(), anyList());
@@ -102,12 +114,12 @@ class RecipeAiAssistanceIntegrationTest extends AbstractIntegrationTest {
     void incompleteProviderOutputIs502AndDoesNotSaveARecipe() throws Exception {
         when(aiClient.generateRecipeContent(anyString(), anyList())).thenThrow(
                 tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException.invalidResponse("private incomplete output"));
-        mockMvc.perform(post("/api/v1/recipes/ai-assistance").with(principal(plusExpertId))
+        mockMvc.perform(post("/api/v1/recipes/ai-assistance").with(principal(proExpertId))
                         .contentType(MediaType.APPLICATION_JSON).content(request()))
                 .andExpect(status().isBadGateway())
                 .andExpect(jsonPath("$.code").value("AI_RESPONSE_INVALID"));
         org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM [RECIPE_POST] WHERE author_id = ?", Integer.class, plusExpertId)).isZero();
+                "SELECT COUNT(*) FROM [RECIPE_POST] WHERE author_id = ?", Integer.class, proExpertId)).isZero();
     }
 
     private long insertUser(String suffix, String role) {

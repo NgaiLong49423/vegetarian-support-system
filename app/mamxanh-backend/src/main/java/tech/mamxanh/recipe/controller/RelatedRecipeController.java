@@ -41,11 +41,11 @@ public class RelatedRecipeController {
     @PostMapping("/ai")
     @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
     @Operation(summary = "Ask Gemini to select existing pairing or variation recipes",
-            description = "Active Customer/Expert with Plus/Pro required before calling Gemini. No recipe or meal plan is written.")
+            description = "Active Customer/Expert with Pro required before calling Gemini. No recipe or meal plan is written.")
     @ApiResponses({@ApiResponse(responseCode = "200", description = "Validated public recipes, possibly empty."),
             @ApiResponse(responseCode = "400", description = "Invalid ID or limit."),
             @ApiResponse(responseCode = "401", description = "Authentication required."),
-            @ApiResponse(responseCode = "403", description = "Member role and active Plus/Pro required."),
+            @ApiResponse(responseCode = "403", description = "Member role and active Pro required."),
             @ApiResponse(responseCode = "404", description = "Source recipe is unavailable."),
             @ApiResponse(responseCode = "502", description = "Invalid Gemini selection."),
             @ApiResponse(responseCode = "503", description = "Gemini unavailable.")})

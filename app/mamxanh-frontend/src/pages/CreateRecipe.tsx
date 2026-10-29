@@ -1,7 +1,8 @@
+import { aiRequiredTier, aiUpgradeMessage, type AiPaidTier } from '../lib/aiUpgrade';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { AlertCircle, Info, LoaderCircle, Plus, Sparkles, Trash2 } from 'lucide-react';
-import { recipesApi, type Choice, type CreateRecipeRequest, type IngredientOption, type RecipeFormOptions } from '../api/recipes';
+import { AlertCircle, Check, Info, LoaderCircle, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { recipesApi, type Choice, type CreateRecipeRequest, type IngredientOption, type RecipeFormOptions, type IngredientRecipeUnit } from '../api/recipes';
 import { ApiError, asApiError } from '../lib/apiClient';
 import { PageContainer } from '../components/Layout';
 import { useAuth } from '../components/AuthContext';
@@ -12,7 +13,8 @@ import type { UserRole } from '../types';
 import { RecipeImageUploader, type ImageItem } from '../components/RecipeImageUploader';
 import { RecipeAiAssistance } from '../components/RecipeAiAssistance';
 import type { RecipeAiContentType } from '../api/recipes';
-import { AiRecipeAssistantModal } from '../components/AiRecipeAssistantModal';
+import { AiRecipeAssistantModal, type GeneratedRecipeData } from '../components/AiRecipeAssistantModal';
+import { assessRecipeDifficulty } from '../utils/difficultyCalculator';
 
 type IngredientRow = {
   key: string;
@@ -21,6 +23,9 @@ type IngredientRow = {
   search: string;
   quantity: string;
   unitId: number | null;
+  units: IngredientRecipeUnit[];
+  unitsLoading: boolean;
+  unitsError: string;
 };
 
 let ingredientRowSequence = 0;
@@ -32,6 +37,9 @@ const emptyIngredient = (): IngredientRow => ({
   search: '',
   quantity: '',
   unitId: null,
+  units: [],
+  unitsLoading: false,
+  unitsError: '',
 });
 
 export function CreateRecipe() {
@@ -106,9 +114,80 @@ function CreateRecipeForm() {
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [aiLoading, setAiLoading] = useState<RecipeAiContentType | null>(null);
-  const [aiError, setAiError] = useState<{ contentType: RecipeAiContentType; message: string; upgradeRequired?: boolean } | null>(null);
+  const [aiError, setAiError] = useState<{ contentType: RecipeAiContentType; message: string; upgradeRequired?: boolean; requiredTier?: AiPaidTier } | null>(null);
   const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiNotice, setAiNotice] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  const suggestedDifficulty = assessRecipeDifficulty({
+    ingredientCount: ingredients.filter((ing) => ing.ingredientId || ing.quantity).length,
+    prepTimeMinutes: Number(prepTimeMinutes) || 0,
+    cookTimeMinutes: Number(cookTimeMinutes) || 0,
+    instructions,
+  });
+
+  const handleApplyAiRecipe = async (aiRecipe: GeneratedRecipeData) => {
+    setTitle(aiRecipe.title);
+    setDescription(aiRecipe.description);
+    setInstructions(aiRecipe.instructions);
+    if (aiRecipe.dishCategory) setDishCategory(aiRecipe.dishCategory);
+    if (aiRecipe.vegetarianType) setVegetarianType(aiRecipe.vegetarianType);
+    if (aiRecipe.difficulty) setDifficulty(aiRecipe.difficulty);
+    setServings(String(aiRecipe.servings));
+    setPrepTimeMinutes(String(aiRecipe.prepTimeMinutes));
+    setCookTimeMinutes(String(aiRecipe.cookTimeMinutes));
+
+    if (aiRecipe.ingredients && aiRecipe.ingredients.length > 0) {
+      const mappedRows: IngredientRow[] = await Promise.all(
+        aiRecipe.ingredients.map(async (item, idx) => {
+          let foundIngredientId: number | null = null;
+          let foundName = item.name;
+          try {
+            const searchResults = await recipesApi.searchIngredients(item.name);
+            if (searchResults && searchResults.length > 0) {
+              const exact = searchResults.find(
+                (r) => r.name.toLowerCase() === item.name.toLowerCase(),
+              );
+              if (exact) {
+                foundIngredientId = exact.ingredientId;
+                foundName = exact.name;
+              } else {
+                foundIngredientId = searchResults[0].ingredientId;
+                foundName = searchResults[0].name;
+              }
+            }
+          } catch {
+            // bỏ qua lỗi nếu search catalog tạm thời không khả dụng
+          }
+
+          let units: IngredientRecipeUnit[] = [];
+          if (foundIngredientId !== null) {
+            try { units = await recipesApi.getIngredientUnits(foundIngredientId); } catch { /* surfaced on the row */ }
+          }
+          const aiUnit = units.find((unit) => unit.code.toLowerCase() === item.unitCode.toLowerCase());
+
+          return {
+            key: `ingredient-${Date.now()}-${idx}`,
+            ingredientId: foundIngredientId,
+            ingredientName: foundName,
+            search: foundName,
+            quantity: String(item.quantity),
+            unitId: aiUnit?.id ?? null,
+            units,
+            unitsLoading: false,
+            unitsError: foundIngredientId === null ? 'Không xác định được nguyên liệu phù hợp với gợi ý AI. Hãy chọn nguyên liệu và đơn vị.'
+              : units.length === 0 ? 'Không tải được đơn vị. Hãy thử tải lại.'
+                : !aiUnit ? `AI đề xuất đơn vị “${item.unitCode}” chưa được nguyên liệu hỗ trợ. Hãy chọn đơn vị khác.` : '',
+          };
+        }),
+      );
+      setIngredients(mappedRows);
+    }
+
+    setAiNotice(
+      `Đã nạp thành công thông tin món "${aiRecipe.title}" kèm định lượng nguyên liệu vào biểu mẫu!`,
+    );
+  };
 
   useEffect(() => {
     let active = true;
@@ -125,10 +204,25 @@ function CreateRecipeForm() {
     setIngredients((current) => current.map((row) => row.key === key ? { ...row, ...patch } : row));
   };
 
+  const loadIngredientUnits = async (key: string, ingredientId: number, name?: string) => {
+    const current = ingredients.find((row) => row.key === key);
+    updateIngredient(key, { ...(name ? { ingredientName: name, search: name } : {}), ingredientId, unitsLoading: true, unitsError: '' });
+    try {
+      const units = await recipesApi.getIngredientUnits(ingredientId);
+      const selected = units.some((unit) => unit.id === current?.unitId)
+        ? current?.unitId : units.find((unit) => unit.code === 'g')?.id ?? null;
+      setIngredients((rows) => rows.map((row) => row.key === key && row.ingredientId === ingredientId
+        ? { ...row, units, unitsLoading: false, unitsError: '', unitId: selected ?? null } : row));
+    } catch (cause) {
+      setIngredients((rows) => rows.map((row) => row.key === key && row.ingredientId === ingredientId
+        ? { ...row, units: [], unitsLoading: false, unitsError: cause instanceof Error ? cause.message : 'Không tải được đơn vị.' } : row));
+    }
+  };
+
   const generateWithAi = async (contentType: RecipeAiContentType) => {
     setAiError(null);
     if (title.trim().length < 3 || !dishCategory || !vegetarianType || Number(servings) < 1
-        || ingredients.some((row) => row.ingredientId === null || row.unitId === null
+        || ingredients.some((row) => row.ingredientId === null || row.unitId === null || row.unitsLoading || !row.units.some((unit) => unit.id === row.unitId)
           || !row.quantity || Number(row.quantity) <= 0)) {
       setAiError({ contentType, message: 'Hãy nhập tên món, loại chay, danh mục, khẩu phần và hoàn tất nguyên liệu trước khi yêu cầu AI.' });
       return;
@@ -151,8 +245,8 @@ function CreateRecipeForm() {
       else setInstructions(result.content);
     } catch (cause) {
       const error = asApiError(cause);
-      setAiError({ contentType, upgradeRequired: error.code === 'AI_SUBSCRIPTION_REQUIRED', message: error.code === 'AI_SUBSCRIPTION_REQUIRED'
-        ? 'Tính năng AI dành cho gói Plus/Pro. Bạn vẫn có thể tự viết và đăng công thức.'
+      setAiError({ contentType, upgradeRequired: error.code === 'AI_SUBSCRIPTION_REQUIRED', requiredTier: aiRequiredTier(error, 'PRO'), message: error.code === 'AI_SUBSCRIPTION_REQUIRED'
+        ? aiUpgradeMessage(error, 'PRO', 'AI soạn nội dung công thức') + ' Bạn vẫn có thể tự viết và đăng công thức.'
         : error.code === 'AI_PROVIDER_UNAVAILABLE' || error.code === 'AI_RESPONSE_INVALID'
           ? 'AI hiện không tạo được nội dung hợp lệ. Bạn vẫn có thể tự viết và đăng công thức.'
           : error.message });
@@ -188,6 +282,11 @@ function CreateRecipeForm() {
     if (!validateMediaSelection()) return;
     if (!options) {
       setSubmitError('Danh mục công thức chưa tải được. Hãy thử tải lại trang.');
+      return;
+    }
+
+    if (ingredients.some((row) => row.unitsLoading || row.unitsError || row.unitId === null || !row.units.some((unit) => unit.id === row.unitId))) {
+      setSubmitError('Hãy tải đơn vị của từng nguyên liệu và chọn một đơn vị còn được hỗ trợ trước khi đăng.');
       return;
     }
 
@@ -273,6 +372,18 @@ function CreateRecipeForm() {
         </Button>
       </div>
 
+      {aiNotice && (
+        <div role="status" className="mb-5 flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-900 shadow-sm animate-fade-in">
+          <Check className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
+          <div className="flex-1">
+            <p className="font-semibold">{aiNotice}</p>
+          </div>
+          <button type="button" onClick={() => setAiNotice(null)} className="text-green-700 hover:text-green-900 text-xs font-bold">
+            Đóng
+          </button>
+        </div>
+      )}
+
       <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
         <Info className="mt-0.5 h-5 w-5 shrink-0" />
         <p><strong>Dành cho Chuyên gia ẩm thực:</strong> Vui lòng kiểm tra kỹ định lượng nguyên liệu và các bước hướng dẫn trước khi xuất bản công thức.</p>
@@ -290,7 +401,7 @@ function CreateRecipeForm() {
             </Field>
             <Field label="Mô tả (không bắt buộc, tối đa 2.000 ký tự)" error={errorFor('description')}>
               <textarea aria-label="Mô tả" value={description} onChange={(event) => setDescription(event.target.value)} maxLength={2000} rows={3} placeholder="Giới thiệu ngắn về món ăn" className={`${inputClass} resize-y`} />
-              <RecipeAiAssistance upgradeRequired={aiError?.upgradeRequired} contentType="DESCRIPTION" loading={aiLoading} error={aiError?.contentType === 'DESCRIPTION' ? aiError.message : ''} onGenerate={generateWithAi} />
+              <RecipeAiAssistance requiredTier={aiError?.requiredTier} upgradeRequired={aiError?.upgradeRequired} contentType="DESCRIPTION" loading={aiLoading} error={aiError?.contentType === 'DESCRIPTION' ? aiError.message : ''} onGenerate={generateWithAi} />
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Thể loại món *" error={errorFor('dishCategory')}>
@@ -316,7 +427,7 @@ function CreateRecipeForm() {
 
           <Card className="space-y-4 p-5 sm:p-6">
             <SectionHead number="2" title="Nguyên liệu và định lượng" />
-            <p className="text-sm text-ink-muted">Chọn nguyên liệu trong danh mục và nhập số lượng lớn hơn 0. Đơn vị khác g/kg cần có tỷ lệ quy đổi sẵn.</p>
+            <p className="text-sm text-ink-muted">Chọn nguyên liệu trong danh mục và nhập số lượng lớn hơn 0. Đơn vị khác g/kg cần có tỷ lệ quy đổi sẵn. Nếu không tìm thấy nguyên liệu phù hợp, hãy báo quản trị viên bổ sung vào danh mục.</p>
             {ingredients.map((row, index) => (
               <div key={row.key} className="rounded-xl border border-brand-100 p-3">
                 <div className="mb-2 flex items-center justify-between">
@@ -327,22 +438,24 @@ function CreateRecipeForm() {
                   <IngredientPicker
                     value={row.search || row.ingredientName}
                     selectedId={row.ingredientId}
-                    onTextChange={(search) => updateIngredient(row.key, { search, ingredientId: null, ingredientName: '' })}
-                    onSelect={(ingredient) => updateIngredient(row.key, { ingredientId: ingredient.ingredientId, ingredientName: ingredient.name, search: ingredient.name })}
+                    onTextChange={(search) => updateIngredient(row.key, { search, ingredientId: null, ingredientName: '', unitId: null, units: [], unitsLoading: false, unitsError: '' })}
+                    onSelect={(ingredient) => { void loadIngredientUnits(row.key, ingredient.ingredientId, ingredient.name); }}
                     error={errorFor(`ingredients[${index}].ingredientId`)}
                     rowNumber={index + 1}
                   />
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-ink-soft" htmlFor={`quantity-${row.key}`}>Số lượng *</label>
-                    <input id={`quantity-${row.key}`} type="number" min="0.01" step={['g', 'kg'].includes(options?.units.find((unit) => unit.unitId === row.unitId)?.code ?? '') ? 'any' : '0.01'} value={row.quantity} onChange={(event) => updateIngredient(row.key, { quantity: event.target.value })} placeholder={options?.units.find((unit) => unit.unitId === row.unitId)?.code === 'g' ? '100' : '0'} className={inputClass} aria-label={`Số lượng nguyên liệu ${index + 1}`} />
+                    <input id={`quantity-${row.key}`} type="number" min="0.001" step="any" value={row.quantity} onChange={(event) => updateIngredient(row.key, { quantity: event.target.value })} placeholder="Số lượng" className={inputClass} aria-label={`Số lượng nguyên liệu ${index + 1}`} />
                     {errorFor(`ingredients[${index}].quantity`) && <p className={errorClass}>{errorFor(`ingredients[${index}].quantity`)}</p>}
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-ink-soft" htmlFor={`unit-${row.key}`}>Đơn vị *</label>
-                    <select id={`unit-${row.key}`} value={row.unitId ?? ''} onChange={(event) => updateIngredient(row.key, { unitId: event.target.value ? Number(event.target.value) : null })} className={inputClass} aria-label={`Đơn vị nguyên liệu ${index + 1}`}>
-                      <option value="">Chọn đơn vị</option>
-                      {(options?.units ?? []).map((unit) => <option key={unit.unitId} value={unit.unitId}>{unit.name} ({unit.code})</option>)}
+                    <select id={`unit-${row.key}`} value={row.unitId ?? ''} disabled={!row.ingredientId || row.unitsLoading || !!row.unitsError} onChange={(event) => updateIngredient(row.key, { unitId: event.target.value ? Number(event.target.value) : null })} className={inputClass} aria-label={`Đơn vị nguyên liệu ${index + 1}`}>
+                      <option value="">{row.unitsLoading ? 'Đang tải đơn vị…' : 'Chọn đơn vị'}</option>
+                      {row.units.map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}
                     </select>
+                    {row.unitsError && <p className={errorClass}>{row.unitsError} <button type="button" className="underline" onClick={() => row.ingredientId && void loadIngredientUnits(row.key, row.ingredientId)}>Thử lại</button></p>}
+                    {!row.unitsError && row.ingredientId && row.unitId === null && !row.unitsLoading && <p className={errorClass}>Hãy chọn đơn vị được hỗ trợ cho nguyên liệu này.</p>}
                     {errorFor(`ingredients[${index}].unitId`) && <p className={errorClass}>{errorFor(`ingredients[${index}].unitId`)}</p>}
                   </div>
                 </div>
@@ -359,7 +472,7 @@ function CreateRecipeForm() {
             <Field label="Hướng dẫn * (10–5.000 ký tự)" error={errorFor('instructions')}>
               <textarea aria-label="Hướng dẫn * (10–5.000 ký tự)" value={instructions} onChange={(event) => setInstructions(event.target.value)} rows={8} placeholder="Viết hướng dẫn theo cách của bạn, có thể chia theo từng bước hoặc cách nấu chi tiết." className={`${inputClass} resize-y`} />
               <p className="mt-1 text-right text-xs text-ink-muted">{instructions.trim().length}/5.000 ký tự</p>
-              <RecipeAiAssistance upgradeRequired={aiError?.upgradeRequired} contentType="INSTRUCTIONS" loading={aiLoading} error={aiError?.contentType === 'INSTRUCTIONS' ? aiError.message : ''} onGenerate={generateWithAi} />
+              <RecipeAiAssistance requiredTier={aiError?.requiredTier} upgradeRequired={aiError?.upgradeRequired} contentType="INSTRUCTIONS" loading={aiLoading} error={aiError?.contentType === 'INSTRUCTIONS' ? aiError.message : ''} onGenerate={generateWithAi} />
             </Field>
           </Card>
 
@@ -435,12 +548,8 @@ function CreateRecipeForm() {
       <AiRecipeAssistantModal
         open={aiModalOpen}
         onClose={() => setAiModalOpen(false)}
-        title={title}
-        description={description}
-        instructions={instructions}
-        loading={aiLoading}
-        error={aiError}
-        onGenerate={(contentType) => void generateWithAi(contentType)}
+        options={options}
+        onApplyRecipe={handleApplyAiRecipe}
       />
     </PageContainer>
   );
@@ -457,16 +566,23 @@ function IngredientPicker({ value, selectedId, onTextChange, onSelect, error, ro
   const [suggestions, setSuggestions] = useState<IngredientOption[]>([]);
   const [open, setOpen] = useState(false);
   const [searchError, setSearchError] = useState('');
+  const [searching, setSearching] = useState(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !value.trim()) {
+      setSuggestions([]);
+      setSearchError('');
+      setSearching(false);
+      return;
+    }
     let active = true;
     const timer = window.setTimeout(() => {
+      setSearching(true);
       recipesApi.searchIngredients(value).then((items) => {
         if (active) { setSuggestions(items); setSearchError(''); }
       }).catch((reason: unknown) => {
         if (active) setSearchError(reason instanceof Error ? reason.message : 'Không tải được nguyên liệu.');
-      });
+      }).finally(() => { if (active) setSearching(false); });
     }, 180);
     return () => { active = false; window.clearTimeout(timer); };
   }, [open, value]);
@@ -477,7 +593,9 @@ function IngredientPicker({ value, selectedId, onTextChange, onSelect, error, ro
       <input id={`ingredient-${rowNumber}`} value={value} onFocus={() => setOpen(true)} onChange={(event) => onTextChange(event.target.value)} onBlur={() => window.setTimeout(() => setOpen(false), 120)} placeholder="Tìm nguyên liệu có sẵn" autoComplete="off" className={inputClass} aria-label={`Chọn nguyên liệu ${rowNumber}`} aria-expanded={open} />
       {open && <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-brand-200 bg-paper p-1 shadow-lg">
         {searchError && <p className="px-3 py-2 text-xs text-red-700">{searchError}</p>}
-        {!searchError && suggestions.length === 0 && <p className="px-3 py-2 text-xs text-ink-muted">Nguyên liệu này hiện chưa được hỗ trợ.</p>}
+        {!searchError && !value.trim() && <p className="px-3 py-2 text-xs text-ink-muted">Nhập tên để tìm nguyên liệu trong danh mục.</p>}
+        {!searchError && value.trim() && searching && <p role="status" className="px-3 py-2 text-xs text-ink-muted">Đang tìm nguyên liệu…</p>}
+        {!searchError && value.trim() && !searching && suggestions.length === 0 && <p role="status" className="rounded-lg bg-green-50 px-3 py-2 text-xs font-medium text-green-800">Không có nguyên liệu phù hợp trong danh mục.</p>}
         {suggestions.map((item) => <button key={item.ingredientId} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => { onSelect(item); setOpen(false); }} className={`block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-brand-50 ${selectedId === item.ingredientId ? 'bg-brand-50 font-semibold' : ''}`}>{item.name}</button>)}
       </div>}
       {error && <p className={errorClass}>{error}</p>}

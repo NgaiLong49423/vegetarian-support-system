@@ -21,14 +21,14 @@ public class SubscriptionEntitlementService {
     @Transactional(readOnly = true)
     public void requirePlusOrPro(long userId) {
         if (!repository.hasActivePaidSubscription(userId, LocalDateTime.now(clock))) {
-            throw upgradeRequired("PLUS", "Tính năng AI này yêu cầu gói Plus hoặc Pro còn hiệu lực. Hãy nâng cấp lên Plus để tiếp tục.");
+            throw upgradeRequired("PLUS", "Tính năng AI này yêu cầu gói AI PLUS còn hiệu lực. Hãy nâng cấp lên gói AI PLUS để tiếp tục.");
         }
     }
 
     @Transactional(readOnly = true)
     public void requirePro(long userId) {
         if (!repository.hasActiveProSubscription(userId, LocalDateTime.now(clock))) {
-            throw upgradeRequired("PRO", "Tính năng AI này yêu cầu gói Pro còn hiệu lực. Hãy nâng cấp lên Pro để tiếp tục.");
+            throw upgradeRequired("PRO", "Tính năng AI này yêu cầu gói AI PRO còn hiệu lực. Hãy nâng cấp lên gói AI PRO để tiếp tục.");
         }
     }
 

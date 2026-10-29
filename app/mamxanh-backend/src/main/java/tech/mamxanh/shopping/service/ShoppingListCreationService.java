@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,13 +25,14 @@ import tech.mamxanh.shopping.dto.response.ShoppingListCreationResponse;
 import tech.mamxanh.shopping.dto.response.ShoppingListCreationResponse.Warning;
 import tech.mamxanh.shopping.entity.ShoppingListEntity;
 import tech.mamxanh.shopping.entity.ShoppingListItemEntity;
+import tech.mamxanh.shopping.entity.ShoppingRecipeContributionEntity;
 import tech.mamxanh.shopping.repository.ShoppingListItemRepository;
 import tech.mamxanh.shopping.repository.ShoppingListRepository;
 
 /** FR-53 AC-53.1: create a new, independent checklist from the current Member's meal plan. */
 @Service
 public class ShoppingListCreationService {
-    private static final BigDecimal MAX_QUANTITY = new BigDecimal("99999999.99");
+    private static final BigDecimal MAX_QUANTITY = new BigDecimal("999999999999.999999");
     private static final DateTimeFormatter FULL_DATE = DateTimeFormatter.ofPattern("dd/MM/uuuu", Locale.ROOT);
     private final CurrentUserService users;
     private final MealPlanReadService mealPlans;
@@ -69,12 +71,14 @@ public class ShoppingListCreationService {
         var warnings = new ArrayList<Warning>();
         var lines = new ArrayList<ShoppingAggregationLine>();
         var origins = new ArrayList<Origin>();
+        var contributions = new ArrayList<ShoppingRecipeContributionEntity>();
         for (var entry : entries) {
             var recipe = sources.get(entry.recipeId());
             if (recipe == null) {
                 warnings.add(new Warning("UNAVAILABLE_RECIPE", "Bỏ qua công thức không còn công khai.", entry.entryId(), entry.recipeId()));
                 continue;
             }
+            UUID sourceId = UUID.randomUUID();
             for (var line : recipe.ingredients()) {
                 if (line.ingredientId() == null) {
                     warnings.add(new Warning("INVALID_RECIPE_INGREDIENT", "Bỏ qua nguyên liệu công thức không có mã catalog.", entry.entryId(), entry.recipeId()));
@@ -84,6 +88,19 @@ public class ShoppingListCreationService {
                         .divide(BigDecimal.valueOf(recipe.servings()), MathContext.DECIMAL128);
                 lines.add(new ShoppingAggregationLine(line.ingredientId(), null, quantity, line.unitId()));
                 origins.add(new Origin(entry.entryId(), entry.recipeId()));
+                var contribution = new ShoppingRecipeContributionEntity();
+                contribution.setSourceId(sourceId);
+                contribution.setRecipeId(entry.recipeId());
+                contribution.setSourceKind("RECIPE");
+                contribution.setExpectedIngredientCount(recipe.ingredients().size());
+                contribution.setIngredientId(line.ingredientId());
+                contribution.setUnitId(line.unitId());
+                contribution.setQuantity(quantity);
+                contribution.setServings(entry.plannedServings());
+                contribution.setMealPlanEntryId(entry.entryId());
+                contribution.setMealDate(entry.mealDate());
+                contribution.setMealType(entry.mealType());
+                contributions.add(contribution);
             }
         }
         var result = aggregation.aggregate(lines);
@@ -96,12 +113,12 @@ public class ShoppingListCreationService {
         var rows = new ArrayList<ShoppingListItemEntity>();
         for (var item : aggregated) {
             // Only round after all source contributions have been summed. Never persist zero or overflow.
-            BigDecimal quantity = item.quantity().setScale(2, RoundingMode.HALF_UP);
+            BigDecimal quantity = item.quantity().setScale(6, RoundingMode.HALF_UP);
             if (quantity.signum() <= 0 || quantity.compareTo(MAX_QUANTITY) > 0) {
                 throw invalid("Định lượng sau tổng hợp vượt giới hạn lưu trữ hoặc quá nhỏ: " + item.name());
             }
             if (quantity.compareTo(item.quantity()) != 0) {
-                warnings.add(new Warning("QUANTITY_ROUNDED", "Lượng " + item.name() + " được làm tròn đến hai chữ số thập phân khi lưu.", null, null));
+                warnings.add(new Warning("QUANTITY_ROUNDED", "Lượng " + item.name() + " được làm tròn đến sáu chữ số thập phân khi lưu.", null, null));
             }
             var row = new ShoppingListItemEntity();
             row.setIngredientId(item.ingredientId());
@@ -118,6 +135,16 @@ public class ShoppingListCreationService {
         entityManager.refresh(list); // read database-generated timestamps, rather than fabricate response values
         rows.forEach(row -> row.setShoppingListId(list.getId()));
         items.saveAllAndFlush(rows);
+        for (int i = 0; i < aggregated.size(); i++) {
+            var target = rows.get(i);
+            for (int sourceIndex : aggregated.get(i).sourceIndices()) {
+                var contribution = contributions.get(sourceIndex);
+                contribution.setShoppingListId(list.getId());
+                contribution.setShoppingListItemId(target.getId());
+                entityManager.persist(contribution);
+            }
+        }
+        entityManager.flush();
         var incompatible = new ArrayList<Long>();
         for (int i = 0; i < rows.size(); i++) {
             if (aggregated.get(i).incompatibleUnits()) incompatible.add(rows.get(i).getId());

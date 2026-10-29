@@ -49,7 +49,7 @@ public class RecipeAiAssistanceService {
 
     public RecipeAiAssistanceResponse generate(RecipeAiAssistanceRequest request) {
         var expert = currentUserService.requireActiveExpert();
-        entitlementService.requirePlusOrPro(expert.id());
+        entitlementService.requirePro(expert.id());
 
         List<Long> ingredientIds = request.ingredients().stream().map(RecipeAiAssistanceRequest.Ingredient::ingredientId).toList();
         if (new HashSet<>(ingredientIds).size() != ingredientIds.size()) {

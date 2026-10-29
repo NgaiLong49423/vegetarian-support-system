@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useState } from "react"
+
+import { Link } from "react-router-dom"
+
 import {
   Activity,
   AlertCircle,
@@ -17,74 +19,112 @@ import {
   ShieldCheck,
   UserCheck,
   Users,
-} from 'lucide-react';
-import { Card, Button, Badge } from '../components/ui';
-import { useAuth } from '../components/AuthContext';
-import { expertApplicationsApi, type ExpertApplication } from '../api/expertApplications';
+} from "lucide-react"
+
+import { Card, Button, Badge } from "../components/ui"
+
+import { useAuth } from "../components/AuthContext"
+
+import {
+  expertApplicationsApi,
+  type ExpertApplication,
+} from "../api/expertApplications"
+
 import {
   adminCatalogApi,
   type CatalogIngredient,
   type IngredientCatalogOptions,
-} from '../services/adminCatalogApi';
+} from "../services/adminCatalogApi"
 
 export function AdminDashboard() {
-  const { account } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { account } = useAuth()
+
+  const [loading, setLoading] = useState(true)
+
+  const [error, setError] = useState("")
 
   // Real data state
-  const [pendingApplications, setPendingApplications] = useState<ExpertApplication[]>([]);
-  const [pendingCount, setPendingCount] = useState(0);
-  const [ingredientTotal, setIngredientTotal] = useState(0);
-  const [recentIngredients, setRecentIngredients] = useState<CatalogIngredient[]>([]);
-  const [catalogOptions, setCatalogOptions] = useState<IngredientCatalogOptions>({
-    groups: [],
-    sources: [],
-  });
+
+  const [pendingApplications, setPendingApplications] =
+    useState<ExpertApplication[]>([])
+
+  const [pendingCount, setPendingCount] = useState(0)
+
+  const [ingredientTotal, setIngredientTotal] = useState(0)
+
+  const [recentIngredients, setRecentIngredients] =
+    useState<CatalogIngredient[]>([])
+
+  const [catalogOptions, setCatalogOptions] =
+    useState<IngredientCatalogOptions>({
+      groups: [],
+
+      sources: [],
+    })
 
   const loadData = useCallback(async () => {
-    setLoading(true);
-    setError('');
+    setLoading(true)
+
+    setError("")
+
     try {
       const [appRes, ingRes, optRes] = await Promise.allSettled([
-        expertApplicationsApi.list('PENDING', 0),
+        expertApplicationsApi.list("PENDING", 0),
+
         adminCatalogApi.searchIngredients({
-          query: '',
-          ingredientGroup: '',
+          query: "",
+
+          ingredientGroup: "",
+
           active: null,
+
           nutritionSupported: null,
+
           page: 0,
+
           size: 5,
         }),
-        adminCatalogApi.ingredientOptions(),
-      ]);
 
-      if (appRes.status === 'fulfilled') {
-        setPendingApplications(appRes.value.content || []);
-        setPendingCount(appRes.value.totalElements || 0);
+        adminCatalogApi.ingredientOptions(),
+      ])
+
+      if (appRes.status === "fulfilled") {
+        setPendingApplications(appRes.value.content || [])
+
+        setPendingCount(appRes.value.totalElements || 0)
       }
-      if (ingRes.status === 'fulfilled') {
-        setIngredientTotal(ingRes.value.totalElements || 0);
-        setRecentIngredients(ingRes.value.content || []);
+
+      if (ingRes.status === "fulfilled") {
+        setIngredientTotal(ingRes.value.totalElements || 0)
+
+        setRecentIngredients(ingRes.value.content || [])
       }
-      if (optRes.status === 'fulfilled' && optRes.value?.groups) {
-        setCatalogOptions(optRes.value);
+
+      if (optRes.status === "fulfilled" && optRes.value?.groups) {
+        setCatalogOptions(optRes.value)
       }
 
       // Check if unauthorized or forbidden
-      if (appRes.status === 'rejected' && ingRes.status === 'rejected') {
-        setError('Không tải được một số dữ liệu quản trị. Kiểm tra quyền truy cập của tài khoản.');
+
+      if (appRes.status === "rejected" && ingRes.status === "rejected") {
+        setError(
+          "Không tải được một số dữ liệu quản trị. Kiểm tra quyền truy cập của tài khoản.",
+        )
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Lỗi tải dữ liệu bảng điều khiển.');
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Lỗi tải dữ liệu bảng điều khiển.",
+      )
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, []);
+  }, [])
 
   useEffect(() => {
-    void loadData();
-  }, [loadData]);
+    void loadData()
+  }, [loadData])
 
   return (
     <div className="space-y-7 py-2">
@@ -92,13 +132,15 @@ export function AdminDashboard() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-leaf-200 bg-leaf-50/80 px-3 py-1 text-xs font-bold text-leaf-800">
-            <ShieldCheck className="h-3.5 w-3.5 text-leaf-700" /> Trung tâm quản trị Mầm Xanh
+            <ShieldCheck className="h-3.5 w-3.5 text-leaf-700" /> Trung tâm quản
+            trị Mầm Xanh
           </div>
           <h1 className="text-2xl font-black tracking-tight text-ink sm:text-3xl lg:text-4xl">
             Bảng điều phối hệ thống
           </h1>
           <p className="mt-1.5 text-xs text-ink-muted sm:text-sm">
-            Giám sát danh mục nguyên liệu, xét duyệt hồ sơ chuyên gia và theo dõi trạng thái tích hợp dịch vụ.
+            Giám sát danh mục nguyên liệu, xét duyệt hồ sơ chuyên gia và theo
+            dõi trạng thái tích hợp dịch vụ.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -109,7 +151,11 @@ export function AdminDashboard() {
             disabled={loading}
             className="rounded-xl border-brand-200"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin text-brand-600' : ''}`} />
+            <RefreshCw
+              className={`h-4 w-4 ${
+                loading ? "animate-spin text-brand-600" : ""
+              }`}
+            />
             Tải lại số liệu
           </Button>
           <Link
@@ -122,7 +168,10 @@ export function AdminDashboard() {
       </div>
 
       {error && (
-        <div role="alert" className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs font-medium text-amber-950 sm:text-sm">
+        <div
+          role="alert"
+          className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs font-medium text-amber-950 sm:text-sm"
+        >
           <AlertCircle className="h-5 w-5 shrink-0 text-amber-600" />
           <span>{error}</span>
         </div>
@@ -138,7 +187,11 @@ export function AdminDashboard() {
                 Đơn Chuyên gia chờ duyệt
               </p>
               <p className="mt-2 text-3xl font-black text-ink">
-                {loading ? <LoaderCircle className="h-8 w-8 animate-spin text-brand-600" /> : pendingCount}
+                {loading ? (
+                  <LoaderCircle className="h-8 w-8 animate-spin text-brand-600" />
+                ) : (
+                  pendingCount
+                )}
               </p>
             </div>
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-100 text-brand-600">
@@ -146,8 +199,15 @@ export function AdminDashboard() {
             </span>
           </div>
           <div className="mt-4 flex items-center justify-between border-t border-brand-100/70 pt-3">
-            <span className={`inline-flex items-center gap-1 text-xs font-semibold ${pendingCount > 0 ? 'text-amber-700' : 'text-leaf-700'}`}>
-              <Clock className="h-3.5 w-3.5" /> {pendingCount > 0 ? `${pendingCount} đơn cần xử lý` : 'Đã xử lý xong'}
+            <span
+              className={`inline-flex items-center gap-1 text-xs font-semibold ${
+                pendingCount > 0 ? "text-amber-700" : "text-leaf-700"
+              }`}
+            >
+              <Clock className="h-3.5 w-3.5" />{" "}
+              {pendingCount > 0
+                ? `${pendingCount} đơn cần xử lý`
+                : "Đã xử lý xong"}
             </span>
             <Link
               to="/admin/xet-duyet-chuyen-gia"
@@ -166,7 +226,11 @@ export function AdminDashboard() {
                 Nguyên liệu chuẩn hóa
               </p>
               <p className="mt-2 text-3xl font-black text-ink">
-                {loading ? <LoaderCircle className="h-8 w-8 animate-spin text-brand-600" /> : ingredientTotal}
+                {loading ? (
+                  <LoaderCircle className="h-8 w-8 animate-spin text-brand-600" />
+                ) : (
+                  ingredientTotal
+                )}
               </p>
             </div>
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-leaf-100 text-leaf-700">
@@ -194,7 +258,11 @@ export function AdminDashboard() {
                 Nhóm thực phẩm
               </p>
               <p className="mt-2 text-3xl font-black text-ink">
-                {loading ? <LoaderCircle className="h-8 w-8 animate-spin text-brand-600" /> : (catalogOptions?.groups?.length ?? 0)}
+                {loading ? (
+                  <LoaderCircle className="h-8 w-8 animate-spin text-brand-600" />
+                ) : (
+                  (catalogOptions?.groups?.length ?? 0)
+                )}
               </p>
             </div>
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-raised text-ink-soft">
@@ -205,7 +273,9 @@ export function AdminDashboard() {
             <span className="text-xs text-ink-muted">
               {catalogOptions?.sources?.length ?? 0} nguồn kiểm định
             </span>
-            <span className="text-xs font-semibold text-ink-soft">Danh mục chuẩn</span>
+            <span className="text-xs font-semibold text-ink-soft">
+              Danh mục chuẩn
+            </span>
           </div>
         </Card>
 
@@ -217,9 +287,11 @@ export function AdminDashboard() {
                 Phiên quản trị viên
               </p>
               <p className="mt-2 truncate text-base font-extrabold text-ink">
-                {account?.displayName || 'Administrator'}
+                {account?.displayName || "Administrator"}
               </p>
-              <p className="truncate text-xs text-ink-muted">{account?.email || 'admin@mamxanh.local'}</p>
+              <p className="truncate text-xs text-ink-muted">
+                {account?.email || "admin@mamxanh.local"}
+              </p>
             </div>
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-leaf-100 text-leaf-800">
               <ShieldCheck className="h-6 w-6" />
@@ -227,7 +299,9 @@ export function AdminDashboard() {
           </div>
           <div className="mt-4 flex items-center justify-between border-t border-brand-100/70 pt-3">
             <Badge tone="leaf">Quyền: ADMIN</Badge>
-            <span className="text-xs font-medium text-leaf-700">Xác thực hợp lệ</span>
+            <span className="text-xs font-medium text-leaf-700">
+              Xác thực hợp lệ
+            </span>
           </div>
         </Card>
       </div>
@@ -242,8 +316,12 @@ export function AdminDashboard() {
                 <Award className="h-4 w-4" />
               </span>
               <div>
-                <h2 className="text-base font-bold text-ink">Đơn đăng ký Chuyên gia mới nhất</h2>
-                <p className="text-xs text-ink-muted">Hồ sơ thành viên gửi yêu cầu nâng cấp vai trò</p>
+                <h2 className="text-base font-bold text-ink">
+                  Đơn đăng ký Chuyên gia mới nhất
+                </h2>
+                <p className="text-xs text-ink-muted">
+                  Hồ sơ thành viên gửi yêu cầu nâng cấp vai trò
+                </p>
               </div>
             </div>
             <Link
@@ -257,13 +335,18 @@ export function AdminDashboard() {
           <div className="mt-4 flex-1 space-y-3">
             {loading ? (
               <div className="flex items-center justify-center py-12 text-xs text-ink-muted">
-                <LoaderCircle className="mr-2 h-4 w-4 animate-spin text-brand-600" /> Đang tải danh sách...
+                <LoaderCircle className="mr-2 h-4 w-4 animate-spin text-brand-600" />{" "}
+                Đang tải danh sách...
               </div>
             ) : pendingApplications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <CheckCircle2 className="h-10 w-10 text-leaf-600" />
-                <p className="mt-3 text-sm font-bold text-ink">Hàng đợi trống</p>
-                <p className="mt-1 text-xs text-ink-muted">Tất cả đơn đăng ký Chuyên gia đã được xử lý.</p>
+                <p className="mt-3 text-sm font-bold text-ink">
+                  Hàng đợi trống
+                </p>
+                <p className="mt-1 text-xs text-ink-muted">
+                  Tất cả đơn đăng ký Chuyên gia đã được xử lý.
+                </p>
               </div>
             ) : (
               pendingApplications.slice(0, 4).map((app) => (
@@ -273,12 +356,16 @@ export function AdminDashboard() {
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="truncate text-xs font-bold text-ink">{app.displayName}</span>
+                      <span className="truncate text-xs font-bold text-ink">
+                        {app.displayName}
+                      </span>
                       <span className="rounded-md bg-brand-100 px-1.5 py-0.5 text-[10px] font-bold text-brand-700">
                         {app.vegetarianType}
                       </span>
                     </div>
-                    <p className="mt-1 truncate text-xs text-ink-muted">{app.email}</p>
+                    <p className="mt-1 truncate text-xs text-ink-muted">
+                      {app.email}
+                    </p>
                     <p className="mt-1.5 line-clamp-1 text-xs text-ink-soft">
                       {app.experience || app.sampleRecipeSummary}
                     </p>
@@ -303,8 +390,12 @@ export function AdminDashboard() {
                 <Database className="h-4 w-4" />
               </span>
               <div>
-                <h2 className="text-base font-bold text-ink">Ma trận năng lực quản trị (RBAC)</h2>
-                <p className="text-xs text-ink-muted">Theo đặc tả SRS và tiến độ hoàn thiện API Backend</p>
+                <h2 className="text-base font-bold text-ink">
+                  Ma trận năng lực quản trị (RBAC)
+                </h2>
+                <p className="text-xs text-ink-muted">
+                  Theo đặc tả SRS và tiến độ hoàn thiện API Backend
+                </p>
               </div>
             </div>
             <span className="rounded-full bg-leaf-50 px-2.5 py-1 text-[11px] font-bold text-leaf-800 border border-leaf-200">
@@ -316,12 +407,21 @@ export function AdminDashboard() {
             {/* Capability 1 */}
             <div className="flex items-center justify-between py-3">
               <div>
-                <p className="font-bold text-ink">Danh mục nguyên liệu & dinh dưỡng</p>
-                <p className="text-ink-muted">Chuẩn hóa 9 chỉ tiêu vi chất và quy đổi đơn vị</p>
+                <p className="font-bold text-ink">
+                  Danh mục nguyên liệu & dinh dưỡng
+                </p>
+                <p className="text-ink-muted">
+                  Chuẩn hóa 9 chỉ tiêu vi chất và quy đổi đơn vị
+                </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-leaf-100 px-2.5 py-0.5 font-bold text-leaf-800">Hoạt động</span>
-                <Link to="/quan-tri/danh-muc" className="font-bold text-brand-600 hover:underline">
+                <span className="rounded-full bg-leaf-100 px-2.5 py-0.5 font-bold text-leaf-800">
+                  Hoạt động
+                </span>
+                <Link
+                  to="/quan-tri/danh-muc"
+                  className="font-bold text-brand-600 hover:underline"
+                >
                   Mở →
                 </Link>
               </div>
@@ -330,12 +430,21 @@ export function AdminDashboard() {
             {/* Capability 2 */}
             <div className="flex items-center justify-between py-3">
               <div>
-                <p className="font-bold text-ink">Xét duyệt Chuyên gia ẩm thực</p>
-                <p className="text-ink-muted">Thẩm định hồ sơ, ghi nhận quyết định và lý do</p>
+                <p className="font-bold text-ink">
+                  Xét duyệt Chuyên gia ẩm thực
+                </p>
+                <p className="text-ink-muted">
+                  Thẩm định hồ sơ, ghi nhận quyết định và lý do
+                </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-leaf-100 px-2.5 py-0.5 font-bold text-leaf-800">Hoạt động</span>
-                <Link to="/admin/xet-duyet-chuyen-gia" className="font-bold text-brand-600 hover:underline">
+                <span className="rounded-full bg-leaf-100 px-2.5 py-0.5 font-bold text-leaf-800">
+                  Hoạt động
+                </span>
+                <Link
+                  to="/admin/xet-duyet-chuyen-gia"
+                  className="font-bold text-brand-600 hover:underline"
+                >
                   Mở →
                 </Link>
               </div>
@@ -344,12 +453,18 @@ export function AdminDashboard() {
             {/* Capability 3 */}
             <div className="flex items-center justify-between py-3">
               <div>
-                <p className="font-bold text-ink">Hậu kiểm nội dung & Báo cáo vi phạm</p>
-                <p className="text-ink-muted">Hàng đợi kiểm duyệt bài viết và bình luận vi phạm</p>
+                <p className="font-bold text-ink">
+                  Hậu kiểm nội dung & Báo cáo vi phạm
+                </p>
+                <p className="text-ink-muted">
+                  Hàng đợi kiểm duyệt bài viết và bình luận vi phạm
+                </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-leaf-100 px-2.5 py-0.5 font-bold text-leaf-800">Minh họa</span>
-                <Link to="/admin/bao-cao" className="font-bold text-brand-600 hover:underline">
+                <Link
+                  to="/admin/bao-cao"
+                  className="font-bold text-brand-600 hover:underline"
+                >
                   Mở →
                 </Link>
               </div>
@@ -358,12 +473,18 @@ export function AdminDashboard() {
             {/* Capability 4 */}
             <div className="flex items-center justify-between py-3">
               <div>
-                <p className="font-bold text-ink">Quản lý tài khoản & Phân quyền người dùng</p>
-                <p className="text-ink-muted">Tra cứu thành viên, phân quyền và khóa tài khoản vi phạm</p>
+                <p className="font-bold text-ink">
+                  Quản lý tài khoản & Phân quyền người dùng
+                </p>
+                <p className="text-ink-muted">
+                  Tra cứu thành viên, phân quyền và khóa tài khoản vi phạm
+                </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-leaf-100 px-2.5 py-0.5 font-bold text-leaf-800">Minh họa</span>
-                <Link to="/admin/nguoi-dung" className="font-bold text-brand-600 hover:underline">
+                <Link
+                  to="/admin/nguoi-dung"
+                  className="font-bold text-brand-600 hover:underline"
+                >
                   Mở →
                 </Link>
               </div>
@@ -372,12 +493,18 @@ export function AdminDashboard() {
             {/* Capability 5 */}
             <div className="flex items-center justify-between py-3">
               <div>
-                <p className="font-bold text-ink">Giám sát giao dịch gói AI hệ thống</p>
-                <p className="text-ink-muted">Nhật ký thanh toán PayOS trên toàn hệ thống</p>
+                <p className="font-bold text-ink">
+                  Giám sát giao dịch gói AI hệ thống
+                </p>
+                <p className="text-ink-muted">
+                  Nhật ký thanh toán PayOS trên toàn hệ thống
+                </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-leaf-100 px-2.5 py-0.5 font-bold text-leaf-800">Minh họa</span>
-                <Link to="/admin/giao-dich" className="font-bold text-brand-600 hover:underline">
+                <Link
+                  to="/admin/giao-dich"
+                  className="font-bold text-brand-600 hover:underline"
+                >
                   Mở →
                 </Link>
               </div>
@@ -386,5 +513,5 @@ export function AdminDashboard() {
         </Card>
       </div>
     </div>
-  );
+  )
 }

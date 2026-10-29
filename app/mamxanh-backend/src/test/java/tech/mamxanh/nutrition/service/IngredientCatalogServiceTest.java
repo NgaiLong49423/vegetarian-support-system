@@ -29,6 +29,7 @@ import tech.mamxanh.nutrition.dto.request.IngredientSaveRequest;
 import tech.mamxanh.nutrition.dto.request.IngredientNutritionRequest;
 import tech.mamxanh.nutrition.dto.request.NutritionSupportUpdateRequest;
 import tech.mamxanh.nutrition.dto.request.UnitSaveRequest;
+import tech.mamxanh.nutrition.dto.request.VolumeConversionSaveRequest;
 import tech.mamxanh.nutrition.entity.IngredientEntity;
 import tech.mamxanh.nutrition.entity.CatalogStatus;
 import tech.mamxanh.nutrition.entity.IngredientUnitConversionEntity;
@@ -358,15 +359,17 @@ class IngredientCatalogServiceTest {
         assertThat(results).singleElement().extracting(response -> response.name()).isEqualTo("Đậu phụ");
     }
 
-    @Test void listsAllIngredientsForNullOrBlankQueryAndSortsByName() {
+    @Test void listsAllIngredientsForNullOrBlankQueryAndSortsByCreationTimeDescending() {
         IngredientEntity banana = new IngredientEntity("Chuối", "Trái cây", "USDA", null, LocalDate.now());
         IngredientEntity tofu = new IngredientEntity("Đậu phụ", "Đậu hạt", "USDA", null, LocalDate.now());
+        org.springframework.test.util.ReflectionTestUtils.setField(banana, "createdAt", LocalDate.now().atStartOfDay());
+        org.springframework.test.util.ReflectionTestUtils.setField(tofu, "createdAt", LocalDate.now().atTime(12, 0));
         when(ingredientRepository.findAll()).thenReturn(List.of(banana, tofu));
 
         assertThat(service.listIngredients(null)).extracting(response -> response.name())
-                .containsExactly("Chuối", "Đậu phụ");
+                .containsExactly("Đậu phụ", "Chuối");
         assertThat(service.listIngredients("  ")).extracting(response -> response.name())
-                .containsExactly("Chuối", "Đậu phụ");
+                .containsExactly("Đậu phụ", "Chuối");
     }
 
     @Test void searchesActiveIngredientsByGroupAndHandlesEmptyAndMissingQueries() {
@@ -412,21 +415,113 @@ class IngredientCatalogServiceTest {
         assertThat(service.findActiveUnits()).extracting(response -> response.code()).containsExactly("g");
     }
 
-    @Test void updatesAndDeactivatesUnitWithoutDeletingIt() {
-        UnitEntity unit = new UnitEntity("ml", "mililit", MeasurementDimension.VOLUME, BigDecimal.ONE);
+    @Test void updatesAndDeactivatesLegacyUnitWithoutDeletingIt() {
+        UnitEntity unit = new UnitEntity("bìa", "bìa", MeasurementDimension.COUNT, BigDecimal.ONE);
         when(unitRepository.findById(2)).thenReturn(Optional.of(unit));
 
-        var updated = service.updateUnit(2, new UnitSaveRequest("l", "lít", MeasurementDimension.MASS, new BigDecimal("1000")));
+        var updated = service.updateUnit(2, new UnitSaveRequest("hộp", "hộp", MeasurementDimension.COUNT, BigDecimal.ONE));
         var deactivated = service.setUnitStatus(2, new CatalogStatusUpdateRequest(false));
 
-        assertThat(updated.code()).isEqualTo("l");
-        assertThat(updated.baseFactor()).isEqualByComparingTo("1000");
-        assertThat(updated.dimension()).isEqualTo(MeasurementDimension.MASS);
+        assertThat(updated.code()).isEqualTo("hộp");
+        assertThat(updated.baseFactor()).isEqualByComparingTo("1");
+        assertThat(updated.dimension()).isEqualTo(MeasurementDimension.COUNT);
         assertThat(deactivated.active()).isFalse();
     }
 
+    @Test void keepsStandardRecipeUnitsFixedAndListsOnlySupportedRecipeUnits() {
+        UnitEntity gram = new UnitEntity("g", "gram", MeasurementDimension.MASS, BigDecimal.ONE);
+        org.springframework.test.util.ReflectionTestUtils.setField(gram, "id", 1);
+        UnitEntity piece = new UnitEntity("quả", "quả", MeasurementDimension.COUNT, BigDecimal.ONE);
+        org.springframework.test.util.ReflectionTestUtils.setField(piece, "id", 2);
+        UnitEntity unsupportedLegacy = new UnitEntity("bìa", "bìa", MeasurementDimension.COUNT, BigDecimal.ONE);
+        org.springframework.test.util.ReflectionTestUtils.setField(unsupportedLegacy, "id", 3);
+        IngredientEntity ingredient = new IngredientEntity("Cam", "Trái cây", "Manual", null, LocalDate.now());
+        org.springframework.test.util.ReflectionTestUtils.setField(ingredient, "id", 7L);
+        var countRate = new IngredientUnitConversionEntity(new IngredientUnitConversionId(7L, 2),
+                new BigDecimal("130"), true);
+        when(unitRepository.findById(1)).thenReturn(Optional.of(gram));
+        when(ingredientRepository.findByIdAndStatus(7L, CatalogStatus.ACTIVE)).thenReturn(Optional.of(ingredient));
+        when(conversionRepository.findByIdIngredientId(7L)).thenReturn(List.of(countRate));
+        when(unitRepository.findByActiveTrue()).thenReturn(List.of(gram, piece, unsupportedLegacy));
+
+        assertThatThrownBy(() -> service.updateUnit(1, new UnitSaveRequest("g", "gram", MeasurementDimension.MASS,
+                new BigDecimal("2"))))
+                .isInstanceOfSatisfying(ApiException.class, error -> assertThat(error.getCode()).isEqualTo("STANDARD_UNIT_FIXED"));
+        assertThatThrownBy(() -> service.setUnitStatus(1, new CatalogStatusUpdateRequest(false)))
+                .isInstanceOfSatisfying(ApiException.class, error -> assertThat(error.getCode()).isEqualTo("STANDARD_UNIT_REQUIRED"));
+        assertThat(service.listRecipeUnits(7L)).extracting(option -> option.code()).containsExactly("g", "quả");
+        assertThat(service.listRecipeUnits(7L).get(1).gramsPerUnit()).isEqualByComparingTo("130");
+    }
+
+    @Test void savesAndReactivatesSynchronizedVolumeConversionsAndRejectsIncompleteStandardSet() {
+        IngredientEntity ingredient = new IngredientEntity("Nước", "Khác", "Manual", null, LocalDate.now());
+        when(ingredientRepository.findById(7L)).thenReturn(Optional.of(ingredient));
+        List<UnitEntity> volumeUnits = List.of(
+                new UnitEntity("ml", "ml", MeasurementDimension.VOLUME, BigDecimal.ONE),
+                new UnitEntity("L", "lít", MeasurementDimension.VOLUME, new BigDecimal("1000")),
+                new UnitEntity("tsp", "tsp", MeasurementDimension.VOLUME, new BigDecimal("5")),
+                new UnitEntity("tbsp", "tbsp", MeasurementDimension.VOLUME, new BigDecimal("15")),
+                new UnitEntity("cup", "cup", MeasurementDimension.VOLUME, new BigDecimal("240")));
+        for (int index = 0; index < volumeUnits.size(); index++) {
+            org.springframework.test.util.ReflectionTestUtils.setField(volumeUnits.get(index), "id", index + 1);
+        }
+        when(unitRepository.findByActiveTrue()).thenReturn(volumeUnits);
+        when(conversionRepository.findById(any())).thenReturn(Optional.empty());
+        when(conversionRepository.findByIdIngredientId(7L)).thenReturn(List.of());
+        var saved = service.saveVolumeConversions(7L, new VolumeConversionSaveRequest(new BigDecimal("0.9"), true));
+        assertThat(saved).hasSize(5);
+        assertThat(saved).extracting(tech.mamxanh.nutrition.dto.response.ConversionResponse::gramsPerUnit)
+                .containsExactly(new BigDecimal("0.9"), new BigDecimal("900.0"), new BigDecimal("4.5"),
+                        new BigDecimal("13.5"), new BigDecimal("216.0"));
+        org.mockito.Mockito.verify(conversionRepository, org.mockito.Mockito.times(5)).insertNew(
+                eq(7L), org.mockito.ArgumentMatchers.anyInt(), any(BigDecimal.class), eq(true));
+        assertThat(service.setVolumeConversionStatus(7L, new CatalogStatusUpdateRequest(false))).isEmpty();
+    }
+
+    @Test void updatesEveryExistingVolumeConversionAndCanRestoreTheWholeGroup() {
+        IngredientEntity ingredient = new IngredientEntity("Nước", "Khác", "Manual", null, LocalDate.now());
+        when(ingredientRepository.findById(7L)).thenReturn(Optional.of(ingredient));
+        List<UnitEntity> units = List.of(
+                new UnitEntity("ml", "ml", MeasurementDimension.VOLUME, BigDecimal.ONE),
+                new UnitEntity("L", "lít", MeasurementDimension.VOLUME, new BigDecimal("1000")),
+                new UnitEntity("tsp", "tsp", MeasurementDimension.VOLUME, new BigDecimal("5")),
+                new UnitEntity("tbsp", "tbsp", MeasurementDimension.VOLUME, new BigDecimal("15")),
+                new UnitEntity("cup", "cup", MeasurementDimension.VOLUME, new BigDecimal("240")));
+        List<IngredientUnitConversionEntity> conversions = new java.util.ArrayList<>();
+        for (int index = 0; index < units.size(); index++) {
+            int unitId = index + 1;
+            org.springframework.test.util.ReflectionTestUtils.setField(units.get(index), "id", unitId);
+            conversions.add(new IngredientUnitConversionEntity(new IngredientUnitConversionId(7L, unitId),
+                    new BigDecimal("1"), false));
+        }
+        when(unitRepository.findByActiveTrue()).thenReturn(units);
+        when(conversionRepository.findById(any())).thenAnswer(invocation -> conversions.stream()
+                .filter(conversion -> conversion.getId().equals(invocation.getArgument(0))).findFirst());
+        when(conversionRepository.findByIdIngredientId(7L)).thenReturn(conversions);
+
+        var saved = service.saveVolumeConversions(7L, new VolumeConversionSaveRequest(new BigDecimal("0.92"), false));
+        var restored = service.setVolumeConversionStatus(7L, new CatalogStatusUpdateRequest(true));
+
+        assertThat(saved).hasSize(5).allSatisfy(conversion -> assertThat(conversion.active()).isTrue());
+        assertThat(saved.get(4).gramsPerUnit()).isEqualByComparingTo("220.80");
+        assertThat(restored).hasSize(5).allSatisfy(conversion -> assertThat(conversion.active()).isTrue());
+        assertThat(conversions).allSatisfy(conversion -> assertThat(conversion.isActive()).isTrue());
+    }
+
+    @Test void rejectsSavingVolumeConversionsWhenAStandardUnitIsMissing() {
+        when(ingredientRepository.findById(7L)).thenReturn(Optional.of(
+                new IngredientEntity("Nước", "Khác", "Manual", null, LocalDate.now())));
+        when(unitRepository.findByActiveTrue()).thenReturn(List.of(
+                new UnitEntity("ml", "ml", MeasurementDimension.VOLUME, BigDecimal.ONE)));
+
+        assertThatThrownBy(() -> service.saveVolumeConversions(7L,
+                new VolumeConversionSaveRequest(new BigDecimal("0.9"), false)))
+                .isInstanceOfSatisfying(ApiException.class,
+                        error -> assertThat(error.getCode()).isEqualTo("STANDARD_VOLUME_UNITS_INCOMPLETE"));
+    }
+
     @Test void rejectsChangingUnitDimensionWhenConversionsExist() {
-        UnitEntity unit = new UnitEntity("ml", "Mililit", MeasurementDimension.VOLUME, BigDecimal.ONE);
+        UnitEntity unit = new UnitEntity("oz", "Ounce", MeasurementDimension.VOLUME, BigDecimal.ONE);
         when(unitRepository.findById(2)).thenReturn(Optional.of(unit));
         when(conversionRepository.existsByIdUnitId(2)).thenReturn(true);
 
@@ -440,15 +535,15 @@ class IngredientCatalogServiceTest {
     }
 
     @Test void updatesUnitWithSameCodeAndRejectsAnotherUnitsCode() {
-        UnitEntity unit = new UnitEntity("g", "gam", MeasurementDimension.MASS, BigDecimal.ONE);
+        UnitEntity unit = new UnitEntity("custom", "đơn vị tùy chỉnh", MeasurementDimension.MASS, BigDecimal.ONE);
         when(unitRepository.findById(2)).thenReturn(Optional.of(unit));
 
-        var updated = service.updateUnit(2, new UnitSaveRequest("g", "gam mới", MeasurementDimension.MASS, BigDecimal.ONE));
-        assertThat(updated.name()).isEqualTo("gam mới");
+        var updated = service.updateUnit(2, new UnitSaveRequest("custom", "đơn vị mới", MeasurementDimension.MASS, BigDecimal.ONE));
+        assertThat(updated.name()).isEqualTo("đơn vị mới");
 
-        when(unitRepository.existsByCodeIgnoreCase("ml")).thenReturn(true);
+        when(unitRepository.existsByCodeIgnoreCase("other")).thenReturn(true);
         assertThatThrownBy(() -> service.updateUnit(2,
-                new UnitSaveRequest("ml", "mililit", MeasurementDimension.VOLUME, BigDecimal.ONE)))
+                new UnitSaveRequest("other", "đơn vị khác", MeasurementDimension.MASS, BigDecimal.ONE)))
                 .isInstanceOf(ApiException.class).hasMessage("Ký hiệu đơn vị đã tồn tại.");
     }
 
@@ -528,7 +623,7 @@ class IngredientCatalogServiceTest {
         assertThat(conversion.getGramsPerUnit()).isEqualByComparingTo("120");
     }
 
-    @Test void rejectsReactivatingMassUnitConversionButAllowsDeactivation() {
+    @Test void rejectsReactivatingOrDeactivatingMassUnitConversion() {
         var id = new IngredientUnitConversionId(1L, 2);
         var conversion = new IngredientUnitConversionEntity(id, new BigDecimal("120"), false);
         conversion.setActive(false);
@@ -544,8 +639,12 @@ class IngredientCatalogServiceTest {
         assertThat(conversion.isActive()).isFalse();
 
         conversion.setActive(true);
-        service.setConversionStatus(1L, 2, new CatalogStatusUpdateRequest(false));
-        assertThat(conversion.isActive()).isFalse();
+        assertThatThrownBy(() -> service.setConversionStatus(1L, 2, new CatalogStatusUpdateRequest(false)))
+                .isInstanceOfSatisfying(ApiException.class, exception -> {
+                    assertThat(exception.getStatus()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(exception.getCode()).isEqualTo("MASS_CONVERSION_NOT_ALLOWED");
+                });
+        assertThat(conversion.isActive()).isTrue();
     }
 
     @Test void mapsConcurrentDuplicateInsertToConflictAndRethrowsOtherDatabaseErrors() {
@@ -585,7 +684,7 @@ class IngredientCatalogServiceTest {
     @Test void rejectsHardDeleteAndComparesConversionIdsByBothKeys() {
         assertThatThrownBy(() -> service.rejectHardDelete("nguyên liệu"))
                 .isInstanceOf(ApiException.class)
-                .hasMessage("Không hỗ trợ xóa vĩnh viễn nguyên liệu; hãy chuyển sang trạng thái ngừng sử dụng.");
+                .hasMessage("Không hỗ trợ xóa vĩnh viễn nguyên liệu. Hãy chuyển sang trạng thái ngừng sử dụng.");
 
         IngredientUnitConversionId id = new IngredientUnitConversionId(1L, 2);
         assertThat(id).isEqualTo(new IngredientUnitConversionId(1L, 2))

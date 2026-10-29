@@ -82,7 +82,7 @@ public class MealPlanController {
             content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
     @ApiResponse(responseCode = "409", description = "The selected recipe already exists in a target day/meal.",
             content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
-    @ApiResponse(responseCode = "403", description = "An active Pro subscription is required.",
+    @ApiResponse(responseCode = "403", description = "An active Plus or Pro subscription is required.",
             content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
     @PostMapping("/{weekStartDate}/ai-menu")
     public MealPlanWeekResponse applyAiMenu(

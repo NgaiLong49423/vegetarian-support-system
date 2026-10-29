@@ -365,15 +365,6 @@ export function Profile() {
                             {item.authorName}
                           </p>
                         </Link>
-                        <div className="mt-1">
-                          <Link
-                            to={`/so-sanh?a=${item.recipeId}`}
-                            aria-label={`So sánh ${item.title}`}
-                            className="text-xs font-semibold text-brand-600 hover:text-brand-700"
-                          >
-                            So sánh →
-                          </Link>
-                        </div>
                       </>
                     ) : (
                       <div className="flex flex-1 flex-col">

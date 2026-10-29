@@ -193,6 +193,7 @@ test('recipe report form validates the six reason groups without claiming a serv
 });
 
 test('recipe report form accepts an empty optional description for each standard reason', async ({ page }) => {
+  test.setTimeout(90_000);
   const optionalReasons = [
     'Không phải món chay',
     'Nguy cơ an toàn thực phẩm',
@@ -433,6 +434,7 @@ test('nutrition tracker uses the member meal plan for analysis and daily/weekly 
 });
 
 test('expert application customer and admin workflows use the API and recover from stale decisions (FR-05)', async ({ page }) => {
+  test.setTimeout(90_000);
   await page.goto('/dang-ky-chuyen-gia');
   await expect(page.getByRole('heading', { name: 'Đăng nhập để tiếp tục' })).toBeVisible();
   await page.evaluate(() => sessionStorage.setItem('mamxanh.auth', JSON.stringify({

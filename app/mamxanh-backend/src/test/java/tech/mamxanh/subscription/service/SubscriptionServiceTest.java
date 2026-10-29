@@ -94,11 +94,14 @@ class SubscriptionServiceTest {
 
         PlanResponse plus = plans.get(1);
         assertThat(plus.tier()).isEqualTo("PLUS");
+        assertThat(plus.features()).contains("AI lập thực đơn tuần 7 ngày", "AI lập thực đơn theo dinh dưỡng cá nhân");
+        assertThat(plus.features()).noneMatch(feature -> feature.contains("soạn bài") || feature.contains("biến tấu"));
         assertThat(plus.priceVnd()).isEqualTo(49_000);
         assertThat(plus.billingPeriod()).contains("Tháng");
 
         PlanResponse pro = plans.get(2);
         assertThat(pro.tier()).isEqualTo("PRO");
+        assertThat(pro.features()).contains("Toàn bộ quyền lợi gói PLUS", "AI hỗ trợ soạn bài viết và công thức", "AI gợi ý biến tấu món chay sáng tạo");
         assertThat(pro.priceVnd()).isEqualTo(99_000);
         assertThat(pro.billingPeriod()).contains("Tháng");
 
@@ -265,7 +268,8 @@ class SubscriptionServiceTest {
         MySubscriptionResponse response = subscriptionService.getMySubscription(userId);
 
         assertThat(response.tier()).isEqualTo("PLUS");
-        assertThat(response.unlockedFeatures()).contains("AI hỗ trợ soạn bài viết và công thức");
+        assertThat(response.unlockedFeatures()).contains("AI lập thực đơn tuần 7 ngày", "AI lập thực đơn theo dinh dưỡng cá nhân")
+                .doesNotContain("AI đề xuất điều chỉnh dinh dưỡng", "AI hỗ trợ soạn bài viết và công thức", "AI gợi ý biến tấu món chay sáng tạo");
     }
 
     @Test

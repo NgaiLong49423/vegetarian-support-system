@@ -1,16 +1,31 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.27.0<br>
+> **Version:** v0.32.0<br>
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-28<br>
+> **Last Updated:** 2026-10-29<br>
 > **Status:** Active  
 
 # Database Workspace
 
-### V26 — Telemetry AI thử nghiệm (FR-11 / Issue #17)
+### Migration V30 — Telemetry AI thử nghiệm (FR-11 / Issue #17)
 
-`V26__ai_usage_telemetry.sql` bổ sung bảng log kỹ thuật `AI_USAGE_TELEMETRY` và index thời gian/tính năng. Bảng không lưu prompt/answer, không có FK tài khoản hoặc cơ chế quota. `database/schema.sql` chứa cùng DDL; không chỉnh ERD. Thay đổi cấu trúc này được triển khai local theo chỉ dẫn người dùng, vẫn chờ biểu quyết nhóm trước khi đưa vào baseline chung. V26 dùng version còn trống sau V25 trên develop; không sửa V22 đã merge của báo cáo. Các database thử nghiệm cũ đã áp dụng V22 telemetry cần được đối chiếu lịch sử riêng, không tự repair hoặc sửa checksum. Retention xóa bản ghi quá 90 ngày theo UTC; xem API Guide và Backend README cho cách ghi, thống kê và giới hạn ước tính chi phí.
+`V30__ai_usage_telemetry.sql` bổ sung bảng log kỹ thuật `AI_USAGE_TELEMETRY` và index thời gian/tính năng. Bảng không lưu prompt/answer, không có FK tài khoản hoặc cơ chế quota. `database/schema.sql` chứa cùng DDL; không chỉnh ERD. Thay đổi cấu trúc này được chuyển sang V30 sau khi đồng bộ develop (nơi V26–V29 đã được sử dụng cho đơn vị chuẩn và shopping list). Retention xóa bản ghi quá 90 ngày theo UTC; xem API Guide và Backend README cho cách ghi, thống kê và giới hạn ước tính chi phí.
 
+## Migration V29 — Lượng Shopping List mất xác định
+
+`V29__shopping_unknown_contributions.sql` thêm trạng thái `UNKNOWN` cho các lượng còn lại của một lần xuất hiện công thức sau khi item khác bị xóa. Migration phân loại các nhóm công thức vốn không đầy đủ nhưng giữ tombstone để không hiện món; `database/schema.sql` đồng bộ CHECK constraint. Chưa xác minh trên SQL Server.
+
+## Migration V28 — Nguồn item Shopping List và trạng thái đầy đủ công thức
+
+`V28__shopping_list_item_sources.sql` mở rộng `SHOPPING_RECIPE_CONTRIBUTION` để lưu riêng nguồn `RECIPE` và `MANUAL`, cho phép nguồn thủ công trỏ tới một item catalog hoặc mặt hàng tùy chỉnh. Mỗi dòng công thức lưu số nguyên liệu bắt buộc của nguồn tại thời điểm thêm; xóa một item giữ contribution công thức không còn liên kết để hệ thống biết các công thức nào chưa đủ, đồng thời xóa các phần thêm thủ công thuộc item đó. Dữ liệu cũ không có khẩu phần giữ trạng thái đầy đủ là chưa xác định. `database/schema.sql` phản ánh schema này; chưa xác minh trên SQL Server.
+
+## Migration V27 — Nguồn món và khẩu phần trong Shopping List
+
+`V27__shopping_list_recipe_sources.sql` lưu mã nguồn từng lần xuất hiện, khẩu phần và thông tin lịch ăn tùy chọn để trình bày công thức trong danh sách và đổi tổng khẩu phần riêng cho Shopping List.
+
+## Migration V26 — Chuẩn hóa đơn vị công thức và quy đổi
+
+`V26__standard_recipe_units.sql` thêm `mg` (0.001 g), chốt hệ số thể tích chuẩn, tăng `INGREDIENT_UNIT_CONVERSION.grams_per_unit` lên `DECIMAL(18,9)`. Admin nhập trực tiếp hệ số theo nguyên liệu; `is_approximate` chỉ đánh dấu hệ số ước tính, không yêu cầu khai báo nguồn. Tỷ lệ Admin không bị seed ghi đè. Nhóm thể tích cũ có hệ số mâu thuẫn được soft-disable để Admin rà soát rồi cấu hình đồng bộ; mã legacy vẫn còn để đọc lịch sử. Backend chỉ trả 11 mã chuẩn cho lựa chọn công thức mới. `SHOPPING_LIST_ITEM.quantity` và `SHOPPING_RECIPE_CONTRIBUTION.quantity` tăng lên `DECIMAL(18,6)` để giữ lượng nhỏ. Migration chưa được xác nhận trên SQL Server.
 
 ## Migration V18/V19 — Checklist và nguồn Recipe Post
 
@@ -51,7 +66,7 @@ Repeatable `R__demo_sample_data_67_report_groups.sql` (chỉ profile `local`, AC
 
 ## Quyền sở hữu dữ liệu
 
-- Flyway migration trong backend (`app/mamxanh-backend/src/main/resources/db/migration/`) là lịch sử schema có thẩm quyền và append-only sau khi chia sẻ. Baseline hiện gồm V1–V25; V13 mở rộng `nutrition_goal`, V14 tạo `NUTRITION_DAILY_VALUE`, V16 cho phép hỗ trợ từng phần, V17 chấp nhận nguồn AI trong tính toán một phần, V18 thêm đơn vị `cuộn`, V19 lưu loại danh sách và đóng góp Recipe Post, V20 thêm URL ảnh minh họa tùy chọn cho nguyên liệu, V21 cho phép loại danh sách `MANUAL`, V22 thêm người xử lý báo cáo, V23 tạo `REPORT_SUPPLEMENT`, V24 thêm tham chiếu attachment riêng tư vào đơn đăng ký Chuyên gia và V25 lưu BMI hồ sơ dinh dưỡng. `database/schema.sql` phản ánh trạng thái sau toàn bộ migration; Physical ERD do người phụ trách sơ đồ cập nhật riêng.
+- Flyway migration trong backend (`app/mamxanh-backend/src/main/resources/db/migration/`) là lịch sử schema có thẩm quyền và append-only sau khi chia sẻ. Working baseline hiện gồm V1–V29; V13 mở rộng `nutrition_goal`, V14 tạo `NUTRITION_DAILY_VALUE`, V16 cho phép hỗ trợ từng phần, V17 chấp nhận nguồn AI trong tính toán một phần, V18 thêm đơn vị `cuộn`, V19 lưu loại danh sách và đóng góp Recipe Post, V20 thêm URL ảnh minh họa tùy chọn cho nguyên liệu, V21 cho phép loại danh sách `MANUAL`, V22 thêm người xử lý báo cáo, V23 tạo `REPORT_SUPPLEMENT`, V24 thêm tham chiếu attachment riêng tư vào đơn đăng ký Chuyên gia, V25 lưu BMI, V26 chuẩn hóa đơn vị công thức, V27 lưu nguồn/khẩu phần Recipe Post, V28 lưu nguồn manual cùng số nguyên liệu bắt buộc, V29 phân loại lượng mất xác định. `database/schema.sql` phản ánh trạng thái sau toàn bộ migration; Physical ERD do người phụ trách sơ đồ cập nhật riêng. V26–V29 chưa được xác minh trên SQL Server trong lượt này.
 - `database/schema.sql` là snapshot/manual bootstrap độc lập, được đồng bộ có chủ đích với trạng thái sau khi chạy toàn bộ Flyway migration; dùng cho khởi tạo nhanh trên SSMS, Azure Data Studio hoặc `sqlcmd`.
 - Flyway repeatable migrations trong `app/mamxanh-backend/src/main/resources/db/demo/` nạp fixture demo khi profile `local` chạy (IntelliJ hoặc Docker Compose), gồm tài khoản, lịch ăn, công thức, nguyên liệu, tương tác cộng đồng và danh sách mua sắm. `MAMXANH_DEMO_PASSWORD` được lấy từ `.env` local và BCrypt hóa lúc Backend khởi động; không lưu password/hash trong SQL migration hoặc Git.
 - Profile `local` dùng thêm location `classpath:db/demo`; `test` và production chỉ chạy migration schema. Repeatable demo chạy theo thứ tự catalog, ước tính AI, recipe và hoạt động mẫu. Fixture AI estimate điền đủ chín chỉ tiêu trên 100 g bằng giá trị minh họa chưa xác minh để công thức demo không còn thiếu chỉ tiêu; số 0 cũng là ước tính (ví dụ B12 trong thực phẩm thực vật), không phải xác nhận xét nghiệm. Dữ liệu nhập khác vẫn có thể thiếu trường; khi đó giá trị `NULL` được bỏ khỏi phép tính và giao diện cảnh báo kết quả chưa đầy đủ. Seed kiểm tra tồn tại trước khi thêm nên chạy lại không nhân bản fixture.
@@ -59,12 +74,15 @@ Repeatable `R__demo_sample_data_67_report_groups.sql` (chỉ profile `local`, AC
 
 ## Gia vị, định lượng và ảnh minh họa demo
 
+- Repeatable `R__demo_sample_data_70_expert_nutrition_profile.sql` (chỉ profile `local`) nạp hồ sơ dinh dưỡng tổng hợp cho `demo-expert@mamxanh.local` để trình diễn form/hồ sơ: 29 tuổi, nữ, 165 cm, 60 kg, vận động vừa, mục tiêu cải thiện sức khỏe. BMI được tính từ chiều cao/cân nặng. Fixture bật consent và xác nhận phạm vi dinh dưỡng bằng giá trị giả lập để luồng hồ sơ demo dùng được; chỉ điền khi hồ sơ tài khoản còn trống hoàn toàn, không ghi đè dữ liệu đã nhập.
+
 - Repeatable `R__demo_sample_data_46_recipe_seasonings.sql` cập nhật đúng 54 món mẫu của `demo-expert@mamxanh.local` theo danh sách tiêu đề: bổ sung gia vị riêng cho từng món, đồng bộ hướng dẫn và định lượng cho hai phần ăn. Tất cả nguyên liệu trong các bài này dùng gram; form tạo/sửa vẫn hỗ trợ các đơn vị đã có.
 - Seed kiểm tra đủ món/nguyên liệu trước khi ghi, cập nhật từng cặp bài–nguyên liệu và không xóa nguyên liệu bổ sung sẵn có. Đơn vị cũ được đổi bằng `UNIT.base_factor` cho khối lượng hoặc `INGREDIENT_UNIT_CONVERSION` riêng theo nguyên liệu; thiếu hệ số thì dừng transaction. Không áp dụng quy tắc 1 ml = 1 g cho mọi chất lỏng.
 - Gạo/hạt/đậu khô được cân trước khi nấu; trứng tính phần bỏ vỏ, rau củ tính phần ăn được. Nước ghi trong công thức là lượng giữ trong món; nước ngâm/rửa, nước hấp và nước luộc bỏ đi không được tính là nguyên liệu tiêu thụ. Định lượng là công thức minh họa, không phải chỉ định dinh dưỡng cá nhân.
 - Repeatable `R__demo_sample_data_12_ingredient_images.sql` ánh xạ 209 nguyên liệu seed sang ảnh AI riêng tại Frontend `public/ingredients/*.webp`. Chỉ điền `image_url` trống; ảnh có sẵn hoặc ảnh Admin tải lên được giữ nguyên. Ảnh minh họa không đại diện thương hiệu hoặc xác nhận giá trị dinh dưỡng.
 - Repeatable `R__demo_sample_data_13_ingredient_groups.sql` chuẩn hóa nhóm cho cùng 209 nguyên liệu demo dựa trên loại thực phẩm; chỉ cập nhật `ingredient_group`, không thay đổi dinh dưỡng, ảnh, quy đổi hoặc nguyên liệu ngoài danh sách demo.
-- Sau khi stack Compose chuẩn chạy với profile `local`, chạy `./scripts/verify-demo-ingredient-fixtures.ps1` từ repository root. Script kiểm tra asset WebP và chạy hai seed hai lần trong transaction có rollback: kiểm tra định lượng gram, dinh dưỡng đủ chín chỉ tiêu, không trùng nguyên liệu, bảo toàn bài ngoài fixture và ảnh có sẵn. Không reset database hoặc SQL volume. Có thể truyền `-ComposeProject` nếu stack dùng project name khác.
+- Repeatable `R__demo_sample_data_14_ingredient_unit_conversions.sql` chỉ chạy ở profile `local`, thêm quy đổi thể tích cho đủ năm đơn vị chuẩn (`ml`, `L`, `tsp`, `tbsp`, `cup`) và đơn vị đếm `quả`, `củ`, `miếng` phù hợp cho nguyên liệu demo. Nước dùng 1 g/ml; mật độ dầu, sữa đậu nành, nước tương và khối lượng mỗi quả/củ/miếng là giá trị tham khảo, được đánh dấu `is_approximate` khi có biến thiên. Seed chỉ chèn cặp nguyên liệu–đơn vị còn thiếu, không ghi đè giá trị hoặc trạng thái do Admin cấu hình; khối lượng `mg/g/kg` vẫn dùng hệ số chuẩn cố định.
+- Sau khi stack Compose chuẩn chạy với profile `local`, chạy `./scripts/verify-demo-ingredient-fixtures.ps1` từ repository root. Script kiểm tra asset WebP và chạy các seed hai lần trong transaction có rollback: kiểm tra định lượng gram, dinh dưỡng đủ chín chỉ tiêu, quy đổi thể tích/đếm hợp lệ và lặp lại an toàn, không trùng nguyên liệu, bảo toàn bài ngoài fixture, ảnh có sẵn và conversion Admin đã lưu. Không reset database hoặc SQL volume. Có thể truyền `-ComposeProject` nếu stack dùng project name khác.
 
 ## Khôi phục database local khi Flyway history không tương thích
 
@@ -109,7 +127,7 @@ Chính sách quản trị schema tuân thủ trực tiếp [Engineering Autonomy
    - **Ranh giới Diagram Artifact Protection:** Thư mục `docs/diagrams/ERD/` (Physical ERD, Logical ERD) là presentation workspace do con người duy trì và được bảo vệ theo `AGENTS.md`. Việc thay đổi schema hoặc migration **tuyệt đối không tự động cấp quyền sửa hoặc regenerate ERD diagrams** cho coding agent trừ khi có task riêng được ủy quyền tường minh.
 3. **Quy trình thực hiện migration:**
    - Truy vết thay đổi đến SRS/Issue và xác nhận không mở rộng scope ngoài quyết định đã duyệt.
-   - Thêm Flyway migration mới ở phiên bản tiếp theo khả dụng (hiện là `V26__...`); không sửa migration đã được chia sẻ.
+   - Thêm Flyway migration mới ở phiên bản tiếp theo khả dụng (hiện là `V29__...`); không sửa migration đã được chia sẻ.
    - Cập nhật entity/DTO/repository và test liên quan.
    - Cập nhật snapshot `database/schema.sql`.
    - Kiểm tra migration trên database sạch và kiểm thử nâng cấp.
@@ -121,7 +139,7 @@ Chính sách quản trị schema tuân thủ trực tiếp [Engineering Autonomy
 - **Logical ERD:** [logical-erd-v1.0.0.drawio](../docs/diagrams/ERD/logical-erd-v1.0.0.drawio) (22 bảng, 37 connector thể hiện 36 quan hệ; cập nhật lần cuối ở commit `827353e`).
 - **Physical ERD:** [physical-erd-v1.0.0.drawio](../docs/diagrams/ERD/physical-erd-v1.0.0.drawio) & [physical-erd-v1.0.0.drawio.png](../docs/diagrams/ERD/physical-erd-v1.0.0.drawio.png) (22 bảng, 37 connector, 196 physical columns với đầy đủ kiểu dữ liệu, nullability, constraints, indexes).
 - **Data Dictionary:** [data-dictionary.md](../docs/diagrams/ERD/data-dictionary.md) v0.7.2 (22 bảng, 196 cột physical, hoàn thành triển khai toàn bộ 33 mục đánh dấu sau review PR #66). Theo quyết định của Tech Lead ngày 01/10/2026, các tài liệu trong `docs/diagrams/` (ERD, Data Dictionary) là baseline tham khảo và chỉ được đồng bộ ở giai đoạn viết tài liệu nộp; trạng thái schema hiện hành lấy theo Flyway migration và `database/schema.sql`.
-- **Schema & Migration:** Lịch sử hiện hành gồm V1–V25; V13 mở rộng mục tiêu FR-35, V14 thêm giá trị tham chiếu cho FR-37, V16/V17 hỗ trợ dinh dưỡng từng phần và nguồn AI; V18 thêm đơn vị `cuộn`, V19 lưu loại danh sách và đóng góp Recipe Post, V20 thêm URL ảnh minh họa tùy chọn cho nguyên liệu, V21 thêm loại `MANUAL`, V22 thêm `REPORT.handled_by`, V23 tạo `REPORT_SUPPLEMENT`, V24 thêm attachment riêng tư FR-05 và V25 lưu BMI FR-35. `database/schema.sql` là snapshot thủ công sau toàn bộ migration. SQL Server Testcontainers đã áp dụng V1–V19 ngày 21/10/2026 trên baseline lúc đó; V20 và V21 chưa được xác minh trên SQL Server trong lượt triển khai này. Ngày 25/10/2026, `AdminReportIntegrationTest` (Issue #33) chạy trên SQL Server Testcontainers mới nên đã áp dụng V1–V22; V23–V25 chưa được xác minh trên SQL Server.
+- **Schema & Migration:** Working baseline gồm V1–V29; các thay đổi mới nhất là V26 chuẩn hóa đơn vị công thức, V27 lưu nguồn/khẩu phần món trong Shopping List, V28 phân biệt phần công thức/thêm thủ công và V29 phân loại lượng mất xác định. `database/schema.sql` là snapshot thủ công sau toàn bộ migration. V26–V29 chưa được xác minh trên SQL Server trong lượt triển khai này.
 - **Migration V7 (Issue #36, FR-31):** [V7__user_onboarding_invitation.sql](../app/mamxanh-backend/src/main/resources/db/migration/V7__user_onboarding_invitation.sql) thêm cột `USER.onboarding_invited_at DATETIME2(7) NULL`: thời điểm lời mời Onboarding đã hiển thị, `NULL` là chưa mời. Backend chỉ mời khi `onboarding_status = NOT_STARTED` và cột còn `NULL`, nên Member bỏ dở questionnaire không bị mời lại (AC-31.10). Tài khoản tồn tại trước migration được ghi thời điểm chạy migration nên không bị hỏi tự động; `onboarding_status` giữ nguyên, nên `SKIPPED` vẫn chỉ có nghĩa là Member đã bấm "Bỏ qua".
 - **Migration V8 (Issue #68, FR-05):** [V8__expert_application_notifications.sql](../app/mamxanh-backend/src/main/resources/db/migration/V8__expert_application_notifications.sql) thêm `NOTIFICATION.target_path` và hai index phục vụ truy vấn lịch sử/xét duyệt đơn Chuyên gia. Cần xác minh migration này cùng snapshot trên database sạch trước khi dùng kết quả kiểm tra V1–V7 làm bằng chứng cho baseline đã đồng bộ.
 - **Migration V11 (Issue #9, FR-03-E):** [V11__user_password_reset.sql](../app/mamxanh-backend/src/main/resources/db/migration/V11__user_password_reset.sql) thêm năm cột trên `USER`: `password_reset_token`, `reset_token_expires_at`, `password_reset_sent_at`, `password_reset_window_started_at`, `password_reset_window_count`; hai CHECK (`CK_USER_password_reset_token_pair` giữ token và hạn cùng có hoặc cùng `NULL`, `CK_USER_password_reset_window_count_non_negative`), một DEFAULT và filtered unique index `UQ_USER_password_reset_token`. Token mới ghi đè token cũ; đặt lại thành công xóa token nhưng giữ khung rate limit.

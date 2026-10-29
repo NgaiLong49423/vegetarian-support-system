@@ -59,11 +59,21 @@ class MealPlanNutritionAiServiceTest {
     }
 
     @Test
+    void memberWithoutProCannotRequestNutritionAiBeforeReadingMenusOrCallingProvider() {
+        doThrow(new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED))
+                .when(entitlements).requirePro(OWNER);
+        assertThatThrownBy(() -> service.recommend(MONDAY, 101L))
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_SUBSCRIPTION_REQUIRED);
+        verifyNoInteractions(plans, entries, nutrition, analysis, recipePosts, ai, events);
+    }
+
+    @Test
     void returnsHelpfulEmptyResultWithoutCallingAiWhenNoPublicCandidatesExist() {
         when(entries.findPublishedCandidateIds(501L)).thenReturn(List.of());
 
         var result = service.recommend(MONDAY, 101L);
 
+        verify(entitlements).requirePro(OWNER);
         assertThat(result.recommendations()).isEmpty();
         assertThat(result.analysis()).contains("Chưa có công thức");
         verifyNoInteractions(nutrition, analysis, recipePosts, ai, events);

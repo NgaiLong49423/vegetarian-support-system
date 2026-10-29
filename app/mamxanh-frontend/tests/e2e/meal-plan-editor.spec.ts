@@ -337,20 +337,20 @@ test("only one day expands, and adding meals queries saved recipes with paginati
   expect(publicSearches).toBe(0)
 })
 
-test("FR-10: nutrition AI explains the Pro requirement and links to plans without changing meals", async ({ page }) => {
+test("FR-10: nutrition AI explains the Plus requirement and links to plans without changing meals", async ({ page }) => {
   const original = entry(7, 11)
   const state = await setup(page, [original])
   await page.route("**/api/v1/meal-plans/ai-menu/previews", route => route.fulfill({
     status: 403, contentType: "application/problem+json", json: {
-      status: 403, code: "AI_SUBSCRIPTION_REQUIRED", requiredTier: "PRO", upgradeUrl: "/goi-ai",
-      detail: "Tính năng AI này yêu cầu gói Pro còn hiệu lực. Hãy nâng cấp lên Pro để tiếp tục.",
+      status: 403, code: "AI_SUBSCRIPTION_REQUIRED", requiredTier: "PLUS", upgradeUrl: "/goi-ai",
+      detail: "Gói hiện tại chưa hỗ trợ tính năng này.",
     },
   }))
   await page.goto("/ke-hoach?view=for-you")
   await page.getByRole("tab", { name: "Theo nhu cầu dinh dưỡng" }).click()
   await page.getByRole("button", { name: "Tạo thực đơn tuần" }).click()
-  await expect(page.getByRole("alert")).toContainText("yêu cầu gói Pro")
-  await expect(page.getByRole("alert").getByRole("link", { name: "Nâng cấp gói Pro" })).toHaveAttribute("href", "/goi-ai")
+  await expect(page.getByRole("alert")).toContainText("yêu cầu gói AI PLUS")
+  await expect(page.getByRole("alert").getByRole("link", { name: "Nâng cấp gói AI PLUS" })).toHaveAttribute("href", "/goi-ai")
   expect(state.entries).toEqual([original])
   expect(state.writes).toBe(0)
 })
@@ -776,12 +776,13 @@ test("a mismatched plan entry cannot be edited and ordinary recipe viewing does 
 test("invalid legacy serving values need correction before saving", async ({ page }) => {
   const state = await setup(page, [{ ...entry(), plannedServings: 1.1 }])
   await page.goto(`/cong-thuc/id/11?mealPlanWeek=${week}&mealPlanEntryId=1`)
-  const input = page.getByRole("spinbutton", { name: "Số khẩu phần cần nấu" })
-  await expect(input).toHaveValue("1.1")
-  await expect(page.getByRole("button", { name: "Lưu khẩu phần vào lịch ăn" })).toBeDisabled()
+  const servings = page.locator('[aria-label="Khẩu phần món trong lịch ăn"]')
+  await expect(page.getByText("1,1 phần", { exact: true })).toBeVisible()
+  await expect(servings.getByRole("button", { name: "Lưu khẩu phần vào lịch ăn" })).toBeDisabled()
   expect(state.writes).toBe(0)
-  await input.fill("1.5")
-  await page.getByRole("button", { name: "Lưu khẩu phần vào lịch ăn" }).click()
+  await servings.getByRole("button", { name: "Tăng khẩu phần" }).click()
+  await expect(page.getByText("1,5 phần", { exact: true })).toBeVisible()
+  await servings.getByRole("button", { name: "Lưu khẩu phần vào lịch ăn" }).click()
   await expect(page.getByRole("status").filter({ hasText: "Đã lưu 1,5 phần" })).toContainText("Đã lưu 1,5 phần")
   expect(state.entries[0].plannedServings).toBe(1.5)
 })
@@ -1014,3 +1015,23 @@ for (const width of [360, 768, 1440]) {
     await page.screenshot({ path: path.join(directory, `servings-detail-light-${width}.png`) })
   })
 }
+
+
+test("FR-10: nutrition adjustment requires PRO while preserving the current meal", async ({ page }) => {
+  const original = entry(7, 11)
+  const state = await setup(page, [original])
+  await page.route("**/api/v1/meal-plans/*/nutrition/recommendations/*", route => route.fulfill({
+    status: 403, json: { status: 403, code: "AI_SUBSCRIPTION_REQUIRED", requiredTier: "PRO", detail: "Gói chưa phù hợp." },
+  }))
+  await page.goto("/ke-hoach")
+  await openMonday(page)
+  await page.getByRole("button", { name: "Xem dinh dưỡng ngày" }).click()
+  const dialog = page.getByRole("dialog")
+  await dialog.getByRole("button", { name: "Phân tích và gợi ý món" }).first().click()
+  const alert = dialog.getByRole("alert")
+  await expect(alert).toContainText("AI đề xuất điều chỉnh dinh dưỡng yêu cầu gói AI PRO")
+  await expect(alert.getByRole("link", { name: "Nâng cấp gói AI PRO" })).toHaveAttribute("href", "/goi-ai")
+  await expect(alert).not.toContainText("PLUS")
+  expect(state.entries).toEqual([original])
+  expect(state.writes).toBe(0)
+})

@@ -6,8 +6,8 @@ package tech.mamxanh.subscription.entity;
  * FREE tier is the default system entitlement when no active subscription exists.
  */
 public enum SubscriptionTier {
-    PLUS(49_000, "Gói PLUS", "Gói tháng cơ bản với AI soạn bài và gợi ý biến tấu"),
-    PRO(99_000, "Gói PRO", "Gói tháng cao cấp với đầy đủ tính năng AI và lập thực đơn tuần theo dinh dưỡng");
+    PLUS(49_000, "Gói PLUS", "Gói tháng cơ bản với AI lập thực đơn tuần theo dinh dưỡng"),
+    PRO(99_000, "Gói PRO", "Gói tháng cao cấp với AI soạn bài và gợi ý biến tấu");
 
     private final int priceVnd;
     private final String displayName;

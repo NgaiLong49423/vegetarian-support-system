@@ -27,6 +27,8 @@ import tech.mamxanh.AbstractIntegrationTest;
 class IncompleteNutritionAiMenuIntegrationTest extends AbstractIntegrationTest {
     private static final String MEMBER = "issue45-member@test.local";
     private static final String EXPERT = "issue45-expert@test.local";
+    private static final String COMPLETE_RECIPE = "Issue45 đậu hũ hấp";
+    private static final String INCOMPLETE_RECIPE = "Issue45 nấm tràm xào";
     private static final String SUPPORTED = "Issue45 đậu hũ có dinh dưỡng";
     private static final String UNSUPPORTED = "Issue45 nấm tràm chưa có dinh dưỡng";
     // Same current week as MutableClock.DEFAULT_START, including Vietnam-local scheduling rules.
@@ -41,6 +43,7 @@ class IncompleteNutritionAiMenuIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     void prepareFixtures() {
         removeFixtures();
+        clock.reset();
         jdbc.update("""
                 INSERT INTO [USER] (email, display_name, role, account_status, email_verified, date_of_birth,
                     biological_sex, height_cm, weight_kg, activity_level, health_data_consent, health_data_consent_at,
@@ -50,7 +53,7 @@ class IncompleteNutritionAiMenuIntegrationTest extends AbstractIntegrationTest {
                 """, MEMBER);
         memberId = jdbc.queryForObject("SELECT user_id FROM [USER] WHERE email = ?", Long.class, MEMBER);
         LocalDateTime now = LocalDateTime.now(clock);
-        jdbc.update("INSERT INTO [SUBSCRIPTION] (user_id, tier, status, starts_at, ends_at) VALUES (?, 'PRO', 'ACTIVE', ?, ?)",
+        jdbc.update("INSERT INTO [SUBSCRIPTION] (user_id, tier, status, starts_at, ends_at) VALUES (?, 'PLUS', 'ACTIVE', ?, ?)",
                 memberId, now.minusDays(1), now.plusDays(30));
 
         jdbc.update("INSERT INTO [USER] (email, display_name, role, account_status, email_verified) VALUES (?, N'Issue 45 Expert', 'EXPERT', 'ACTIVE', 1)", EXPERT);
@@ -67,8 +70,8 @@ class IncompleteNutritionAiMenuIntegrationTest extends AbstractIntegrationTest {
                 """, supportedId);
         long unsupportedId = insertIngredient(UNSUPPORTED);
         jdbc.update("UPDATE [INGREDIENT] SET nutrition_supported = 0 WHERE ingredient_id = ?", unsupportedId);
-        completeRecipe = insertRecipe(expertId, "Issue45 đậu hũ hấp", gramUnitId, supportedId);
-        incompleteRecipe = insertRecipe(expertId, "Issue45 nấm tràm xào", gramUnitId, supportedId, unsupportedId);
+        completeRecipe = insertRecipe(expertId, COMPLETE_RECIPE, gramUnitId, supportedId);
+        incompleteRecipe = insertRecipe(expertId, INCOMPLETE_RECIPE, gramUnitId, supportedId, unsupportedId);
     }
 
     @AfterEach
@@ -77,9 +80,13 @@ class IncompleteNutritionAiMenuIntegrationTest extends AbstractIntegrationTest {
         jdbc.update("DELETE FROM [MEAL_PLAN] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email = ?)", MEMBER);
         jdbc.update("DELETE FROM [SUBSCRIPTION] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email = ?)", MEMBER);
         jdbc.update("DELETE FROM [RECIPE_INGREDIENT] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email = ?))", EXPERT);
+        jdbc.update("DELETE FROM [RECIPE_INGREDIENT] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE title IN (?, ?))",
+                COMPLETE_RECIPE, INCOMPLETE_RECIPE);
         jdbc.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email = ?)", EXPERT);
+        jdbc.update("DELETE FROM [RECIPE_POST] WHERE title IN (?, ?)", COMPLETE_RECIPE, INCOMPLETE_RECIPE);
         jdbc.update("DELETE FROM [INGREDIENT] WHERE name IN (?, ?)", SUPPORTED, UNSUPPORTED);
         jdbc.update("DELETE FROM [USER] WHERE email IN (?, ?)", MEMBER, EXPERT);
+        clock.reset();
     }
 
     @Test

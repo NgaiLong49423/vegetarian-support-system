@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M06
 > **File:** `docs/requirements/use-cases/ai-and-personalization.md`
-> **Version:** v2.4.0
+> **Version:** v2.5.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-15
+> **Last Updated:** 2026-10-29
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -84,7 +84,7 @@ Yêu cầu xác định được actor, tính năng cần gọi và gói Subscri
 
 #### Main Flow
 1. Backend xác định actor và hạng gói hiện tại.
-2. Feature Entitlement Guard đối chiếu tính năng được yêu cầu với ma trận quyền của FR-10: Guest chỉ dùng Chatbot; Free Member dùng Chatbot và gợi ý món cơ bản; Plus có thêm AI hỗ trợ soạn bài và gợi ý biến tấu; Pro có toàn bộ tính năng, gồm lập thực đơn tuần.
+2. Feature Entitlement Guard đối chiếu tính năng được yêu cầu với ma trận quyền của FR-10: Guest chỉ dùng Chatbot; Free Member dùng Chatbot và gợi ý món cơ bản; Plus có thêm AI lập thực đơn tuần và hỗ trợ dinh dưỡng. Pro kế thừa Plus và thêm AI soạn bài cho Chuyên gia cùng gợi ý món liên quan hoặc biến tấu và AI điều chỉnh dinh dưỡng (FR-37).
 3. Với quyền hợp lệ, Backend cho phép chuyển yêu cầu tới luồng AI sở hữu tính năng tương ứng; các quyền không bị giới hạn theo số lượt/ngày.
 
 #### Alternative Flows
@@ -128,7 +128,7 @@ Backend đã xác định gói hiện tại và tính năng yêu cầu; entitlem
 
 #### Main Flow
 1. Backend từ chối yêu cầu tại máy chủ với HTTP 403 trước khi gọi Gemini.
-2. Giao diện thông báo gói tối thiểu cần có: Free Member được hướng dẫn nâng cấp Plus khi yêu cầu tính năng Plus; Plus Member được hướng dẫn nâng cấp Pro khi yêu cầu lập thực đơn tuần.
+2. Giao diện thông báo gói tối thiểu cần có: Free Member được hướng dẫn nâng cấp Plus khi yêu cầu tính năng Plus; Plus Member được hướng dẫn nâng cấp Pro khi yêu cầu AI soạn bài, gợi ý món liên quan/biến tấu hoặc AI điều chỉnh dinh dưỡng (FR-37).
 3. Giao diện cung cấp đường dẫn tới thông tin gói dịch vụ tại [FR-13](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13).
 
 #### Postconditions
@@ -143,7 +143,7 @@ Yêu cầu không được thực thi và không phát sinh chi phí gọi Gemin
 - [AC-10.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Từ chối tính năng Plus với Member Free.
 - [AC-10.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Từ chối tính năng Pro với Member Plus.
 - [AC-10.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Chặn tại Backend trước khi gọi Gemini.
-- [AC-10.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Từ chối yêu cầu thực đơn tuần FR-34 với gói Free/Plus và hướng dẫn lên Pro.
+- [AC-10.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Từ chối yêu cầu thực đơn tuần FR-34 với gói Free và hướng dẫn lên Plus.
 
 ---
 

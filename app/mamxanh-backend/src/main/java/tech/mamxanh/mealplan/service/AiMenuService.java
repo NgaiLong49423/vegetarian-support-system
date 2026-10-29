@@ -90,7 +90,7 @@ public class AiMenuService {
         validateWeek(request.weekStartDate());
         long userId = users.requireActiveMember().id();
         // Entitlement and health-profile gates intentionally run before catalog work or Gemini.
-        entitlements.requirePro(userId);
+        entitlements.requirePlusOrPro(userId);
         var profile = nutritionProfiles.requireMenuNutritionContext(userId);
         LocalDate firstSuggestionDate = firstActionableDate(request.weekStartDate());
         LocalDate lastSuggestionDate = lastActionableDate(request.weekStartDate());
@@ -139,7 +139,7 @@ public class AiMenuService {
     public MealPlanWeekResponse apply(ApplyAiMenuRequest request) {
         validateWeek(request.weekStartDate());
         long userId = users.requireActiveMember().id();
-        entitlements.requirePro(userId);
+        entitlements.requirePlusOrPro(userId);
         nutritionProfiles.requireMenuNutritionContext(userId);
         LocalDate firstReplaceDate = firstActionableDate(request.weekStartDate());
         LocalDate lastReplaceDate = lastActionableDate(request.weekStartDate());

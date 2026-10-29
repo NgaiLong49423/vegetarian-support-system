@@ -42,7 +42,8 @@ class AiEntitlementIntegrationTest extends AbstractIntegrationTest {
     @CsvSource({"PLUS,ACTIVE,-1,1,true,false", "PRO,ACTIVE,-1,1,true,true",
             "PLUS,ACTIVE,0,1,true,false", "PRO,ACTIVE,0,1,true,true",
             "PRO,ACTIVE,-1,0,false,false", "PRO,ACTIVE,1,2,false,false",
-            "PRO,EXPIRED,-1,1,false,false", "PRO,CANCELLED,-1,1,false,false"})
+            "PRO,EXPIRED,-1,1,false,false", "PRO,CANCELLED,-1,1,false,false", "PLUS,ACTIVE,-1,0,false,false",
+            "PLUS,ACTIVE,1,2,false,false", "PLUS,EXPIRED,-1,1,false,false"})
     void sqlUsesTierStatusAndExactValidityBoundaries(String tier, String status, int starts, int ends,
             boolean plusAllowed, boolean proAllowed) {
         subscribe(tier, status, starts, ends);
@@ -51,16 +52,16 @@ class AiEntitlementIntegrationTest extends AbstractIntegrationTest {
         verifyNoInteractions(aiClient);
     }
 
-    @Test void freeAndPlusCannotCallPaidFeaturesAndReceiveTheCorrectUpgradeWithoutGemini() throws Exception {
+    @Test void freeNeedsPlusForMenusAndBothFreeAndPlusNeedProForAuthoringWithoutGemini() throws Exception {
         String assistance = """
                 {"contentType":"DESCRIPTION","title":"Canh chay","dishCategory":"SOUP","vegetarianType":"VEGAN",
                  "servings":2,"ingredients":[{"ingredientId":1,"unitId":1,"quantity":100}]}
                 """;
-        forbidden("/api/v1/recipes/ai-assistance", assistance, "PLUS");
-        forbidden("/api/v1/recipes/1/related/ai", "{}", "PLUS");
+        forbidden("/api/v1/recipes/ai/weekly-menu", "{\"ingredientIds\":[1]}", "PLUS");
+        forbidden("/api/v1/meal-plans/ai-menu/previews", "{\"weekStartDate\":\"2026-09-28\",\"mode\":\"PROFILE\"}", "PLUS");
         for (int pass = 0; pass < 2; pass++) {
-            forbidden("/api/v1/recipes/ai/weekly-menu", "{\"ingredientIds\":[1]}", "PRO");
-            forbidden("/api/v1/meal-plans/ai-menu/previews", "{\"weekStartDate\":\"2026-09-28\",\"mode\":\"PROFILE\"}", "PRO");
+            forbidden("/api/v1/recipes/ai-assistance", assistance, "PRO");
+            forbidden("/api/v1/recipes/1/related/ai", "{}", "PRO");
             if (pass == 0) subscribe("PLUS", "ACTIVE", -1, 1);
         }
         verifyNoInteractions(aiClient);
@@ -74,18 +75,35 @@ class AiEntitlementIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.requiredTier").value(tier)).andExpect(jsonPath("$.upgradeUrl").value("/goi-ai"));
     }
 
-    @Test void chatRoutesWeeklyMenuUsingTheRealSubscriptionInsteadOfTheProvider() throws Exception {
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"PLUS", "PRO"})
+    void chatRoutesBothPaidTiersUsingTheRealSubscriptionInsteadOfTheProvider(String tier) throws Exception {
         String path = "/api/v1/recipes/ai/chat";
         String body = "{\"contextType\":\"GENERAL\",\"question\":\"Lập thực đơn tuần 7 ngày theo dinh dưỡng cá nhân\"}";
-        forbidden(path, body, "PRO");
-        subscribe("PLUS", "ACTIVE", -1, 1);
-        forbidden(path, body, "PRO");
-        jdbc.update("DELETE FROM [SUBSCRIPTION] WHERE user_id=?", member);
-        subscribe("PRO", "ACTIVE", -1, 1);
+        forbidden(path, body, "PLUS");
+        subscribe(tier, "ACTIVE", -1, 1);
         mockMvc.perform(post(path).with(user(Long.toString(member)).roles("EXPERT"))
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.workflowUrl").value("/ke-hoach?view=for-you"))
                 .andExpect(jsonPath("$.recommendations").isEmpty());
+        jdbc.update("UPDATE [SUBSCRIPTION] SET ends_at=? WHERE user_id=?", LocalDateTime.now(clock), member);
+        forbidden(path, body, "PLUS");
+        verifyNoInteractions(aiClient);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"PLUS,false", "PRO,true"})
+    void authoringChatRequiresProAndRechecksExpiry(String tier, boolean allowed) throws Exception {
+        String path = "/api/v1/recipes/ai/chat";
+        String body = "{\"contextType\":\"GENERAL\",\"question\":\"Viết mô tả cho bài đăng công thức\"}";
+        subscribe(tier, "ACTIVE", -1, 1);
+        if (allowed) {
+            mockMvc.perform(post(path).with(user(Long.toString(member)).roles("EXPERT"))
+                            .contentType(MediaType.APPLICATION_JSON).content(body))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.workflowUrl").value("/dang-cong-thuc"));
+        } else {
+            forbidden(path, body, "PRO");
+        }
         jdbc.update("UPDATE [SUBSCRIPTION] SET ends_at=? WHERE user_id=?", LocalDateTime.now(clock), member);
         forbidden(path, body, "PRO");
         verifyNoInteractions(aiClient);

@@ -76,7 +76,7 @@ class AiRecipeRecommendationServiceTest {
 
     @Test
     void freeMemberCannotRequestWeeklyMenuBeforeProfileOrGeminiWork() {
-        doThrow(new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED)).when(entitlements).requirePro(7);
+        doThrow(new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED)).when(entitlements).requirePlusOrPro(7);
         assertThatThrownBy(() -> service.weeklyMenu(List.of(1L))).isInstanceOf(AppException.class);
         verifyNoInteractions(preferences, recipes, ai, events);
     }
@@ -162,7 +162,7 @@ class AiRecipeRecommendationServiceTest {
 
     @Test
     void expiredProCannotApplyAnEarlierWeeklyPreview() {
-        doThrow(new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED)).when(entitlements).requirePro(7);
+        doThrow(new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED)).when(entitlements).requirePlusOrPro(7);
         assertThatThrownBy(() -> service.requireWeeklyApplyEligible(7L, List.of(1L)))
                 .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_SUBSCRIPTION_REQUIRED);
         verifyNoInteractions(preferences, recipes, ai, events);

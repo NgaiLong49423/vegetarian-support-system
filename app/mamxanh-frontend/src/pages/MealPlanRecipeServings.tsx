@@ -117,6 +117,16 @@ export function MealPlanRecipeServings({
   }
 
   const validServings = Number.isFinite(servings) && servings >= 0.5 && servings <= 10 && Number.isInteger(servings * 2)
+  const decreaseServings = () => {
+    const next = validServings ? servings - 0.5 : Math.floor(servings * 2) / 2
+    onChange(Math.max(0.5, next))
+    setNotice("")
+  }
+  const increaseServings = () => {
+    const next = validServings ? servings + 0.5 : Math.ceil(servings * 2) / 2
+    onChange(Math.min(10, next))
+    setNotice("")
+  }
 
   return (
     <div
@@ -130,10 +140,7 @@ export function MealPlanRecipeServings({
             type="button"
             aria-label="Giảm khẩu phần"
             disabled={!entry || loading || saving || servings <= 0.5}
-            onClick={() => {
-              onChange(Math.max(0.5, servings - 0.5))
-              setNotice("")
-            }}
+            onClick={decreaseServings}
             className="rounded-lg p-2 text-brand-700 hover:bg-paper disabled:opacity-40"
           >
             <Minus className="h-4 w-4" />
@@ -145,10 +152,7 @@ export function MealPlanRecipeServings({
             type="button"
             aria-label="Tăng khẩu phần"
             disabled={!entry || loading || saving || servings >= 10}
-            onClick={() => {
-              onChange(Math.min(10, servings + 0.5))
-              setNotice("")
-            }}
+            onClick={increaseServings}
             className="rounded-lg p-2 text-brand-700 hover:bg-paper disabled:opacity-40"
           >
             <Plus className="h-4 w-4" />
@@ -176,25 +180,6 @@ export function MealPlanRecipeServings({
           Đã lưu {entry.plannedServings.toLocaleString("vi-VN")} phần cần nấu.
           Thay đổi chỉ áp dụng cho món trong bữa này.
         </p>
-      )}
-      {entry && (
-        <label className="flex max-w-56 flex-col gap-1 text-xs text-ink-muted">
-          Số khẩu phần cần nấu
-          <input
-            type="number"
-            min={0.5}
-            max={10}
-            step={0.5}
-            value={servings}
-            onChange={(event) => {
-              const value = Number(event.target.value)
-              if (Number.isFinite(value)) onChange(value)
-              setNotice("")
-            }}
-            disabled={loading || saving}
-            className="rounded-lg border border-brand-200 bg-paper px-3 py-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-brand-600"
-          />
-        </label>
       )}
       {notice && (
         <p role="status" className="text-sm text-leaf-700">
