@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.113.0
+> **Version:** v2.113.1
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-29
 > **Status:** Active
@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-29 — Monitor Subscription Payments with Real Accounting Data
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 7d300dd0ef08555ceed6418a4c1b78ee5aadefd1.
 
 **Scope:** Implement the directly assigned Administrator transaction screen on the current FR-11 branch using existing FR-13 payment data; no separate Issue or publishing action is implied.
 
@@ -33,7 +33,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-28 — Integrate FR-11 and Recover Pending AI Accounting
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 7d300dd0ef08555ceed6418a4c1b78ee5aadefd1.
 
 **Scope:** Complete local FR-11 integration against develop `b294a28e` and the confirmed FR-10 dependency `a9d68e4a`; publishing, structural approval and main acceptance remain deferred.
 
