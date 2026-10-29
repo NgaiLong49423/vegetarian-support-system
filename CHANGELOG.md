@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.124.0
+> **Version:** v2.125.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-29
 > **Status:** Active
@@ -23,6 +23,25 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Ask recipe drafting AI to prioritize entered ingredients while allowing suitable additional suggestions for the author to review and edit before posting.
 - Remove Backend rejection based only on generated ingredient mentions; keep existing response-format, entitlement, and publication checks. Published recipes remain subject to current post-moderation.
+
+### Fixed
+
+- None.
+
+## 2026-10-29 — Add Nguyen Hoang Phuc Dessert Demo Collection
+
+**Status:** Working tree — uncommitted changes.
+
+**Scope:** Expand the local Expert demo with a detailed vegetarian collection of desserts, drinks and baked sweets.
+
+### Added
+
+- Add a local-only repeatable seed for 15 recipe posts with professional descriptions, step-by-step instructions, gram quantities and catalog ingredients prioritized for lower usage in existing demo fixtures.
+- Generate and attach one distinct food illustration per post, served from Frontend public assets.
+
+### Changed
+
+- Document the new Expert demo collection and local seed behavior.
 
 ### Fixed
 
