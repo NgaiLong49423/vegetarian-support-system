@@ -484,6 +484,36 @@ test("shopping manual item quantity, edit, bought/unbought, filtering and deleti
   expect(state.list.items).toHaveLength(2)
 })
 
+test("shopping catalog item unit selection converts the displayed total", async ({ page }) => {
+  const state = await setup(page)
+  await page.route("**/api/v1/ingredients/5/units", (route) =>
+    route.fulfill({
+      json: [
+        { id: 1, code: "g", name: "gram", dimension: "MASS", gramsPerUnit: 1, approximate: false },
+        { id: 2, code: "ml", name: "mililít", dimension: "VOLUME", gramsPerUnit: 2, approximate: true },
+      ],
+    }),
+  )
+
+  await page.goto("/di-cho?listId=42")
+  await page.getByRole("button", { name: "Sửa Nước tương g", exact: true }).click()
+  const quantity = page.getByLabel("Tổng số lượng mới", { exact: true })
+  const unit = page.getByLabel("Đơn vị", { exact: true })
+  await expect(unit).toHaveValue("1")
+  await unit.selectOption("2")
+  await expect(quantity).toHaveValue("150")
+
+  await page.getByRole("button", { name: "Tiếp tục", exact: true }).click()
+  await page.getByRole("button", { name: "Xác nhận thay đổi", exact: true }).click()
+
+  expect(state.writes).toContainEqual({
+    method: "PUT",
+    suffix: "/42/items/1",
+    body: { quantity: 150, unitId: 2 },
+  })
+  await expect(page.getByTestId("shopping-item-1")).toContainText("150 ml")
+})
+
 test("shopping failed mutations preserve data and form, cleanup preserves unbought rows", async ({
   page,
 }) => {

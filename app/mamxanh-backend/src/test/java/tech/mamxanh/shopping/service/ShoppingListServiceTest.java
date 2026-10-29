@@ -240,6 +240,48 @@ class ShoppingListServiceTest {
         assertThat(item.isBought()).isTrue();
     }
 
+    @Test void editingCatalogItemAcrossUnitsConvertsRecipeAndUnknownAmountsToSelectedUnit() {
+        var rows = prepareRecipeBackedIngredientSources();
+        var grams = new IngredientUnitOptionResponse(1, "g", "gram", MeasurementDimension.MASS,
+                BigDecimal.ONE, false);
+        var kilograms = new IngredientUnitOptionResponse(2, "kg", "kilogram", MeasurementDimension.MASS,
+                new BigDecimal("1000"), false);
+        when(catalog.findActiveIngredientUnits(8L)).thenReturn(List.of(grams, kilograms));
+        when(catalog.findUnitReferences(List.of(2))).thenReturn(List.of(
+                new UnitResponse(2, "kg", "kilogram", MeasurementDimension.MASS, new BigDecimal("1000"), true)));
+        when(aggregation.aggregate(anyList())).thenAnswer(call -> aggregateWithUnits(call.getArgument(0)));
+
+        var result = service.update(10, 3, new UpdateShoppingItemRequest(new BigDecimal("0.06"), 2));
+
+        assertThat(item.getQuantity()).isEqualByComparingTo("0.06");
+        assertThat(item.getUnitId()).isEqualTo(2);
+        assertThat(rows).filteredOn(source -> "UNKNOWN".equals(source.getSourceKind()))
+                .extracting(ShoppingRecipeContributionEntity::getQuantity)
+                .containsExactly(new BigDecimal("5.000000"), new BigDecimal("5.000000"));
+        assertThat(rows).filteredOn(source -> "MANUAL".equals(source.getSourceKind())).singleElement()
+                .satisfies(source -> {
+                    assertThat(source.getQuantity()).isEqualByComparingTo("0.01");
+                    assertThat(source.getUnitId()).isEqualTo(2);
+                });
+        assertThat(result.requiredQuantity()).isEqualByComparingTo("0.04");
+        assertThat(result.unitCode()).isEqualTo("kg");
+    }
+
+    @Test void changingUnitBelowConvertedRecipeMinimumIsRejected() {
+        prepareRecipeBackedIngredientSources();
+        when(catalog.findActiveIngredientUnits(8L)).thenReturn(List.of(
+                new IngredientUnitOptionResponse(1, "g", "gram", MeasurementDimension.MASS, BigDecimal.ONE, false),
+                new IngredientUnitOptionResponse(2, "kg", "kilogram", MeasurementDimension.MASS,
+                        new BigDecimal("1000"), false)));
+        when(aggregation.aggregate(anyList())).thenAnswer(call -> aggregateWithUnits(call.getArgument(0)));
+
+        assertThatThrownBy(() -> service.update(10, 3, new UpdateShoppingItemRequest(new BigDecimal("0.03"), 2)))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("0.04");
+        assertThat(item.getUnitId()).isEqualTo(1);
+        assertThat(list.getUpdatedAt()).isNull();
+    }
+
     @Test void increasingTotalDoesNotIncreaseTheUnresolvedContributionBucket() {
         var rows = prepareRecipeBackedIngredientSources();
 
@@ -361,5 +403,18 @@ class ShoppingListServiceTest {
                 new tech.mamxanh.shopping.dto.response.ShoppingAggregationResult.Group("Đậu", List.of(
                         new tech.mamxanh.shopping.dto.response.ShoppingAggregationResult.Item(
                                 8L, "Đậu phụ", quantity, 1, "g", "gram", false, indices)))), List.of());
+    }
+
+    private static tech.mamxanh.shopping.dto.response.ShoppingAggregationResult aggregateWithUnits(
+            List<ShoppingAggregationLine> lines) {
+        int unitId = lines.getFirst().unitId();
+        String unitCode = unitId == 2 ? "kg" : "g";
+        String unitName = unitId == 2 ? "kilogram" : "gram";
+        BigDecimal quantity = lines.stream().map(ShoppingAggregationLine::quantity).reduce(BigDecimal.ZERO, BigDecimal::add);
+        var indices = java.util.stream.IntStream.range(0, lines.size()).boxed().toList();
+        return new tech.mamxanh.shopping.dto.response.ShoppingAggregationResult(List.of(
+                new tech.mamxanh.shopping.dto.response.ShoppingAggregationResult.Group("Đậu", List.of(
+                        new tech.mamxanh.shopping.dto.response.ShoppingAggregationResult.Item(
+                                8L, "Đậu phụ", quantity, unitId, unitCode, unitName, false, indices)))), List.of());
     }
 }

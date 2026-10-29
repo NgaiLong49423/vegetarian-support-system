@@ -212,7 +212,7 @@ public class ShoppingListService {
             BigDecimal oldManualQuantity = manualAmount == null ? BigDecimal.ZERO : convertIngredientQuantity(item.getIngredientId(), manualAmount.quantity(), manualAmount.unitId(), targetUnitId);
             if (requestedQuantity.compareTo(fixedQuantity) < 0) {
                 throw invalid("Đây là nguyên liệu tối thiểu để hoàn thành công thức: "
-                        + fixedQuantity.stripTrailingZeros().toPlainString() + " " + request.unitId() + ".");
+                        + fixedQuantity.stripTrailingZeros().toPlainString() + " " + requestedAmount.unitCode() + ".");
             }
             BigDecimal flexibleQuantity = requestedQuantity.subtract(fixedQuantity);
             BigDecimal targetUnknownQuantity = flexibleQuantity.subtract(oldManualQuantity).max(BigDecimal.ZERO)
