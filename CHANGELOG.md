@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-30 — Implement Backend-Backed Admin Account Management
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `8632da92`.
 
 **Scope:** Replace the account-management preview with protected SQL Server-backed account lookup and administration.
 
