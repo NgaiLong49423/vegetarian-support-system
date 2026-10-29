@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.127.0
+> **Version:** v2.128.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-29
 > **Status:** Active
@@ -8,6 +8,27 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-29 — Synchronize FR-11 with Develop and Latest FR-10 Entitlements
+
+**Status:** Committed — `ed354ce7a2e43b296f0e5afa067865c128c2b1be`.
+
+**Scope:** Synchronize the FR-11 branch against the develop baseline (58 commits ahead) and incorporate latest FR-10 tier rebalancing and restored assistant modal.
+
+### Added
+
+- Renumber unmerged telemetry migration from V26 to V30 (`V30__ai_usage_telemetry.sql`) to avoid collision with develop standard recipe units (`V26__standard_recipe_units.sql`).
+
+### Changed
+
+- Align latest FR-10 permissions: PRO required for recipe authoring assistance and related recipe AI recommendations; PLUS or PRO required for weekly meal planning and AI nutrition menus.
+- Restore the original develop recipe assistant modal (`AiRecipeAssistantModal.tsx`) with verified minimum upgrade plan guidance (`aiUpgrade.ts`).
+- Resolve all integration conflicts across database schema, OpenAPI specification, bug registry, and backend test fixtures.
+
+### Fixed
+
+- Prevent migration version collision with develop V26–V29.
+- Pass all unit and integration tests across both backend and frontend builds.
 
 ## 2026-10-29 — Align AI Integration Fixtures with Pro Entitlements
 
