@@ -95,6 +95,7 @@ test('administrator can add, search, edit and deactivate a Vietnamese ingredient
     return url.pathname.endsWith('/admin/ingredients/search') && url.searchParams.get('query') === 'Nấm';
   });
   await page.getByPlaceholder('Tìm tên nguyên liệu').fill('Nấm');
+  await page.getByRole('button', { name: 'Tìm và lọc' }).click();
   await nameSearch;
   await expect(page.getByText('Nấm đùi gà', { exact: true })).toBeVisible();
   await expect(page.getByText('Chuối tây', { exact: true })).toHaveCount(0);
@@ -115,6 +116,82 @@ test('administrator can add, search, edit and deactivate a Vietnamese ingredient
   await page.getByRole('button', { name: 'Bật lại Nấm đùi gà tươi' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Đã bật lại nguyên liệu' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Ngừng sử dụng Nấm đùi gà tươi' })).toBeVisible();
+});
+
+test('administrator manages count and volume conversions for one ingredient', async ({ page }) => {
+  const data = [{ ...banana, recipeUsageCount: 0 }];
+  const units = [
+    { id: 1, code: 'mg', name: 'miligram', dimension: 'MASS', baseFactor: 0.001, active: true },
+    { id: 2, code: 'g', name: 'gram', dimension: 'MASS', baseFactor: 1, active: true },
+    { id: 3, code: 'kg', name: 'kilogram', dimension: 'MASS', baseFactor: 1000, active: true },
+    { id: 4, code: 'ml', name: 'mililít', dimension: 'VOLUME', baseFactor: 1, active: true },
+    { id: 5, code: 'L', name: 'lít', dimension: 'VOLUME', baseFactor: 1000, active: true },
+    { id: 6, code: 'tsp', name: 'muỗng cà phê', dimension: 'VOLUME', baseFactor: 5, active: true },
+    { id: 7, code: 'tbsp', name: 'muỗng canh', dimension: 'VOLUME', baseFactor: 15, active: true },
+    { id: 8, code: 'cup', name: 'cup', dimension: 'VOLUME', baseFactor: 240, active: true },
+    { id: 9, code: 'quả', name: 'quả', dimension: 'COUNT', baseFactor: 1, active: true },
+    { id: 10, code: 'củ', name: 'củ', dimension: 'COUNT', baseFactor: 1, active: true },
+    { id: 11, code: 'miếng', name: 'miếng', dimension: 'COUNT', baseFactor: 1, active: true },
+  ];
+  const conversions: Array<{ ingredientId: number; unitId: number; gramsPerUnit: number; approximate: boolean; active: boolean }> = [];
+  await page.route('**/api/v1/admin/**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const method = request.method();
+    if (url.pathname.endsWith('/ingredients/options')) return route.fulfill({ json: { success: true, data: { groups: ['Rau củ'], sources: ['Nguồn kiểm thử'] } } });
+    if (url.pathname.endsWith('/ingredients/search') && method === 'GET') return route.fulfill({ json: ingredientPage(data) });
+    if (url.pathname.endsWith('/ingredients') && method === 'GET') return route.fulfill({ json: { success: true, data } });
+    if (url.pathname.endsWith('/units') && method === 'GET') return route.fulfill({ json: { success: true, data: units } });
+    if (url.pathname.endsWith('/ingredient-unit-conversions') && method === 'GET') {
+      const ingredientId = url.searchParams.get('ingredientId');
+      return route.fulfill({ json: { success: true, data: ingredientId ? conversions.filter((item) => item.ingredientId === Number(ingredientId)) : conversions } });
+    }
+    const countMatch = url.pathname.match(/\/ingredients\/(\d+)\/unit-conversions\/(\d+)(?:\/status)?$/);
+    if (countMatch && !url.pathname.endsWith('/status') && ['POST', 'PUT'].includes(method)) {
+      const conversion = { ingredientId: Number(countMatch[1]), unitId: Number(countMatch[2]), ...request.postDataJSON(), active: true };
+      const index = conversions.findIndex((row) => row.ingredientId === conversion.ingredientId && row.unitId === conversion.unitId);
+      if (index < 0) conversions.push(conversion); else conversions[index] = conversion;
+      return route.fulfill({ json: { success: true, data: conversion } });
+    }
+    if (countMatch && method === 'PATCH') {
+      const conversion = conversions.find((row) => row.ingredientId === Number(countMatch[1]) && row.unitId === Number(countMatch[2]));
+      if (conversion) conversion.active = request.postDataJSON().active;
+      return route.fulfill({ json: { success: true, data: conversion } });
+    }
+    if (url.pathname.endsWith('/ingredients/7/volume-conversion') && method === 'PUT') {
+      const body = request.postDataJSON();
+      for (const unit of units.filter((row) => row.dimension === 'VOLUME')) {
+        const conversion = { ingredientId: 7, unitId: unit.id, gramsPerUnit: body.gramsPerMl * unit.baseFactor, approximate: body.approximate, active: true };
+        const index = conversions.findIndex((row) => row.ingredientId === 7 && row.unitId === unit.id);
+        if (index < 0) conversions.push(conversion); else conversions[index] = conversion;
+      }
+      return route.fulfill({ json: { success: true, data: conversions.filter((row) => row.ingredientId === 7 && units.find((unit) => unit.id === row.unitId)?.dimension === 'VOLUME') } });
+    }
+    if (url.pathname.endsWith('/ingredients/7/volume-conversion/status') && method === 'PATCH') {
+      const { active } = request.postDataJSON();
+      conversions.filter((row) => units.find((unit) => unit.id === row.unitId)?.dimension === 'VOLUME').forEach((row) => { row.active = active; });
+      return route.fulfill({ json: { success: true, data: conversions } });
+    }
+    return route.fulfill({ status: 404, json: { detail: 'Not found' } });
+  });
+
+  await page.goto('/quan-tri/danh-muc');
+  await expect(page.getByLabel('Đơn vị được hỗ trợ cho Chuối tây')).toContainText('mg');
+  await page.getByRole('button', { name: 'Đơn vị' }).click();
+  await expect(page.getByRole('heading', { name: 'Quản lý đơn vị · Chuối tây' })).toBeVisible();
+  await expect(page.getByText('cup: 0.0000 g')).toBeVisible();
+  await page.getByRole('heading', { name: 'Số đếm theo nguyên liệu' }).locator('..').getByRole('combobox').selectOption('9');
+  await page.getByLabel('Số gram trên đơn vị').fill('120');
+  await page.getByRole('button', { name: 'Lưu quy đổi đếm' }).click();
+  await expect(page.getByText('quả: 120 g · xấp xỉ')).toBeVisible();
+  await page.getByLabel('1 ml tương đương bao nhiêu gram').fill('0.91');
+  await expect(page.getByText('cup: 218.40 g')).toBeVisible();
+  await page.getByRole('button', { name: 'Lưu và đồng bộ 5 đơn vị thể tích' }).click();
+  await expect(page.getByText('ml: 0.91 g · xấp xỉ')).toBeVisible();
+  await page.getByRole('button', { name: 'Ngừng sử dụng', exact: true }).first().click();
+  await expect(page.getByRole('button', { name: 'Khôi phục', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Đóng' }).click();
+  await expect(page.getByRole('heading', { name: 'Quản lý đơn vị · Chuối tây' })).toHaveCount(0);
 });
 
 test('administrator saves nutrition values and backend validates enabling calculation support', async ({ page }) => {
@@ -243,7 +320,7 @@ test('administrator filters the catalog through the paginated endpoint and reads
   await expect(page).toHaveURL('/cong-thuc/id/30');
 });
 
-test('automatic ingredient search keeps focus while a slow response loads', async ({ page }) => {
+test('ingredient filters wait for submit and preserve the selected query while results load', async ({ page }) => {
   let releaseSearch!: () => void;
   const searchGate = new Promise<void>((resolve) => { releaseSearch = resolve; });
   const searchQueries: string[] = [];
@@ -271,17 +348,18 @@ test('automatic ingredient search keeps focus while a slow response loads', asyn
 
   await page.goto('/quan-tri/danh-muc');
   const search = page.getByPlaceholder('Tìm tên nguyên liệu');
-  await search.focus();
   await search.pressSequentially('bắp', { delay: 120 });
+  await expect(search).toHaveValue('bắp');
+  await expect.poll(() => searchQueries).not.toContain('bắp');
+  await page.getByRole('button', { name: 'Tìm và lọc' }).click();
   await expect.poll(() => searchQueries).toContain('bắp');
   await expect(page.getByRole('status')).toContainText('Đang tải danh mục');
-  await expect(search).toBeFocused();
 
   releaseSearch();
   await expect(page.getByText('Bắp cải', { exact: true })).toBeVisible();
-  await expect(search).toBeFocused();
-  await search.pressSequentially(' cải', { delay: 80 });
+  await search.fill('bắp cải');
   await expect(search).toHaveValue('bắp cải');
+  await page.getByRole('button', { name: 'Tìm và lọc' }).click();
   await expect.poll(() => searchQueries.at(-1)).toBe('bắp cải');
 });
 

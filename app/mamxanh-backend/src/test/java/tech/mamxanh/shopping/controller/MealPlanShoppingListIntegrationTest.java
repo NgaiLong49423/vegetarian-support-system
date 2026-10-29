@@ -126,25 +126,25 @@ class MealPlanShoppingListIntegrationTest extends AbstractIntegrationTest {
         sql.update("UPDATE [MEAL_PLAN_ENTRY] SET planned_servings=1 WHERE meal_plan_id=?",plan);
         mockMvc.perform(post(route).with(user(Long.toString(owner)).roles("CUSTOMER"))
                 .contentType(MediaType.APPLICATION_JSON).content("{\"weekStartDate\":\"2026-10-19\",\"selectedDates\":[\"2026-10-19\",\"2026-10-20\"]}"))
-                .andExpect(status().isCreated()).andExpect(jsonPath("$.shoppingList.items[0].quantity").value(0.67))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.shoppingList.items[0].quantity").value(0.673333))
                 .andExpect(jsonPath("$.warnings[0].code").value("QUANTITY_ROUNDED"));
         assertThat(countLists(owner)).isEqualTo(1);
     }
 
-    @Test void underflowCannotLeaveAnEmptyOrPartialChecklist() throws Exception {
+    @Test void smallValidAmountsRetainPrecisionWhenSaved() throws Exception {
         sql.update("UPDATE [RECIPE_POST] SET servings=50 WHERE recipe_id=?",first);
         sql.update("UPDATE [RECIPE_INGREDIENT] SET quantity=0.01 WHERE recipe_id=?",first);
         sql.update("UPDATE [MEAL_PLAN_ENTRY] SET planned_servings=0.1 WHERE meal_plan_id=?",plan);
-        failure(selectedMonday(),owner);
-        assertThat(countLists(owner)).isZero();
+        long list=create(selectedMonday(),owner);
+        assertThat(quantity(list)).isEqualByComparingTo("0.00002");
     }
 
-    @Test void overflowCannotLeaveAnEmptyOrPartialChecklist() throws Exception {
+    @Test void largeValidAmountsPersistWithinTheShoppingQuantityPrecision() throws Exception {
         sql.update("UPDATE [RECIPE_POST] SET servings=1 WHERE recipe_id=?",first);
         sql.update("UPDATE [RECIPE_INGREDIENT] SET quantity=99999999.99 WHERE recipe_id=?",first);
         sql.update("UPDATE [MEAL_PLAN_ENTRY] SET planned_servings=50 WHERE meal_plan_id=?",plan);
-        failure(selectedMonday(),owner);
-        assertThat(countLists(owner)).isZero();
+        long list=create(selectedMonday(),owner);
+        assertThat(quantity(list)).isEqualByComparingTo("4999999999.5");
     }
 
     @Test void generatedListNameUsesCreationDateRegardlessOfSelectedMealDates() throws Exception {

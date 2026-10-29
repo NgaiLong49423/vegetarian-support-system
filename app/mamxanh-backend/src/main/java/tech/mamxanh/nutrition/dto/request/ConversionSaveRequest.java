@@ -6,5 +6,5 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 
 public record ConversionSaveRequest(
-        @NotNull @DecimalMin(value = "0.01") @Digits(integer = 8, fraction = 2) BigDecimal gramsPerUnit,
+        @NotNull @DecimalMin(value = "0.000000001") @Digits(integer = 9, fraction = 9) BigDecimal gramsPerUnit,
         boolean approximate) { }

@@ -269,17 +269,17 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     @Test
     void acceptsCountUnitWhenActiveIngredientSpecificConversionExists() throws Exception {
         jdbcTemplate.update("INSERT INTO [INGREDIENT_UNIT_CONVERSION] (ingredient_id, unit_id, grams_per_unit) VALUES (?, ?, 150)",
-                ingredientId, blockUnitId);
+                ingredientId, countUnitId);
 
         mockMvc.perform(post("/api/v1/recipes")
                         .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(json(request(List.of(ingredient(blockUnitId, "2")), null))))
+                        .content(json(request(List.of(ingredient(countUnitId, "2")), null))))
                 .andExpect(status().isCreated());
 
         org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM [RECIPE_INGREDIENT] ri JOIN [RECIPE_POST] rp ON rp.recipe_id = ri.recipe_id WHERE rp.author_id = ? AND ri.ingredient_id = ? AND ri.unit_id = ? AND ri.quantity = 2",
-                Integer.class, expertId, ingredientId, blockUnitId)).isEqualTo(1);
+                Integer.class, expertId, ingredientId, countUnitId)).isEqualTo(1);
     }
 
     @Test
@@ -324,12 +324,12 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     void calculatesAllNineNutrientsFromDatabaseCatalogAndIngredientConversion() throws Exception {
         setSupportedNutritionFixture();
         jdbcTemplate.update("INSERT INTO [INGREDIENT_UNIT_CONVERSION] (ingredient_id, unit_id, grams_per_unit) VALUES (?, ?, 150)",
-                ingredientId, blockUnitId);
+                ingredientId, countUnitId);
 
         var created = mockMvc.perform(post("/api/v1/recipes")
                         .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(json(request(List.of(ingredient(blockUnitId, "2")), null))))
+                        .content(json(request(List.of(ingredient(countUnitId, "2")), null))))
                 .andExpect(status().isCreated())
                 .andReturn();
         long recipeId = jsonMapper.readTree(created.getResponse().getContentAsString()).path("recipeId").asLong();
@@ -362,8 +362,8 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     void returnsPartialNutritionAndMissingCatalogIngredientNames() throws Exception {
         setSupportedNutritionFixture();
         jdbcTemplate.update("INSERT INTO [INGREDIENT_UNIT_CONVERSION] (ingredient_id, unit_id, grams_per_unit) VALUES (?, ?, 150)",
-                ingredientId, blockUnitId);
-        var recipeIngredients = List.of(ingredient(blockUnitId, "2"),
+                ingredientId, countUnitId);
+        var recipeIngredients = List.of(ingredient(countUnitId, "2"),
                 new RecipeIngredientInput(ingredientWithoutNutritionId, gramUnitId, new BigDecimal("80")));
 
         var created = mockMvc.perform(post("/api/v1/recipes")

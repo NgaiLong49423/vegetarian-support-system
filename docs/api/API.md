@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.45.0
+> **Version:** v0.47.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-27
 > **Status:** Active
@@ -515,6 +515,7 @@ Generated OpenAPI là contract chi tiết. Guest và Member có thể đọc dan
 | `GET /api/v1/ingredients` | Danh sách phân trang chỉ gồm catalog `ACTIVE`, có tìm kiếm và lọc nhóm; mỗi mục trả `ingredientId`, `name`, `ingredientGroup`, `imageUrl`. FE tải các trang để duyệt/tìm/chọn nhiều nguyên liệu. |
 | `GET /api/v1/ingredients/groups` | Tên và số nguyên liệu đang hoạt động trong từng nhóm. |
 | `GET /api/v1/ingredients/{ingredientId}` | Chi tiết nguyên liệu đang hoạt động, bổ sung `nutrition` với giá trị trên 100 g. ID không tồn tại và nguyên liệu `INACTIVE` đều trả `404 INGREDIENT_NOT_FOUND`; ID không hợp lệ trả `400 VALIDATION_FAILED`. |
+| `GET /api/v1/ingredients/{ingredientId}/units` | Danh sách đơn vị công thức đang hỗ trợ cho nguyên liệu active: `mg/g/kg` luôn có; `ml/L/tsp/tbsp/cup` và `quả/củ/miếng` chỉ có khi conversion active. Trả `id`, `code`, `name`, `dimension`, `gramsPerUnit`, `approximate`. Dùng dữ liệu này cho bộ chọn đơn vị trong công thức và công cụ quy đổi hai chiều ở `/nguyen-lieu/:ingredientId`; Backend vẫn xác thực lại khi lưu công thức. |
 
 `nutrition` giữ các chỉ tiêu và đơn vị sau; không nhân theo khẩu phần món hoặc tự suy diễn tỷ lệ quy đổi:
 

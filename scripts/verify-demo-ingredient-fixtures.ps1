@@ -7,13 +7,35 @@ try {
     $demoRoot = 'app/mamxanh-backend/src/main/resources/db/demo'
     $recipeSeed = Get-Content -LiteralPath "$demoRoot/R__demo_sample_data_46_recipe_seasonings.sql" -Raw -Encoding utf8
     $imageSeed = Get-Content -LiteralPath "$demoRoot/R__demo_sample_data_12_ingredient_images.sql" -Raw -Encoding utf8
-    $recipeBlock = [regex]::Match($recipeSeed, '(?s)INSERT INTO @recipes .*?VALUES\s*(.*?)DECLARE @ingredients').Groups[1].Value
-    $titles = [regex]::Matches($recipeBlock, "(?m)^[ \t]*\(N'((?:''|[^'])+)', N'") | ForEach-Object { $_.Groups[1].Value }
+    $conversionSeed = Get-Content -LiteralPath "$demoRoot/R__demo_sample_data_14_ingredient_unit_conversions.sql" -Raw -Encoding utf8
+    $recipeJsonMatch = [regex]::Match($recipeSeed, "(?s)DECLARE @recipe_json NVARCHAR\(MAX\) = N'(\[.*?\])';\s*INSERT INTO @recipes")
+    if (-not $recipeJsonMatch.Success) { throw 'Could not find the JSON recipe fixture in the recipe seed.' }
+    $recipes = @($recipeJsonMatch.Groups[1].Value.Replace("''", "'") | ConvertFrom-Json)
+    $titles = @($recipes | ForEach-Object { $_.title })
     if ($titles.Count -ne 54) { throw 'Expected exactly 54 named fixture recipes.' }
-    $titleValues = ($titles | ForEach-Object { "(N'$_')" }) -join ",`n"
+    $titleValues = ($titles | ForEach-Object { "(N'$($_.Replace("'", "''"))')" }) -join ",`n"
     $imageRows = [regex]::Matches($imageSeed, "\(N'((?:''|[^'])+)', N'(/ingredients/[^']+\.webp)'\)")
     if ($imageRows.Count -ne 209) { throw 'Expected exactly 209 ingredient image mappings.' }
     $imageNames = ($imageRows | ForEach-Object { "(N'$($_.Groups[1].Value)')" }) -join ",`n"
+    $conversionRows = [regex]::Matches($conversionSeed, "(?m)^\s*\(N'((?:''|[^'])+)',\s*N'((?:''|[^'])+)',\s*([0-9]+(?:\.[0-9]+)?),\s*([01])\)[,;]?\s*$")
+    if ($conversionRows.Count -lt 1) { throw 'Expected ingredient-specific demo unit conversions.' }
+    $conversionKeys = @{}
+    $demoIngredientNames = @{}
+    foreach ($row in $imageRows) { $demoIngredientNames[$row.Groups[1].Value] = $true }
+    $allowedUnitCodes = @('ml', 'L', 'tsp', 'tbsp', 'cup', 'quả', 'củ', 'miếng')
+    $conversionValues = foreach ($row in $conversionRows) {
+        $ingredientName = $row.Groups[1].Value
+        $unitCode = $row.Groups[2].Value
+        $grams = [decimal]::Parse($row.Groups[3].Value, [Globalization.CultureInfo]::InvariantCulture)
+        if (-not $demoIngredientNames.ContainsKey($ingredientName)) { throw "Conversion references a non-demo ingredient: $ingredientName" }
+        if ($unitCode -notin $allowedUnitCodes) { throw "Conversion uses a non-volume/count unit: $unitCode" }
+        if ($grams -le 0) { throw "Conversion must be positive: $ingredientName/$unitCode" }
+        $key = "$ingredientName|$unitCode"
+        if ($conversionKeys.ContainsKey($key)) { throw "Duplicate conversion mapping: $key" }
+        $conversionKeys[$key] = $true
+        "(N'$ingredientName', N'$unitCode', $($row.Groups[3].Value), $($row.Groups[4].Value))"
+    }
+    $conversionValues = $conversionValues -join ",`n"
     foreach ($row in $imageRows) {
         $asset = Join-Path 'app/mamxanh-frontend/public' $row.Groups[2].Value.TrimStart('/')
         if (-not (Test-Path -LiteralPath $asset -PathType Leaf)) { throw "Missing asset: $asset" }
@@ -40,6 +62,21 @@ CREATE TABLE #titles (title NVARCHAR(120) PRIMARY KEY);
 INSERT INTO #titles VALUES $titleValues;
 CREATE TABLE #imageNames (name NVARCHAR(200) PRIMARY KEY);
 INSERT INTO #imageNames VALUES $imageNames;
+CREATE TABLE #expectedConversions (
+    ingredient_name NVARCHAR(200) NOT NULL,
+    unit_code NVARCHAR(50) NOT NULL,
+    grams_per_unit DECIMAL(18,9) NOT NULL,
+    is_approximate BIT NOT NULL,
+    PRIMARY KEY (ingredient_name, unit_code)
+);
+INSERT INTO #expectedConversions VALUES $conversionValues;
+SELECT * INTO #volumeBaseConversions FROM #expectedConversions WHERE unit_code = N'ml';
+INSERT INTO #expectedConversions (ingredient_name, unit_code, grams_per_unit, is_approximate)
+SELECT base.ingredient_name, unit.code, base.grams_per_unit * unit.base_factor, base.is_approximate
+FROM #volumeBaseConversions base
+JOIN [UNIT] unit ON unit.code IN (N'L', N'tsp', N'tbsp', N'cup') AND unit.dimension = N'VOLUME';
+IF (SELECT COUNT(*) FROM [UNIT] WHERE code IN (N'ml', N'L', N'tsp', N'tbsp', N'cup') AND dimension = N'VOLUME') <> 5
+    THROW 51126, 'All five standardized volume units are required for demo conversion checks.', 1;
 SELECT post.recipe_id INTO #targets FROM [RECIPE_POST] post JOIN #titles t ON t.title = post.title
 WHERE post.author_id = (SELECT user_id FROM [USER] WHERE email = 'demo-expert@mamxanh.local');
 IF (SELECT COUNT(*) FROM #targets) <> 54 THROW 51100, 'Missing or ambiguous fixture posts.', 1;
@@ -77,12 +114,22 @@ WHERE post.author_id = @fixtureAuthor AND post.title = N'Khoai lang hấp'
 UPDATE [INGREDIENT] SET image_url = N'/test-preserved-admin-upload.webp' WHERE name = N'Muối ăn' AND status = 'ACTIVE';
 UPDATE [INGREDIENT] SET image_url = NULL WHERE name = N'Tỏi' AND status = 'ACTIVE';
 SELECT ingredient_id, image_url INTO #existingImages FROM [INGREDIENT] WHERE NULLIF(LTRIM(RTRIM(image_url)), N'') IS NOT NULL;
+
+-- A deliberately different oil conversion proves the local fixture never overwrites Admin data.
+DECLARE @oilId BIGINT = (SELECT ingredient_id FROM [INGREDIENT] WHERE name = N'Dầu ăn');
+DECLARE @mlId INT = (SELECT unit_id FROM [UNIT] WHERE code = N'ml');
+IF @oilId IS NULL OR @mlId IS NULL THROW 51120, 'Oil and ml are required for conversion preservation checks.', 1;
+IF NOT EXISTS (SELECT 1 FROM [INGREDIENT_UNIT_CONVERSION] WHERE ingredient_id = @oilId AND unit_id = @mlId)
+    INSERT INTO [INGREDIENT_UNIT_CONVERSION] (ingredient_id, unit_id, grams_per_unit, is_approximate, is_active)
+    VALUES (@oilId, @mlId, 0.950000000, 0, 1);
+SELECT * INTO #initialConversions FROM [INGREDIENT_UNIT_CONVERSION];
 GO
 "@
     $afterFirst = @'
 SELECT * INTO #firstIngredients FROM [RECIPE_INGREDIENT] WHERE recipe_id IN (SELECT recipe_id FROM #targets);
 SELECT * INTO #firstPosts FROM [RECIPE_POST] WHERE recipe_id IN (SELECT recipe_id FROM #targets);
 SELECT ingredient_id, image_url, updated_at INTO #firstImages FROM [INGREDIENT];
+SELECT * INTO #firstConversions FROM [INGREDIENT_UNIT_CONVERSION];
 GO
 '@
     $checks = @'
@@ -94,6 +141,42 @@ IF EXISTS (SELECT * FROM #firstPosts EXCEPT SELECT * FROM [RECIPE_POST] WHERE re
  THROW 51103, 'Recipe seed is not idempotent.', 1;
 IF EXISTS (SELECT * FROM #firstImages EXCEPT SELECT ingredient_id, image_url, updated_at FROM [INGREDIENT])
  THROW 51104, 'Image seed is not idempotent.', 1;
+IF EXISTS (SELECT * FROM #firstConversions EXCEPT SELECT * FROM [INGREDIENT_UNIT_CONVERSION])
+ OR EXISTS (SELECT * FROM [INGREDIENT_UNIT_CONVERSION] EXCEPT SELECT * FROM #firstConversions)
+ THROW 51121, 'Unit conversion seed is not idempotent.', 1;
+IF EXISTS (SELECT * FROM #initialConversions EXCEPT SELECT * FROM [INGREDIENT_UNIT_CONVERSION])
+ THROW 51122, 'Unit conversion seed changed an existing Admin conversion.', 1;
+IF EXISTS (
+    SELECT 1 FROM #expectedConversions expected
+    JOIN [INGREDIENT] ingredient ON ingredient.name = expected.ingredient_name
+    JOIN [UNIT] unit ON unit.code = expected.unit_code
+    LEFT JOIN [INGREDIENT_UNIT_CONVERSION] conversion
+      ON conversion.ingredient_id = ingredient.ingredient_id AND conversion.unit_id = unit.unit_id
+    WHERE conversion.ingredient_id IS NULL OR conversion.grams_per_unit <= 0
+       OR unit.dimension NOT IN (N'VOLUME', N'COUNT')
+)
+ THROW 51123, 'A curated ingredient-specific volume/count conversion is missing or invalid.', 1;
+IF EXISTS (
+    SELECT 1 FROM #expectedConversions expected
+    JOIN [INGREDIENT] ingredient ON ingredient.name = expected.ingredient_name
+    JOIN [UNIT] unit ON unit.code = expected.unit_code
+    JOIN [INGREDIENT_UNIT_CONVERSION] conversion
+      ON conversion.ingredient_id = ingredient.ingredient_id AND conversion.unit_id = unit.unit_id
+    LEFT JOIN #initialConversions existing
+      ON existing.ingredient_id = conversion.ingredient_id AND existing.unit_id = conversion.unit_id
+    WHERE existing.ingredient_id IS NULL
+      AND (conversion.grams_per_unit <> expected.grams_per_unit
+           OR conversion.is_approximate <> expected.is_approximate OR conversion.is_active <> 1)
+)
+ THROW 51127, 'A newly inserted conversion differs from the curated demo value.', 1;
+IF NOT EXISTS (
+    SELECT 1 FROM [INGREDIENT_UNIT_CONVERSION] conversion
+    JOIN [INGREDIENT] ingredient ON ingredient.ingredient_id = conversion.ingredient_id
+    JOIN [UNIT] unit ON unit.unit_id = conversion.unit_id
+    WHERE ingredient.name = N'Dầu ăn' AND unit.code = N'ml'
+      AND conversion.grams_per_unit = 0.950000000 AND conversion.is_approximate = 0 AND conversion.is_active = 1
+)
+ THROW 51125, 'The Admin conversion sentinel was not preserved.', 1;
 IF EXISTS (SELECT * FROM #otherPosts EXCEPT SELECT * FROM [RECIPE_POST] WHERE recipe_id NOT IN (SELECT recipe_id FROM #targets))
  OR EXISTS (SELECT * FROM [RECIPE_POST] WHERE recipe_id NOT IN (SELECT recipe_id FROM #targets) EXCEPT SELECT * FROM #otherPosts)
  THROW 51105, 'A non-fixture post was changed.', 1;
@@ -126,7 +209,8 @@ IF NOT EXISTS (SELECT 1 FROM [RECIPE_INGREDIENT] ri JOIN [RECIPE_POST] post ON p
  THROW 51117, 'An additional fixture ingredient was not preserved with its gram conversion.', 1;
 SELECT 'PASS' AS result, (SELECT COUNT(*) FROM #targets) AS recipes,
  (SELECT COUNT(*) FROM #firstIngredients) AS ingredient_references,
- (SELECT COUNT(*) FROM [INGREDIENT] i JOIN #imageNames names ON names.name = i.name) AS illustrated_ingredients;
+ (SELECT COUNT(*) FROM [INGREDIENT] i JOIN #imageNames names ON names.name = i.name) AS illustrated_ingredients,
+ (SELECT COUNT(*) FROM #expectedConversions) AS expected_unit_conversions;
 ROLLBACK TRANSACTION;
 GO
 '@
@@ -164,7 +248,7 @@ BEGIN CATCH
 END CATCH;
 GO
 "@
-    $sql = $setup + "`n" + $imageSeed + "`nGO`n" + $recipeSeed + "`nGO`n" + $afterFirst + "`n" + $imageSeed + "`nGO`n" + $recipeSeed + "`nGO`n" + $checks + "`n" + $negativeChecks
+    $sql = $setup + "`n" + $imageSeed + "`nGO`n" + $conversionSeed + "`nGO`n" + $recipeSeed + "`nGO`n" + $afterFirst + "`n" + $imageSeed + "`nGO`n" + $conversionSeed + "`nGO`n" + $recipeSeed + "`nGO`n" + $checks + "`n" + $negativeChecks
     $oldEncoding = [Console]::OutputEncoding
     $oldPipeEncoding = $OutputEncoding
     try {

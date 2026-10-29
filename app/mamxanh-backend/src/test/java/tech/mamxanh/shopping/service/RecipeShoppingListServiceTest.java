@@ -129,15 +129,15 @@ class RecipeShoppingListServiceTest {
     @Test
     void rejectsRecipeQuantitiesThatRoundToZeroOrExceedStorageLimit() {
         ownedList();
-        source(11, List.of(new RecipeService.ShoppingIngredient(3L, new BigDecimal("0.0001"), 1)));
+        source(11, List.of(new RecipeService.ShoppingIngredient(3L, new BigDecimal("0.0000001"), 1)));
         assertThatThrownBy(() -> service.addRecipe(7, request(11L, 1, null, null))).isInstanceOf(AppException.class);
 
-        source(11, List.of(new RecipeService.ShoppingIngredient(3L, new BigDecimal("100000000"), 1)));
+        source(11, List.of(new RecipeService.ShoppingIngredient(3L, new BigDecimal("1000000000000"), 1)));
         when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of());
         when(items.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of());
         when(aggregation.aggregate(anyList())).thenReturn(new ShoppingAggregationResult(
                 List.of(new ShoppingAggregationResult.Group("Đậu", List.of(new ShoppingAggregationResult.Item(
-                        3L, "Đậu", new BigDecimal("100000000"), 1, "g", "gram", false, List.of(0))))), List.of()));
+                        3L, "Đậu", new BigDecimal("1000000000000"), 1, "g", "gram", false, List.of(0))))), List.of()));
         assertThatThrownBy(() -> service.addRecipe(7, request(11L, null, null, null))).isInstanceOf(AppException.class);
     }
 

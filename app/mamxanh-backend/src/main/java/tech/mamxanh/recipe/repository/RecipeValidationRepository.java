@@ -26,6 +26,7 @@ public class RecipeValidationRepository {
                 SELECT COUNT(1)
                 FROM UNIT u
                 WHERE u.unit_id = ? AND u.is_active = 1
+                  AND u.code IN (N'mg', N'g', N'kg', N'ml', N'L', N'tsp', N'tbsp', N'cup', N'quả', N'củ', N'miếng')
                   AND (u.dimension = 'MASS' OR EXISTS (
                     SELECT 1 FROM INGREDIENT_UNIT_CONVERSION c
                     WHERE c.unit_id = u.unit_id AND c.ingredient_id = ? AND c.is_active = 1
@@ -55,6 +56,7 @@ public class RecipeValidationRepository {
                   ON c.ingredient_id = i.ingredient_id AND c.unit_id = u.unit_id AND c.is_active = 1
                 WHERE i.status = 'ACTIVE'
                   AND (@keyword = '' OR i.name LIKE N'%' + @keyword + N'%')
+                  AND u.code IN (N'mg', N'g', N'kg', N'ml', N'L', N'tsp', N'tbsp', N'cup', N'quả', N'củ', N'miếng')
                   AND (u.dimension = 'MASS' OR c.unit_id IS NOT NULL)
                 ORDER BY i.name, u.unit_id
                 """.replace("@keyword", "?"), (rs, rowNum) -> new IngredientOption(rs.getLong("ingredient_id"),

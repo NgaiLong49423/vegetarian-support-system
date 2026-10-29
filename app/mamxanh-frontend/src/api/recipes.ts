@@ -2,6 +2,7 @@ import { apiClient, asApiError } from '../lib/apiClient';
 
 export type Choice = { code: string; label: string };
 export type RecipeUnitOption = { unitId: number; code: string; name: string; dimension: string };
+export type IngredientRecipeUnit = { id: number; code: string; name: string; dimension: string; gramsPerUnit: number; approximate: boolean };
 export type IngredientOption = { ingredientId: number; name: string };
 
 export interface RecipeFormOptions {
@@ -336,6 +337,7 @@ export const recipesApi = {
     () => apiClient.post<{ items: RecipePost[] }>(`/recipes/${recipeId}/related/ai`, undefined, { timeout: 60_000 }),
   ),
   getFormOptions: () => request(() => apiClient.get<RecipeFormOptions>('/recipes/form-options')),
+  getIngredientUnits: (ingredientId: number) => request(() => apiClient.get<IngredientRecipeUnit[]>(`/ingredients/${ingredientId}/units`)),
   searchIngredients: (query: string) => request(
     () => apiClient.get<IngredientOption[]>('/recipes/ingredient-options', { params: { query } }),
   ),

@@ -802,7 +802,7 @@ CREATE TABLE [SHOPPING_LIST_ITEM] (
     ingredient_id          BIGINT         NULL,
     unit_id                INT            NOT NULL,
     custom_ingredient_name NVARCHAR(200)  NULL,
-    quantity               DECIMAL(10,2)  NOT NULL,
+    quantity               DECIMAL(18,6)  NOT NULL,
     is_bought              BIT            NOT NULL
         CONSTRAINT DF_SLI_is_bought DEFAULT 0,
 
@@ -835,12 +835,11 @@ GO
 CREATE TABLE [INGREDIENT_UNIT_CONVERSION] (
     ingredient_id   BIGINT         NOT NULL,
     unit_id         INT            NOT NULL,
-    grams_per_unit  DECIMAL(10,2)  NOT NULL,
+    grams_per_unit  DECIMAL(18,9)  NOT NULL,
     is_approximate  BIT            NOT NULL
         CONSTRAINT DF_IUC_is_approximate DEFAULT 0,
     is_active       BIT            NOT NULL
         CONSTRAINT DF_IUC_is_active DEFAULT 1,
-
     CONSTRAINT PK_INGREDIENT_UNIT_CONVERSION PRIMARY KEY (ingredient_id, unit_id),
     CONSTRAINT FK_IUC_INGREDIENT FOREIGN KEY (ingredient_id)
         REFERENCES [INGREDIENT](ingredient_id) ON DELETE NO ACTION,
@@ -1064,6 +1063,7 @@ GO
 -- ============================================================================
 
 INSERT INTO [UNIT] (code, name, dimension, base_factor) VALUES
+    (N'mg',     N'miligram',        'MASS',    0.001),
     (N'g',      N'gram',            'MASS',    1.0),
     (N'kg',     N'kilogram',        'MASS',    1000.0),
     (N'ml',     N'mililít',         'VOLUME',  1.0),
@@ -1149,18 +1149,33 @@ CREATE UNIQUE INDEX UX_SHOPPING_LIST_personal_owner ON [SHOPPING_LIST](user_id) 
 CREATE TABLE [SHOPPING_RECIPE_CONTRIBUTION] (
     contribution_id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     shopping_list_id BIGINT NOT NULL,
-    recipe_id BIGINT NOT NULL,
-    ingredient_id BIGINT NOT NULL,
+    recipe_id BIGINT NULL,
+    ingredient_id BIGINT NULL,
     unit_id INT NOT NULL,
-    quantity DECIMAL(10,2) NOT NULL CHECK (quantity > 0),
+    quantity DECIMAL(18,6) NOT NULL CHECK (quantity > 0),
     shopping_list_item_id BIGINT NULL,
+    source_id UNIQUEIDENTIFIER NOT NULL,
+    source_kind VARCHAR(16) NOT NULL CONSTRAINT DF_SRC_source_kind DEFAULT 'RECIPE',
+    expected_ingredient_count INT NULL,
+    servings DECIMAL(4,1) NULL,
+    meal_plan_entry_id BIGINT NULL,
+    meal_date DATE NULL,
+    meal_type VARCHAR(20) NULL,
     CONSTRAINT FK_SRC_LIST FOREIGN KEY (shopping_list_id) REFERENCES [SHOPPING_LIST](shopping_list_id) ON DELETE CASCADE,
     CONSTRAINT FK_SRC_RECIPE FOREIGN KEY (recipe_id) REFERENCES [RECIPE_POST](recipe_id),
     CONSTRAINT FK_SRC_INGREDIENT FOREIGN KEY (ingredient_id) REFERENCES [INGREDIENT](ingredient_id),
     CONSTRAINT FK_SRC_UNIT FOREIGN KEY (unit_id) REFERENCES [UNIT](unit_id),
-    CONSTRAINT FK_SRC_ITEM FOREIGN KEY (shopping_list_item_id) REFERENCES [SHOPPING_LIST_ITEM](shopping_list_item_id)
+    CONSTRAINT FK_SRC_ITEM FOREIGN KEY (shopping_list_item_id) REFERENCES [SHOPPING_LIST_ITEM](shopping_list_item_id),
+    CONSTRAINT CK_SRC_source_kind CHECK (
+        (source_kind = 'RECIPE' AND recipe_id IS NOT NULL AND ingredient_id IS NOT NULL
+            AND (expected_ingredient_count IS NULL OR expected_ingredient_count > 0))
+        OR (source_kind = 'MANUAL' AND recipe_id IS NULL AND expected_ingredient_count IS NULL)
+        OR (source_kind = 'UNKNOWN' AND ingredient_id IS NOT NULL
+            AND (expected_ingredient_count IS NULL OR expected_ingredient_count > 0))
+    )
 );
 CREATE INDEX IX_SRC_LIST_RECIPE ON [SHOPPING_RECIPE_CONTRIBUTION](shopping_list_id,recipe_id);
 CREATE INDEX IX_SRC_ITEM ON [SHOPPING_RECIPE_CONTRIBUTION](shopping_list_item_id);
+CREATE INDEX IX_SRC_LIST_SOURCE ON [SHOPPING_RECIPE_CONTRIBUTION](shopping_list_id,source_id);
 
 GO
