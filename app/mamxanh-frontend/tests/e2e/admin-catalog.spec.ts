@@ -146,8 +146,8 @@ test('administrator manages count and volume conversions for one ingredient', as
       const ingredientId = url.searchParams.get('ingredientId');
       return route.fulfill({ json: { success: true, data: ingredientId ? conversions.filter((item) => item.ingredientId === Number(ingredientId)) : conversions } });
     }
-    const countMatch = url.pathname.match(/\/ingredients\/(\d+)\/unit-conversions\/(\d+)$/);
-    if (countMatch && ['POST', 'PUT'].includes(method)) {
+    const countMatch = url.pathname.match(/\/ingredients\/(\d+)\/unit-conversions\/(\d+)(?:\/status)?$/);
+    if (countMatch && !url.pathname.endsWith('/status') && ['POST', 'PUT'].includes(method)) {
       const conversion = { ingredientId: Number(countMatch[1]), unitId: Number(countMatch[2]), ...request.postDataJSON(), active: true };
       const index = conversions.findIndex((row) => row.ingredientId === conversion.ingredientId && row.unitId === conversion.unitId);
       if (index < 0) conversions.push(conversion); else conversions[index] = conversion;
