@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.113.0
+> **Version:** v2.113.1
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-29
 > **Status:** Active
@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-29 — Restore the Recipe Assistant Form Layout
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `b60e177e9afc738a74569b37ed441dacbb3ab367`.
 
 **Scope:** Restore the develop-style recipe assistant dialog while retaining the real FR-21 API and Pro entitlement enforcement.
 
@@ -31,7 +31,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-29 — Rebalance Plus and Pro AI Feature Entitlements
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `b60e177e9afc738a74569b37ed441dacbb3ab367`.
 
 **Scope:** Apply the authorized entitlement change on the FR-10 branch, including the plan display previously implemented under FR-13. Prices, purchased periods and verified payment settlement remain unchanged.
 
