@@ -101,7 +101,7 @@ test('a Free plan error leaves the recipe fields available for manual entry', as
   await page.getByLabel('Số lượng nguyên liệu 1').fill('200');
   await page.getByLabel('Đơn vị nguyên liệu 1').selectOption('1');
   await page.getByRole('button', { name: 'AI gợi ý viết mô tả' }).click();
-  await expect(page.getByRole('alert')).toContainText('gói Pro');
+  await expect(page.getByRole('alert')).toContainText('gói AI PRO');
   expect(assistanceRequests).toBe(1);
   await expect(page.getByRole('textbox', { name: 'Mô tả' })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Xuất bản công thức' })).toBeEnabled();

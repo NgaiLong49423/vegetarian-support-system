@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.50.0
+> **Version:** v0.50.1
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-29
 > **Status:** Active
@@ -478,7 +478,7 @@ Chatbot áp dụng cùng ranh giới tính năng: yêu cầu rõ ràng lập th�
 
 `history[].recommendedRecipeIds` là field tùy chọn, tối đa bốn số nguyên dương, chỉ thuộc lượt ASSISTANT. FE gửi ID của các thẻ đã hiển thị, không tự thêm danh sách vào lượt USER. Backend xem đây là gợi ý loại trừ không đáng tin cậy khi yêu cầu món khác; không dùng ID này để cấp quyền, tải nội dung riêng hoặc xác thực công thức còn công khai. Tìm món tiếp nhận diện ngữ cảnh câu hỏi, lọc thể loại trước phân trang và kiểm tra tối đa bốn trang 50 bài để lấy tối đa 50 ứng viên hợp lệ. Thẻ kết quả được kiểm tra lại theo trạng thái hiện tại; thông báo rỗng chỉ nói về phần danh mục đã kiểm tra ở lượt này. Client cũ bỏ qua hai field tùy chọn vẫn gửi được request cũ, nhưng không có đủ ID thẻ để tránh lặp chính xác.
 
-Các guard hiện có vẫn dùng `403 AI_SUBSCRIPTION_REQUIRED`. ProblemDetail bổ sung `requiredTier` (`PLUS` hoặc `PRO`) và `upgradeUrl` (`/goi-ai`); `detail` hướng dẫn đúng gói tối thiểu. Pro cho FR-21 vẫn đồng thời yêu cầu vai trò Expert. FR-47 (AI gợi ý món liên quan/biến tấu) và AI đề xuất điều chỉnh dinh dưỡng FR-37 tiếp tục yêu cầu Pro. Plus/Pro cho FR-36 vẫn yêu cầu eligibility và hồ sơ hợp lệ. Frontend hiển thị thông báo và liên kết nâng cấp nhưng Backend quyết định quyền từ Subscription đang hiệu lực, không từ thông tin gói do client khai. Preview và apply menu tuần kiểm tra lại Plus hoặc Pro ở từng bước; lỗi không đổi Subscription hoặc gọi Gemini. Nội dung tính toán dinh dưỡng/gợi ý thông thường không bị đưa vào paywall bởi thay đổi này.
+Các guard hiện có vẫn dùng `403 AI_SUBSCRIPTION_REQUIRED`. ProblemDetail bổ sung `requiredTier` (`PLUS` hoặc `PRO`) và `upgradeUrl` (`/goi-ai`); `detail` hướng dẫn đúng gói tối thiểu. Pro cho FR-21 vẫn đồng thời yêu cầu vai trò Expert. FR-47 (AI gợi ý món liên quan/biến tấu) và AI đề xuất điều chỉnh dinh dưỡng FR-37 tiếp tục yêu cầu Pro. Plus/Pro cho FR-36 vẫn yêu cầu eligibility và hồ sơ hợp lệ. Frontend giữ lại `requiredTier` khi chuẩn hóa lỗi và hiển thị đúng tên gói AI PLUS hoặc PRO trong cả thông báo lẫn liên kết nâng cấp. Không dùng lời nhắc “Plus hoặc Pro” ở lỗi thiếu quyền tính năng. Nếu response cũ thiếu metadata, giao diện dùng mức tối thiểu đã xác định của chức năng. Backend quyết định quyền từ Subscription đang hiệu lực, không từ thông tin gói do client khai. Preview và apply menu tuần kiểm tra lại Plus hoặc Pro ở từng bước; lỗi không đổi Subscription hoặc gọi Gemini. Nội dung tính toán dinh dưỡng/gợi ý thông thường không bị đưa vào paywall bởi thay đổi này.
 
 `GET /api/v1/subscriptions/my-subscription` hiển thị quyền trả phí theo cùng cửa sổ `starts_at <= now < ends_at` với guard AI. Gói bắt đầu trong tương lai chưa mở tính năng: response dùng Free hiện tại và giữ nguyên bản ghi gói tương lai; không tự hủy hoặc đánh dấu gói tương lai là hết hạn.
 

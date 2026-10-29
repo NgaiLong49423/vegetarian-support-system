@@ -1,3 +1,4 @@
+import { aiRequiredTier, aiUpgradeMessage, type AiPaidTier } from "../lib/aiUpgrade"
 import {
   FormEvent,
   useEffect,
@@ -53,6 +54,7 @@ export function AiChatPage() {
   const [loading, setLoading] = useState(false)
 
   const [error, setError] = useState("")
+  const [upgradeTier, setUpgradeTier] = useState<AiPaidTier>("PLUS")
   const [errorAction, setErrorAction] = useState<"plans" | "login" | null>(null)
   const [retryQuestion, setRetryQuestion] = useState("")
 
@@ -286,6 +288,7 @@ export function AiChatPage() {
     } catch (cause) {
       if (version !== requestVersion.current) return
       const apiError = asApiError(cause)
+      setUpgradeTier(aiRequiredTier(apiError, "PLUS"))
       setErrorAction(
         apiError.code === "AI_SUBSCRIPTION_REQUIRED"
           ? "plans"
@@ -296,7 +299,9 @@ export function AiChatPage() {
       if (apiError.status === 401 || apiError.status === 403)
         setRetryQuestion("")
       setError(
-        apiError.status === 429
+        apiError.code === "AI_SUBSCRIPTION_REQUIRED"
+          ? aiUpgradeMessage(apiError, "PLUS", "Tính năng AI bạn yêu cầu")
+          : apiError.status === 429
           ? "Bạn đã gửi nhiều câu hỏi trong thời gian ngắn. Hãy thử lại sau; bạn cũng có thể đăng ký tài khoản để tiếp tục."
           : apiError.status === 0
             ? "Dịch vụ trả lời đang gặp sự cố. Vui lòng thử lại sau."
@@ -702,7 +707,7 @@ export function AiChatPage() {
                   onClick={closeChat}
                   className="ml-2 font-bold underline"
                 >
-                  Xem các gói AI
+                  Nâng cấp gói AI {upgradeTier}
                 </Link>
               )}
               {errorAction === "login" && (

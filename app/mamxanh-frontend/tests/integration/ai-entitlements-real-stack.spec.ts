@@ -89,8 +89,8 @@ test('FR-10: real JWT and SQL subscription changes select the correct upgrade an
     expect(await expiredChat.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PLUS' });
     const section = page.getByRole('region', { name: 'Công thức liên quan' });
     await section.getByRole('button', { name: 'AI gợi ý món ăn kèm hoặc biến tấu' }).click();
-    await expect(section.getByRole('alert')).toContainText('gói Pro');
-    await expect(section.getByRole('link', { name: 'Xem các gói' })).toHaveAttribute('href', '/goi-ai');
+    await expect(section.getByRole('alert')).toContainText('gói AI PRO');
+    await expect(section.getByRole('link', { name: 'Nâng cấp gói AI PRO' })).toHaveAttribute('href', '/goi-ai');
     await page.screenshot({ path: testInfo.outputPath('fr10-upgrade.png') });
     // The inline Gemini action must still reach the server guard after paid entitlement expires.
     await page.goto('/dang-cong-thuc');
@@ -109,7 +109,7 @@ test('FR-10: real JWT and SQL subscription changes select the correct upgrade an
     const rejection = await rejectedAssistance;
     expect(rejection.status()).toBe(403);
     expect(await rejection.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PRO' });
-    await expect(page.getByRole('link', { name: 'Xem các gói AI' })).toHaveAttribute('href', '/goi-ai');
+    await expect(page.getByRole('link', { name: 'Nâng cấp gói AI PRO' })).toHaveAttribute('href', '/goi-ai');
     await page.screenshot({ path: testInfo.outputPath('fr10-inline-upgrade.png'), animations: 'disabled' });
     await expect(page.getByRole('textbox', { name: 'Mô tả' })).toHaveValue('');
     await expect(page.getByLabel('Số lượng nguyên liệu 1')).toHaveValue(String(ingredients[0].quantity));

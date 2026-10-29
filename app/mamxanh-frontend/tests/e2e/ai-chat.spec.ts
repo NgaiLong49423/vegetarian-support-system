@@ -74,21 +74,24 @@ test('follow-up chat includes only IDs of recipe cards shown in assistant histor
   expect(requests[1].history[1]).toMatchObject({ speaker: 'ASSISTANT', recommendedRecipeIds: [3] });
 });
 
-test('advanced chat denial shows the Pro upgrade action without a futile retry', async ({ page }) => {
-  await signInAsMember(page);
-  await page.route('**/api/v1/recipes/ai/chat', route => route.fulfill({ status: 403, json: {
-    status: 403, code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PRO', upgradeUrl: '/goi-ai',
-    detail: 'Hãy nâng cấp lên Pro để lập thực đơn tuần.',
-  } }));
-  await page.goto('/trang-chu');
-  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
-  await page.getByLabel('Câu hỏi của bạn').fill('Lập thực đơn tuần');
-  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
-  const alert = page.getByRole('dialog').getByRole('alert');
-  await expect(alert).toContainText('nâng cấp lên Pro');
-  await expect(alert.getByRole('link', { name: 'Xem các gói AI' })).toHaveAttribute('href', '/goi-ai');
-  await expect(alert.getByRole('button', { name: 'Thử lại' })).toHaveCount(0);
-});
+for (const tier of ['PLUS', 'PRO'] as const) {
+  test(`advanced chat denial names the server-required ${tier} plan without a futile retry`, async ({ page }) => {
+    await signInAsMember(page);
+    await page.route('**/api/v1/recipes/ai/chat', route => route.fulfill({ status: 403, json: {
+      status: 403, code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: tier, upgradeUrl: '/goi-ai',
+      detail: 'Gói hiện tại chưa hỗ trợ tính năng này.',
+    } }));
+    await page.goto('/trang-chu');
+    await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+    await page.getByLabel('Câu hỏi của bạn').fill(tier === 'PLUS' ? 'Lập thực đơn tuần' : 'Soạn bài đăng công thức');
+    await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+    const alert = page.getByRole('dialog').getByRole('alert');
+    await expect(alert).toContainText(`yêu cầu gói AI ${tier}`);
+    await expect(alert.getByRole('link', { name: `Nâng cấp gói AI ${tier}` })).toHaveAttribute('href', '/goi-ai');
+    await expect(alert).not.toContainText(tier === 'PLUS' ? 'PRO' : 'PLUS');
+    await expect(alert.getByRole('button', { name: 'Thử lại' })).toHaveCount(0);
+  });
+}
 
 test('Guest sees a login action for advanced workflows on a narrow screen', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });

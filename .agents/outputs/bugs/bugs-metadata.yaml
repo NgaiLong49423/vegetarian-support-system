@@ -5,7 +5,7 @@ last_updated: 2026-10-29
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
 # BUG-066 được cấp khi đồng bộ PR #161 ngày 2026-10-25 vì BUG-065 đã được dùng cho lỗi OpenAPI.
 # BUG-078–080 đã được cấp trên nhánh feature/17-ai-usage-telemetry, tránh cấp trùng khi tích hợp.
-next_id: 85
+next_id: 86
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -14,6 +14,15 @@ status_definitions:
 
 # Đồng bộ PR #194: mã gốc FR-10 → mã sau tích hợp: BUG-054 → BUG-070, BUG-055 → BUG-071, BUG-056 → BUG-072, BUG-057 → BUG-073, BUG-058 → BUG-074, BUG-059 → BUG-075, BUG-060 → BUG-076, BUG-066 → BUG-077.
 bugs:
+  - id: BUG-085
+    title: Thông báo nâng gói AI chưa chỉ rõ gói tối thiểu
+    status: RESOLVED
+    severity: Unknown
+    area: Frontend/AI/Subscription upgrade
+    file: .agents/outputs/bugs/BUG-085.md
+    created: 2026-10-29
+    updated: 2026-10-29
+    related_issue: 16
   - id: BUG-084
     title: Chatbot chuyển yêu cầu lập thực đơn tuần tới AI mà chưa kiểm tra quyền gói
     status: RESOLVED

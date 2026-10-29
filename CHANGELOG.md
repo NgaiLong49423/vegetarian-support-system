@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.124.0
+> **Version:** v2.125.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-29
 > **Status:** Active
@@ -8,6 +8,26 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-29 — Name the Minimum Required AI Upgrade Plan
+
+**Status:** Working tree — not committed.
+
+**Scope:** Explain the minimum PLUS or PRO tier consistently at feature-specific upgrade prompts without changing entitlements or prices.
+
+### Added
+
+- Preserve validated `requiredTier` metadata in frontend API errors and share minimum-plan upgrade copy.
+- Verify TypeScript, production build, 35 relevant UI cases, two Backend guard tests and one real JWT/SQL Compose scenario without changing tier authorization.
+
+### Changed
+
+- Name PLUS for weekly and nutrition-based menus, and PRO for authoring, related recipes and nutrition adjustments. Use the server-provided minimum tier for both messages and upgrade links, with feature-specific fallbacks for older responses.
+- Keep general plan-navigation links independent of a particular feature. Preserve the original develop recipe assistant.
+
+### Fixed
+
+- Replace ambiguous “Plus or Pro” feature errors and generic upgrade actions with the minimum plan name (BUG-085).
 
 ## 2026-10-29 — Synchronize FR-10 with the Current Develop Baseline
 
