@@ -1,9 +1,9 @@
 schema_version: 1
-last_updated: 2026-10-27
+last_updated: 2026-10-29
 # BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
 # BUG-066 được cấp khi đồng bộ PR #161 ngày 2026-10-25 vì BUG-065 đã được dùng cho lỗi OpenAPI.
-next_id: 69
+next_id: 70
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -11,6 +11,15 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-069
+    title: Script kiểm chứng fixture không đọc danh sách recipe dạng JSON
+    status: RESOLVED
+    severity: Low
+    area: Database/Demo/Verification
+    file: .agents/outputs/bugs/BUG-069.md
+    created: 2026-10-29
+    updated: 2026-10-29
+    related_issue: Unknown
   - id: BUG-068
     title: Migration V26 lỗi khi tạo ràng buộc cho cột nguồn quy đổi
     status: TRACKING

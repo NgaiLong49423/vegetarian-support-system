@@ -451,7 +451,7 @@ function CreateRecipeForm() {
                     <label className="mb-1 block text-xs font-semibold text-ink-soft" htmlFor={`unit-${row.key}`}>Đơn vị *</label>
                     <select id={`unit-${row.key}`} value={row.unitId ?? ''} disabled={!row.ingredientId || row.unitsLoading || !!row.unitsError} onChange={(event) => updateIngredient(row.key, { unitId: event.target.value ? Number(event.target.value) : null })} className={inputClass} aria-label={`Đơn vị nguyên liệu ${index + 1}`}>
                       <option value="">{row.unitsLoading ? 'Đang tải đơn vị…' : 'Chọn đơn vị'}</option>
-                      {row.units.map((unit) => <option key={unit.id} value={unit.id}>{unit.name} ({unit.code}){unit.code === 'cup' ? ' = 240 ml' : ''}{unit.approximate ? ' · xấp xỉ' : ''}</option>)}
+                      {row.units.map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}
                     </select>
                     {row.unitsError && <p className={errorClass}>{row.unitsError} <button type="button" className="underline" onClick={() => row.ingredientId && void loadIngredientUnits(row.key, row.ingredientId)}>Thử lại</button></p>}
                     {!row.unitsError && row.ingredientId && row.unitId === null && !row.unitsLoading && <p className={errorClass}>Hãy chọn đơn vị được hỗ trợ cho nguyên liệu này.</p>}

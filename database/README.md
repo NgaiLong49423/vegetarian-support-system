@@ -1,8 +1,8 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.30.0<br>
+> **Version:** v0.31.0<br>
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-28<br>
+> **Last Updated:** 2026-10-29<br>
 > **Status:** Active  
 
 # Database Workspace
@@ -77,7 +77,8 @@ Repeatable `R__demo_sample_data_67_report_groups.sql` (chỉ profile `local`, AC
 - Gạo/hạt/đậu khô được cân trước khi nấu; trứng tính phần bỏ vỏ, rau củ tính phần ăn được. Nước ghi trong công thức là lượng giữ trong món; nước ngâm/rửa, nước hấp và nước luộc bỏ đi không được tính là nguyên liệu tiêu thụ. Định lượng là công thức minh họa, không phải chỉ định dinh dưỡng cá nhân.
 - Repeatable `R__demo_sample_data_12_ingredient_images.sql` ánh xạ 209 nguyên liệu seed sang ảnh AI riêng tại Frontend `public/ingredients/*.webp`. Chỉ điền `image_url` trống; ảnh có sẵn hoặc ảnh Admin tải lên được giữ nguyên. Ảnh minh họa không đại diện thương hiệu hoặc xác nhận giá trị dinh dưỡng.
 - Repeatable `R__demo_sample_data_13_ingredient_groups.sql` chuẩn hóa nhóm cho cùng 209 nguyên liệu demo dựa trên loại thực phẩm; chỉ cập nhật `ingredient_group`, không thay đổi dinh dưỡng, ảnh, quy đổi hoặc nguyên liệu ngoài danh sách demo.
-- Sau khi stack Compose chuẩn chạy với profile `local`, chạy `./scripts/verify-demo-ingredient-fixtures.ps1` từ repository root. Script kiểm tra asset WebP và chạy hai seed hai lần trong transaction có rollback: kiểm tra định lượng gram, dinh dưỡng đủ chín chỉ tiêu, không trùng nguyên liệu, bảo toàn bài ngoài fixture và ảnh có sẵn. Không reset database hoặc SQL volume. Có thể truyền `-ComposeProject` nếu stack dùng project name khác.
+- Repeatable `R__demo_sample_data_14_ingredient_unit_conversions.sql` chỉ chạy ở profile `local`, thêm quy đổi thể tích cho đủ năm đơn vị chuẩn (`ml`, `L`, `tsp`, `tbsp`, `cup`) và đơn vị đếm `quả`, `củ`, `miếng` phù hợp cho nguyên liệu demo. Nước dùng 1 g/ml; mật độ dầu, sữa đậu nành, nước tương và khối lượng mỗi quả/củ/miếng là giá trị tham khảo, được đánh dấu `is_approximate` khi có biến thiên. Seed chỉ chèn cặp nguyên liệu–đơn vị còn thiếu, không ghi đè giá trị hoặc trạng thái do Admin cấu hình; khối lượng `mg/g/kg` vẫn dùng hệ số chuẩn cố định.
+- Sau khi stack Compose chuẩn chạy với profile `local`, chạy `./scripts/verify-demo-ingredient-fixtures.ps1` từ repository root. Script kiểm tra asset WebP và chạy các seed hai lần trong transaction có rollback: kiểm tra định lượng gram, dinh dưỡng đủ chín chỉ tiêu, quy đổi thể tích/đếm hợp lệ và lặp lại an toàn, không trùng nguyên liệu, bảo toàn bài ngoài fixture, ảnh có sẵn và conversion Admin đã lưu. Không reset database hoặc SQL volume. Có thể truyền `-ComposeProject` nếu stack dùng project name khác.
 
 ## Khôi phục database local khi Flyway history không tương thích
 
