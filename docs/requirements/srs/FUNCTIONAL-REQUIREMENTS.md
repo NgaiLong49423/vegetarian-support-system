@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.44.0
+> **Version:** v2.45.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-28
+> **Last Updated:** 2026-10-29
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -1502,13 +1502,14 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **Use Case detail:** [Open interaction flows](../use-cases/recipe-contribution-and-community.md#fr-21).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cung cấp tính năng trợ lý AI tương tác thông minh hỗ trợ Chuyên gia trong quá trình tạo hoặc chỉnh sửa bài công thức nấu ăn: AI hỗ trợ gợi ý đoạn văn bản giới thiệu món ăn hấp dẫn (Description $\le 2.000$ ký tự) hoặc đề xuất nội dung hướng dẫn chế biến (văn bản từ 10 đến 5.000 ký tự theo FR-16, BR-19) dựa trên thông tin tác giả đã cung cấp (tên món, loại ăn chay, thể loại món `dish_category`, danh sách nguyên liệu và khẩu phần); AI tuyệt đối không tự ý thêm bất kỳ nguyên liệu mới nào ngoài danh sách tác giả đã nhập; kết quả do AI sinh ra được đưa trực tiếp vào các ô nhập liệu của biểu mẫu ở phía client (ô mô tả `description` hoặc ô hướng dẫn chế biến `instructions`) ở dạng có thể chỉnh sửa tự do và chỉ được công khai khi người dùng chủ động xem xét, xác nhận (BR-15); hệ thống không tự động công khai hoặc lưu persistent server-side Recipe Post draft trong baseline hiện tại; tính năng thuộc gói Plus và Pro (FR-10, BR-02); nếu AI gặp sự cố kỹ thuật hoặc tài khoản không thuộc gói Plus/Pro, tác giả vẫn có toàn quyền tiếp tục tự viết hướng dẫn chế biến và xuất bản bài viết bình thường (BR-16).
+- **Tóm tắt yêu cầu:** Cung cấp tính năng trợ lý AI tương tác thông minh hỗ trợ Chuyên gia trong quá trình tạo hoặc chỉnh sửa bài công thức nấu ăn: AI hỗ trợ gợi ý đoạn văn bản giới thiệu món ăn hấp dẫn (Description $\le 2.000$ ký tự) hoặc đề xuất nội dung hướng dẫn chế biến (văn bản từ 10 đến 5.000 ký tự theo FR-16, BR-19) dựa trên thông tin tác giả đã cung cấp (tên món, loại ăn chay, thể loại món `dish_category`, danh sách nguyên liệu và khẩu phần); prompt hướng AI ưu tiên nguyên liệu và định lượng đã nhập, đồng thời có thể gợi ý thêm nguyên liệu phù hợp để tác giả rà soát và chỉnh sửa; Backend không từ chối nội dung AI chỉ vì nhắc đến nguyên liệu ngoài danh sách đã nhập; kết quả AI được đưa vào các ô nhập liệu có thể chỉnh sửa trên client và chỉ được công khai khi tác giả chủ động rà soát, xác nhận (BR-15); công thức sau khi đăng tiếp tục thuộc cơ chế hậu kiểm hiện hành; hệ thống không tự động công khai hoặc lưu persistent server-side Recipe Post draft trong baseline hiện tại; tính năng thuộc gói Plus và Pro (FR-10, BR-02); nếu AI gặp sự cố kỹ thuật hoặc tài khoản không thuộc gói Plus/Pro, tác giả vẫn có toàn quyền tiếp tục tự viết hướng dẫn chế biến và xuất bản bài viết bình thường (BR-16).
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Chuyên gia đã đăng nhập và đang đăng ký gói Plus hoặc Pro còn hiệu lực (FR-03, FR-10, BR-02).
   - Khả năng hỗ trợ:
     1. Gợi ý đoạn giới thiệu món ăn (Description $\le 2.000$ ký tự).
     2. Đề xuất nội dung hướng dẫn chế biến linh hoạt (`instructions`, từ 10 đến 5.000 ký tự).
-  - Không hỗ trợ: AI không tự thêm nguyên liệu, không tự động công khai và không lưu persistent server-side Recipe Post draft trong baseline hiện tại.
+  - Hệ thống hướng prompt để AI ưu tiên nguyên liệu đã nhập nhưng không áp dụng kiểm tra Backend bắt buộc nội dung chỉ nhắc các nguyên liệu đó; tác giả rà soát và chỉnh sửa mọi gợi ý trước khi đăng.
+  - Không hỗ trợ: AI không tự động công khai và không lưu persistent server-side Recipe Post draft trong baseline hiện tại.
 - **Phân loại Actor:**
   - Primary Actor: `Chuyên gia (Role = EXPERT)` (tác giả bài viết).
   - Supporting Actor: `Google Gemini AI` (trợ lý sinh nội dung), `Hệ thống xác thực quyền tính năng (Feature Entitlement)`.
@@ -1522,7 +1523,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 
 #### Phân quyền & Ràng buộc phê duyệt
 - **Quyền hạn:** Chỉ Chuyên gia đã đăng nhập và đang sử dụng gói Plus hoặc Pro còn hiệu lực mới được sử dụng.
-- **Ràng buộc an toàn:** AI không tự thêm nguyên liệu; kết quả AI phải ở dạng chỉnh sửa được; AI không tự ý công khai và không lưu persistent server-side Recipe Post draft trong baseline hiện tại; không chặn đăng bài khi AI lỗi (BR-16).
+- **Ràng buộc an toàn:** Prompt hướng AI ưu tiên nguyên liệu tác giả đã nhập; nội dung AI có thể đề xuất thêm nguyên liệu và không bị Backend từ chối chỉ vì khác danh sách. Tác giả có thể rà soát, chỉnh sửa nội dung trong biểu mẫu trước khi chủ động đăng; bài đã đăng tiếp tục theo cơ chế hậu kiểm hiện hành. AI không tự ý công khai hoặc lưu persistent server-side Recipe Post draft trong baseline hiện tại; không chặn đăng bài khi AI lỗi (BR-16).
 
 #### Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
@@ -1543,14 +1544,14 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - [NFR-13](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13): Giao diện Responsive tiếng Việt trên đa kích thước màn hình.
 
 #### Tiêu chí chấp nhận nguyên tử (Acceptance Criteria)
-- **AC-21.1 (AI sinh nội dung không tự ý thêm nguyên liệu mới):**
+- **AC-21.1 (AI ưu tiên nguyên liệu đã nhập và cho phép tác giả rà soát gợi ý thêm):**
   - *Given* tác giả khai báo danh sách nguyên liệu chỉ gồm "Đậu phụ, Cà chua, Hành boa-rô",
   - *When* AI sinh nội dung hướng dẫn chế biến,
-  - *Then* toàn bộ nội dung hướng dẫn chỉ sử dụng các nguyên liệu đã khai báo và tuyệt đối không xuất hiện nguyên liệu mới (như nấm, ớt chuông...).
+  - *Then* prompt hướng AI ưu tiên các nguyên liệu đã khai báo; nội dung có thể gợi ý thêm nguyên liệu phù hợp, Backend không từ chối chỉ vì nội dung nhắc nguyên liệu ngoài danh sách, và tác giả nhận nội dung ở dạng có thể rà soát/chỉnh sửa trước khi đăng.
 - **AC-21.2 (Đưa nội dung AI sinh vào form soạn thảo dưới dạng có thể chỉnh sửa):**
   - *Given* AI phản hồi thành công nội dung hướng dẫn chế biến (10–5.000 ký tự),
   - *When* dữ liệu trả về client,
-  - *Then* nội dung được tự động điền vào ô nhập liệu `instructions` trên form để tác giả có thể chỉnh sửa trực tiếp và chỉ được công khai khi tác giả chủ động bấm đăng.
+  - *Then* nội dung được tự động điền vào ô nhập liệu `instructions` trên form để tác giả rà soát, chỉnh sửa trực tiếp và chỉ được công khai khi tác giả chủ động bấm đăng; sau khi đăng, áp dụng cơ chế hậu kiểm hiện hành.
 - **AC-21.3 (Tuyệt đối không lưu trữ bản nháp trên server):**
   - *Given* tác giả sử dụng AI hỗ trợ soạn bài nhưng chưa nhấn nút "Đăng công thức",
   - *When* kiểm tra cơ sở dữ liệu hệ thống trên máy chủ,

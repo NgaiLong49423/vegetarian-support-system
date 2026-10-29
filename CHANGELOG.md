@@ -1,13 +1,32 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.123.0
+> **Version:** v2.124.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-28
+> **Last Updated:** 2026-10-29
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-29 — Let Recipe AI Suggest Additional Ingredients
+
+**Status:** Committed — `aae27490a990d7d045cec0fe7a0ab807d2af610e`.
+
+**Scope:** Align FR-21, the API guide and recipe drafting with author-reviewed AI suggestions instead of rejecting generated text that mentions an ingredient outside the form's selected list.
+
+### Added
+
+- None.
+
+### Changed
+
+- Ask recipe drafting AI to prioritize entered ingredients while allowing suitable additional suggestions for the author to review and edit before posting.
+- Remove Backend rejection based only on generated ingredient mentions; keep existing response-format, entitlement, and publication checks. Published recipes remain subject to current post-moderation.
+
+### Fixed
+
+- None.
 
 ## 2026-10-28 — Track Recipe Sources and Item Provenance in Shopping Lists
 
