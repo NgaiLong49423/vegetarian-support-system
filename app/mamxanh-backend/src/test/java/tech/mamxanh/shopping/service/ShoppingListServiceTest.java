@@ -141,8 +141,9 @@ class ShoppingListServiceTest {
         mutation(); references();
         var ingredient = new IngredientResponse(8L, "Đậu phụ", "Đậu", null, null, null, false, true);
         when(catalog.findActiveIngredientsByIds(List.of(8L))).thenReturn(List.of(ingredient));
-        when(catalog.findActiveIngredientUnits(8L)).thenReturn(List.of(new IngredientUnitOptionResponse(
-                7, "cuộn", "cuộn", MeasurementDimension.COUNT, BigDecimal.ONE, false)));
+        when(catalog.findActiveIngredientUnits(8L)).thenReturn(List.of(
+                new IngredientUnitOptionResponse(1, "g", "gram", MeasurementDimension.MASS, BigDecimal.ONE, false),
+                new IngredientUnitOptionResponse(7, "cuộn", "cuộn", MeasurementDimension.COUNT, BigDecimal.ONE, false)));
         item.setIngredientId(8L);
         when(items.findByShoppingListIdOrderByIdAsc(10L)).thenReturn(List.of(item));
         var sourceRows = new ArrayList<ShoppingRecipeContributionEntity>();
