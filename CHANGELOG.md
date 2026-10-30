@@ -1,13 +1,109 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.123.0
+> **Version:** v2.126.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-28
+> **Last Updated:** 2026-10-30
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-30 — Restore Meal Plan Focus After Moving an Entry
+
+**Status:** Committed — `4b143d74`.
+
+**Scope:** Keep keyboard focus in a usable location when a meal-plan dialog closes after its trigger becomes hidden.
+
+### Added
+
+- None.
+
+### Changed
+
+- None.
+
+### Fixed
+
+- Return focus to the meal-plan heading when the dialog's original trigger is still in the DOM but no longer visible.
+
+## 2026-10-30 — Align CI Checks for Admin Account Management
+
+**Status:** Committed — `3ec1ed3c`.
+
+**Scope:** Keep the generated API contract and Frontend coverage test aligned with the Admin account-management page.
+
+### Added
+
+- None.
+
+### Changed
+
+- Refresh the OpenAPI snapshot from the runtime contract generated for the pull request commit.
+- Update the Admin page coverage assertion to match the current heading.
+
+### Fixed
+
+- None.
+
+## 2026-10-30 — Implement Backend-Backed Admin Account Management
+
+**Status:** Committed — `8632da92`.
+
+**Scope:** Replace the account-management preview with protected SQL Server-backed account lookup and administration.
+
+### Added
+
+- Add paginated account search, global counts, minimal account details, and an append-only account audit history for Administrators.
+- Add reason-required account status and CUSTOMER/EXPERT role changes. Direct Expert grants close any pending application and notify its applicant in the same transaction.
+- Add Frontend coverage for API-backed account search, role/status changes, and read-only Administrator rows.
+
+### Changed
+
+- Remove sample accounts, account export, and the preview banner from the account-management page; retain the separate transaction preview.
+- Clarify FR-05/FR-06 and related business rules for direct Expert grants and cancellation of pending applications.
+
+### Fixed
+
+- None.
+
+## 2026-10-29 — Let Recipe AI Suggest Additional Ingredients
+
+**Status:** Committed — `540998c5d2ca8c8b7765d1efc328ed629ae81dcd`.
+
+**Scope:** Align FR-21, the API guide and recipe drafting with author-reviewed AI suggestions instead of rejecting generated text that mentions an ingredient outside the form's selected list.
+
+### Added
+
+- None.
+
+### Changed
+
+- Ask recipe drafting AI to prioritize entered ingredients while allowing suitable additional suggestions for the author to review and edit before posting.
+- Remove Backend rejection based only on generated ingredient mentions; keep existing response-format, entitlement, and publication checks. Published recipes remain subject to current post-moderation.
+
+### Fixed
+
+- None.
+
+## 2026-10-29 — Add Nguyen Hoang Phuc Dessert Demo Collection
+
+**Status:** Committed — `a430530b0a8e91ca40e3cdd525fea1734f3221f6`.
+
+**Scope:** Expand the local Expert demo with a detailed vegetarian collection of desserts, drinks and baked sweets.
+
+### Added
+
+- Add a local-only repeatable seed for 15 recipe posts with professional descriptions, step-by-step instructions, gram quantities and catalog ingredients prioritized for lower usage in existing demo fixtures.
+- Generate and attach one distinct food illustration per post, served from Frontend public assets.
+
+### Changed
+
+- Document the new Expert demo collection and local seed behavior.
+
+### Fixed
+
+- None.
 
 ## 2026-10-28 — Track Recipe Sources and Item Provenance in Shopping Lists
 
