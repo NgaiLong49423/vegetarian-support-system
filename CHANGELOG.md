@@ -121,6 +121,19 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Split cancelled and failed payment transactions into two dedicated cards on `AdminTransactionsPage.tsx` using a balanced 5-column grid (`sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5`).
 - Update transaction filter pagination counter label to `2 giao dịch · Trang 1/1` and synchronize `admin-transactions-real-stack.spec.ts`.
 - Replace technical disclaimer on `AiTelemetryPage.tsx` with a concise privacy-focused notice.
+## 2026-10-28 — Remove Semicolons from the Recipe Comparison Text ([PR #195](https://github.com/NgaiLong49423/vegetarian-support-system/pull/195))
+
+**Status:** Committed — `f7abbe11`.
+
+**Scope:** Apply the lecturer's feedback that text shown on the website does not use semicolons to the FR-60 recipe comparison page.
+
+### Added
+
+- Add a Playwright check that the text on the comparison page contains no semicolon.
+
+### Changed
+
+- Split the three comparison notes joined by a semicolon (ingredient alignment, nutrition difference and estimate disclaimer) into separate sentences without changing their meaning.
 
 ### Fixed
 
