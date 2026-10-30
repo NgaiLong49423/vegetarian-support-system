@@ -1,13 +1,76 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.130.0
+> **Version:** v2.134.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-30
+> **Last Updated:** 2026-10-31
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-31 — Implement Admin AI Configuration Foundation
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Add persisted Admin configuration for AI plans, Gemini model access, AI Credit conversion, and customer notifications under Issue #212.
+
+### Added
+
+- Add the V33 configuration migration, Admin-only configuration API, Gemini model validation, asynchronous email notices, and an Admin configuration page.
+- Add V34 order snapshots so payment settlement activates the tier and monthly quota captured at checkout.
+- Add validation coverage for rejecting a tier without exactly one enabled default model.
+- Display Admin-configured monthly prices, token quotas, and Gemini model access on the AI plans page.
+
+### Changed
+
+- Keep Free quota changes pending until the next Vietnam calendar month; retain current paid subscription snapshots.
+- Synchronize the database schema snapshot with the new migration.
+- Align package benefits with role-based capabilities and monthly token/model entitlements.
+
+### Fixed
+
+- None.
+
+## 2026-10-30 — Define Admin AI Configuration Requirements
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Refine the AI administration requirements for configurable Gemini access, package limits, AI Credit grants, and customer notifications.
+
+### Added
+
+- Define pilot defaults and validation rules for Admin-managed Gemini catalog access by tier.
+- Define AI Credit-only grants, configuration-change notifications, and package-setting effective dates.
+
+### Changed
+
+- Clarify that Guest follows Free model configuration, Free remains a zero-price tier, and package grants are excluded from Admin operations.
+- Align the PRD and FR-10 interaction flow with Admin-managed model access for each tier.
+
+### Fixed
+
+- None.
+
+## 2026-10-30 — Clarify Gemini Model Preference Requirements
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Align the detailed AI requirements and interaction flows with the approved per-account Gemini model selection behavior.
+
+### Added
+
+- Define account-scoped model preference, chatbox selection, stale-preference handling, and a single consented retry using an allowed alternative model.
+
+### Changed
+
+- Clarify that user role and the underlying capability govern AI function access, while the current subscription governs token quota and Gemini model access.
+- Replace the outdated use-case description that restricted AI functions by subscription tier.
+- Align nutrition, recipe assistance/discovery, chat routing, and package comparison flows with role-based capabilities and quota/model-based packages.
+
+### Fixed
+
+- None.
 
 ## 2026-10-30 — Add AI Token Quota Tracking
 

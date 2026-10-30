@@ -14,42 +14,12 @@ import {
 import { formatVnd } from '../utils/date';
 import { formatSubscriptionDate as formatDate } from '../utils/subscriptionDate';
 
-const DEFAULT_PLANS: PlanResponse[] = [
-  {
-    tier: 'FREE',
-    name: 'FREE',
-    priceVnd: 0,
-    billingPeriod: 'Hàng tháng',
-    description: 'Trải nghiệm các tính năng AI cơ bản',
-    features: ['AI Chatbot cơ bản', 'Gợi ý món chay cơ bản'],
-  },
-  {
-    tier: 'PLUS',
-    name: 'PLUS',
-    priceVnd: 49000,
-    billingPeriod: 'Hàng tháng',
-    description: 'Dành cho người ăn chay chuyên sâu & tối ưu dinh dưỡng',
-    features: ['Toàn bộ quyền của FREE', 'AI lập thực đơn tuần 7 ngày', 'AI lập thực đơn theo dinh dưỡng cá nhân'],
-  },
-  {
-    tier: 'PRO',
-    name: 'PRO',
-    priceVnd: 99000,
-    billingPeriod: 'Hàng tháng',
-    description: 'Dành cho người ăn chay muốn sáng tạo thực đơn',
-    features: [
-      'Toàn bộ quyền của PLUS',
-      'AI hỗ trợ soạn bài viết và công thức',
-      'AI gợi ý biến tấu món chay sáng tạo',
-    ],
-  },
-];
-
 export function AiPlans() {
   const navigate = useNavigate();
   const { isAuthenticated: isLoggedIn } = useAuth();
 
-  const [plans, setPlans] = useState<PlanResponse[]>(DEFAULT_PLANS);
+  const [plans, setPlans] = useState<PlanResponse[]>([]);
+  const [plansError, setPlansError] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<MySubscriptionResponse | null>(null);
   const [usage, setUsage] = useState<MyAiUsageResponse | null>(null);
   const [usageError, setUsageError] = useState<string | null>(null);
@@ -65,9 +35,10 @@ export function AiPlans() {
         const fetchedPlans = await subscriptionApi.getPlans();
         if (active && fetchedPlans.length > 0) {
           setPlans(fetchedPlans);
+          setPlansError(null);
         }
       } catch {
-        // Fall back to DEFAULT_PLANS if API is unreachable
+        if (active) setPlansError('Không tải được giá và quyền lợi hiện hành. Thử tải lại trang để tránh xem thông tin cũ.');
       }
 
       if (isLoggedIn) {
@@ -170,7 +141,7 @@ export function AiPlans() {
         )}
 
         <p className="mt-2 text-xs text-ink-muted">
-          Giá theo tháng, thanh toán từng kỳ qua VietQR (payOS) và không tự động gia hạn.
+          Gói quyết định hạn mức token và model Gemini; quyền dùng chức năng AI theo vai trò và quyền nghiệp vụ của tài khoản. Free tính theo tháng dương lịch, Plus/Pro theo tháng gói. Guest có 20.000 token dùng thử mỗi phiên. Plus/Pro thanh toán từng tháng qua payOS, không tự động gia hạn.
         </p>
       </div>
 
@@ -219,8 +190,12 @@ export function AiPlans() {
         <div className="flex justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
         </div>
+      ) : plansError || plans.length === 0 ? (
+        <div role="alert" className="mx-auto max-w-2xl rounded-xl border border-amber-200 bg-amber-50 p-4 text-center text-sm text-amber-900">
+          {plansError ?? 'Chưa có cấu hình gói AI để hiển thị.'}
+        </div>
       ) : (
-        /* AC-13.1: Exactly 3 tiers: FREE 0 VNĐ/tháng, PLUS 49.000 VNĐ/tháng, PRO 99.000 VNĐ/tháng */
+        /* Current prices, token quotas, and model entitlements come from the Backend Admin configuration. */
         <div className="grid gap-6 lg:grid-cols-3">
           {plans.map((plan) => {
             const isCurrent = plan.tier === currentTier;

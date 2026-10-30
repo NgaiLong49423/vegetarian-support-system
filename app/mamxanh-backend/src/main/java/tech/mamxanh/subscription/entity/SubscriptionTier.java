@@ -1,13 +1,14 @@
 package tech.mamxanh.subscription.entity;
 
 /**
- * Membership tiers for AI capabilities (FR-13, BR-02).
+ * Persisted subscription tiers (FR-13, BR-02). Current price/quota/model rules live in AI configuration.
  * DB values allowed in SUBSCRIPTION table: 'PLUS', 'PRO'.
  * FREE tier is the default system entitlement when no active subscription exists.
+ * The enum price values only recognize payment rows created before V34 stored their tier snapshot.
  */
 public enum SubscriptionTier {
-    PLUS(49_000, 300_000, "Gói PLUS", "Gói tháng cơ bản với AI lập thực đơn tuần theo dinh dưỡng"),
-    PRO(99_000, 600_000, "Gói PRO", "Gói tháng cao cấp với AI soạn bài và gợi ý biến tấu");
+    PLUS(49_000, 300_000, "Gói PLUS", "Gói tháng với hạn mức token và model Gemini theo cấu hình hiện hành"),
+    PRO(99_000, 600_000, "Gói PRO", "Gói tháng với hạn mức token và model Gemini theo cấu hình hiện hành");
 
     private final int priceVnd;
     private final long tokenQuota;

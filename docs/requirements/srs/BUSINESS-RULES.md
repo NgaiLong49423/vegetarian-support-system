@@ -1,6 +1,6 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v2.16.0
+> **Version:** v2.18.0
 > **Created:** 2026-09-14
 > **Last Updated:** 2026-10-30
 > **Status:** Active
@@ -22,7 +22,7 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-02 — Hạn mức token và quyền chọn Gemini Model theo gói
 
 - **Mã quy tắc:** BR-02
-- **Nội dung:** Gói không khóa riêng từng chức năng AI; các chức năng vẫn chịu role, ownership, eligibility và validation của chức năng gốc. Hạn mức khởi đầu: Free 50.000 token/tháng; Plus 300.000 token/tháng, 99.000đ/tháng; Pro 600.000 token/tháng, 199.000đ/tháng. Plus/Pro bắt đầu chu kỳ khi kích hoạt/gia hạn; Free có chu kỳ tháng riêng. Hạn mức tháng không cộng dồn. Guest/Free chỉ dùng Gemini Flash-Lite; Plus/Pro chọn Flash-Lite hoặc Flash, mặc định Flash. Chưa hỗ trợ model ngoài Gemini. Admin có thể đổi cấu hình; chu kỳ đã mua giữ giá/hạn mức đã cấp.
+- **Nội dung:** Gói không khóa riêng chức năng AI; các chức năng vẫn chịu role, ownership, eligibility và validation của chức năng gốc. Cấu hình khởi đầu là Free 0đ/50.000 token mỗi tháng dương lịch, Plus 99.000đ/300.000 token mỗi tháng và Pro 199.000đ/600.000 token mỗi tháng. Free quota dùng tháng dương lịch `Asia/Saigon`; thay đổi quota Free giữa chu kỳ có hiệu lực từ chu kỳ kế tiếp. Plus/Pro bắt đầu chu kỳ lúc kích hoạt/gia hạn; thay đổi giá/quota chỉ áp dụng lần mua/kích hoạt mới, chu kỳ trả phí đang chạy giữ snapshot. Quota tháng không cộng dồn. Chỉ hỗ trợ Gemini; catalog, quyền truy cập và model mặc định theo từng tier do Admin cấu hình. Pilot mặc định: Guest theo cấu hình Free; Free dùng Flash-Lite; Plus/Pro có Flash-Lite và Flash, mặc định Flash. Mỗi tier phải có ít nhất một model đang bật và một model mặc định nằm trong danh sách đang bật; Admin có thể gán bất kỳ Gemini model đã xác minh cho bất kỳ tier nào. Model ID mới phải được xác minh với Gemini trước khi lưu; nếu provider lỗi hoặc không hỗ trợ ID thì không lưu model mới và không làm thay đổi cấu hình hiện có. Member lưu model preference theo tài khoản, áp dụng cho mọi chức năng AI được phép; Guest không lưu preference. Backend xác thực tier hiện tại, preference và catalog đang bật trước mỗi provider call; gói hết hạn trở về quyền model Free, AI Credit không mở thêm quyền model. Nếu preference không còn hợp lệ hoặc model bị tắt/thu hồi, yêu cầu chọn lại và không gọi Gemini. Khi model lỗi, chỉ retry một lần bằng model thay thế sau khi người dùng đồng ý; preference đã lưu không đổi.
 
 ---
 
@@ -30,7 +30,7 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-03 — Xác thực quyền, model và ngân sách trước khi gọi dịch vụ AI
 
 - **Mã quy tắc:** BR-03
-- **Nội dung:** Backend xác thực người dùng, quyền truy cập dữ liệu/chức năng gốc, quyền model theo gói, consent dữ liệu cá nhân và ngân sách trước mỗi lần gọi Gemini. Khi hết quota tháng, hệ thống tự tính phí vượt mức bằng AI Credit theo BR-77; không đủ Credit thì dừng trước lần gọi tiếp theo. Admin endpoints không được gọi qua AI Assistant.
+- **Nội dung:** Backend xác thực người dùng, quyền truy cập dữ liệu/chức năng gốc, model preference của tài khoản với tier/subscription hiện tại và catalog đang bật, consent dữ liệu cá nhân và ngân sách trước mỗi lần gọi Gemini. Khi hết quota tháng, hệ thống tự tính phí vượt mức bằng AI Credit theo BR-77; không đủ Credit thì dừng trước lần gọi tiếp theo. Model thay thế chỉ được dùng sau xác nhận rõ ràng và tối đa một lần retry; không sửa preference đã lưu. Admin endpoints không được gọi qua AI Assistant.
 
 ---
 
@@ -54,7 +54,7 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-78 — Quản trị AI và chu kỳ gói
 
 - **Mã quy tắc:** BR-78
-- **Nội dung:** Chỉ Administrator trực tiếp trong giao diện quản trị được quản lý giá/hạn mức gói, model Gemini khả dụng theo gói, tỷ lệ tiền/Credit, tỷ lệ Credit/token overage, giới hạn nạp, grant gói/Credit cho tài khoản và thông báo. Grant phải tạo thông báo in-app cho người nhận. Plus→Pro áp dụng ngay sau thanh toán đủ, mở chu kỳ Pro mới và không hoàn tiền phần Plus còn lại; mua lại cùng gói khi còn hạn và hạ Pro→Plus khi Pro còn hạn không được phép. AI Assistant không thao tác chức năng Admin.
+- **Nội dung:** Chỉ Administrator trực tiếp trong giao diện quản trị được quản lý quota gói và giá Plus/Pro (giá Free luôn 0đ), Gemini model catalog/quyền/default theo tier, tỷ lệ tiền/Credit, tỷ lệ Credit/token overage và giới hạn nạp. Admin có thể thay đổi các giá trị cấu hình mà không có trần riêng do nghiệp vụ đặt ra; quy tắc hiệu lực và snapshot theo BR-02/BR-77 vẫn áp dụng. Admin chỉ được cấp AI Credit, không cấp/gán gói thủ công; grant áp dụng cho tài khoản đích, yêu cầu số Credit dương và lý do 10–500 ký tự, ghi qua Credit ledger, không hết hạn và gửi thông báo in-app cho người nhận. Mọi thay đổi cấu hình AI thực tế phải tạo thông báo in-app cho tất cả tài khoản CUSTOMER/EXPERT đang hoạt động; Admin có thể chọn gửi thêm email đến các tài khoản CUSTOMER/EXPERT đang hoạt động và đã xác minh email. Thông báo nêu giá trị cũ, giá trị mới và thời điểm hiệu lực; email gửi bất đồng bộ. Đổi tỷ lệ overage có hiệu lực ngay; tỷ lệ tiền/Credit và min/max nạp áp dụng đơn mới; đơn nạp đang chờ giữ nguyên snapshot đến khi hết hạn. Plus→Pro áp dụng ngay sau thanh toán đủ, mở chu kỳ Pro mới và không hoàn tiền phần Plus còn lại; mua lại cùng gói khi còn hạn và hạ Pro→Plus khi Pro còn hạn không được phép. AI Assistant không thao tác chức năng Admin.
 
 ---
 

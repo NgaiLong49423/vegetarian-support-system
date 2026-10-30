@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
@@ -25,6 +26,7 @@ import tech.mamxanh.recipe.dto.response.RecipeDetailResponse;
 import tech.mamxanh.recipe.dto.response.RecipePostResponse;
 import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 import tech.mamxanh.subscription.service.AiTokenQuotaService;
+import tech.mamxanh.subscription.service.AiChatSettingsService;
 
 /** FR-51 chat orchestration; conversation and prompt content remain request-scoped only. */
 @Service
@@ -79,11 +81,13 @@ public class AiChatService {
     private final Clock clock;
     private final SubscriptionEntitlementService entitlements;
     private final AiTokenQuotaService aiQuota;
+    private final AiChatSettingsService chatSettings;
 
+    @Autowired
     public AiChatService(CurrentUserService users, RecipeService recipes,
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
             ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
-            AiTokenQuotaService aiQuota) {
+            AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings) {
         this.users = users;
         this.recipes = recipes;
         this.recipePosts = recipePosts;
@@ -94,6 +98,15 @@ public class AiChatService {
         this.clock = clock;
         this.entitlements = entitlements;
         this.aiQuota = aiQuota;
+        this.chatSettings = chatSettings;
+    }
+
+    /** Compatibility constructor used by focused orchestration tests. */
+    AiChatService(CurrentUserService users, RecipeService recipes, RecipePostService recipePosts,
+            DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
+            ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
+            AiTokenQuotaService aiQuota) {
+        this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, null);
     }
 
     public AiChatResponse answer(AiChatRequest request) {
@@ -101,9 +114,11 @@ public class AiChatService {
         validateContext(request);
         AiChatIntent.Workflow workflow = AiChatIntent.workflow(request);
         if (workflow != null) return routeWorkflow(request, userId, workflow);
+        String modelId = chatSettings == null ? null
+                : chatSettings.resolve(userId, userId == null ? request.anonymousViewerId() : null);
         ScopeDecision decision;
         try {
-            decision = classifyScope(request, userId);
+            decision = classifyScope(request, userId, modelId);
         } catch (AppException exception) {
             if (exception.errorCode() == ErrorCode.AI_PROVIDER_UNAVAILABLE
                     || exception.errorCode() == ErrorCode.AI_RESPONSE_INVALID) {
@@ -130,7 +145,8 @@ public class AiChatService {
         AiClient.ChatResult result;
         try {
             aiQuota.requireAvailable(userId, userId == null ? request.anonymousViewerId() : null);
-            result = ai.answerChat(SYSTEM_INSTRUCTION, prompt);
+            result = modelId == null ? ai.answerChat(SYSTEM_INSTRUCTION, prompt)
+                    : ai.answerChat(modelId, SYSTEM_INSTRUCTION, prompt);
         } catch (AiProviderException exception) {
             LOG.warn("Gemini chat rejected category={} httpStatus={}", exception.kind(), exception.httpStatus());
             if (exception.kind() == tech.mamxanh.integration.ai.GeminiAiClient.FailureKind.INVALID_RESPONSE) {
@@ -153,11 +169,12 @@ public class AiChatService {
         return new AiChatResponse(request.contextType(), request.recipeId(), answer, recommendations);
     }
 
-    private ScopeDecision classifyScope(AiChatRequest request, Long userId) {
+    private ScopeDecision classifyScope(AiChatRequest request, Long userId, String modelId) {
         AiClient.ChatResult result;
         try {
             aiQuota.requireAvailable(userId, userId == null ? request.anonymousViewerId() : null);
-            result = ai.classifyChatScope(SCOPE_CLASSIFIER_INSTRUCTION, scopePrompt(request));
+            result = modelId == null ? ai.classifyChatScope(SCOPE_CLASSIFIER_INSTRUCTION, scopePrompt(request))
+                    : ai.classifyChatScope(modelId, SCOPE_CLASSIFIER_INSTRUCTION, scopePrompt(request));
         } catch (AiProviderException exception) {
             LOG.warn("Gemini chat scope classification failed category={} httpStatus={}", exception.kind(), exception.httpStatus());
             if (exception.kind() == tech.mamxanh.integration.ai.GeminiAiClient.FailureKind.INVALID_RESPONSE) {

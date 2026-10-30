@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M04
 > **File:** `docs/requirements/use-cases/recipe-discovery-and-classification.md`
-> **Version:** v2.9.0
+> **Version:** v2.10.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-29
+> **Last Updated:** 2026-10-30
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -409,7 +409,7 @@ Kết quả gợi ý tham chiếu tới Recipe Post công khai thực tế; hệ
 
 #### Traceability
 - **Parent FR:** [FR-34](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34).
-- **Related FR:** [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) (Feature Entitlement); [FR-31](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-31) (hồ sơ tối thiểu).
+- **Related FR:** [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) (quyền model/quota theo gói, không khóa capability); [FR-31](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-31) (hồ sơ tối thiểu).
 - **Relevant BR:** [BR-31](../srs/BUSINESS-RULES.md#br-31) (thiếu thông tin thì chặn cá nhân hóa); [BR-38](../srs/BUSINESS-RULES.md#br-38) (AI chỉ dùng công thức công khai có sẵn).
 - **Relevant NFR:** [NFR-03](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03) (thời gian phản hồi AI); [NFR-18](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-18) (provider fallback); [NFR-25](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-25) (chất lượng và tuân thủ nội dung AI).
 
@@ -424,10 +424,10 @@ Kết quả gợi ý tham chiếu tới Recipe Post công khai thực tế; hệ
 ### UC-34.2 — Yêu cầu AI tạo preview thực đơn tuần
 
 #### Goal
-Cho Member Plus hoặc Pro yêu cầu Gemini đề xuất thực đơn tuần dựa trên kho công thức công khai và hồ sơ ăn uống.
+Cho Member đủ điều kiện hồ sơ yêu cầu Gemini đề xuất thực đơn tuần dựa trên kho công thức công khai và hồ sơ ăn uống.
 
 #### Primary Actor
-`Member` thuộc gói Plus hoặc Pro.
+`Member` đã đăng nhập.
 
 #### Supporting Actors
 Google Gemini AI.
@@ -436,7 +436,7 @@ Google Gemini AI.
 Member chọn “AI lập thực đơn tuần mới”.
 
 #### Preconditions
-Member đã đăng nhập, hoàn tất hồ sơ sở thích tối thiểu và có quyền Plus hoặc Pro theo FR-10.
+Member đã đăng nhập, có hồ sơ/eligibility cần thiết và đủ ngân sách AI. Gói chỉ quyết định quota/model, không khóa chức năng.
 
 #### Main Flow
 1. Hệ thống lấy công thức công khai, lọc theo trường phái ăn chay và loại trừ dị ứng Member đã khai báo.
@@ -445,14 +445,14 @@ Member đã đăng nhập, hoàn tất hồ sơ sở thích tối thiểu và c�
 4. Member có thể xem xét preview rồi chuyển sang UC-34.3 để xác nhận áp dụng.
 
 #### Alternative Flows
-- Member không chấp nhận preview có thể hủy hoặc yêu cầu Gemini tạo phương án khác trong phạm vi gói hiện tại; Meal Plan hiện có không thay đổi.
+- Member không chấp nhận preview có thể hủy hoặc yêu cầu Gemini tạo phương án khác nếu còn ngân sách AI; Meal Plan hiện có không thay đổi.
 
 #### Postconditions
 Preview được hiển thị; chưa có thay đổi nào được ghi vào Meal Plan nếu Member chưa xác nhận.
 
 #### Traceability
 - **Parent FR:** [FR-34](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34).
-- **Related FR:** [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) (Plus/Pro entitlement); [FR-31](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-31) (hồ sơ tối thiểu); [FR-09](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) (đích áp dụng sau xác nhận).
+- **Related FR:** [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) (model/quota theo gói, không khóa capability); [FR-31](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-31) (hồ sơ tối thiểu); [FR-09](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) (đích áp dụng sau xác nhận).
 - **Relevant BR:** [BR-31](../srs/BUSINESS-RULES.md#br-31) (chặn khi thiếu hồ sơ); [BR-38](../srs/BUSINESS-RULES.md#br-38) (chỉ dùng công thức công khai).
 - **Relevant NFR:** [NFR-03](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03); [NFR-18](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-18); [NFR-25](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-25).
 
@@ -460,7 +460,7 @@ Preview được hiển thị; chưa có thay đổi nào được ghi vào Meal
 - [AC-34.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) — Tuân thủ loại ăn chay và danh sách dị ứng.
 - [AC-34.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) — Preview chưa làm thay đổi Lịch ăn khi chưa xác nhận.
 - [AC-34.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) — Chặn yêu cầu khi thiếu hồ sơ tối thiểu.
-- [AC-10.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Chỉ gói Plus hoặc Pro được yêu cầu thực đơn tuần thông thường FR-34.
+- [AC-10.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Capability phụ thuộc quyền nghiệp vụ, không phụ thuộc tier subscription.
 
 ---
 
@@ -468,23 +468,25 @@ Preview được hiển thị; chưa có thay đổi nào được ghi vào Meal
 ### UC-34.3 — Xác nhận áp dụng thực đơn AI vào Lịch ăn
 
 #### Goal
-Cho Member chủ động quyết định lưu preview AI vào một Lịch ăn tuần đã chọn.
+Cho Member có quyền với Meal Plan đích quyết định áp dụng preview AI theo Execution Mode hiện hành.
 
 #### Primary Actor
-`Member` thuộc gói Plus hoặc Pro.
+`Member` sở hữu Meal Plan đích.
 
 #### Trigger
-Member nhấn “Xác nhận áp dụng vào Lịch ăn” trên preview đã xem.
+Member có quyền sở hữu nhấn “Xác nhận áp dụng vào Lịch ăn” trong mode Có xác nhận; mode Tự động áp dụng theo yêu cầu rõ.
 
 #### Preconditions
 Có preview thực đơn AI hợp lệ được tạo cho Member; Member chọn tuần đích.
 
 #### Main Flow
-1. Member xác nhận áp dụng preview vào tuần đã chọn.
-2. Hệ thống ghi các món đề xuất vào Meal Plan của Member và thông báo áp dụng thành công.
+1. Với mode Hỏi đáp/Gợi ý, hệ thống chỉ giữ preview trên giao diện; Member tự lưu hoặc đổi mode cho yêu cầu mới.
+2. Với mode Có xác nhận, hệ thống hiển thị preview và chờ Member xác nhận trước khi ghi.
+3. Với mode Tự động và yêu cầu rõ, hệ thống ghi các món đề xuất sau khi kiểm tra lại quyền sở hữu và validation.
+4. Hệ thống chỉ báo thành công sau khi xác minh kết quả lưu; nếu một bước lỗi, giữ các bước đã lưu và hỏi trước khi tiếp tục phần còn lại.
 
 #### Postconditions
-Meal Plan được cập nhật chỉ sau hành động xác nhận chủ động của Member; Recipe Post nguồn không bị sửa.
+Meal Plan chỉ thay đổi theo mode áp dụng cho yêu cầu này và quyền ghi hiện hành; Recipe Post nguồn không bị sửa.
 
 #### Traceability
 - **Parent FR:** [FR-34](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34).
@@ -493,7 +495,7 @@ Meal Plan được cập nhật chỉ sau hành động xác nhận chủ độn
 - **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (quyền sở hữu Meal Plan).
 
 #### Acceptance Coverage
-- [AC-34.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) — Lưu thực đơn sau xác nhận chủ động.
+- [AC-34.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) — Áp dụng theo Execution Mode và chỉ ghi khi mode cho phép.
 
 ---
 
@@ -571,29 +573,29 @@ Khối công thức liên quan thông thường được hiển thị cho ngư�
 ### UC-47.2 — Yêu cầu Gemini gợi ý món ăn kèm hoặc biến tấu
 
 #### Goal
-Cho Member có entitlement Pro nhận gợi ý món ăn kèm hoặc biến tấu từ kho Recipe Post công khai.
+Cho Member nhận gợi ý món ăn kèm hoặc biến tấu từ kho Recipe Post công khai khi có quyền truy cập nội dung và đủ ngân sách AI.
 
 #### Primary Actor
-`Member` thuộc gói Pro.
+`Guest` hoặc `Member` xem Recipe Post công khai.
 
 #### Supporting Actors
 Google Gemini AI.
 
 #### Trigger
-Member nhấn “Nhờ AI gợi ý món ăn kèm / biến tấu”.
+Guest hoặc Member nhấn “Nhờ AI gợi ý món ăn kèm / biến tấu”.
 
 #### Preconditions
-Member đang xem Recipe Post công khai và có quyền AI tương ứng theo FR-10.
+Actor đang xem Recipe Post công khai; Guest chỉ dùng dữ liệu công khai/session, Member dùng dữ liệu được phép cho tài khoản hiện tại.
 
 #### Main Flow — AF-47.1 (Member yêu cầu AI gợi ý kết hợp món)
-1. Hệ thống kiểm tra Feature Entitlement trước khi gọi Gemini.
+1. Backend kiểm tra quyền truy cập Recipe Post công khai, model, consent (nếu cần) và ngân sách trước khi gọi Gemini.
 2. Hệ thống lấy tập ứng viên Recipe Post công khai có giới hạn, cùng loại chay với bài nguồn; phân bổ ứng viên giữa các thể loại món để hỗ trợ cả món ăn kèm và biến tấu.
 3. Hệ thống gửi metadata bài hiện tại cùng danh sách ứng viên cho Gemini.
 4. Gemini chọn ID trong tập ứng viên. Backend xác minh cấu trúc, loại ID trùng, đọc lại trạng thái công khai và loại chay; hệ thống hiển thị thẻ công thức thật trong khung riêng cùng giải thích rằng các món cùng loại chay được AI chọn để ăn kèm/đổi món. Metadata token thực tế được bàn giao cho FR-11; không lưu raw prompt.
 
 #### Exception Flows
-- **EF-47.1 — Guest yêu cầu AI:** Hệ thống yêu cầu đăng nhập.
-- **EF-47.2 — Member Free hoặc Plus yêu cầu AI:** Hệ thống thông báo cần Pro và điều hướng tới trang gói dịch vụ.
+- **EF-47.1 — Guest yêu cầu AI:** Hệ thống chỉ dùng nội dung công khai và quota phiên Guest; khi hết quota thì mời đăng ký.
+- **EF-47.2 — Member không đủ ngân sách hoặc model không hợp lệ:** Hệ thống chặn trước provider call và hướng dẫn xử lý quota/model phù hợp; không yêu cầu nâng gói để mở khóa capability.
 - **EF-47.3 — Gemini lỗi hoặc timeout:** Hệ thống thông báo lỗi thân thiện và ghi error log theo BR-04.
 
 #### Postconditions
@@ -601,8 +603,8 @@ Khi yêu cầu hợp lệ và Gemini thành công, kết quả xuất hiện tro
 
 #### Traceability
 - **Parent FR:** [FR-47](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-47).
-- **Related FR:** [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) (entitlement); [FR-11](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-11) (telemetry); [FR-13](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13) (thông tin gói).
-- **Relevant BR:** [BR-02](../srs/BUSINESS-RULES.md#br-02) (quyền Plus/Pro); [BR-03](../srs/BUSINESS-RULES.md#br-03) (kiểm tra entitlement trước khi gọi); [BR-04](../srs/BUSINESS-RULES.md#br-04) (provider error/telemetry); [BR-05](../srs/BUSINESS-RULES.md#br-05) (Guest phải đăng nhập).
+- **Related FR:** [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) (model/quota); [FR-11](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-11) (telemetry); [FR-13](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13) (thông tin gói).
+- **Relevant BR:** [BR-02](../srs/BUSINESS-RULES.md#br-02) (model/quota theo gói); [BR-03](../srs/BUSINESS-RULES.md#br-03) (kiểm tra quyền/model/ngân sách trước khi gọi); [BR-04](../srs/BUSINESS-RULES.md#br-04) (provider error/telemetry); [BR-05](../srs/BUSINESS-RULES.md#br-05) (giới hạn dữ liệu riêng tư Guest).
 - **Relevant NFR:** [NFR-03](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03) (thời gian phản hồi AI); [NFR-18](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-18) (provider fallback).
 
 #### Acceptance Coverage

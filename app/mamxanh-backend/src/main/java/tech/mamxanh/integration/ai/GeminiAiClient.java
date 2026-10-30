@@ -48,6 +48,15 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
         this(apiKey, HttpOptions.builder().timeout(DEFAULT_TIMEOUT_MILLIS).build());
     }
 
+    /** Verifies a model through Gemini's model metadata endpoint without generating billable content. */
+    public boolean verifyModel(String modelId) {
+        return request("MODEL_VALIDATION", "Gemini model validation failed", () -> {
+            var model = client.models.get(modelId, com.google.genai.types.GetModelConfig.builder().build());
+            if (model == null) throw AiProviderException.invalidResponse("Gemini did not return model metadata");
+            return model.supportedActions().orElse(List.of()).contains("generateContent");
+        });
+    }
+
     GeminiAiClient(String apiKey, HttpOptions httpOptions) {
         this.client = apiKey == null || apiKey.isBlank() ? null : Client.builder()
                 .apiKey(apiKey.strip())
@@ -110,6 +119,11 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
 
     @Override
     public ChatResult classifyChatScope(String systemInstruction, String prompt) {
+        return classifyChatScope(MODEL, systemInstruction, prompt);
+    }
+
+    @Override
+    public ChatResult classifyChatScope(String modelId, String systemInstruction, String prompt) {
         Schema schema = Schema.builder().type(Type.Known.OBJECT)
                 .properties(Map.of("decisionId", Schema.builder().type(Type.Known.STRING).build(),
                         "reasonId", Schema.builder().type(Type.Known.STRING).build()))
@@ -123,11 +137,11 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                 .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build())
                 .build();
         return request("CHAT_SCOPE", "Gemini chat scope classification failed", CHAT_SCOPE_TIMEOUT_MS, () -> {
-            var response = client.models.generateContent(MODEL, prompt, config);
+            var response = client.models.generateContent(modelId, prompt, config);
             String finishReason = response.candidates().orElse(List.of()).stream().findFirst()
                     .flatMap(candidate -> candidate.finishReason()).map(Object::toString).orElse("STOP");
             String text = response.text();
-            var usage = tokenUsage(response);
+            var usage = tokenUsage(response, modelId);
             if (!"STOP".equals(finishReason) || text == null || text.isBlank()) {
                 // Provider safety filters can suppress a classifier response for high-risk text.
                 // Fail closed into the Backend's prepared warning instead of surfacing a 502.
@@ -142,6 +156,11 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
 
     @Override
     public ChatResult answerChat(String systemInstruction, String prompt) {
+        return answerChat(MODEL, systemInstruction, prompt);
+    }
+
+    @Override
+    public ChatResult answerChat(String modelId, String systemInstruction, String prompt) {
         Schema recommendationSchema = Schema.builder().type(Type.Known.OBJECT)
                 .properties(Map.of("recipeId", Schema.builder().type(Type.Known.INTEGER).build(),
                         "reason", Schema.builder().type(Type.Known.STRING).build()))
@@ -162,14 +181,14 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                 .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build())
                 .build();
         return request("CHAT", "Gemini chat request failed", CHAT_ANSWER_TIMEOUT_MS, () -> {
-            var response = client.models.generateContent(MODEL, prompt, config);
+            var response = client.models.generateContent(modelId, prompt, config);
             String finishReason = response.candidates().orElse(List.of()).stream().findFirst()
                     .flatMap(candidate -> candidate.finishReason()).map(Object::toString).orElse("STOP");
             String text = response.text();
             if (!"STOP".equals(finishReason) || text == null || text.isBlank()) {
                 throw AiProviderException.invalidResponse("Gemini returned an incomplete chat response");
             }
-            var usage = tokenUsage(response);
+            var usage = tokenUsage(response, modelId);
             return new ChatResult(null, text.strip(), usage.promptTokens(), usage.responseTokens(), usage.totalTokens(), usage);
         });
     }
@@ -225,7 +244,11 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
     }
 
     private static AiTokenUsage tokenUsage(com.google.genai.types.GenerateContentResponse response) {
-        return response.usageMetadata().map(value -> new AiTokenUsage(MODEL, "STANDARD",
+        return tokenUsage(response, MODEL);
+    }
+
+    private static AiTokenUsage tokenUsage(com.google.genai.types.GenerateContentResponse response, String modelId) {
+        return response.usageMetadata().map(value -> new AiTokenUsage(modelId, "STANDARD",
                 value.promptTokenCount().orElse(null), value.candidatesTokenCount().orElse(null),
                 value.totalTokenCount().orElse(null), value.thoughtsTokenCount().orElse(0),
                 value.cachedContentTokenCount().orElse(0), value.toolUsePromptTokenCount().orElse(0)))

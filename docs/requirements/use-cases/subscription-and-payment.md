@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M08
 > **File:** `docs/requirements/use-cases/subscription-and-payment.md`
-> **Version:** v2.3.0
+> **Version:** v2.5.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-29
+> **Last Updated:** 2026-10-31
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -44,8 +44,8 @@ Cho phép người dùng xem và so sánh giá cùng quyền lợi của các g�
 Người dùng mở trang Bảng giá dịch vụ.
 
 #### Main Flow
-1. Hệ thống hiển thị ba gói: Free (0 VNĐ/tháng), Plus (49.000 VNĐ/tháng) và Pro (99.000 VNĐ/tháng).
-2. Hệ thống trình bày quyền lợi AI của từng gói theo bảng quyền lợi trong FR-13: Free có Chatbot và gợi ý món cơ bản; Plus bổ sung AI lập thực đơn tuần thông thường và theo dinh dưỡng. Pro kế thừa Plus, bổ sung AI soạn bài cho Chuyên gia, gợi ý món liên quan/biến tấu và AI đề xuất điều chỉnh dinh dưỡng.
+1. Hệ thống hiển thị ba gói: Free (0 VNĐ/tháng), Plus (99.000 VNĐ/tháng) và Pro (199.000 VNĐ/tháng), theo giá hiện hành do Admin cấu hình.
+2. Hệ thống trình bày quota token mỗi tháng, các Gemini model được Admin cho phép và giá hiện hành. Free dùng tháng dương lịch; Plus/Pro dùng tháng của chu kỳ gói. Nếu vượt quota tháng, Member có thể dùng AI Credit khi số dư đủ. Các chức năng AI không bị khóa theo tier; quyền role, ownership, eligibility và validation của capability gốc tiếp tục áp dụng.
 3. Hệ thống không hiển thị gói năm, mã giảm giá, khuyến mãi hoặc gói dùng thử trong bảng giá Phase 1.
 
 #### Postconditions
@@ -53,7 +53,7 @@ Người dùng đã xem được giá và quyền lợi để so sánh các gói
 
 #### Traceability
 - **Parent FR:** [FR-13](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13).
-- **Relevant BR:** [BR-01](../srs/BUSINESS-RULES.md#br-01) (quyền AI cơ bản của Guest/Member Free); [BR-02](../srs/BUSINESS-RULES.md#br-02) (quyền tính năng AI theo gói Plus/Pro).
+- **Relevant BR:** [BR-01](../srs/BUSINESS-RULES.md#br-01) (quyền AI theo capability); [BR-02](../srs/BUSINESS-RULES.md#br-02) (quota và model theo gói).
 - **Relevant NFR:** [NFR-13](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13) (giao diện tiếng Việt, responsive).
 
 #### Acceptance Coverage
@@ -77,7 +77,7 @@ Cổng thanh toán trực tuyến.
 Member đã đăng nhập nhấn “Nâng cấp gói” tại khu vực quản lý tài khoản hoặc từ thông báo nâng cấp khi truy cập tính năng nâng cao.
 
 #### Preconditions
-Member đã đăng nhập tài khoản hợp lệ; giao dịch được thực hiện cho một gói trả phí đang được niêm yết trong FR-13.
+Member đã đăng nhập tài khoản hợp lệ; giao dịch được thực hiện cho một gói trả phí đang được niêm yết trong FR-13. Giá và quota của đơn được chụp từ cấu hình tại thời điểm khởi tạo; thay đổi cấu hình không sửa đơn đang chờ thanh toán.
 
 #### Main Flow
 1. Member chọn Plus hoặc Pro và nhấn “Tiến hành thanh toán”.

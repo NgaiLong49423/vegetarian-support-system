@@ -46,7 +46,10 @@ public class PaymentSettlementService {
             if (status == PaymentStatus.CANCELLED || status == PaymentStatus.FAILED) payment.setStatus(status);
             return;
         }
-        SubscriptionTier tier = tierForAmount(amount);
+        SubscriptionTier tier = payment.getSubscriptionTier() == null
+                ? tierForAmount(amount) : payment.getSubscriptionTier();
+        long tokenQuota = payment.getTokenQuotaSnapshot() == null
+                ? tier.tokenQuota() : payment.getTokenQuotaSnapshot();
         LocalDateTime now = LocalDateTime.now(clock);
         subscriptions.findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE).ifPresent(existing -> {
             existing.setStatus(SubscriptionStatus.EXPIRED);
@@ -54,8 +57,9 @@ public class PaymentSettlementService {
             // Flush expiry before inserting the new row to satisfy the filtered unique ACTIVE index.
             subscriptions.saveAndFlush(existing);
         });
-        SubscriptionEntity subscription = subscriptions.saveAndFlush(
-                new SubscriptionEntity(userId, tier, now, now.plusDays(30)));
+        SubscriptionEntity subscription = new SubscriptionEntity(userId, tier, now, now.plusDays(30));
+        subscription.setTokenQuota(tokenQuota);
+        subscriptions.saveAndFlush(subscription);
         payment.setStatus(PaymentStatus.PAID);
         payment.setPaidAt(now);
         payment.setSubscriptionId(subscription.getId());

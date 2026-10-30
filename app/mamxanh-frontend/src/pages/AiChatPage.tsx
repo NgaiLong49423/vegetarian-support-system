@@ -12,10 +12,14 @@ import { Link } from "react-router-dom"
 
 import {
   Bot,
+  Check,
+  ChevronDown,
   Clock3,
+  Gauge,
   LoaderCircle,
   Send,
   ShieldAlert,
+  Sparkles,
   UserRound,
   X,
 } from "lucide-react"
@@ -25,6 +29,7 @@ import { useAuth } from "../components/AuthContext"
 import { useAiChat } from "../components/AiChatContext"
 
 import { recipesApi, type AiChatTurn } from "../api/recipes"
+import { subscriptionApi, type AiChatSettingsResponse } from "../api/subscription"
 
 import { asApiError } from "../lib/apiClient"
 import { anonymousRecipeViewer } from "../lib/recipeViewer"
@@ -57,6 +62,13 @@ export function AiChatPage() {
   const [upgradeTier, setUpgradeTier] = useState<AiPaidTier>("PLUS")
   const [errorAction, setErrorAction] = useState<"plans" | "login" | null>(null)
   const [retryQuestion, setRetryQuestion] = useState("")
+  const [chatSettings, setChatSettings] = useState<AiChatSettingsResponse | null>(null)
+  const [settingsLoading, setSettingsLoading] = useState(false)
+  const [settingsError, setSettingsError] = useState("")
+  const [modelSaving, setModelSaving] = useState(false)
+  const [modelMenuOpen, setModelMenuOpen] = useState(false)
+  const [usageOpen, setUsageOpen] = useState(false)
+  const modelMenuRef = useRef<HTMLDivElement>(null)
 
   const [sequence, setSequence] = useState(0)
 
@@ -197,6 +209,37 @@ export function AiChatPage() {
     setSequence(0)
   }, [recipeId, account?.id, isAuthenticated])
 
+  useEffect(() => {
+    if (!isOpen || account?.role === "ADMIN") return
+    let active = true
+    setSettingsLoading(true)
+    setSettingsError("")
+    const anonymousViewerId = isAuthenticated ? undefined : anonymousRecipeViewer()
+    subscriptionApi.getChatSettings(anonymousViewerId)
+      .then((settings) => { if (active) setChatSettings(settings) })
+      .catch((cause) => { if (active) setSettingsError(asApiError(cause).message) })
+      .finally(() => { if (active) setSettingsLoading(false) })
+    return () => { active = false }
+  }, [isOpen, account?.id, account?.role, isAuthenticated])
+
+  useEffect(() => {
+    if (!modelMenuOpen) return
+    const dismiss = (event: Event) => {
+      if (event.target instanceof Node && !modelMenuRef.current?.contains(event.target)) {
+        setModelMenuOpen(false)
+      }
+    }
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") setModelMenuOpen(false)
+    }
+    document.addEventListener("pointerdown", dismiss)
+    document.addEventListener("keydown", onKeyDown)
+    return () => {
+      document.removeEventListener("pointerdown", dismiss)
+      document.removeEventListener("keydown", onKeyDown)
+    }
+  }, [modelMenuOpen])
+
   if (!isOpen) return null
 
   if (account?.role === "ADMIN") {
@@ -285,6 +328,9 @@ export function AiChatPage() {
       setSequence(currentId + 1)
 
       setRetryQuestion("")
+      void subscriptionApi.getChatSettings(isAuthenticated ? undefined : anonymousRecipeViewer())
+        .then(setChatSettings)
+        .catch(() => undefined)
     } catch (cause) {
       if (version !== requestVersion.current) return
       const apiError = asApiError(cause)
@@ -297,9 +343,22 @@ export function AiChatPage() {
             : null,
       )
       if (apiError.code === "AI_TOKEN_QUOTA_EXCEEDED") setRetryQuestion("")
+      if (apiError.code === "AI_TOKEN_QUOTA_EXCEEDED") {
+        void subscriptionApi.getChatSettings(isAuthenticated ? undefined : anonymousRecipeViewer())
+          .then(setChatSettings)
+          .catch(() => undefined)
+      }
+      if (apiError.code === "AI_MODEL_SELECTION_REQUIRED") {
+        setError("Model đang chọn không còn được gói của bạn hỗ trợ. Hãy chọn model khác rồi gửi lại câu hỏi.")
+        setModelMenuOpen(true)
+        setUsageOpen(false)
+        void subscriptionApi.getChatSettings(isAuthenticated ? undefined : anonymousRecipeViewer())
+          .then(setChatSettings)
+          .catch(() => undefined)
+      }
       if (apiError.status === 401 || apiError.status === 403)
         setRetryQuestion("")
-      setError(
+      if (apiError.code !== "AI_MODEL_SELECTION_REQUIRED") setError(
         apiError.code === "AI_SUBSCRIPTION_REQUIRED"
           ? aiUpgradeMessage(apiError, "PLUS", "Tính năng AI bạn yêu cầu")
           : apiError.code === "AI_TOKEN_QUOTA_EXCEEDED" && !isAuthenticated
@@ -733,41 +792,164 @@ export function AiChatPage() {
           <label htmlFor="ai-chat-question" className="sr-only">
             Câu hỏi của bạn
           </label>
-          <div className="flex items-end gap-2 rounded-2xl border border-brand-200 bg-cream-soft p-2 focus-within:ring-2 focus-within:ring-brand-300">
+          <div ref={modelMenuRef} className="relative rounded-2xl border border-brand-200 bg-paper shadow-sm transition focus-within:border-brand-300 focus-within:ring-2 focus-within:ring-brand-100">
+            {modelMenuOpen && (
+              <section
+                id="chat-model-popover"
+                aria-label="Model Gemini và hạn mức sử dụng"
+                className="absolute bottom-[calc(100%+0.65rem)] left-0 z-30 w-[min(22rem,calc(100vw-3rem))] overflow-hidden rounded-2xl border border-brand-100 bg-paper text-ink shadow-xl"
+              >
+                <div className="border-b border-brand-50 px-4 py-3">
+                  <p className="text-sm font-bold">Model Gemini</p>
+                  <p className="mt-0.5 text-xs text-ink-muted">
+                    {chatSettings ? `Các model khả dụng trong gói ${chatSettings.tier === "GUEST" ? "dùng thử" : chatSettings.tier}` : "Model được quản lý theo gói AI của bạn"}
+                  </p>
+                </div>
+                {settingsLoading ? (
+                  <div className="flex items-center gap-2 px-4 py-4 text-xs text-ink-muted" role="status">
+                    <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" /> Đang tải model…
+                  </div>
+                ) : settingsError && !chatSettings ? (
+                  <div className="px-4 py-3">
+                    <p className="text-xs text-red-700">Không tải được danh sách model hoặc hạn mức.</p>
+                    <button
+                      type="button"
+                      className="mt-2 text-xs font-semibold text-brand-700 underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600"
+                      onClick={() => {
+                        setSettingsLoading(true)
+                        setSettingsError("")
+                        subscriptionApi.getChatSettings(isAuthenticated ? undefined : anonymousRecipeViewer())
+                          .then(setChatSettings)
+                          .catch((cause) => setSettingsError(asApiError(cause).message))
+                          .finally(() => setSettingsLoading(false))
+                      }}
+                    >Thử tải lại</button>
+                  </div>
+                ) : chatSettings ? (
+                  <>
+                    <div id="chat-model-menu" role="listbox" aria-label="Model được gói hỗ trợ" className="p-2">
+                      {chatSettings.models.map((model) => {
+                        const selected = chatSettings.selectedModelId === model.modelId
+                        return (
+                          <button
+                            key={model.modelId}
+                            type="button"
+                            role="option"
+                            aria-selected={selected}
+                            disabled={modelSaving || loading}
+                            onClick={() => {
+                              if (selected) return
+                              setModelSaving(true)
+                              setSettingsError("")
+                              subscriptionApi.selectChatModel(model.modelId)
+                                .then((settings) => {
+                                  setChatSettings(settings)
+                                  setModelMenuOpen(false)
+                                  setUsageOpen(false)
+                                })
+                                .catch((cause) => {
+                                  setSettingsError(asApiError(cause).message)
+                                  void subscriptionApi.getChatSettings(isAuthenticated ? undefined : anonymousRecipeViewer())
+                                    .then(setChatSettings)
+                                    .catch(() => undefined)
+                                })
+                                .finally(() => setModelSaving(false))
+                            }}
+                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-cream-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600 disabled:opacity-60"
+                          >
+                            <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${selected ? "bg-brand-50 text-brand-700" : "bg-stone-50 text-ink-muted"}`}>
+                              <Sparkles className="h-4 w-4" aria-hidden="true" />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-sm font-semibold">{model.displayName}</span>
+                              <span className="mt-0.5 block truncate text-[11px] text-ink-muted">{model.modelId}</span>
+                            </span>
+                            {model.isDefault && <span className="rounded-full bg-brand-50 px-2 py-1 text-[10px] font-semibold text-brand-700">Mặc định</span>}
+                            {selected && <Check className="h-4 w-4 shrink-0 text-brand-700" aria-label="Đang chọn" />}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {settingsError && <p className="mx-3 mb-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700" role="alert">{settingsError}</p>}
+                    <div className="border-t border-brand-50 p-2">
+                      <button
+                        type="button"
+                        aria-expanded={usageOpen}
+                        aria-controls="chat-ai-usage"
+                        onClick={() => setUsageOpen((open) => !open)}
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-ink-muted hover:bg-cream-soft hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600"
+                      >
+                        <Gauge className="h-4 w-4" aria-hidden="true" />
+                        <span className="flex-1">Xem hạn mức sử dụng</span>
+                        <ChevronDown className={`h-4 w-4 transition-transform ${usageOpen ? "rotate-180" : ""}`} aria-hidden="true" />
+                      </button>
+                      {usageOpen && (
+                        <div id="chat-ai-usage" className="mt-1 rounded-xl bg-cream-soft p-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-xs font-semibold text-ink">{chatSettings.tier === "GUEST" ? "Hạn mức dùng thử" : `Gói ${chatSettings.tier}`}</p>
+                              <p className="mt-1 text-[11px] text-ink-muted">Đã dùng {chatSettings.consumedTokens.toLocaleString("vi-VN")} / {chatSettings.quotaTokens.toLocaleString("vi-VN")} token</p>
+                            </div>
+                            <p className="shrink-0 text-right text-xs font-bold text-brand-700">Còn<br />{chatSettings.remainingTokens.toLocaleString("vi-VN")}</p>
+                          </div>
+                          <div className="mt-3 h-2 overflow-hidden rounded-full bg-paper" role="progressbar" aria-label="Mức sử dụng token trong kỳ hiện tại" aria-valuemin={0} aria-valuemax={chatSettings.quotaTokens} aria-valuenow={chatSettings.consumedTokens}>
+                            <div className="h-full rounded-full bg-brand-600 transition-[width]" style={{ width: `${chatSettings.quotaTokens ? Math.min(100, chatSettings.consumedTokens / chatSettings.quotaTokens * 100) : 0}%` }} />
+                          </div>
+                          <div className="mt-2 flex justify-between gap-2 text-[10px] text-ink-muted">
+                            <span>{chatSettings.tier === "GUEST" ? "Tính theo phiên khách" : "Hạn mức theo tháng"}</span>
+                            {chatSettings.resetsAt && <span>Cấp lại {new Date(chatSettings.resetsAt).toLocaleDateString("vi-VN")}</span>}
+                          </div>
+                          {chatSettings.tier === "GUEST" && <Link to="/dang-ky" onClick={closeChat} className="mt-3 inline-flex text-xs font-semibold text-brand-700 underline">Đăng ký để có hạn mức tháng</Link>}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : null}
+              </section>
+            )}
             <textarea
               id="ai-chat-question"
               value={question}
               onChange={(event) => setQuestion(event.target.value)}
               onKeyDown={(event) => {
-                if (
-                  event.key !== "Enter" ||
-                  event.shiftKey ||
-                  event.nativeEvent.isComposing
-                )
-                  return
-
+                if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return
                 event.preventDefault()
-
                 event.currentTarget.form?.requestSubmit()
               }}
               maxLength={1000}
               rows={2}
               placeholder="Nhập câu hỏi của bạn…"
-              className="max-h-36 min-h-12 flex-1 resize-y bg-transparent px-2 py-2 text-sm text-ink outline-none placeholder:text-ink-muted"
+              className="block max-h-36 min-h-20 w-full resize-y bg-transparent px-4 py-3 text-sm text-ink outline-none placeholder:text-ink-muted"
               disabled={loading}
             />
-            <button
-              type="submit"
-              aria-label="Gửi câu hỏi"
-              disabled={loading || !question.trim()}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-on-brand enabled:hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Send className="h-4 w-4" aria-hidden="true" />
-            </button>
+            <div className="flex items-center justify-between gap-2 border-t border-brand-50 px-2 py-2">
+              <div className="flex min-w-0 items-center gap-2">
+                <button
+                  type="button"
+                  aria-haspopup="dialog"
+                  aria-expanded={modelMenuOpen}
+                  aria-controls="chat-model-menu"
+                  onClick={() => setModelMenuOpen((open) => !open)}
+                  disabled={settingsLoading}
+                  className="flex min-w-0 items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs text-ink-muted transition hover:bg-cream-soft hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600 disabled:opacity-60"
+                >
+                  <Sparkles className="h-4 w-4 shrink-0 text-brand-700" aria-hidden="true" />
+                  <span className="min-w-0 truncate font-semibold text-ink">{chatSettings?.models.find((model) => model.modelId === chatSettings.selectedModelId)?.displayName ?? (settingsLoading ? "Đang tải model" : "Chọn model")}</span>
+                  <span className="hidden shrink-0 sm:inline">· {chatSettings?.tier === "GUEST" ? "Guest" : chatSettings?.tier ?? "AI"}</span>
+                  <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform ${modelMenuOpen ? "rotate-180" : ""}`} aria-hidden="true" />
+                </button>
+                <span className="text-[10px] text-ink-muted">{question.length}/1.000</span>
+              </div>
+              <button
+                type="submit"
+                aria-label="Gửi câu hỏi"
+                disabled={loading || !question.trim()}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-on-brand enabled:hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+              >
+                {loading ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Send className="h-4 w-4" aria-hidden="true" />}
+              </button>
+            </div>
           </div>
-          <p className="mt-1 text-right text-[11px] text-ink-muted">
-            {question.length}/1.000 ký tự
-          </p>
         </form>
       </section>
     </div>

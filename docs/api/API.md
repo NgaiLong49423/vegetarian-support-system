@@ -1,11 +1,23 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.51.0
+> **Version:** v0.53.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-30
+> **Last Updated:** 2026-10-31
 > **Status:** Active
 
 # API Integration Guide
+
+## Bảng gói AI và checkout theo cấu hình Admin
+
+- `GET /api/v1/subscriptions/plans` trả đúng ba tier cùng giá hiện hành từ cấu hình Admin, quota token tháng, Gemini model được bật và mô tả quyền chức năng theo role/capability. Không phân quyền chức năng AI theo Plus/Pro.
+- `POST /api/v1/subscriptions/checkout` dùng giá và quota đã đọc từ cấu hình tại thời điểm tạo đơn. Response `amountVnd` là số tiền payOS phải thu; Backend lưu tier/quota cùng đơn để webhook kích hoạt đúng quyền lợi đã mua.
+- Thay đổi giá/quota sau đó không đổi đơn `PENDING` hoặc chu kỳ đã kích hoạt. Checkout vẫn yêu cầu giao dịch dương và payOS xác minh đúng số tiền đã lưu.
+
+## Cấu hình AI của Administrator — Issue #212
+
+- `GET /api/v1/admin/ai-config` trả cấu hình gói Free/Plus/Pro, quota Free đang chờ áp dụng, Gemini model catalog và tỷ lệ AI Credit/top-up. Response đặt `Cache-Control: no-store`.
+- `PUT /api/v1/admin/ai-config` lưu cùng cấu hình; cần Bearer token của Administrator. API xác thực các giá trị gói, quyền/default model theo tier và khoảng nạp. Model ID mới được xác minh với Gemini trước khi ghi; nếu provider từ chối hoặc không khả dụng, cấu hình cũ được giữ nguyên.
+- Giá/quota Plus/Pro áp dụng cho lần kích hoạt/mua mới; quota Free đổi có hiệu lực từ đầu tháng Việt Nam tiếp theo. Các chu kỳ trả phí đang hoạt động giữ snapshot. Thay đổi tỷ lệ overage có hiệu lực ngay; tỷ lệ nạp và giới hạn nạp áp dụng cho đơn mới. Contract schema/status chi tiết được sinh trong `openapi.yaml` từ Backend runtime.
 
 ## Giám sát giao dịch gói tài khoản
 

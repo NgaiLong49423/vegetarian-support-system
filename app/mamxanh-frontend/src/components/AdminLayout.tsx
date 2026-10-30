@@ -13,6 +13,7 @@ import {
   Moon,
   ShieldAlert,
   ShieldCheck,
+  Settings2,
   Sun,
   Users,
   X,
@@ -54,6 +55,7 @@ const adminNavigationGroups: { title: string; items: AdminNavItem[] }[] = [
       { to: '/admin/nguoi-dung', label: 'Quản lý người dùng', icon: Users },
       { to: '/admin/giao-dich', label: 'Giám sát giao dịch', icon: CreditCard },
       { to: '/admin/ai-telemetry', label: 'Mức sử dụng AI', icon: Activity },
+      { to: '/admin/ai-config', label: 'Cấu hình AI', icon: Settings2 },
     ],
   },
 ];
@@ -68,6 +70,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const getPageTitle = () => {
     if (pathname === '/admin' || pathname === '/admin/tong-quan') return 'Bảng điều phối hệ thống';
     if (pathname.startsWith('/admin/ai-telemetry')) return 'Mức sử dụng AI';
+    if (pathname.startsWith('/admin/ai-config')) return 'Cấu hình AI';
     if (pathname.startsWith('/quan-tri/danh-muc')) return 'Danh mục nguyên liệu dinh dưỡng';
     if (pathname.startsWith('/admin/xet-duyet-chuyen-gia')) return 'Xét duyệt Chuyên gia';
     if (pathname.startsWith('/admin/bao-cao')) return 'Hậu kiểm nội dung';

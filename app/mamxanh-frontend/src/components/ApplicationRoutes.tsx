@@ -33,6 +33,7 @@ import { AdminDashboard } from "../pages/AdminDashboard"
 import { AiTelemetryPage } from "../pages/AiTelemetryPage"
 import { AdminPendingModule } from "../pages/AdminPendingModule"
 import { AdminTransactionsPage } from "../pages/AdminTransactionsPage"
+import { AdminAiConfigurationPage } from "../pages/AdminAiConfigurationPage"
 import { AdminReportsPage } from "../pages/AdminReportsPage"
 import { ExpertDirectoryPage } from "../pages/ExpertDirectoryPage"
 import { IngredientDirectoryPage } from "../pages/IngredientDirectoryPage"
@@ -129,6 +130,7 @@ export default function ApplicationRoutes() {
               />
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/ai-telemetry" element={<AiTelemetryPage />} />
+              <Route path="/admin/ai-config" element={<AdminAiConfigurationPage />} />
               <Route path="/admin/tong-quan" element={<AdminDashboard />} />
               <Route
                 path="/admin/bao-cao"

@@ -30,6 +30,7 @@ import tech.mamxanh.subscription.entity.SubscriptionStatus;
 import tech.mamxanh.subscription.entity.SubscriptionTier;
 import tech.mamxanh.subscription.repository.PaymentTransactionRepository;
 import tech.mamxanh.subscription.repository.SubscriptionRepository;
+import tech.mamxanh.subscription.repository.AiConfigurationRepository;
 
 @Service
 public class SubscriptionService {
@@ -44,6 +45,7 @@ public class SubscriptionService {
     private final Clock clock;
     private final PaymentSettlementService settlement;
     private final PaymentOrderService orders;
+    private final AiConfigurationRepository aiConfiguration;
 
     @Autowired
     public SubscriptionService(
@@ -51,7 +53,8 @@ public class SubscriptionService {
             PaymentTransactionRepository paymentTransactionRepository,
             UserRepository userRepository,
             PayOsClient payOsClient,
-            Clock clock, PaymentSettlementService settlement, PaymentOrderService orders) {
+            Clock clock, PaymentSettlementService settlement, PaymentOrderService orders,
+            AiConfigurationRepository aiConfiguration) {
         this.subscriptionRepository = subscriptionRepository;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.userRepository = userRepository;
@@ -59,6 +62,7 @@ public class SubscriptionService {
         this.clock = clock;
         this.settlement = settlement;
         this.orders = orders;
+        this.aiConfiguration = aiConfiguration;
     }
 
     /**
@@ -66,43 +70,49 @@ public class SubscriptionService {
      */
     @Transactional(readOnly = true)
     public List<PlanResponse> getAvailablePlans() {
+        var configuration = aiConfiguration.findConfiguration();
+        long freeQuota = aiConfiguration.currentFreeQuota(clock.instant());
         return List.of(
-                new PlanResponse(
-                        "FREE",
-                        0,
-                        "Gói FREE",
-                        "Gói trải nghiệm mặc định dành cho mọi tài khoản",
-                        List.of(
-                                "AI Chatbot hỗ trợ ẩm thực chay",
-                                "Gợi ý món theo nguyên liệu sẵn có"
-                        ),
-                        "Không thời hạn"
-                ),
-                new PlanResponse(
-                        SubscriptionTier.PLUS.name(),
-                        SubscriptionTier.PLUS.priceVnd(),
-                        SubscriptionTier.PLUS.displayName(),
-                        SubscriptionTier.PLUS.description(),
-                        List.of(
-                                "Toàn bộ quyền lợi gói FREE",
-                                "AI lập thực đơn tuần 7 ngày",
-                                "AI lập thực đơn theo dinh dưỡng cá nhân"
-                        ),
-                        "Tháng (không tự động gia hạn)"
-                ),
-                new PlanResponse(
-                        SubscriptionTier.PRO.name(),
-                        SubscriptionTier.PRO.priceVnd(),
-                        SubscriptionTier.PRO.displayName(),
-                        SubscriptionTier.PRO.description(),
-                        List.of(
-                                "Toàn bộ quyền lợi gói PLUS",
-                                "AI hỗ trợ soạn bài viết và công thức",
-                                "AI gợi ý biến tấu món chay sáng tạo"
-                        ),
-                        "Tháng (không tự động gia hạn)"
-                )
+                plan(configuration, "FREE", freeQuota, "Gói miễn phí với hạn mức AI hàng tháng"),
+                plan(configuration, "PLUS", null, "Thêm ngân sách AI hàng tháng cho tài khoản của bạn"),
+                plan(configuration, "PRO", null, "Ngân sách AI hàng tháng cao hơn cho tài khoản của bạn")
         );
+    }
+
+    private static PlanResponse plan(tech.mamxanh.subscription.entity.AiConfigurationSnapshot configuration,
+            String tier, Long overrideQuota, String description) {
+        var configured = configuration.plans().stream().filter(value -> value.tier().equals(tier)).findFirst()
+                .orElseThrow(() -> new IllegalStateException("AI plan configuration missing: " + tier));
+        long quota = overrideQuota == null ? configured.tokenQuota() : overrideQuota;
+        List<String> features = features(configuration, tier, quota);
+        String name = switch (tier) { case "FREE" -> "FREE"; case "PLUS" -> "PLUS"; default -> "PRO"; };
+        return new PlanResponse(tier, "FREE".equals(tier) ? 0 : configured.priceVnd(), name,
+                description, features, "FREE".equals(tier)
+                        ? "Tháng dương lịch" : "Mỗi tháng trong chu kỳ gói; không tự động gia hạn");
+    }
+
+    private static List<String> features(tech.mamxanh.subscription.entity.AiConfigurationSnapshot configuration,
+            String tier, long quota) {
+        List<String> features = new java.util.ArrayList<>();
+        features.add("Các chức năng AI theo vai trò và quyền nghiệp vụ của tài khoản");
+        features.add("Hạn mức " + String.format(java.util.Locale.forLanguageTag("vi-VN"), "%,d", quota) + " token mỗi tháng");
+        var allowedModels = configuration.models().stream().filter(model -> model.enabled())
+                .filter(model -> switch (tier) {
+                    case "FREE" -> model.freeAllowed();
+                    case "PLUS" -> model.plusAllowed();
+                    case "PRO" -> model.proAllowed();
+                    default -> false;
+                }).toList();
+        String modelNames = allowedModels.stream().map(model -> model.displayName()
+                + (switch (tier) {
+                    case "FREE" -> model.freeDefault();
+                    case "PLUS" -> model.plusDefault();
+                    case "PRO" -> model.proDefault();
+                    default -> false;
+                } ? " (mặc định)" : "")).collect(java.util.stream.Collectors.joining(", "));
+        if (!modelNames.isBlank()) features.add("Model Gemini: " + modelNames);
+        features.add("Có thể dùng AI Credit để tiếp tục khi vượt hạn mức tháng");
+        return List.copyOf(features);
     }
 
     /**
@@ -118,10 +128,16 @@ public class SubscriptionService {
         payOsClient.validateCheckoutConfiguration();
 
         long orderCode = generateOrderCode();
-        int amount = tier.priceVnd();
+        var configuredPlan = aiConfiguration.findConfiguration().plans().stream()
+                .filter(plan -> plan.tier().equals(tier.name())).findFirst()
+                .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_RESPONSE_INVALID));
+        int amount = configuredPlan.priceVnd();
+        if (amount <= 0) throw new AppException(ErrorCode.VALIDATION_FAILED, "Gói trả phí phải có giá lớn hơn 0đ.");
         String description = "Nang cap " + tier.name();
 
         PaymentTransactionEntity transaction = new PaymentTransactionEntity(user.getId(), String.valueOf(orderCode), amount);
+        transaction.setSubscriptionTier(tier);
+        transaction.setTokenQuotaSnapshot(configuredPlan.tokenQuota());
         transaction.setCreatedAt(LocalDateTime.now(clock));
         orders.create(transaction);
 
@@ -170,7 +186,7 @@ public class SubscriptionService {
                 userId, SubscriptionStatus.ACTIVE);
 
         if (activeSubOpt.isEmpty()) {
-            return MySubscriptionResponse.free();
+            return freeSubscription();
         }
 
         SubscriptionEntity sub = activeSubOpt.get();
@@ -182,28 +198,13 @@ public class SubscriptionService {
             sub.setUpdatedAt(now);
             subscriptionRepository.save(sub);
             log.info("Subscription for user {} expired at {}. Reverting to FREE.", userId, sub.getEndsAt());
-            return MySubscriptionResponse.free();
+            return freeSubscription();
         }
 
         // Match the AI guard's starts_at <= now < ends_at window without cancelling a future period.
-        if (!sub.isActiveAt(now)) return MySubscriptionResponse.free();
+        if (!sub.isActiveAt(now)) return freeSubscription();
 
-        // AC-13.7: Display paid plan and expiration date
-        List<String> unlockedFeatures = (sub.getTier() == SubscriptionTier.PRO)
-                ? List.of(
-                        "AI Chatbot hỗ trợ ẩm thực chay",
-                        "Gợi ý món theo nguyên liệu sẵn có",
-                        "AI hỗ trợ soạn bài viết và công thức",
-                        "AI gợi ý biến tấu món chay sáng tạo",
-                        "AI lập thực đơn tuần 7 ngày",
-                        "AI lập thực đơn theo dinh dưỡng cá nhân"
-                )
-                : List.of(
-                        "AI Chatbot hỗ trợ ẩm thực chay",
-                        "Gợi ý món theo nguyên liệu sẵn có",
-                        "AI lập thực đơn tuần 7 ngày",
-                        "AI lập thực đơn theo dinh dưỡng cá nhân"
-                );
+        List<String> unlockedFeatures = planFeatures(sub.getTier().name(), sub.getTokenQuota());
 
         return new MySubscriptionResponse(
                 sub.getTier().name(),
@@ -213,6 +214,17 @@ public class SubscriptionService {
                 sub.getEndsAt(),
                 unlockedFeatures
         );
+    }
+
+    private MySubscriptionResponse freeSubscription() {
+        return new MySubscriptionResponse("FREE", "ACTIVE", true, null, null,
+                planFeatures("FREE", null));
+    }
+
+    private List<String> planFeatures(String tier, Long quotaSnapshot) {
+        var configuration = aiConfiguration.findConfiguration();
+        long quota = quotaSnapshot == null ? aiConfiguration.currentFreeQuota(clock.instant()) : quotaSnapshot;
+        return features(configuration, tier, quota);
     }
 
     @Transactional(readOnly = true)
@@ -234,8 +246,9 @@ public class SubscriptionService {
                         tx.getStatus().name(),
                         tx.getCreatedAt(),
                         tx.getPaidAt(),
-                        tx.getAmountVnd() == SubscriptionTier.PRO.priceVnd() ? "PRO"
-                                : tx.getAmountVnd() == SubscriptionTier.PLUS.priceVnd() ? "PLUS" : null,
+                        tx.getSubscriptionTier() != null ? tx.getSubscriptionTier().name()
+                                : tx.getAmountVnd() == 99_000 ? "PRO"
+                                : tx.getAmountVnd() == 49_000 ? "PLUS" : null,
                         tx.getStatus() == PaymentStatus.PAID && tx.getSubscriptionId() != null
                                 && purchasedSubscriptions.containsKey(tx.getSubscriptionId())
                                 ? purchasedSubscriptions.get(tx.getSubscriptionId()).getEndsAt() : null

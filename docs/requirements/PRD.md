@@ -1,6 +1,6 @@
 > **Document:** Product Requirements Document — Mâm Xanh
 > **File:** `docs/requirements/PRD.md`
-> **Version:** v2.6.0
+> **Version:** v2.8.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-30
 > **Status:** Active
@@ -49,7 +49,7 @@ Free, Plus và Pro là hạng gói dịch vụ (Subscription Tier) của Custome
 | Dinh dưỡng | Tính từ gram nguyên liệu/khẩu phần và danh mục có nguồn USDA/NIH; 100% nguyên liệu công khai đều có đơn vị đo lường và tỷ lệ quy đổi xác định (chặn xuất bản nếu thiếu quy đổi); BMI chỉ tham khảo, không tự kê calorie/macro target từ BMI hoặc weight goal |
 | Cộng đồng | Bình luận/reply tối đa 5 cấp, cha bị xóa thành tombstone, lưu công thức (Saved Recipe), báo cáo nội dung; đánh giá chất lượng công thức bằng bình chọn Like / Dislike dành cho Customer/Expert đã đăng nhập (`RECIPE_REACTION`, Guest chỉ có quyền xem); hiển thị tỷ lệ % hài lòng `👍 {like_percentage}%` trên thẻ món ăn (tương tự Samsung Food); lưu vết lượt xem chi tiết có khử trùng lặp (`RECIPE_VIEW`); không áp dụng Like cho bình luận/reply |
 | Địa điểm | Không có chức năng tìm hoặc quản lý nhà hàng; Google Maps không phải dependency hiện hành. |
-| Gói AI và Credit | Quota khởi đầu Guest 20.000 token/session, Free 50.000/tháng, Plus 300.000/tháng (99.000đ), Pro 600.000/tháng (199.000đ). Guest/Free dùng Flash-Lite; Plus/Pro chọn Flash-Lite hoặc Flash. 1.000đ = 1.000 Credit; 1.000 token overage = 400 Credit; Credit không hết hạn. Admin cấu hình được giá, quota, model và tỷ lệ. |
+| Gói AI và Credit | Quota pilot Guest 20.000 token/session, Free 50.000/tháng, Plus 300.000/tháng (99.000đ), Pro 600.000/tháng (199.000đ); Free có giá 0đ. Model pilot mặc định: Guest theo Free/Flash-Lite, Plus/Pro chọn Flash-Lite hoặc Flash. Admin cấu hình quota, giá Plus/Pro, Gemini catalog/access/default theo tier và tỷ lệ; mọi model tier có thể đổi theo cấu hình Admin. 1.000đ = 1.000 Credit; 1.000 token overage = 400 Credit; Credit không hết hạn. |
 
 ## 5. Ngoài phạm vi MVP
 
@@ -68,7 +68,7 @@ Free, Plus và Pro là hạng gói dịch vụ (Subscription Tier) của Custome
 
 ## 6. Nguyên tắc chất lượng
 
-- Backend thực thi authentication, authorization, validation, feature entitlement và ownership; frontend không phải lớp bảo vệ duy nhất.
+- Backend thực thi authentication, authorization, validation, ownership và model/quota checks; Frontend không phải lớp bảo vệ duy nhất. Gói AI không cấp thêm quyền nghiệp vụ hoặc khóa riêng capability.
 - Secret và credential của Gemini, Azure, Maps hoặc thanh toán không được đưa vào frontend, source code hay Git.
 - Kết quả AI và dịch vụ ngoài phải có trạng thái loading/error rõ ràng, có rate limit kỹ thuật chống spam; khi request thất bại do lỗi mạng/provider, hệ thống phản hồi thân thiện và ghi log kỹ thuật.
 - Không lưu lịch sử hội thoại AI theo account; telemetry chỉ lưu lượng token tiêu thụ và không giữ raw prompt, lưu trữ trong 90 ngày. Báo cáo kiểm duyệt và quyết định xử lý được lưu trữ trực tiếp trên Report.

@@ -3,6 +3,7 @@ package tech.mamxanh.notification.service;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -33,5 +34,19 @@ public class NotificationService {
                 "Đơn đang chờ của bạn được đóng vì tài khoản đã được cấp vai trò Chuyên gia trực tiếp.",
                 "/dang-ky-chuyen-gia?applicationId=" + applicationId,
                 LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC));
+    }
+
+    /** Persists one in-app notice per changed AI setting for every active Customer and Expert. */
+    public void aiConfigurationChanged(List<String> changes) {
+        LocalDateTime now = LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC);
+        for (String message : changes) {
+            jdbc.update("""
+                    INSERT INTO [NOTIFICATION]
+                        (user_id,notification_type,title,message,target_path,created_at)
+                    SELECT user_id,?,?,?,?,?
+                    FROM [USER]
+                    WHERE account_status = 'ACTIVE' AND role IN ('CUSTOMER','EXPERT')
+                    """, "AI_CONFIG_CHANGED", "Cập nhật cấu hình AI", message, "/goi-ai", now);
+        }
     }
 }

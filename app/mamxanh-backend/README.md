@@ -1,11 +1,19 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.53.0
+> **Version:** v0.55.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-30
+> **Last Updated:** 2026-10-31
 > **Status:** Active  
 
 # Backend Workspace
+
+## Cấu hình AI do Admin quản lý — Issue #212
+
+- `GET`/`PUT /api/v1/admin/ai-config` chỉ dành cho Administrator. Cấu hình và dữ liệu pilot được lưu qua migration V33; API không trả thông tin xác thực Gemini.
+- `AI_PLAN_CONFIGURATION` là nguồn giá/quota cho bảng gói và checkout. Thay đổi quota Free được áp dụng đầu tháng kế tiếp theo `Asia/Ho_Chi_Minh`; chu kỳ Plus/Pro đã kích hoạt tiếp tục giữ `SUBSCRIPTION.token_quota` snapshot. Migration V34 lưu tier/quota khi tạo đơn để đơn chờ giữ nguyên điều kiện lúc mua.
+- `AI_GEMINI_MODEL_CONFIGURATION` lưu catalog Gemini, tier access và model mặc định. Model ID mới được kiểm tra với Gemini trước khi lưu; quyền lựa chọn tại mọi luồng AI thuộc #210.
+- `AI_CREDIT_CONFIGURATION` lưu tỷ lệ quy đổi và giới hạn nạp cho #211/#213. Cấp Credit qua ledger và tạo đơn nạp thuộc các lát tiếp theo.
+- Các thay đổi đã lưu tạo thông báo in-app cho Customer/Expert đang hoạt động; Admin có thể chọn email bất đồng bộ tới email đã xác minh.
 
 ### Giám sát giao dịch gói tài khoản
 

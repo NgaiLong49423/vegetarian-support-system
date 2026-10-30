@@ -22,6 +22,7 @@ import tech.mamxanh.subscription.entity.SubscriptionEntity;
 import tech.mamxanh.subscription.entity.SubscriptionStatus;
 import tech.mamxanh.subscription.entity.SubscriptionTier;
 import tech.mamxanh.subscription.repository.AiTokenUsageLedgerRepository;
+import tech.mamxanh.subscription.repository.AiConfigurationRepository;
 import tech.mamxanh.subscription.repository.SubscriptionRepository;
 
 class AiTokenQuotaServiceTest {
@@ -29,14 +30,16 @@ class AiTokenQuotaServiceTest {
     private final AiTokenUsageLedgerRepository ledger = mock(AiTokenUsageLedgerRepository.class);
     private final SubscriptionRepository subscriptions = mock(SubscriptionRepository.class);
     private final CurrentUserService users = mock(CurrentUserService.class);
+    private final AiConfigurationRepository configuration = mock(AiConfigurationRepository.class);
     private final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
-    private final AiTokenQuotaService service = new AiTokenQuotaService(ledger, subscriptions, users, clock);
+    private final AiTokenQuotaService service = new AiTokenQuotaService(ledger, subscriptions, users, configuration, clock);
 
     @BeforeEach
     void setUp() {
         when(subscriptions.findByUserIdAndStatus(anyLong(), eq(SubscriptionStatus.ACTIVE))).thenReturn(Optional.empty());
         when(ledger.sumMemberTokens(anyLong(), any(), any())).thenReturn(0L);
         when(ledger.sumGuestTokens(anyString())).thenReturn(0L);
+        when(configuration.currentFreeQuota(any())).thenReturn(50_000L);
         when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(7L, Role.CUSTOMER));
     }
 
@@ -61,6 +64,13 @@ class AiTokenQuotaServiceTest {
         assertThat(usage.quotaTokens()).isEqualTo(50_000);
         assertThat(usage.periodStartsAt()).isEqualTo(Instant.parse("2026-09-30T17:00:00Z"));
         assertThat(usage.resetsAt()).isEqualTo(Instant.parse("2026-10-31T17:00:00Z"));
+    }
+
+    @Test
+    void freeQuotaReadsTheAdminConfiguration() {
+        when(configuration.currentFreeQuota(NOW)).thenReturn(42_000L);
+
+        assertThat(service.getMyUsage(7L).quotaTokens()).isEqualTo(42_000L);
     }
 
     @Test
