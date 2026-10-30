@@ -26,7 +26,7 @@ import { expertApplicationsApi, type ApplicationStatus, type ExpertApplication }
 const types = [
   ['VEGAN', 'Thuần chay'], ['LACTO', 'Lacto'], ['OVO', 'Ovo'], ['LACTO_OVO', 'Lacto-Ovo'], ['MACROBIOTIC', 'Thực dưỡng'],
 ];
-const statuses: Array<'' | ApplicationStatus> = ['', 'PENDING', 'APPROVED', 'REJECTED'];
+const statuses: Array<'' | ApplicationStatus> = ['', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'];
 const errorText = (error: unknown) => {
   const api = asApiError(error);
   if (api.status === 409) return api.message || 'Đơn đã thay đổi. Tải lại dữ liệu trước khi tiếp tục.';
@@ -201,7 +201,7 @@ export function ExpertApplicationPage() {
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Bộ lọc hiện tại</p>
               <p className="truncate text-lg font-extrabold text-ink">
-                {filter === 'PENDING' ? 'Chờ duyệt' : filter === 'APPROVED' ? 'Đã duyệt' : filter === 'REJECTED' ? 'Đã từ chối' : 'Tất cả'}
+                {filter === 'PENDING' ? 'Chờ duyệt' : filter === 'APPROVED' ? 'Đã duyệt' : filter === 'REJECTED' ? 'Đã từ chối' : filter === 'CANCELLED' ? 'Đã kết thúc' : 'Tất cả'}
               </p>
             </div>
           </div>
@@ -274,7 +274,7 @@ export function ExpertApplicationPage() {
                 ? 'border-l-leaf-500'
                 : app.status === 'REJECTED'
                   ? 'border-l-rose-500'
-                  : 'border-l-brand-500';
+                  : app.status === 'CANCELLED' ? 'border-l-ink-muted' : 'border-l-brand-500';
             return (
               <Card
                 key={app.id}
@@ -369,8 +369,8 @@ export function ExpertApplicationPage() {
                     <p className="mt-1 break-all text-sm text-ink-muted">{selected.email}</p>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <span className="rounded-md bg-brand-50 px-2 py-1 text-xs font-semibold text-ink-muted">Mã hồ sơ #{selected.id}</span>
-                      <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${selected.status === 'PENDING' ? 'bg-amber-100 text-amber-800' : selected.status === 'APPROVED' ? 'bg-leaf-100 text-leaf-800' : 'bg-rose-100 text-rose-800'}`}>
-                        {selected.status === 'PENDING' ? 'Chờ duyệt' : selected.status === 'APPROVED' ? 'Đã phê duyệt' : 'Đã từ chối'}
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${selected.status === 'PENDING' ? 'bg-amber-100 text-amber-800' : selected.status === 'APPROVED' ? 'bg-leaf-100 text-leaf-800' : selected.status === 'CANCELLED' ? 'bg-gray-100 text-gray-700' : 'bg-rose-100 text-rose-800'}`}>
+                        {selected.status === 'PENDING' ? 'Chờ duyệt' : selected.status === 'APPROVED' ? 'Đã phê duyệt' : selected.status === 'CANCELLED' ? 'Đã kết thúc' : 'Đã từ chối'}
                       </span>
                     </div>
                   </div>
@@ -432,7 +432,7 @@ export function ExpertApplicationPage() {
                         </div>
                       )}
                     </div>
-                    <p className="mt-3 text-xs leading-5 text-ink-muted">Tệp chỉ dùng để thẩm định đơn; ảnh thẻ không hiển thị hoặc cập nhật ảnh đại diện hồ sơ công khai.</p>
+                    <p className="mt-3 text-xs leading-5 text-ink-muted">Tệp chỉ dùng để thẩm định đơn, ảnh thẻ không hiển thị hoặc cập nhật ảnh đại diện hồ sơ công khai.</p>
                   </div>
                 )}
                 <div className="rounded-2xl border border-brand-100 bg-cream-soft/70 p-4 sm:col-span-2">
@@ -563,7 +563,7 @@ export function ExpertApplicationPage() {
         {account.role === 'EXPERT' && <p className="mt-3 rounded-xl bg-leaf-50 p-3 text-sm text-leaf-800">Tài khoản đã được phê duyệt Chuyên gia.</p>}
         <div className="mt-4 space-y-3">{loading ? <p className="text-sm text-ink-muted">Đang tải lịch sử…</p> : history.map((app) => <article key={app.id} className="rounded-xl border border-brand-100 p-3">
           <p className="font-semibold">#{app.id} · {app.status}</p><p className="text-xs text-ink-muted">Gửi lúc {new Date(app.submittedAt).toLocaleString('vi-VN')}</p>
-          {app.status === 'REJECTED' && app.adminNote && <p className="mt-2 rounded-lg bg-rose-50 p-2 text-sm text-rose-800"><strong>Lý do:</strong> {app.adminNote}</p>}
+          {app.adminNote && app.status !== 'APPROVED' && <p className={`mt-2 rounded-lg p-2 text-sm ${app.status === 'REJECTED' ? 'bg-rose-50 text-rose-800' : 'bg-gray-50 text-ink-soft'}`}><strong>{app.status === 'CANCELLED' ? 'Lý do kết thúc:' : 'Lý do:'}</strong> {app.adminNote}</p>}
         </article>)}{!loading && history.length === 0 && <p className="text-sm text-ink-muted">Bạn chưa có hồ sơ nào.</p>}</div>
         {!loading && totalPages > 1 && <div className="mt-4 flex items-center justify-center gap-3"><Button variant="outline" disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>Trang trước</Button><span className="text-sm">Trang {page + 1}/{totalPages}</span><Button variant="outline" disabled={page + 1 >= totalPages} onClick={() => setPage((value) => value + 1)}>Trang sau</Button></div>}
       </Card>}
@@ -574,7 +574,7 @@ export function ExpertApplicationPage() {
           <label className="block text-sm font-semibold">Tóm tắt công thức sở trường (30–2.000 ký tự)<textarea required minLength={30} maxLength={2000} value={summary} onChange={(e) => setSummary(e.target.value)} rows={4} className="mt-1 w-full rounded-xl border border-brand-200 p-3" /></label>
           <label className="block text-sm font-semibold">Đường dẫn portfolio<input type="url" maxLength={500} value={portfolioUrl} onChange={(e) => setPortfolioUrl(e.target.value)} className="mt-1 w-full rounded-xl border border-brand-200 p-3" /><span className="mt-1 block text-xs font-normal text-ink-muted">Không bắt buộc. Chấp nhận HTTP/HTTPS, tối đa 500 ký tự.</span></label>
           <div className="space-y-4 rounded-2xl border border-brand-100 bg-cream-soft/50 p-4">
-            <div><h3 className="text-sm font-bold text-ink">Tài liệu bổ trợ <span className="font-normal text-ink-muted">(không bắt buộc)</span></h3><p className="mt-1 text-xs text-ink-muted">Chỉ Admin dùng để thẩm định; không hiển thị trên hồ sơ công khai.</p></div>
+            <div><h3 className="text-sm font-bold text-ink">Tài liệu bổ trợ <span className="font-normal text-ink-muted">(không bắt buộc)</span></h3><p className="mt-1 text-xs text-ink-muted">Chỉ Admin dùng để thẩm định, không hiển thị trên hồ sơ công khai.</p></div>
             <div className="grid gap-4 md:grid-cols-2">
               <label className="block min-w-0 text-sm font-semibold">Chứng chỉ hoặc văn bằng chuyên môn<input ref={certificateInputRef} type="file" accept="application/pdf,image/jpeg,image/png" onChange={(event) => { const file = event.target.files?.[0] ?? null; if (file && file.size > 5 * 1024 * 1024) { setError('Tài liệu chứng chỉ tối đa 5 MB.'); event.target.value = ''; setCertificateFile(null); return; } setCertificateFile(file); setError(''); }} className="mt-1 block w-full rounded-xl border border-brand-200 bg-paper p-2 text-sm file:mr-2 file:rounded-lg file:border-0 file:bg-brand-100 file:px-3 file:py-2 file:font-semibold file:text-brand-700" /><span className="mt-1 block text-xs font-normal text-ink-muted">PDF, JPEG hoặc PNG · tối đa 5 MB. Không tải giấy tờ tùy thân.</span></label>
               <label className="block min-w-0 text-sm font-semibold">Ảnh thẻ 3×4 cho hồ sơ<input ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0] ?? null; if (file && file.size > 2 * 1024 * 1024) { setError('Ảnh thẻ đính kèm đơn tối đa 2 MB.'); event.target.value = ''; setApplicationAvatarFile(null); return; } setApplicationAvatarFile(file); setError(''); }} className="mt-1 block w-full rounded-xl border border-brand-200 bg-paper p-2 text-sm file:mr-2 file:rounded-lg file:border-0 file:bg-brand-100 file:px-3 file:py-2 file:font-semibold file:text-brand-700" /><span className="mt-1 block text-xs font-normal text-ink-muted">Ảnh chân dung theo khung 3:4 · JPEG, PNG hoặc WebP · tối đa 2 MB. Chỉ gắn với đơn, không đổi ảnh đại diện hồ sơ.</span></label>

@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -30,13 +31,19 @@ class SavedRecipeIntegrationTest extends AbstractIntegrationTest {
     private long hiddenId;
     private long deletedId;
 
-    @BeforeEach
-    void prepareFixtures() {
+    /** Keep this suite's recipe fixtures from leaking into Auth tests sharing the container. */
+    @AfterEach
+    void cleanupFixtures() {
         jdbcTemplate.update("DELETE FROM [SAVED_RECIPE] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?)",
                 EMAIL_PREFIX + "%@test.local");
         jdbcTemplate.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?)",
                 EMAIL_PREFIX + "%@test.local");
         jdbcTemplate.update("DELETE FROM [USER] WHERE email LIKE ?", EMAIL_PREFIX + "%@test.local");
+    }
+
+    @BeforeEach
+    void prepareFixtures() {
+        cleanupFixtures();
 
         authorId = insertUser("author", "EXPERT", "ACTIVE");
         memberId = insertUser("member", "CUSTOMER", "ACTIVE");

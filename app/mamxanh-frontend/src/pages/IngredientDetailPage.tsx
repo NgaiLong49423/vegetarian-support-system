@@ -5,6 +5,7 @@ import { PageContainer } from '../components/Layout';
 import { Button, EmptyState } from '../components/ui';
 import { IngredientImage } from '../components/IngredientImage';
 import { IngredientRecipes } from '../components/IngredientRecipes';
+import { IngredientUnitConverter } from '../components/IngredientUnitConverter';
 import { discoveryApi, type PublicIngredientDetail, type PublicIngredientNutrition } from '../api/discovery';
 import { asApiError } from '../lib/apiClient';
 
@@ -100,6 +101,7 @@ export function IngredientDetailPage() {
         </dl>}
         <p className="mt-5 border-t border-brand-100 pt-4 text-xs leading-5 text-ink-muted">Giá trị có thể chưa đầy đủ và thay đổi theo loại nguyên liệu, giống và cách chế biến. Đây là thông tin tham khảo, không thay thế tư vấn dinh dưỡng cá nhân.</p>
       </section>
+      <IngredientUnitConverter key={`unit-converter-${ingredient.ingredientId}`} ingredientId={ingredient.ingredientId} ingredientName={ingredient.name} />
       <IngredientRecipes key={ingredient.ingredientId} ingredientId={ingredient.ingredientId} name={ingredient.name} />
     </article>}
   </PageContainer>;

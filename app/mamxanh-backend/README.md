@@ -1,30 +1,37 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.42.0
+> **Version:** v0.52.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-26
+> **Last Updated:** 2026-10-30
 > **Status:** Active  
 
 # Backend Workspace
+
+## Admin account management — FR-06
+
+`/api/v1/admin/users` is restricted to the `ADMIN` role and provides bounded, paginated account search, global summary counts, minimal details and combined account history. Status and `CUSTOMER`/`EXPERT` role changes require a 10–500 character reason and write an audit row in the same transaction. Administrator accounts are view-only. Directly granting `EXPERT` cancels a pending expert application and sends an in-app notification. Flyway V30 owns the audit table and `CANCELLED` application status.
 
 ## Tổng hợp nguyên liệu — FR-54 / Issue #54
 
 `shopping/service/ShoppingAggregationService.aggregate(List<ShoppingAggregationLine>)` là biên tính toán nội bộ cho FR-53. Đầu vào gồm `ingredientId` (bắt buộc đối với dòng công thức; `null` chỉ dành cho mặt hàng thủ công), `customName`, `quantity` đã được caller tính theo khẩu phần, và `unitId`. Kết quả `ShoppingAggregationResult` chứa các nhóm danh mục, các dòng tổng hợp và cảnh báo có chỉ số dòng nguồn. Service không ghi Shopping List và không gọi AI/API ngoài.
 
-- Chỉ gộp cùng `ingredientId`; tên/nhóm lấy từ catalog. Tự quy đổi đúng hai cặp chuẩn `g/kg`, `ml/L`, trả đơn vị cơ sở khi có trong catalog. Cùng đơn vị đếm giữ nguyên đơn vị; không suy diễn rằng mọi đơn vị `COUNT` tương đương nhau.
-- Khác nhóm đơn vị chỉ gộp được qua `INGREDIENT_UNIT_CONVERSION` đúng nguyên liệu, với cả nguyên liệu, đơn vị và tỷ lệ còn hoạt động. Một tỷ lệ ml hoặc L có thể dùng qua quan hệ chuẩn 1 L = 1000 ml; các tỷ lệ đang mâu thuẫn khiến nhóm đó giữ riêng và có cảnh báo. Muỗng/thìa không tự đổi sang ml chỉ dựa vào `base_factor`.
-- Mặt hàng thủ công chỉ gộp tên giống nhau không phân biệt hoa thường sau trim và cùng `unitId`; không gộp với dòng catalog hoặc tự đổi g/kg cho mặt hàng thủ công. Dòng không tương thích được giữ riêng với `incompatibleUnits=true`; kết quả phân nhóm theo danh mục, mặt hàng thủ công thuộc `Nhóm khác`.
-- Phép cộng/nhân/chia chuẩn dùng `BigDecimal`, không làm tròn hoặc ghi về precision của SQL ở bước tổng hợp. FR-53 phải xử lý precision khi lưu để không biến lượng nhỏ thành 0. Dòng thiếu số lượng, số lượng <= 0, nguyên liệu/đơn vị không tồn tại hoặc tên thủ công không hợp lệ được bỏ qua kèm cảnh báo; đầu vào rỗng trả kết quả rỗng, thiếu toàn bộ danh sách trả `VALIDATION_FAILED`.
+- Chỉ gộp cùng `ingredientId`; tên/nhóm lấy từ catalog. Chuẩn hóa nội bộ `mg/g/kg` và `ml/L/tsp/tbsp/cup` theo `UNIT.base_factor`, đưa khối lượng về `g`, thể tích về `ml`. Đếm chỉ gộp khi trùng đúng đơn vị.
+- Khác nhóm đơn vị chỉ gộp qua `INGREDIENT_UNIT_CONVERSION` active cho đúng nguyên liệu và đơn vị; nhóm thể tích có thể quy về gram trên ml chỉ khi các tỷ lệ đang active không mâu thuẫn. Admin nhập hệ số trực tiếp; bản ghi chỉ giữ cờ xấp xỉ, không yêu cầu provenance.
+- Mặt hàng thủ công chỉ gộp tên giống nhau sau trim và cùng `unitId`; không gộp với dòng catalog. Dòng không tương thích giữ riêng với `incompatibleUnits=true`.
+- Phép tính trung gian dùng `BigDecimal`. FR-53 lưu quantity đến 6 chữ số thập phân để lượng như 1 mg (0.001 g) không bị làm tròn thành 0. Dòng không hợp lệ được bỏ qua kèm cảnh báo; đầu vào rỗng trả kết quả rỗng.
 - Catalog và quy đổi được đọc theo batch qua public service của module `nutrition`; tham chiếu lịch sử ngừng sử dụng vẫn có tên/đơn vị để hiển thị, nhưng không dùng tỷ lệ đã ngừng sử dụng để gộp khác dimension.
 
 **Ranh giới tích hợp:** engine thuộc FR-54 / PR #150, chưa phải baseline `develop`. Nhánh FR-53 kế thừa engine để triển khai caller bên dưới; PR #150 phải được tích hợp trước khi FR-53 sẵn sàng merge. Engine không tự xử lý đăng nhập, quyền sở hữu hoặc lưu checklist.
 
 ## Checklist mua sắm — FR-53 / Issue #53
 
-- `/api/v1/shopping-lists` cung cấp danh sách theo tài khoản, đọc checklist, đổi tên/xóa danh sách, thêm/sửa/xóa item, đặt trạng thái đã mua và xóa các item đã mua. Backend lấy chủ sở hữu từ phiên đăng nhập; Guest/Admin/tài khoản khóa và truy cập danh sách của người khác bị chặn. Xóa danh sách xóa provenance trước item, không xóa Meal Plan hoặc Recipe Post nguồn.
+- `/api/v1/shopping-lists` cung cấp danh sách theo tài khoản, đọc checklist, đổi tên/xóa danh sách, thêm/xóa nguyên liệu gộp, sửa phần thêm thủ công, đặt trạng thái đã mua và xóa các item đã mua. Tổng item giữ mức sàn từ các lần xuất hiện công thức đầy đủ; lượng mất liên kết do item khác bị xóa vẫn nằm trong tổng nhưng có thể giảm trước lượng Member thêm. Xóa item chuyển các đóng góp sibling của cùng lần công thức sang `UNKNOWN`, để món thiếu nguyên liệu bị ẩn mà số lượng còn lại vẫn quản lý được. Backend lấy chủ sở hữu từ phiên đăng nhập; Guest/Admin/tài khoản khóa và truy cập danh sách của người khác bị chặn.
 - `POST /api/v1/shopping-lists` tạo checklist rỗng loại `MANUAL` với tên Member nhập; danh sách độc lập với Meal Plan và danh sách công thức `PERSONAL`, trả `201` và mở được ngay để thêm mặt hàng thủ công. Migration V21 mở rộng constraint loại danh sách; snapshot schema được đồng bộ.
 - `POST /from-meal-plan` tạo checklist độc lập từ cả tuần hoặc các ngày đã chọn, tính lượng theo khẩu phần dự kiến, tổng hợp qua FR-54 rồi lưu transaction. Tên danh sách thể hiện ngày thực đơn, không ngụ ý ngày mua nguyên liệu.
 - `POST /{listId}/recipes` thêm các nguyên liệu được chọn của một công thức công khai cùng các mặt hàng thủ công tùy chọn vào danh sách Member; `POST /from-recipe` tạo danh sách `MANUAL` có tên và lưu các mục trong cùng transaction. Bỏ `selectedIngredientIds` để chọn toàn bộ nguyên liệu; hỗ trợ khẩu phần 1–50, kiểm tra quyền sở hữu và không cộng trùng đóng góp công thức. Sửa/ẩn/xóa bài không tự thay đổi lượng hoặc trạng thái checklist; nguồn được đọc theo nội dung hiện hành hoặc hiển thị unavailable, theo thiết kế đã chốt trong #90.
+- Danh sách mới lưu provenance theo từng lần xuất hiện của công thức. `GET /{listId}` gom `recipeSources` theo công thức và trả ảnh bìa, tổng khẩu phần cùng số lần xuất hiện; từng `Item.sources` phân biệt `RECIPE`, `MANUAL` và `UNKNOWN`, gồm `sourceId` và khẩu phần khi có. `PUT /{listId}/recipes/{recipeId}/servings` chỉ cập nhật nguồn đầy đủ, phân bổ theo tỷ lệ khẩu phần gốc và tính lại các đóng góp liên quan, giữ phần chênh lượng chỉnh thủ công và không cập nhật Meal Plan. Endpoint nguồn riêng cũ vẫn được giữ tương thích. Metadata khẩu phần thiếu ở danh sách cũ được giữ null.
+- `DELETE /{listId}/recipes/{recipeId}` gỡ mọi lần xuất hiện đầy đủ của một món khỏi đúng Shopping List đó, xóa đóng góp công thức và tính lại item từ các nguồn còn lại; item không còn nguồn sẽ bị xóa. Recipe Post và Meal Plan không thay đổi.
+- Chỉ `ingredientId` đã chọn từ catalog mới tạo nguyên liệu được hỗ trợ; tên gõ tự do hoặc sai tên không được tự liên kết. Phần thêm thủ công được lưu thành source riêng, hiển thị trong `Item.sources`, sửa qua `PUT /{listId}/manual-sources/{sourceId}` và xóa qua `DELETE /{listId}/manual-sources/{sourceId}`. `recipeSources` chỉ chứa công thức có đủ các dòng nguyên liệu tại thời điểm thêm và mọi đóng góp vẫn liên kết với checklist; xóa item giữ bản ghi nguồn Recipe Post không khả dụng bằng `shopping_list_item_id = NULL`.
 - Migration shopping chưa merge được chuyển sang V18 (đơn vị `cuộn`) và V19 (loại danh sách/đóng góp Recipe Post), giữ nguyên V16/V17 dinh dưỡng của develop. Không sửa Flyway history, reset database dùng chung hoặc thay đổi diagram.
 - Clipboard/TXT thuộc FR-55, được bàn giao riêng. Scalar và generated OpenAPI mô tả hợp đồng shopping hiện hành.
 
@@ -168,9 +175,11 @@ Các biến môi trường cho xác thực, email và tích hợp AI (giá trị
 
 ### Tài khoản demo local
 
+Expert demo Nguyễn Hoàng Phúc có bộ 15 bài tráng miệng, thức uống và bánh chay với mô tả, hướng dẫn theo bước, định lượng gram và ảnh minh họa riêng cho từng bài; seed ưu tiên các nguyên liệu catalog ít xuất hiện.
+
 Danh sách 54 công thức mẫu có seed gia vị/định lượng riêng cho hai phần ăn, tất cả nguyên liệu dùng gram và hướng dẫn được đồng bộ. Seed ảnh ánh xạ 209 nguyên liệu sang WebP do Frontend phục vụ, chỉ điền URL trống để giữ ảnh Admin đã tải lên. Quy tắc định lượng và lệnh kiểm chứng chạy lại seed nằm trong [Database Workspace Guide](../../database/README.md#gia-vị-định-lượng-và-ảnh-minh-họa-demo). Chạy profile `local` hoặc Compose để cập nhật có giữ dữ liệu; không cần bật `local-reset`.
 
-Khi Flyway nạp seed trong profile `local`, Backend tạo 25 tài khoản đã xác minh email: 20 Customer (`demo-customer@mamxanh.local`, `demo-new-member@mamxanh.local`, `demo-applicant@mamxanh.local` và `demo-customer-04` đến `demo-customer-20`), 4 Expert (`demo-expert@mamxanh.local` và `demo-expert-02` đến `demo-expert-04`) cùng `demo-admin@mamxanh.local`. Bốn Expert demo có ảnh chân dung tổng hợp do Frontend host trong `public/avatars/experts/`; seed chỉ gán avatar cục bộ khi hồ sơ chưa có avatar hoặc vẫn dùng avatar demo, không ghi đè ảnh đã tải lên storage. Tất cả Customer có hồ sơ hoàn chỉnh, BMI hiện tại từ chiều cao/cân nặng và bốn tuần lịch ăn; hai tài khoản onboarding cũ nay cũng là Customer hoàn chỉnh. Seed có thêm công thức, nguyên liệu chưa xác minh dinh dưỡng và hoạt động Like/Dislike/View/Follow để trình diễn các bảng xếp hạng. Tài khoản Expert đầu tiên quản lý bộ công thức hiện có và có gói Pro demo hiệu lực một năm tính từ lần seed thiết lập subscription. Đặt `MAMXANH_DEMO_PASSWORD` trong file `.env` local; một mật khẩu được BCrypt hóa riêng khi ứng dụng khởi động và gán cho cả 25 tài khoản.
+Khi Flyway nạp seed trong profile `local`, Backend tạo 25 tài khoản đã xác minh email: 20 Customer (`demo-customer@mamxanh.local`, `demo-new-member@mamxanh.local`, `demo-applicant@mamxanh.local` và `demo-customer-04` đến `demo-customer-20`), 4 Expert (`demo-expert@mamxanh.local` và `demo-expert-02` đến `demo-expert-04`) cùng `demo-admin@mamxanh.local`. Bốn Expert demo có ảnh chân dung tổng hợp do Frontend host trong `public/avatars/experts/`; seed chỉ gán avatar cục bộ khi hồ sơ chưa có avatar hoặc vẫn dùng avatar demo, không ghi đè ảnh đã tải lên storage. Tất cả Customer có hồ sơ hoàn chỉnh, BMI hiện tại từ chiều cao/cân nặng và bốn tuần lịch ăn; Expert chính có hồ sơ dinh dưỡng tổng hợp để trình diễn form FR-35 trong profile `local`. Fixture này dùng dữ liệu giả lập, đặt consent/eligibility cho tài khoản demo và chỉ điền hồ sơ khi các trường còn trống, không ghi đè hồ sơ đã nhập. Hai tài khoản onboarding cũ nay cũng là Customer hoàn chỉnh. Seed có thêm công thức, nguyên liệu chưa xác minh dinh dưỡng và hoạt động Like/Dislike/View/Follow để trình diễn các bảng xếp hạng. Tài khoản Expert đầu tiên quản lý bộ công thức hiện có và có gói Pro demo hiệu lực một năm tính từ lần seed thiết lập subscription. Đặt `MAMXANH_DEMO_PASSWORD` trong file `.env` local; một mật khẩu được BCrypt hóa riêng khi ứng dụng khởi động và gán cho cả 25 tài khoản.
 
 Seed repeatable chỉ dùng với profile `local`. Trong IntelliJ/Maven, profile `local,local-reset` mặc định xóa và dựng lại `MamXanhDB` trước khi chạy migration; Docker Compose giữ volume/database khi `down`/`up`, và chạy lại seed an toàn. Reset SQL volume Compose sẽ dựng lại toàn bộ schema và fixture. Không dùng tài khoản hoặc mật khẩu demo ngoài máy local.
 

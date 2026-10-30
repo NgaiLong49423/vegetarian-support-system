@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.45.0
+> **Version:** v0.48.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-27
+> **Last Updated:** 2026-10-29
 > **Status:** Active
 
 # API Integration Guide
@@ -369,9 +369,9 @@ Dùng `GET /api/v1/recipes/form-options` để lấy mã/nhãn loại ăn chay v
 
 `POST /api/v1/recipes/ai-assistance` yêu cầu Bearer token của Expert đang hoạt động và gói Plus/Pro còn hiệu lực. Backend xác thực entitlement trước khi gọi Gemini. Generated OpenAPI runtime là hợp đồng chi tiết cho request/response và các lỗi.
 
-Request chọn `contentType` là `DESCRIPTION` hoặc `INSTRUCTIONS`, gửi tiêu đề, mã danh mục, loại ăn chay, khẩu phần và các dòng nguyên liệu gồm `ingredientId`, `unitId`, `quantity`. Backend đối chiếu ingredient ID với danh mục đang hoạt động, yêu cầu Gemini trả các bước có cấu trúc và chỉ chấp nhận ingredient ID trong request. Nội dung không hợp lệ hoặc nhắc tên nguyên liệu có trong danh mục nhưng không được chọn bị từ chối.
+Request chọn `contentType` là `DESCRIPTION` hoặc `INSTRUCTIONS`, gửi tiêu đề, mã danh mục, loại ăn chay, khẩu phần và các dòng nguyên liệu gồm `ingredientId`, `unitId`, `quantity`. Backend đối chiếu ingredient ID đầu vào với danh mục đang hoạt động, rồi hướng prompt để Gemini ưu tiên nguyên liệu tác giả đã nhập. Nội dung có thể gợi ý thêm nguyên liệu để tác giả rà soát/chỉnh sửa; Backend không từ chối chỉ vì nội dung nhắc thêm nguyên liệu. Với hướng dẫn, ingredient ID dùng để hiển thị tên nguyên liệu đã nhập; nguyên liệu gợi ý thêm được nêu trong text.
 
-Response trả `contentType` và `content` để Frontend điền trực tiếp vào trường có thể chỉnh sửa. API không tạo RecipePost hoặc bản nháp; chỉ thao tác đăng/lưu hiện có mới ghi công thức sau khi tác giả chủ động xác nhận. Free, hết hạn hoặc thiếu subscription nhận `403 AI_SUBSCRIPTION_REQUIRED` trước khi provider được gọi. Gemini thiếu cấu hình/lỗi nhận `503 AI_PROVIDER_UNAVAILABLE`; kết quả sai định dạng/giới hạn nhận `502 AI_RESPONSE_INVALID`. Các lỗi không ngăn tác giả tự nhập và đăng theo validation hiện hành.
+Response trả `contentType` và `content` để Frontend điền trực tiếp vào trường có thể chỉnh sửa. API không tạo RecipePost hoặc bản nháp; chỉ thao tác đăng/lưu hiện có mới ghi công thức sau khi tác giả rà soát và chủ động xác nhận. Free, hết hạn hoặc thiếu subscription nhận `403 AI_SUBSCRIPTION_REQUIRED` trước khi provider được gọi. Gemini thiếu cấu hình/lỗi nhận `503 AI_PROVIDER_UNAVAILABLE`; kết quả sai định dạng hoặc vượt giới hạn cấu trúc nhận `502 AI_RESPONSE_INVALID`. Các lỗi không ngăn tác giả tự nhập và đăng theo validation hiện hành; công thức sau khi đăng tiếp tục theo cơ chế hậu kiểm hiện hành.
 
 Backend gọi model cố định `gemini-3.8-flash` qua Google Gen AI Java SDK; khóa chỉ được đọc từ `GEMINI_API_KEY` ở Backend. Không gửi API key xuống Frontend. Không ghi prompt thô vào log.
 
@@ -515,6 +515,7 @@ Generated OpenAPI là contract chi tiết. Guest và Member có thể đọc dan
 | `GET /api/v1/ingredients` | Danh sách phân trang chỉ gồm catalog `ACTIVE`, có tìm kiếm và lọc nhóm; mỗi mục trả `ingredientId`, `name`, `ingredientGroup`, `imageUrl`. FE tải các trang để duyệt/tìm/chọn nhiều nguyên liệu. |
 | `GET /api/v1/ingredients/groups` | Tên và số nguyên liệu đang hoạt động trong từng nhóm. |
 | `GET /api/v1/ingredients/{ingredientId}` | Chi tiết nguyên liệu đang hoạt động, bổ sung `nutrition` với giá trị trên 100 g. ID không tồn tại và nguyên liệu `INACTIVE` đều trả `404 INGREDIENT_NOT_FOUND`; ID không hợp lệ trả `400 VALIDATION_FAILED`. |
+| `GET /api/v1/ingredients/{ingredientId}/units` | Danh sách đơn vị công thức đang hỗ trợ cho nguyên liệu active: `mg/g/kg` luôn có; `ml/L/tsp/tbsp/cup` và `quả/củ/miếng` chỉ có khi conversion active. Trả `id`, `code`, `name`, `dimension`, `gramsPerUnit`, `approximate`. Dùng dữ liệu này cho bộ chọn đơn vị trong công thức và công cụ quy đổi hai chiều ở `/nguyen-lieu/:ingredientId`; Backend vẫn xác thực lại khi lưu công thức. |
 
 `nutrition` giữ các chỉ tiêu và đơn vị sau; không nhân theo khẩu phần món hoặc tự suy diễn tỷ lệ quy đổi:
 

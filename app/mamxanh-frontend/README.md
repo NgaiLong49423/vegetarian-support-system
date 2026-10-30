@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.48.0
+> **Version:** v1.61.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-26
+> **Last Updated:** 2026-10-28
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -16,11 +16,12 @@
 
 ### Checklist đi chợ — FR-53 / Issue #53
 
-- `/di-cho` đọc và lưu checklist thật theo tài khoản; Guest cần đăng nhập, Administrator không có thao tác cá nhân. Member có thể đổi tên hoặc xóa mọi danh sách của mình; xóa danh sách yêu cầu xác nhận, xóa checklist cùng nguồn đóng góp nhưng giữ Lịch ăn và công thức nguồn. Thêm mặt hàng thủ công, sửa lượng/đơn vị, tick/bỏ tick, xóa từng mục hoặc xóa mục đã mua đều dùng API; lỗi giữ dữ liệu để thử lại.
+- `/di-cho` đọc và lưu checklist thật theo tài khoản; Guest cần đăng nhập, Administrator không có thao tác cá nhân. Member có thể đổi tên hoặc xóa mọi danh sách của mình; xóa danh sách yêu cầu xác nhận, xóa checklist cùng nguồn đóng góp nhưng giữ Lịch ăn và công thức nguồn. Menu ba chấm trên thẻ món cho phép chỉnh nhanh khẩu phần hoặc gỡ món khỏi danh sách; cả hai thao tác xác nhận trước và liệt kê lượng nguyên liệu tăng/giảm hoặc bị xóa. Xóa chỉ gỡ công thức khỏi Shopping List hiện tại, không xóa bài blog hoặc Meal Plan. Khi thêm mặt hàng hoặc sửa số lượng/đơn vị, Member xem lại và xác nhận trước khi lưu; thông báo nêu rõ tên mặt hàng và lượng tăng/giảm nếu quy đổi được, còn khi không quy đổi an toàn thì hiển thị số cũ và mới. Phần đóng góp thủ công cũng xác nhận tên mặt hàng và lượng tăng/giảm khi sửa. Khi thêm mặt hàng, chỉ chọn kết quả catalog mới nhận ảnh và đơn vị riêng của nguyên liệu; tên không được chọn là mặt hàng tùy chỉnh dùng đơn vị chuẩn. Với nguyên liệu từ công thức, Member sửa được tổng lượng nhưng không thấp hơn lượng bắt buộc từ các nguồn đầy đủ; giảm tổng ưu tiên giảm phần `UNKNOWN`, sau đó giảm phần tự thêm. Chi tiết nguồn phân biệt công thức, một tổng `UNKNOWN` duy nhất và phần Member tự thêm; sau khi xóa item, tải lại checklist để thẻ món thiếu nguyên liệu biến mất ngay.
 - Member có thể tạo danh sách rỗng bằng tên tự chọn ngay tại `/di-cho`, không cần Lịch ăn hoặc công thức; checklist mở sẵn để thêm mặt hàng thủ công. Loại `MANUAL` được phân biệt với danh sách Meal Plan và danh sách công thức `PERSONAL`.
 - Từ Lịch ăn có thể tạo theo cả tuần hoặc các ngày chọn; nhãn danh sách thể hiện ngày thực đơn. Từ menu dấu ba chấm trên từng thẻ ở Khám phá/Đã lưu hoặc nút trên trang chi tiết công thức, Member chọn một danh sách của mình (kể cả danh sách từ Lịch ăn) hoặc tạo danh sách có tên mới ngay trong hộp thoại; có thể chọn/bỏ chọn từng nguyên liệu, thêm mặt hàng thủ công và chỉnh khẩu phần 1–50. Thêm thành công ngay trên trang chi tiết giữ Member ở lại bài viết và cho liên kết mở danh sách; từ menu thẻ, hộp thoại vẫn mở trang danh sách sau khi thêm. Guest được yêu cầu đăng nhập, Admin không có thao tác.
-- Nguồn công thức giữ lượng/đơn vị lúc thêm, hiển thị nội dung hiện hành hoặc unavailable khi bài không còn công khai. Thêm lại công thức không cộng trùng. Hành vi theo AC-53.6 và thiết kế nguồn đã chốt trong #90.
-- Dòng nguyên liệu trong checklist dùng `imageUrl` từ danh mục nguyên liệu để hiển thị ảnh minh họa; nguyên liệu thủ công, chưa có ảnh hoặc ảnh tải lỗi hiển thị trạng thái “Chưa có ảnh”.
+- Nguồn công thức giữ lượng/đơn vị lúc thêm, hiển thị nội dung hiện hành hoặc unavailable khi bài không còn công khai. Thêm lại công thức không cộng trùng. Recipe carousel chỉ hiện món có đủ nguyên liệu bắt buộc; nguyên liệu thêm thủ công không tự gắn vào món. Hành vi theo AC-53.6 và thiết kế nguồn đã chốt trong #90.
+- Trang danh sách hiển thị món nguồn trong dãy thẻ cuộn ngang gồm ảnh, tên và tổng khẩu phần; các lần xuất hiện của cùng công thức được gom thành một thẻ, không hiện ngày/bữa. Chạm thẻ mở trang chi tiết công thức; tại mục Nguyên liệu & Định lượng, Member chỉnh tổng khẩu phần ngay trên trang. Lưu xong Backend cập nhật nguyên liệu và điều hướng về đúng danh sách mua sắm để tải dữ liệu mới. Nguồn công thức của từng nguyên liệu nằm trong nút tròn xem chi tiết cạnh sửa/xóa; hộp thoại gom các lần đóng góp cùng món và hiển thị tổng khẩu phần của món. Dữ liệu khẩu phần thiếu không được suy đoán.
+- Dòng nguyên liệu trong checklist dùng `imageUrl` từ danh mục nguyên liệu để hiển thị ảnh minh họa; nguyên liệu thủ công, chưa có ảnh hoặc ảnh tải lỗi hiển thị trạng thái “Chưa có ảnh”. Chi tiết nguyên liệu phân biệt lượng công thức với từng phần Member thêm; chỉ phần Member thêm có thể sửa/xóa riêng.
 - Bản dựng FR-53 không phụ thuộc component export chưa bàn giao của FR-55; clipboard/TXT sẽ được nối ở PR riêng. Backend FR-53 phụ thuộc engine FR-54 / PR #150 chưa merge.
 
 ### Danh bạ Chuyên gia và chọn nguyên liệu — FR-61 / FR-62
@@ -28,6 +29,7 @@
 - Menu Khám phá mở các route Công thức, Danh mục nguyên liệu và Chuyên gia trên desktop/mobile. Cộng đồng vẫn được mở từ nút “Xem cộng đồng” trên Trang chủ; route và deep links hiện có được giữ nguyên.
 - `/chuyen-gia` đọc danh sách Expert đang hoạt động từ `GET /api/v1/experts`, hỗ trợ tìm/phân trang, mở hồ sơ hiện có và follow/unfollow qua API FR-59. Guest được chuyển tới đăng nhập; Admin chỉ duyệt.
 - `/danh-muc-nguyen-lieu` tải nguyên liệu đang hoạt động từ `GET /api/v1/ingredients`, hiển thị ảnh/nhãn thiếu ảnh, cho xem chi tiết tại `/nguyen-lieu/:ingredientId` qua `GET /api/v1/ingredients/{ingredientId}` và giữ luồng chọn nhiều để mở Khám phá. Chi tiết hiện giá trị dinh dưỡng có sẵn trên 100 g; giá trị `null` hiện là chưa có dữ liệu.
+- Trang chi tiết có bộ quy đổi hai chiều dựa trên `GET /api/v1/ingredients/{ingredientId}/units`; hai phía chỉ chọn được đơn vị nguyên liệu đang hỗ trợ, thay đổi số lượng/đơn vị cập nhật kết quả theo gram trên đơn vị, và dữ liệu ước tính được ghi chú.
 - Chi tiết phân biệt nguyên liệu không tồn tại (`404`, có đường về danh mục) với lỗi kết nối/dịch vụ (có Thử lại), có trạng thái thiếu toàn bộ dinh dưỡng và giữ tối đa bốn chữ số thập phân cho B12. Ảnh trống hoặc tải lỗi hiện nhãn chưa có ảnh. Các kiểm tra UI dùng API intercept nằm trong `ingredient-directory.spec.ts` và `ingredient-detail.spec.ts`; chúng không xác nhận SQL Server runtime.
 - Trang chi tiết có lưới bài công thức chứa đúng nguyên liệu từ API discovery: nhãn lọc loại ăn chay chuẩn, sắp xếp mới nhất/được yêu thích, Xem thêm và mở từng bài. Tên/ảnh nguyên liệu trong danh mục và tên nguyên liệu ở chi tiết công thức đều mở trang nguyên liệu. Nhãn là bộ lọc loại công thức, chưa phải phân loại độ phù hợp chế độ ăn riêng của nguyên liệu.
 - Bốn Expert demo trong profile `local` dùng ảnh chân dung tổng hợp được host trong `public/avatars/experts/`; avatar người dùng tải lên được giữ nguyên.

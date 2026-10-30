@@ -315,6 +315,7 @@ class RecipeServiceTest {
         ReflectionTestUtils.setField(countingUnit, "id", 2);
         ReflectionTestUtils.setField(countingUnit, "active", true);
         ReflectionTestUtils.setField(countingUnit, "dimension", "COUNT");
+        ReflectionTestUtils.setField(countingUnit, "code", "quả");
         when(ingredientReferenceRepository.findAllByIdInAndStatus(any(), org.mockito.ArgumentMatchers.eq("ACTIVE")))
                 .thenReturn(List.of(ingredient));
         when(unitReferenceRepository.findAllById(List.of(2))).thenReturn(List.of(countingUnit));
@@ -332,6 +333,7 @@ class RecipeServiceTest {
         ReflectionTestUtils.setField(countingUnit, "id", 2);
         ReflectionTestUtils.setField(countingUnit, "active", true);
         ReflectionTestUtils.setField(countingUnit, "dimension", "COUNT");
+        ReflectionTestUtils.setField(countingUnit, "code", "quả");
         when(unitReferenceRepository.findAllById(List.of(2))).thenReturn(List.of(countingUnit));
         when(conversionRepository.existsByIngredientIdAndUnitIdAndActiveTrue(11L, 2)).thenReturn(true);
         when(recipeRepository.save(any(RecipePostEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));

@@ -83,8 +83,9 @@ test('Administrator manages ingredient nutrition through the real Frontend, Back
 
     await page.reload();
     await page.getByPlaceholder('Tìm tên nguyên liệu').fill(ingredientName);
-    await expect(page.getByText(ingredientName, { exact: true })).toBeVisible();
-    await expect(page.getByText('Có dữ liệu tính toán', { exact: true })).toBeVisible();
+    const ingredientRow = page.getByRole('row').filter({ hasText: ingredientName });
+    await expect(ingredientRow).toBeVisible();
+    await expect(ingredientRow.getByText('Hỗ trợ dinh dưỡng', { exact: true })).toBeVisible();
     expect(sql(`SELECT CONCAT(CONVERT(varchar(20), energy_kcal_100g), '|', CONVERT(varchar(1), nutrition_supported)) FROM INGREDIENT WHERE name = ${ingredientSqlName}`)).toBe('100.00|1');
   } finally {
     sql(`DELETE FROM INGREDIENT WHERE name = ${ingredientSqlName}`);

@@ -16,6 +16,6 @@ public class ShoppingListItemEntity {
     @Column(name = "ingredient_id") private Long ingredientId;
     @Column(name = "unit_id", nullable = false) private Integer unitId;
     @Column(name = "custom_ingredient_name", length = 200) private String customIngredientName;
-    @Column(nullable = false, precision = 10, scale = 2) private BigDecimal quantity;
+    @Column(nullable = false, precision = 18, scale = 6) private BigDecimal quantity;
     @Column(name = "is_bought", nullable = false) private boolean bought;
 }

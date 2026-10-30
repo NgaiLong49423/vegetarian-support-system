@@ -102,6 +102,10 @@ async function setup(
     }),
   )
 
+  await page.route("**/api/v1/recipes/ingredient-options**", (route) =>
+    route.fulfill({ json: [] }),
+  )
+
   await page.route("**/api/v1/shopping-lists**", async (route) => {
     const request = route.request(),
       url = new URL(request.url()),
@@ -368,6 +372,41 @@ test("shopping selected days validates selection, shows creation failure, retrie
   })
 })
 
+for (const width of [375, 1440]) {
+  test(`all shopping items move individually below the bought divider at ${width}px`, async ({ page }) => {
+    const state = await setup(page)
+    state.list.items = [row(1), row(2, { name: "Muối" }), row(3, { name: "Gạo", ingredientGroup: "Ngũ cốc" })]
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto("/di-cho?listId=42")
+    await page.getByRole("button", { name: /Tất cả \(/ }).click()
+    const bought = page.getByRole("region", { name: "Đồ đã mua", exact: true })
+    await expect(bought).toHaveCount(0)
+    await page.getByRole("button", { name: "Đánh dấu Nước tương g", exact: true }).click()
+    await expect(bought.getByTestId("shopping-item-1")).toBeVisible()
+    await expect(bought.getByRole("heading", { name: "Đã mua (1)", exact: true })).toBeVisible()
+    await expect(bought.getByTestId("shopping-item-2")).toHaveCount(0)
+    await expect(page.getByRole("heading", { name: "Gia vị", exact: true })).toBeVisible()
+    const boughtTop = (await bought.boundingBox())!.y
+    for (const id of [2, 3]) {
+      const bounds = (await page.getByTestId(`shopping-item-${id}`).boundingBox())!
+      expect(bounds.y + bounds.height).toBeLessThanOrEqual(boughtTop)
+    }
+    await page.reload()
+    await page.getByRole("button", { name: /Tất cả \(/ }).click()
+    await expect(bought.getByTestId("shopping-item-1")).toBeVisible()
+    await bought.getByRole("button", { name: "Đánh dấu Nước tương g", exact: true }).click()
+    await expect(bought).toHaveCount(0)
+    await expect(page.getByTestId("shopping-item-1")).toBeVisible()
+    for (const item of state.list.items) {
+      await page.getByRole("button", { name: `Đánh dấu ${item.name} g`, exact: true }).click()
+      await expect(bought.getByTestId(`shopping-item-${item.id}`)).toBeVisible()
+    }
+    await expect(bought.getByRole("heading", { name: "Đã mua (3)", exact: true })).toBeVisible()
+    await expect(page.getByText("Không có nguyên liệu trong mục này.", { exact: true })).toHaveCount(0)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  })
+}
+
 test("shopping manual item quantity, edit, bought/unbought, filtering and deletion use saved values", async ({
   page,
 }) => {
@@ -386,7 +425,8 @@ test("shopping manual item quantity, edit, bought/unbought, filtering and deleti
 
   await page.getByLabel("Đơn vị", { exact: true }).selectOption("3")
 
-  await page.getByRole("button", { name: "Lưu mặt hàng" }).click()
+  await page.getByRole("button", { name: "Tiếp tục", exact: true }).click()
+  await page.getByRole("button", { name: "Xác nhận thêm", exact: true }).click()
 
   const item = page.getByTestId("shopping-item-50")
 
@@ -396,10 +436,11 @@ test("shopping manual item quantity, edit, bought/unbought, filtering and deleti
     .getByRole("button", { name: "Sửa Khăn giấy lau bếp cuộn", exact: true })
     .click()
 
-  await expect(page.getByLabel("Số lượng", { exact: true })).toBeFocused()
-  await page.getByLabel("Số lượng", { exact: true }).fill("3.5")
+  await expect(page.getByLabel("Tổng số lượng mới", { exact: true })).toBeFocused()
+  await page.getByLabel("Tổng số lượng mới", { exact: true }).fill("3.5")
 
-  await page.getByRole("button", { name: "Lưu mặt hàng" }).click()
+  await page.getByRole("button", { name: "Tiếp tục", exact: true }).click()
+  await page.getByRole("button", { name: "Xác nhận thay đổi", exact: true }).click()
 
   await expect(item).toContainText("3,5 cuộn")
 
@@ -409,7 +450,12 @@ test("shopping manual item quantity, edit, bought/unbought, filtering and deleti
   })
 
   await check.click()
-  await expect(check).toHaveAttribute("aria-pressed", "true")
+  await page.getByRole("button", { name: /Đã mua \(/ }).click()
+  const boughtCheck = page.getByRole("button", {
+    name: "Đánh dấu Khăn giấy lau bếp cuộn",
+    exact: true,
+  })
+  await expect(boughtCheck).toHaveAttribute("aria-pressed", "true")
 
   await page.getByRole("button", { name: /Cần mua \(/ }).click()
   await expect(item).toHaveCount(0)
@@ -417,7 +463,7 @@ test("shopping manual item quantity, edit, bought/unbought, filtering and deleti
   await page.getByRole("button", { name: /Đã mua \(/ }).click()
   await expect(item).toBeVisible()
 
-  await check.click()
+  await boughtCheck.click()
   await page.getByRole("button", { name: /Tất cả \(/ }).click()
 
   await page
@@ -436,6 +482,55 @@ test("shopping manual item quantity, edit, bought/unbought, filtering and deleti
   await expect(item).toHaveCount(0)
 
   expect(state.list.items).toHaveLength(2)
+})
+
+test("shopping catalog item unit selection converts the displayed total", async ({ page }) => {
+  const state = await setup(page)
+  await page.route("**/api/v1/ingredients/5/units", (route) =>
+    route.fulfill({
+      json: [
+        { id: 1, code: "g", name: "gram", dimension: "MASS", gramsPerUnit: 1, approximate: false },
+        { id: 2, code: "ml", name: "mililít", dimension: "VOLUME", gramsPerUnit: 2, approximate: true },
+      ],
+    }),
+  )
+
+  await page.goto("/di-cho?listId=42")
+  await page.getByRole("button", { name: "Sửa Nước tương g", exact: true }).click()
+  const quantity = page.getByLabel("Tổng số lượng mới", { exact: true })
+  const unit = page.getByLabel("Đơn vị", { exact: true })
+  await expect(unit).toHaveValue("1")
+  await unit.selectOption("2")
+  await expect(quantity).toHaveValue("150")
+
+  await page.getByRole("button", { name: "Tiếp tục", exact: true }).click()
+  await page.getByRole("button", { name: "Xác nhận thay đổi", exact: true }).click()
+
+  expect(state.writes).toContainEqual({
+    method: "PUT",
+    suffix: "/42/items/1",
+    body: { quantity: 150, unitId: 2 },
+  })
+  await expect(page.getByTestId("shopping-item-1")).toContainText("150 ml")
+})
+
+test("shopping edit normalizes a supported cup quantity to milliliters", async ({ page }) => {
+  const state = await setup(page)
+  state.list.items[0] = row(1, { quantity: 2, unitId: 3, unitCode: "cup", unitName: "cup" })
+  await page.route("**/api/v1/ingredients/5/units", (route) =>
+    route.fulfill({
+      json: [
+        { id: 1, code: "g", name: "gram", dimension: "MASS", gramsPerUnit: 1, approximate: false },
+        { id: 2, code: "ml", name: "mililít", dimension: "VOLUME", gramsPerUnit: 1, approximate: false },
+        { id: 3, code: "cup", name: "cup", dimension: "VOLUME", gramsPerUnit: 240, approximate: true },
+      ],
+    }),
+  )
+
+  await page.goto("/di-cho?listId=42")
+  await page.getByRole("button", { name: "Sửa Nước tương cup", exact: true }).click()
+  await expect(page.getByLabel("Đơn vị", { exact: true })).toHaveValue("2")
+  await expect(page.getByLabel("Tổng số lượng mới", { exact: true })).toHaveValue("480")
 })
 
 test("shopping failed mutations preserve data and form, cleanup preserves unbought rows", async ({
@@ -461,18 +556,20 @@ test("shopping failed mutations preserve data and form, cleanup preserves unboug
     .getByRole("button", { name: "Sửa Nước tương g", exact: true })
     .click()
 
-  await page.getByLabel("Số lượng", { exact: true }).fill("400")
+  await page.getByLabel("Tổng số lượng mới", { exact: true }).fill("400")
 
-  await page.getByRole("button", { name: "Lưu mặt hàng" }).click()
+  await page.getByRole("button", { name: "Tiếp tục", exact: true }).click()
+  await page.getByRole("button", { name: "Xác nhận thay đổi", exact: true }).click()
 
   await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
     state.fail,
   )
 
-  await expect(page.getByLabel("Số lượng", { exact: true })).toHaveValue("400")
+  await expect(page.getByRole("dialog")).toContainText("thêm 100 g")
+  await expect(page.getByRole("dialog")).toContainText("Nước tương")
 
   state.fail = ""
-  await page.getByRole("button", { name: "Lưu mặt hàng" }).click()
+  await page.getByRole("button", { name: "Xác nhận thay đổi", exact: true }).click()
 
   await expect(page.getByTestId("shopping-item-1")).toContainText("400 g")
 
@@ -656,4 +753,266 @@ test("shopping list deletion confirms scope and keeps the empty state usable aft
   await expect(page).toHaveURL(/\/di-cho$/)
   await expect(page.getByText("Chưa có danh sách mua sắm", { exact: true })).toBeVisible()
   expect(state.writes.filter((write) => (write as { method: string }).method === "DELETE")).toHaveLength(2)
+})
+
+test("ingredient details group recipe quantities and distinguish unknown from manually added amounts", async ({ page }) => {
+  const state = await setup(page)
+  state.list.recipeSources = [{
+    sourceId: "recipe-9", recipeId: 9, occurrenceCount: 2, title: "Canh nấm", available: false,
+    coverUrl: null, servings: 5, mealDate: null, mealType: null,
+  }]
+  state.list.items[0] = row(1, {
+    quantity: 140,
+    sources: [
+      { sourceId: "recipe-9-a", sourceKind: "RECIPE", recipeId: 9, ingredientId: 5, title: "Canh nấm", available: false, originalQuantity: 60, originalUnitId: 1, originalUnitCode: "g", servings: 2 },
+      { sourceId: "recipe-9-b", sourceKind: "RECIPE", recipeId: 9, ingredientId: 5, title: "Canh nấm", available: false, originalQuantity: 30, originalUnitId: 1, originalUnitCode: "g", servings: 3 },
+      { sourceId: "manual-1", sourceKind: "MANUAL", recipeId: null, ingredientId: 5, title: null, available: true, originalQuantity: 30, originalUnitId: 1, originalUnitCode: "g", servings: null },
+      { sourceId: "unknown-1", sourceKind: "UNKNOWN", recipeId: null, ingredientId: 5, title: "Canh nấm", available: false, originalQuantity: 20, originalUnitId: 1, originalUnitCode: "g", servings: null },
+    ],
+  })
+  await page.goto("/di-cho?listId=42")
+  await page.getByRole("button", { name: "Xem món đã dùng Nước tương" }).first().click()
+  const dialog = page.getByRole("dialog", { name: "Chi tiết Nước tương" })
+  await expect(dialog).toContainText("Tổng trong danh sách")
+  await expect(dialog).toContainText("140 g")
+  await expect(dialog).toContainText("5 khẩu phần")
+  await expect(dialog).toContainText("90 g lúc thêm")
+  await expect(dialog).toContainText("Tổng lượng mất xác định")
+  await expect(dialog).toContainText("20 g")
+  await expect(dialog).toContainText("30 g · Thêm thủ công")
+  await expect(dialog.getByRole("link", { name: "Canh nấm" })).toHaveCount(0)
+})
+
+test("quick recipe serving change previews ingredient deltas before saving to this list", async ({ page }) => {
+  const state = await setup(page)
+  const source = {
+    sourceId: "recipe-9", recipeId: 9, occurrenceCount: 1, title: "Canh nấm", available: true,
+    coverUrl: null, servings: 2, mealDate: null, mealType: null,
+  }
+  state.list.recipeSources = [source]
+  state.list.items[0] = row(1, {
+    quantity: 90,
+    sources: [
+      { sourceId: "recipe-9-a", sourceKind: "RECIPE", recipeId: 9, ingredientId: 5, title: "Canh nấm", available: true, originalQuantity: 60, originalUnitId: 1, originalUnitCode: "g", servings: 2 },
+      { sourceId: "manual-1", sourceKind: "MANUAL", recipeId: null, ingredientId: 5, title: null, available: true, originalQuantity: 30, originalUnitId: 1, originalUnitCode: "g", servings: null },
+    ],
+  })
+  await page.route("**/api/v1/shopping-lists/42/recipes/9/servings", async (route) => {
+    const body = route.request().postDataJSON()
+    state.writes.push({ method: "PUT", suffix: "/42/recipes/9/servings", body })
+    source.servings = body.servings
+    return route.fulfill({ json: state.list })
+  })
+  await page.goto("/di-cho?listId=42")
+  await page.getByRole("button", { name: "Thao tác với Canh nấm" }).click()
+  await page.getByRole("button", { name: "Chỉnh khẩu phần" }).click()
+  const dialog = page.getByRole("dialog", { name: "Chỉnh nhanh khẩu phần" })
+  const servings = dialog.getByLabel("Tổng khẩu phần mới")
+  await servings.fill("1")
+  await dialog.getByRole("button", { name: "Xem thay đổi" }).click()
+  await expect(dialog).toContainText("Giảm 30 g")
+  await expect(dialog).toContainText("Khẩu phần: 2 → 1")
+  await expect(dialog).toContainText("phần người dùng thêm và phần mất xác định được giữ nguyên")
+  await expect.poll(() => state.writes.length).toBe(0)
+  await dialog.getByRole("button", { name: "Xác nhận thay đổi" }).click()
+  await expect(dialog).toHaveCount(0)
+  await expect(page.getByRole("status")).toContainText("Đã cập nhật khẩu phần và nguyên liệu trong danh sách.")
+  expect(state.writes).toContainEqual({ method: "PUT", suffix: "/42/recipes/9/servings", body: { servings: 1 } })
+})
+
+test("quick recipe serving increase previews named ingredient additions before saving", async ({ page }) => {
+  const state = await setup(page)
+  const source = {
+    sourceId: "recipe-9", recipeId: 9, occurrenceCount: 1, title: "Canh nấm", available: true,
+    coverUrl: null, servings: 2, mealDate: null, mealType: null,
+  }
+  state.list.recipeSources = [source]
+  state.list.items[0] = row(1, {
+    quantity: 60,
+    sources: [{ sourceId: "recipe-9-a", sourceKind: "RECIPE", recipeId: 9, ingredientId: 5, title: "Canh nấm", available: true, originalQuantity: 60, originalUnitId: 1, originalUnitCode: "g", servings: 2 }],
+  })
+  await page.route("**/api/v1/shopping-lists/42/recipes/9/servings", async (route) => {
+    const body = route.request().postDataJSON()
+    state.writes.push({ method: "PUT", suffix: "/42/recipes/9/servings", body })
+    source.servings = body.servings
+    return route.fulfill({ json: state.list })
+  })
+  await page.goto("/di-cho?listId=42")
+  await page.getByRole("button", { name: "Thao tác với Canh nấm" }).click()
+  await page.getByRole("button", { name: "Chỉnh khẩu phần" }).click()
+  const dialog = page.getByRole("dialog", { name: "Chỉnh nhanh khẩu phần" })
+  await dialog.getByLabel("Tổng khẩu phần mới").fill("3")
+  await dialog.getByRole("button", { name: "Xem thay đổi" }).click()
+  await expect(dialog).toContainText("Tăng 30 g")
+  await expect(dialog).toContainText("Nước tương")
+  await expect(dialog.getByRole("button", { name: "Xác nhận thay đổi" })).toBeEnabled()
+  await dialog.getByRole("button", { name: "Xác nhận thay đổi" }).click()
+  await expect(page.getByRole("status")).toContainText("Đã cập nhật khẩu phần")
+  expect(state.writes).toContainEqual({ method: "PUT", suffix: "/42/recipes/9/servings", body: { servings: 3 } })
+})
+
+test("removing a recipe previews its full contribution and preserves other sources", async ({ page }) => {
+  const state = await setup(page)
+  const source = {
+    sourceId: "recipe-9", recipeId: 9, occurrenceCount: 1, title: "Canh nấm", available: true,
+    coverUrl: null, servings: 2, mealDate: null, mealType: null,
+  }
+  state.list.recipeSources = [source]
+  state.list.items = [
+    row(1, {
+      quantity: 25,
+      sources: [{ sourceId: "recipe-only", sourceKind: "RECIPE", recipeId: 9, ingredientId: 5, title: "Canh nấm", available: true, originalQuantity: 25, originalUnitId: 1, originalUnitCode: "g", servings: 2 }],
+    }),
+    row(3, {
+      quantity: 80,
+      sources: [
+        { sourceId: "recipe-mixed", sourceKind: "RECIPE", recipeId: 9, ingredientId: 5, title: "Canh nấm", available: true, originalQuantity: 10, originalUnitId: 1, originalUnitCode: "g", servings: 2 },
+        { sourceId: "unknown-mixed", sourceKind: "UNKNOWN", recipeId: null, ingredientId: 5, title: null, available: false, originalQuantity: 20, originalUnitId: 1, originalUnitCode: "g", servings: null },
+        { sourceId: "manual-mixed", sourceKind: "MANUAL", recipeId: null, ingredientId: 5, title: null, available: true, originalQuantity: 50, originalUnitId: 1, originalUnitCode: "g", servings: null },
+      ],
+    }),
+  ]
+  await page.route("**/api/v1/shopping-lists/42/recipes/9", async (route) => {
+    state.writes.push({ method: route.request().method(), suffix: "/42/recipes/9" })
+    state.list.items = state.list.items.filter((item) => item.id !== 1)
+    state.list.items[0].quantity = 70
+    state.list.items[0].sources = state.list.items[0].sources?.filter((itemSource) => itemSource.sourceKind !== "RECIPE")
+    state.list.recipeSources = []
+    return route.fulfill({ json: state.list })
+  })
+  await page.goto("/di-cho?listId=42")
+  await page.getByRole("button", { name: "Thao tác với Canh nấm" }).click()
+  await page.getByRole("button", { name: "Gỡ khỏi danh sách" }).click()
+  const dialog = page.getByRole("dialog", { name: "Gỡ món khỏi danh sách mua sắm" })
+  await expect(dialog).toContainText("Nguyên liệu bị ảnh hưởng · 2 mặt hàng")
+  await expect(dialog).toContainText("25 g · sẽ xóa mặt hàng")
+  await expect(dialog).toContainText("10 g · sẽ giảm")
+  await expect(dialog.getByRole("button", { name: "Xác nhận gỡ món" })).toBeEnabled()
+  await dialog.getByRole("button", { name: "Xác nhận gỡ món" }).click()
+  await expect(page.getByRole("status")).toContainText("Đã gỡ món và cập nhật nguyên liệu")
+  await expect(page.getByTestId("shopping-item-1")).toHaveCount(0)
+  await expect(page.getByTestId("shopping-item-3")).toContainText("70 g")
+  expect(state.writes).toContainEqual({ method: "DELETE", suffix: "/42/recipes/9" })
+})
+
+test("unchanged recipe servings explain that no ingredient quantities will change", async ({ page }) => {
+  const state = await setup(page)
+  state.list.recipeSources = [{
+    sourceId: "recipe-9", recipeId: 9, occurrenceCount: 1, title: "Canh nấm", available: true,
+    coverUrl: null, servings: 2, mealDate: null, mealType: null,
+  }]
+  await page.goto("/di-cho?listId=42")
+  await page.getByRole("button", { name: "Thao tác với Canh nấm" }).click()
+  await page.getByRole("button", { name: "Chỉnh khẩu phần" }).click()
+  const dialog = page.getByRole("dialog", { name: "Chỉnh nhanh khẩu phần" })
+  await dialog.getByRole("button", { name: "Xem thay đổi" }).click()
+  await expect(dialog).toContainText("Không có định lượng nguyên liệu nào thay đổi.")
+  await expect(dialog.getByRole("button", { name: "Xác nhận thay đổi" })).toBeDisabled()
+  expect(state.writes).toEqual([])
+})
+
+test("manual source edit confirms a named increase and saves only after confirmation", async ({ page }) => {
+  const state = await setup(page)
+  const manualSource = {
+    sourceId: "manual-1", sourceKind: "MANUAL" as const, recipeId: null, ingredientId: 5,
+    title: null, available: true, originalQuantity: 30, originalUnitId: 1,
+    originalUnitCode: "g", servings: null,
+  }
+  const updated = row(1, { quantity: 35, sources: [{ ...manualSource, originalQuantity: 35 }] })
+  state.list.items[0] = row(1, { quantity: 30, sources: [manualSource] })
+  await page.route("**/api/v1/shopping-lists/42/manual-sources/manual-1", async (route) => {
+    state.writes.push({ method: route.request().method(), suffix: "/42/manual-sources/manual-1", body: route.request().postDataJSON() })
+    return route.fulfill({ json: updated })
+  })
+  await page.goto("/di-cho?listId=42")
+  await page.getByRole("button", { name: "Xem món đã dùng Nước tương" }).first().click()
+  const detail = page.getByRole("dialog", { name: "Chi tiết Nước tương" })
+  await detail.getByRole("button", { name: "Sửa", exact: true }).click()
+  const editor = page.getByRole("dialog", { name: "Sửa phần đã thêm thủ công" })
+  await editor.getByLabel("Số lượng g").fill("35")
+  await editor.getByRole("button", { name: "Tiếp tục" }).click()
+  await expect(editor).toContainText("thêm 5 g")
+  await expect(editor).toContainText("Nước tương")
+  await expect.poll(() => state.writes.length).toBe(0)
+  await editor.getByRole("button", { name: "Xác nhận thay đổi" }).click()
+  await expect(page.getByRole("status")).toContainText("Đã cập nhật phần thêm thủ công")
+  expect(state.writes).toContainEqual({
+    method: "PUT", suffix: "/42/manual-sources/manual-1", body: { quantity: 35, unitId: 1 },
+  })
+})
+
+test("manual source edit asks before saving an unchanged quantity", async ({ page }) => {
+  const state = await setup(page)
+  const manualSource = {
+    sourceId: "manual-1", sourceKind: "MANUAL" as const, recipeId: null, ingredientId: 5,
+    title: null, available: true, originalQuantity: 30, originalUnitId: 1,
+    originalUnitCode: "g", servings: null,
+  }
+  state.list.items[0] = row(1, { quantity: 30, sources: [manualSource] })
+  await page.route("**/api/v1/shopping-lists/42/manual-sources/manual-1", async (route) => {
+    state.writes.push({ method: route.request().method(), suffix: "/42/manual-sources/manual-1", body: route.request().postDataJSON() })
+    return route.fulfill({ json: state.list.items[0] })
+  })
+  await page.goto("/di-cho?listId=42")
+  await page.getByRole("button", { name: "Xem món đã dùng Nước tương" }).first().click()
+  const detail = page.getByRole("dialog", { name: "Chi tiết Nước tương" })
+  await detail.getByRole("button", { name: "Sửa", exact: true }).click()
+  const editor = page.getByRole("dialog", { name: "Sửa phần đã thêm thủ công" })
+  await editor.getByRole("button", { name: "Tiếp tục" }).click()
+  await expect(editor).toContainText("không thay đổi")
+  await expect.poll(() => state.writes.length).toBe(0)
+  await editor.getByRole("button", { name: "Xác nhận thay đổi" }).click()
+  await expect(page.getByRole("status")).toContainText("Đã cập nhật phần thêm thủ công")
+  expect(state.writes).toHaveLength(1)
+})
+
+test("manual source edit confirms a named decrease and updates only that contribution", async ({ page }) => {
+  const state = await setup(page)
+  const manualSource = {
+    sourceId: "manual-1", sourceKind: "MANUAL" as const, recipeId: null, ingredientId: 5,
+    title: null, available: true, originalQuantity: 30, originalUnitId: 1,
+    originalUnitCode: "g", servings: null,
+  }
+  const updated = row(1, { quantity: 20, sources: [{ ...manualSource, originalQuantity: 20 }] })
+  state.list.items[0] = row(1, { quantity: 30, sources: [manualSource] })
+  await page.route("**/api/v1/shopping-lists/42/manual-sources/manual-1", async (route) => {
+    state.writes.push({ method: route.request().method(), suffix: "/42/manual-sources/manual-1", body: route.request().postDataJSON() })
+    return route.fulfill({ json: updated })
+  })
+  await page.goto("/di-cho?listId=42")
+  await page.getByRole("button", { name: "Xem món đã dùng Nước tương" }).first().click()
+  const detail = page.getByRole("dialog", { name: "Chi tiết Nước tương" })
+  await detail.getByRole("button", { name: "Sửa", exact: true }).click()
+  const editor = page.getByRole("dialog", { name: "Sửa phần đã thêm thủ công" })
+  await editor.getByLabel("Số lượng g").fill("20")
+  await editor.getByRole("button", { name: "Tiếp tục" }).click()
+  await expect(editor).toContainText("giảm 10 g")
+  await expect(editor).toContainText("Nước tương")
+  await editor.getByRole("button", { name: "Xác nhận thay đổi" }).click()
+  await expect(page.getByRole("status")).toContainText("Đã cập nhật phần thêm thủ công")
+  await expect(page.getByTestId("shopping-item-1")).toContainText("20 g")
+  expect(state.writes).toContainEqual({
+    method: "PUT", suffix: "/42/manual-sources/manual-1", body: { quantity: 20, unitId: 1 },
+  })
+})
+
+test("removing a manual source updates the checklist immediately", async ({ page }) => {
+  const state = await setup(page)
+  const manualSource = {
+    sourceId: "manual-1", sourceKind: "MANUAL" as const, recipeId: null, ingredientId: 5,
+    title: null, available: true, originalQuantity: 30, originalUnitId: 1,
+    originalUnitCode: "g", servings: null,
+  }
+  state.list.items[0] = row(1, { quantity: 30, sources: [manualSource] })
+  await page.route("**/api/v1/shopping-lists/42/manual-sources/manual-1", async (route) => {
+    state.writes.push({ method: route.request().method(), suffix: "/42/manual-sources/manual-1" })
+    state.list.items = state.list.items.filter((item) => item.id !== 1)
+    return route.fulfill({ status: 204 })
+  })
+  await page.goto("/di-cho?listId=42")
+  await page.getByRole("button", { name: "Xem món đã dùng Nước tương" }).first().click()
+  await page.getByRole("button", { name: "Xóa phần thêm", exact: true }).click()
+  await expect(page.getByRole("status")).toContainText("Đã xóa phần thêm thủ công")
+  await expect(page.getByTestId("shopping-item-1")).toHaveCount(0)
+  expect(state.writes).toContainEqual({ method: "DELETE", suffix: "/42/manual-sources/manual-1" })
 })

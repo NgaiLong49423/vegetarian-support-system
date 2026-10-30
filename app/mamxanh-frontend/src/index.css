@@ -23,6 +23,12 @@
   --color-ink-muted: #b0b0b0;
   --color-on-brand: #171717;
 
+  /* Header & Footer navigation frame */
+  --color-header: #181818;
+  --color-header-border: #2e2e2e;
+  --color-footer: #141414;
+  --color-footer-border: #2a2a2a;
+
   /* Orange accent (primary) */
   --color-brand-50: #242424;
   --color-brand-100: #363636;
@@ -70,6 +76,11 @@ html {
   --color-ink-soft: #454a40;
   --color-ink-muted: #73786f;
   --color-on-brand: #ffffff;
+
+  --color-header: #eae4d8;
+  --color-header-border: #dcd4c5;
+  --color-footer: #e4ddd0;
+  --color-footer-border: #d8cfbf;
 
   --color-brand-50: #fff3e8;
   --color-brand-100: #ffe4ce;

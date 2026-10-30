@@ -83,7 +83,7 @@ function PaymentResultDetails({ orderCode, signedIn }: { orderCode: string; sign
           {!signedIn ? 'Vui lòng đăng nhập bằng tài khoản đã tạo đơn để xem kết quả.'
             : !validOrder ? 'Mở lịch sử giao dịch để kiểm tra đơn của bạn. Đường dẫn này chưa xác nhận thanh toán.'
             : success ? `Gói ${result?.tier} của đơn này đã được kích hoạt sau khi xác minh thanh toán.`
-            : state === 'paid' ? 'Thanh toán của đơn này đã được xác nhận. Gói của đơn hiện không còn hiệu lực; xem gói đang sử dụng bên dưới.'
+            : state === 'paid' ? 'Thanh toán của đơn này đã được xác nhận. Gói của đơn hiện không còn hiệu lực. Xem gói đang sử dụng bên dưới.'
             : state === 'cancelled' ? 'Đơn đã bị hủy, hết hạn hoặc thất bại theo kết quả máy chủ. Quyền lợi tài khoản của bạn được bảo toàn.'
             : state === 'error' ? error
             : state === 'unconfirmed' ? 'Chưa có xác nhận từ cổng thanh toán. Bạn có thể bấm Kiểm tra lại sau ít phút. Nếu đã chuyển tiền, vui lòng không thanh toán lại khi chưa xác minh kết quả.'

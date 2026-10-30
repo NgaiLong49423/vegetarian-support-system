@@ -11,7 +11,17 @@ public class MutableClock extends Clock {
 
     public static final Instant DEFAULT_START = Instant.parse("2026-09-28T03:00:00Z");
 
-    private volatile Instant instant = DEFAULT_START;
+    private volatile Instant instant;
+    private final ZoneId zone;
+
+    public MutableClock() {
+        this(DEFAULT_START, ZoneOffset.UTC);
+    }
+
+    private MutableClock(Instant instant, ZoneId zone) {
+        this.instant = instant;
+        this.zone = zone;
+    }
 
     public void reset() {
         instant = DEFAULT_START;
@@ -28,11 +38,11 @@ public class MutableClock extends Clock {
 
     @Override
     public ZoneId getZone() {
-        return ZoneOffset.UTC;
+        return zone;
     }
 
     @Override
     public Clock withZone(ZoneId zone) {
-        throw new UnsupportedOperationException("MutableClock is fixed to UTC");
+        return this.zone.equals(zone) ? this : new MutableClock(instant, zone);
     }
 }
