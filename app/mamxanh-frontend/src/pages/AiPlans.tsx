@@ -7,6 +7,7 @@ import { useAuth } from '../components/AuthContext';
 import {
   subscriptionApi,
   type MySubscriptionResponse,
+  type MyAiUsageResponse,
   type PlanResponse,
   type SubscriptionTier,
 } from '../api/subscription';
@@ -50,6 +51,8 @@ export function AiPlans() {
 
   const [plans, setPlans] = useState<PlanResponse[]>(DEFAULT_PLANS);
   const [subscription, setSubscription] = useState<MySubscriptionResponse | null>(null);
+  const [usage, setUsage] = useState<MyAiUsageResponse | null>(null);
+  const [usageError, setUsageError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [subscribingTier, setSubscribingTier] = useState<SubscriptionTier | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -75,6 +78,12 @@ export function AiPlans() {
           }
         } catch {
           // If not authenticated or session expired, ignore
+        }
+        try {
+          const currentUsage = await subscriptionApi.getMyAiUsage();
+          if (active) setUsage(currentUsage);
+        } catch (cause) {
+          if (active) setUsageError(cause instanceof Error ? cause.message : 'Chưa tải được mức sử dụng AI.');
         }
       }
 
@@ -164,6 +173,40 @@ export function AiPlans() {
           Giá theo tháng, thanh toán từng kỳ qua VietQR (payOS) và không tự động gia hạn.
         </p>
       </div>
+
+      {isLoggedIn && (
+        <section aria-labelledby="ai-usage-heading" className="mx-auto mb-8 max-w-3xl">
+          <Card className="p-5 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 id="ai-usage-heading" className="text-lg font-bold text-ink">Mức sử dụng token AI</h2>
+                <p className="mt-1 text-sm text-ink-muted">
+                  {usage ? `Gói ${usage.tier} · cấp lại ${formatDate(usage.resetsAt)}` : 'Đang tải hạn mức của kỳ hiện tại.'}
+                </p>
+              </div>
+              {usage && <Badge tone={usage.remainingTokens === 0 ? 'neutral' : 'brand'}>
+                Còn {usage.remainingTokens.toLocaleString('vi-VN')} token
+              </Badge>}
+            </div>
+            {usage ? (
+              <>
+                <div className="mt-5 flex justify-between gap-3 text-sm">
+                  <span className="font-semibold text-ink">Đã dùng {usage.consumedTokens.toLocaleString('vi-VN')}</span>
+                  <span className="text-ink-muted">Hạn mức {usage.quotaTokens.toLocaleString('vi-VN')}</span>
+                </div>
+                <div className="mt-2 h-3 overflow-hidden rounded-full bg-brand-50" role="progressbar"
+                  aria-label="Mức sử dụng token trong kỳ hiện tại" aria-valuemin={0}
+                  aria-valuemax={usage.quotaTokens} aria-valuenow={usage.consumedTokens}>
+                  <div className="h-full rounded-full bg-brand-600 transition-[width]"
+                    style={{ width: `${usage.quotaTokens === 0 ? 0 : Math.min(100, usage.consumedTokens / usage.quotaTokens * 100)}%` }} />
+                </div>
+              </>
+            ) : usageError ? (
+              <p role="alert" className="mt-4 text-sm text-red-700">{usageError}</p>
+            ) : null}
+          </Card>
+        </section>
+      )}
 
       {errorMsg && (
         <div role="alert" className="mx-auto mb-6 flex max-w-2xl items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">

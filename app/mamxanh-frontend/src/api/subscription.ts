@@ -34,6 +34,15 @@ export interface MySubscriptionResponse {
   unlockedFeatures: string[];
 }
 
+export interface MyAiUsageResponse {
+  tier: SubscriptionTier;
+  consumedTokens: number;
+  quotaTokens: number;
+  remainingTokens: number;
+  periodStartsAt: string;
+  resetsAt: string;
+}
+
 export interface TransactionHistoryResponse {
   paymentTransactionId: number;
   orderCode: string;
@@ -75,6 +84,9 @@ export const subscriptionApi = {
    * Requires authenticated user.
    */
   getMySubscription: () => request(() => apiClient.get<MySubscriptionResponse>('/subscriptions/my-subscription')),
+
+  /** Retrieves the authenticated member's token usage for the current quota period. */
+  getMyAiUsage: () => request(() => apiClient.get<MyAiUsageResponse>('/subscriptions/my-ai-usage')),
 
   /**
    * Creates a payOS payment link for upgrading to PLUS or PRO (AC-13.2).

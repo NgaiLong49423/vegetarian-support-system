@@ -41,13 +41,14 @@ class RecipeAiAssistanceServiceTest {
     @Mock private IngredientCatalogLookupService ingredientCatalog;
     @Mock private AiClient aiClient;
     @Mock private org.springframework.context.ApplicationEventPublisher events;
+    @Mock private tech.mamxanh.subscription.service.AiTokenQuotaService aiQuota;
 
     private RecipeAiAssistanceService service;
 
     @BeforeEach
     void setUp() {
         service = new RecipeAiAssistanceService(currentUserService, entitlementService, ingredientCatalog,
-                aiClient, new JsonMapper(), events, java.time.Clock.systemUTC());
+                aiClient, new JsonMapper(), events, java.time.Clock.systemUTC(), aiQuota);
         when(currentUserService.requireActiveExpert()).thenReturn(new CurrentUser(7L, Role.EXPERT));
         lenient().when(ingredientCatalog.findActiveIngredientsByIds(List.of(1L, 2L))).thenReturn(List.of(TOFU, TOMATO));
     }

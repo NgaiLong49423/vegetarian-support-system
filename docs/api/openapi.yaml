@@ -3177,16 +3177,18 @@ paths:
       tags:
       - ai-chat-controller
       summary: Ask the vegetarian cooking assistant
-      description: Guest and active Member use the same chatbot. Guest must supply
-        a session-cookie UUID in anonymousViewerId; a rolling limit of 10 requests
-        per minute applies independently to cookie and peer IP. No daily quota. General
-        context or the latest public RecipePost is loaded server-side. Recipe discovery
-        selects only current public RecipePosts from the Backend catalog; explicitly
-        requested recipe drafts remain chat text only. Conversation history is request-scoped
-        and is not persisted. Guest has no account dietary context. Explicit weekly-menu
-        and recipe-authoring requests are checked for entitlement and routed to their
-        dedicated workflow without calling Gemini. Follow-up recipe searches use current
-        public data; assistant recipe IDs are untrusted exclusion hints only.
+      description: "Guest and active Member use the same chatbot. Guest must supply\
+        \ a session-cookie UUID in anonymousViewerId; Guest is limited to 20,000 provider-reported\
+        \ tokens per anonymous session and a rolling limit of 10 requests per minute\
+        \ independently for cookie and peer IP. General context or the latest public\
+        \ RecipePost is loaded server-side. Recipe discovery selects only current\
+        \ public RecipePosts from the Backend catalog; explicitly requested recipe\
+        \ drafts remain chat text only. Conversation history is request-scoped and\
+        \ is not persisted. Guest has no account dietary context. Explicit weekly-menu\
+        \ and recipe-authoring requests are checked for entitlement and routed to\
+        \ their dedicated workflow without calling Gemini. Follow-up recipe searches\
+        \ use current public data; assistant recipe IDs are untrusted exclusion hints\
+        \ only."
       operationId: answer
       requestBody:
         content:
@@ -3224,8 +3226,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "429":
-          description: Guest exceeded the cookie or peer-IP limit; Retry-After gives
-            the wait in seconds.
+          description: Guest exceeded the cookie/IP rate limit or the current Guest/Member
+            token quota. Retry-After is provided for rate-limit responses.
           headers:
             Retry-After:
               description: Seconds until Guest can try again.
@@ -5434,6 +5436,32 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
           description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/subscriptions/my-ai-usage:
+    get:
+      tags:
+      - subscription-controller
+      operationId: getMyAiUsage
+      responses:
+        "200":
+          description: Current token usage and quota for the caller.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyAiUsageResponse"
+        "401":
+          description: Authentication is missing or invalid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: The account is locked or is not an active Member.
           content:
             application/problem+json:
               schema:
@@ -10237,6 +10265,26 @@ components:
             type: string
         billingPeriod:
           type: string
+    MyAiUsageResponse:
+      type: object
+      properties:
+        tier:
+          type: string
+        consumedTokens:
+          type: integer
+          format: int64
+        quotaTokens:
+          type: integer
+          format: int64
+        remainingTokens:
+          type: integer
+          format: int64
+        periodStartsAt:
+          type: string
+          format: date-time
+        resetsAt:
+          type: string
+          format: date-time
     PageResponseShoppingListSummary:
       type: object
       properties:

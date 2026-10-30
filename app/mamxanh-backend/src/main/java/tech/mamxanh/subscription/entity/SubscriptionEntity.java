@@ -46,6 +46,9 @@ public class SubscriptionEntity {
     @Column(name = "ends_at", nullable = false)
     private LocalDateTime endsAt;
 
+    @Column(name = "token_quota", nullable = false)
+    private long tokenQuota;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -58,6 +61,7 @@ public class SubscriptionEntity {
         this.status = SubscriptionStatus.ACTIVE;
         this.startsAt = startsAt;
         this.endsAt = endsAt;
+        this.tokenQuota = tier.tokenQuota();
         this.createdAt = LocalDateTime.now(java.time.Clock.systemUTC());
         this.updatedAt = this.createdAt;
     }

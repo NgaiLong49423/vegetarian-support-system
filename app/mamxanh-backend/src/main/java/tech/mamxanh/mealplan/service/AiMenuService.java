@@ -37,6 +37,7 @@ import tech.mamxanh.nutrition.service.RecipeNutritionService;
 import tech.mamxanh.recipe.dto.response.RecipePostResponse;
 import tech.mamxanh.recipe.service.RecipePostService;
 import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
+import tech.mamxanh.subscription.service.AiTokenQuotaService;
 
 @Service
 public class AiMenuService {
@@ -59,6 +60,7 @@ public class AiMenuService {
     private final MealPlanRepository plans;
     private final MealPlanEntryRepository entries;
     private final MealPlanReadService readService;
+    private final AiTokenQuotaService aiQuota;
     private final AiMenuOptimizer optimizer = new AiMenuOptimizer();
 
     public AiMenuService(CurrentUserService users, SubscriptionEntitlementService entitlements,
@@ -67,7 +69,7 @@ public class AiMenuService {
             IngredientCatalogLookupService ingredientCatalog, IngredientConversionLookupService conversions,
             AiClient ai, ApplicationEventPublisher events, Clock clock, ObjectMapper objectMapper,
             MealPlanRepository plans, MealPlanEntryRepository entries,
-            MealPlanReadService readService) {
+            MealPlanReadService readService, AiTokenQuotaService aiQuota) {
         this.users = users;
         this.entitlements = entitlements;
         this.nutritionProfiles = nutritionProfiles;
@@ -83,6 +85,7 @@ public class AiMenuService {
         this.plans = plans;
         this.entries = entries;
         this.readService = readService;
+        this.aiQuota = aiQuota;
     }
 
     @Transactional(readOnly = true)
@@ -111,7 +114,12 @@ public class AiMenuService {
         String prompt = prompt(firstSuggestionDate, lastSuggestionDate, goal, dietary.vegetarianType(),
                 preferred, allAvoid, pool, profile);
         try {
+            aiQuota.requireAvailable(userId, null);
             var result = ai.recommendRecipes(prompt, ids, ids.size());
+            if (result == null) throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+            var usageEvent = new AiUsageEvent(userId, "FR-36", clock.instant(), result.usage());
+            aiQuota.record(usageEvent);
+            events.publishEvent(usageEvent);
             List<Long> rankedIds = parseRecipeIds(result.json(), ids);
             Map<Long, Candidate> candidateById = pool.stream()
                     .collect(Collectors.toMap(candidate -> candidate.recipe().id(), candidate -> candidate));
@@ -122,8 +130,6 @@ public class AiMenuService {
                     firstSuggestionDate, lastSuggestionDate, profile.energyKcal().doubleValue(), ranked.stream()
                             .map(candidate -> new AiMenuOptimizer.Candidate(candidate.recipe().id(), candidate.nutritionPerServing())).toList(),
                     profile.dailyTargets());
-            events.publishEvent(new AiUsageEvent(userId, "FR-36", clock.instant(),
-                    result.usage()));
             return preview(request.weekStartDate(), request.mode(), goal, selections, pool, preferred, profile);
         } catch (AiProviderException exception) {
             throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE,

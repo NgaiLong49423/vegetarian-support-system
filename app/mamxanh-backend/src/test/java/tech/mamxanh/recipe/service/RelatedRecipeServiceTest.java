@@ -34,6 +34,7 @@ class RelatedRecipeServiceTest {
     private SubscriptionEntitlementService entitlement;
     private AiClient ai;
     private ApplicationEventPublisher events;
+    private tech.mamxanh.subscription.service.AiTokenQuotaService aiQuota;
     private RelatedRecipeService service;
 
     @BeforeEach
@@ -44,8 +45,9 @@ class RelatedRecipeServiceTest {
         entitlement = mock(SubscriptionEntitlementService.class);
         ai = mock(AiClient.class);
         events = mock(ApplicationEventPublisher.class);
+        aiQuota = mock(tech.mamxanh.subscription.service.AiTokenQuotaService.class);
         service = new RelatedRecipeService(repository, recipes, users, entitlement, ai,
-                new JsonMapper(), events, Clock.systemUTC());
+                new JsonMapper(), events, Clock.systemUTC(), aiQuota);
     }
 
     private void candidates() {
@@ -115,12 +117,12 @@ class RelatedRecipeServiceTest {
     @ValueSource(strings = {"{}", "null", "not json", "{\"recipeIds\":1}", "{\"recipeIds\":[99]}",
             "{\"recipeIds\":[\"2\"]}", "{\"recipeIds\":[2.1]}", "{\"recipeIds\":[null]}",
             "{\"recipeIds\":[9223372036854775808]}", "{\"recipeIds\":[2,3,2,3,2,3,2]}"})
-    void rejectsInvalidProviderSelectionWithoutSuccessfulTelemetry(String json) {
+    void rejectsInvalidProviderSelectionButRecordsSuccessfulProviderUsage(String json) {
         candidates();
         when(ai.recommendRecipes(anyString(), anyList(), anyInt()))
                 .thenReturn(new AiClient.RecommendationResult(json, null, null, null));
         assertThatThrownBy(() -> service.recommend(1, 6)).isInstanceOf(AppException.class);
-        verifyNoInteractions(events);
+        verify(events).publishEvent(any(AiUsageEvent.class));
     }
 
     @Test

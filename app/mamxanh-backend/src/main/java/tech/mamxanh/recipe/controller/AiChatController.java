@@ -34,7 +34,7 @@ public class AiChatController {
     @Operation(summary = "Ask the vegetarian cooking assistant",
             security = {@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH), @SecurityRequirement(name = "")},
             description = "Guest and active Member use the same chatbot. Guest must supply a session-cookie UUID in anonymousViewerId; "
-                    + "a rolling limit of 10 requests per minute applies independently to cookie and peer IP. No daily quota. "
+                    + "Guest is limited to 20,000 provider-reported tokens per anonymous session and a rolling limit of 10 requests per minute independently for cookie and peer IP. "
                     + "General context or the latest public RecipePost is loaded server-side. "
                     + "Recipe discovery selects only current public RecipePosts from the Backend catalog; explicitly requested recipe drafts remain chat text only. "
                     + "Conversation history is request-scoped and is not persisted. Guest has no account dietary context. "
@@ -44,7 +44,7 @@ public class AiChatController {
     @ApiResponse(responseCode = "400", description = "Invalid question, history, or context fields.")
     @ApiResponse(responseCode = "401", description = "Bearer token invalid/expired, or a Guest requests a Member-only workflow; no provider call.")
     @ApiResponse(responseCode = "403", description = "Account/role denied, or workflow requires a higher subscription. AI_SUBSCRIPTION_REQUIRED includes requiredTier and upgradeUrl; no provider call.")
-    @ApiResponse(responseCode = "429", description = "Guest exceeded the cookie or peer-IP limit; Retry-After gives the wait in seconds.",
+    @ApiResponse(responseCode = "429", description = "Guest exceeded the cookie/IP rate limit or the current Guest/Member token quota. Retry-After is provided for rate-limit responses.",
             headers = @Header(name = "Retry-After", description = "Seconds until Guest can try again.",
                     schema = @Schema(types = {"integer"}, minimum = "1")))
     @ApiResponse(responseCode = "404", description = "The recipe does not exist or is not public.")

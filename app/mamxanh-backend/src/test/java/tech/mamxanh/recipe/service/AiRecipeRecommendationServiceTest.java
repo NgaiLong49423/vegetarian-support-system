@@ -34,6 +34,7 @@ class AiRecipeRecommendationServiceTest {
     private SubscriptionEntitlementService entitlements;
     private AiClient ai;
     private ApplicationEventPublisher events;
+    private tech.mamxanh.subscription.service.AiTokenQuotaService aiQuota;
     private AiRecipeRecommendationService service;
 
     @BeforeEach
@@ -44,8 +45,9 @@ class AiRecipeRecommendationServiceTest {
         entitlements = mock(SubscriptionEntitlementService.class);
         ai = mock(AiClient.class);
         events = mock(ApplicationEventPublisher.class);
+        aiQuota = mock(tech.mamxanh.subscription.service.AiTokenQuotaService.class);
         service = new AiRecipeRecommendationService(recipes, users, preferences, entitlements, ai,
-                new JsonMapper(), events, Clock.systemUTC());
+                new JsonMapper(), events, Clock.systemUTC(), aiQuota);
         when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(7, Role.CUSTOMER));
         when(preferences.getOwnPreferences()).thenReturn(profile());
     }
@@ -119,14 +121,14 @@ class AiRecipeRecommendationServiceTest {
     }
 
     @Test
-    void weeklyPreviewRejectsConsecutiveRepeatsAndDoesNotEmitUsage() {
+    void weeklyPreviewRejectsConsecutiveRepeatsButRecordsSuccessfulProviderUsage() {
         when(recipes.searchPublished("", 0, 50)).thenReturn(new RecipePostService.RecipePageResponse(
                 List.of(recipe(1, "VEGAN", 1L), recipe(2, "VEGAN", 1L)), 0, 50, 2, 1));
         when(ai.recommendRecipeSequence(anyString(), anyList(), eq(21)))
                 .thenReturn(new AiClient.RecommendationResult("{\"recipeIds\":[" + "1,".repeat(20) + "1]}", null, null, null));
         assertThatThrownBy(() -> service.weeklyMenu(List.of(1L)))
                 .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_RESPONSE_INVALID);
-        verifyNoInteractions(events);
+        verify(events).publishEvent(any(AiUsageEvent.class));
     }
 
     @Test
@@ -143,7 +145,7 @@ class AiRecipeRecommendationServiceTest {
     }
 
     @Test
-    void mapsProviderAndMalformedResponseFailuresWithoutRecordingUsage() {
+    void providerFailureIsNotRecordedButMalformedSuccessfulResponseStillCountsUsage() {
         when(recipes.searchPublished("", 0, 50)).thenReturn(new RecipePostService.RecipePageResponse(
                 List.of(recipe(1, "VEGAN", 1L), recipe(2, "VEGAN", 1L), recipe(3, "VEGAN", 1L)), 0, 50, 3, 1));
         when(ai.recommendRecipes(anyString(), anyList(), eq(5)))
@@ -157,7 +159,7 @@ class AiRecipeRecommendationServiceTest {
                 .thenReturn(new AiClient.RecommendationResult("{\"recipeIds\":[1,1,2]}", 1, 1, 2));
         assertThatThrownBy(() -> service.recommend(List.of(1L)))
                 .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_RESPONSE_INVALID);
-        verifyNoInteractions(events);
+        verify(events).publishEvent(any(AiUsageEvent.class));
     }
 
     @Test

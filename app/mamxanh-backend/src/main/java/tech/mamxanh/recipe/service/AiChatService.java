@@ -24,6 +24,7 @@ import tech.mamxanh.recipe.dto.response.AiChatResponse.RecipeRecommendation;
 import tech.mamxanh.recipe.dto.response.RecipeDetailResponse;
 import tech.mamxanh.recipe.dto.response.RecipePostResponse;
 import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
+import tech.mamxanh.subscription.service.AiTokenQuotaService;
 
 /** FR-51 chat orchestration; conversation and prompt content remain request-scoped only. */
 @Service
@@ -77,10 +78,12 @@ public class AiChatService {
     private final ApplicationEventPublisher events;
     private final Clock clock;
     private final SubscriptionEntitlementService entitlements;
+    private final AiTokenQuotaService aiQuota;
 
     public AiChatService(CurrentUserService users, RecipeService recipes,
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
-            ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements) {
+            ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
+            AiTokenQuotaService aiQuota) {
         this.users = users;
         this.recipes = recipes;
         this.recipePosts = recipePosts;
@@ -90,6 +93,7 @@ public class AiChatService {
         this.events = events;
         this.clock = clock;
         this.entitlements = entitlements;
+        this.aiQuota = aiQuota;
     }
 
     public AiChatResponse answer(AiChatRequest request) {
@@ -125,6 +129,7 @@ public class AiChatService {
         String prompt = prompt(request, dietary, recipe, candidates, catalogSearch);
         AiClient.ChatResult result;
         try {
+            aiQuota.requireAvailable(userId, userId == null ? request.anonymousViewerId() : null);
             result = ai.answerChat(SYSTEM_INSTRUCTION, prompt);
         } catch (AiProviderException exception) {
             LOG.warn("Gemini chat rejected category={} httpStatus={}", exception.kind(), exception.httpStatus());
@@ -138,19 +143,20 @@ public class AiChatService {
         if (result == null) {
             throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
         }
+        publishUsage(userId, request, result);
         ChatReply reply = parseReply(result);
         List<RecipeRecommendation> recommendations = hydrateRecommendations(reply, candidates, dietary, request);
         String answer = normalizedAnswer(reply, request, catalogSearch, recommendations);
         if (answer.isBlank() || answer.length() > AiClient.MAX_CHAT_ANSWER_LENGTH) {
             throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
         }
-        publishUsage(userId, request, result);
         return new AiChatResponse(request.contextType(), request.recipeId(), answer, recommendations);
     }
 
     private ScopeDecision classifyScope(AiChatRequest request, Long userId) {
         AiClient.ChatResult result;
         try {
+            aiQuota.requireAvailable(userId, userId == null ? request.anonymousViewerId() : null);
             result = ai.classifyChatScope(SCOPE_CLASSIFIER_INSTRUCTION, scopePrompt(request));
         } catch (AiProviderException exception) {
             LOG.warn("Gemini chat scope classification failed category={} httpStatus={}", exception.kind(), exception.httpStatus());
@@ -160,7 +166,9 @@ public class AiChatService {
             throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE,
                     "Hiện chưa thể kiểm tra phạm vi câu hỏi. Vui lòng thử lại sau.");
         }
-        if (result == null || result.structuredJson() == null || result.structuredJson().isBlank()) return sensitiveDecision();
+        if (result == null) return sensitiveDecision();
+        publishUsage(userId, request, result);
+        if (result.structuredJson() == null || result.structuredJson().isBlank()) return sensitiveDecision();
         ScopeReply reply;
         try {
             reply = mapper.readValue(result.structuredJson(), ScopeReply.class);
@@ -188,7 +196,6 @@ public class AiChatService {
         }
         if (reason != ScopeReason.NONE) scope = Scope.SENSITIVE_OR_ABUSIVE;
         if (scope == Scope.SENSITIVE_OR_ABUSIVE && reason == ScopeReason.NONE) reason = ScopeReason.OTHER_HIGH_RISK;
-        publishUsage(userId, request, result);
         return new ScopeDecision(scope, reason);
     }
 
@@ -224,8 +231,10 @@ public class AiChatService {
     }
 
     private void publishUsage(Long userId, AiChatRequest request, AiClient.ChatResult result) {
-        events.publishEvent(new AiUsageEvent(userId, userId == null ? request.anonymousViewerId() : null,
-                "FR-51", clock.instant(), result.usage()));
+        var event = new AiUsageEvent(userId, userId == null ? request.anonymousViewerId() : null,
+                "FR-51", clock.instant(), result.usage());
+        aiQuota.record(event);
+        events.publishEvent(event);
     }
 
     private AiChatResponse routeWorkflow(AiChatRequest request, Long userId, AiChatIntent.Workflow workflow) {
