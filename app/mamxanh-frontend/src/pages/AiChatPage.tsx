@@ -26,6 +26,17 @@ interface ChatMessage extends AiChatTurn {
   recommendations?: Awaited<ReturnType<typeof recipesApi.chat>>["recommendations"]
 }
 
+function formatResetDateTime(timestamp: number): string {
+  if (!timestamp) return ''
+  const date = new Date(timestamp)
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = date.getFullYear()
+  return `${hours}:${minutes} ngày ${day}/${month}/${year}`
+}
+
 export function AiChatPage() {
   const { account, isAuthenticated } = useAuth()
   const { isOpen, recipeId, recipeTitle, recipeArticle, closeChat } =
@@ -605,8 +616,12 @@ export function AiChatPage() {
               role="alert"
               className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-900"
             >
-              {error}
-              {retrySeconds > 0 && <p>Thử lại sau {retrySeconds} giây.</p>}
+              <p>{error}</p>
+              {retryAt > 0 && retrySeconds > 0 && (
+                <p className="mt-1 font-medium text-red-800">
+                  Lượt hỏi mới sẽ được mở lại vào {formatResetDateTime(retryAt)}.
+                </p>
+              )}
               {retryQuestion && (
                 <button
                   type="button"
@@ -614,7 +629,7 @@ export function AiChatPage() {
                     void send(retryQuestion, messages.slice(0, -1), false)
                   }
                   disabled={loading || retrySeconds > 0}
-                  className="ml-2 font-bold underline disabled:opacity-50"
+                  className="mt-2 inline-block font-bold underline disabled:opacity-50"
                 >
                   Thử lại
                 </button>

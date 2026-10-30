@@ -23,6 +23,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Update OpenAPI documentation on /api/v1/recipes/ai/chat to declare the daily quota and daily reset behavior.
 - Update Backend and Frontend integration tests (GuestChatRateLimiterTest, GuestAiChatControllerTest, AiChatServiceTest, guest-chat-real-stack.spec.ts) to assert the 3-request daily limit and 4th request 429 status.
 - Increase AiChatRequest.Turn.content size limit from 1,000 to 4,000 characters to prevent validation failures when previous AI responses are included in conversation history.
+- Display new day reset date and time (`00:00 ngày DD/MM/YYYY`) instead of raw seconds countdown when guest rate limit is reached in AI chat UI.
 
 ## 2026-10-24 — Guest Chatbot Access and Technical Rate Limiting
 

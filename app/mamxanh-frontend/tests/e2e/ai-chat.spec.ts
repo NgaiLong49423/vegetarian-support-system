@@ -191,7 +191,7 @@ test('Guest rate limit shows registration and waits for Retry-After before retry
   await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
   await page.getByLabel('Câu hỏi của bạn').fill('Cách nấu?');
   await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
-  await expect(page.getByRole('dialog').getByRole('alert')).toContainText('Thử lại sau 3 giây');
+  await expect(page.getByRole('dialog').getByRole('alert')).toContainText('Lượt hỏi mới sẽ được mở lại vào');
   await expect(page.getByRole('dialog').getByRole('button', { name: 'Thử lại', exact: true })).toBeDisabled();
   await expect(page.getByRole('link', { name: 'Đăng ký tài khoản', exact: true })).toBeVisible();
   expect(calls).toBe(1);
