@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-31 — Implement Admin AI Configuration Foundation
 
-**Status:** Working tree (uncommitted changes).
+**Status:** Committed — `f5e026d1`.
 
 **Scope:** Add persisted Admin configuration for AI plans, Gemini model access, AI Credit conversion, and customer notifications under Issue #212.
 
