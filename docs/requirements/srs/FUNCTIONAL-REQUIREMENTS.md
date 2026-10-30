@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.50.0
+> **Version:** v2.51.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-30
+> **Last Updated:** 2026-10-31
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -3987,13 +3987,15 @@ Trang này là cách duyệt trực tiếp từ điển nguyên liệu hiện c�
 - **Mã yêu cầu:** FR-63
 - **Module:** M06
 - **Actor:** Guest, Member.
-- **Mô tả:** Backend ghi nhận token provider báo cáo cho mọi lần gọi Gemini thành công của người dùng (input, output, reasoning nếu có), một lần mỗi token; duy trì hạn mức Guest theo phiên và Member theo chu kỳ; dùng hạn mức tháng trước AI Credit, không cộng dồn quota tháng; Guest hết hạn mức được mời đăng ký. Member xem gói, quota, đã dùng/còn lại, thời điểm reset và Credit đã tiêu thụ/số dư. Lượt provider lỗi không trừ quota/Credit.
+- **Mô tả:** Backend ghi nhận token provider báo cáo cho mọi response Gemini sử dụng được (input, output, reasoning nếu có), một lần mỗi event; duy trì hạn mức Guest theo phiên và Member theo chu kỳ; dùng quota tháng trước AI Credit, không cộng dồn quota tháng; Guest hết hạn mức được mời đăng ký. Member xem gói, quota, đã dùng/còn lại, thời điểm reset và Credit đã tiêu thụ/số dư. Không giữ trước quota/Credit; chỉ bắt đầu model call khi còn quota hoặc Credit dương. Nếu lượt đã bắt đầu vượt số dư, chỉ trừ tối đa Credit hiện có, hệ thống chịu phần vượt và số dư không âm. Chu kỳ quota được chụp lúc bắt đầu call. Lượt lỗi không trừ quota/Credit; chi tiết usage được lưu 90 ngày sau khi chu kỳ tương ứng kết thúc, còn lịch sử Credit tồn tại trong vòng đời tài khoản.
 - **Acceptance Criteria:**
   - AC-63.1: Guest được tối đa 20.000 token mỗi phiên, đồng thời giữ rate limit hiện hành; hết quota bị chặn và được mời đăng ký.
   - AC-63.2: Quota khởi đầu Free 50.000/tháng, Plus 300.000/tháng, Pro 600.000/tháng; paid cycle bắt đầu lúc kích hoạt/gia hạn, Free có chu kỳ tháng riêng; quota tháng không cộng dồn.
   - AC-63.3: Token từ mọi lần gọi thành công được cộng đúng một lần; lỗi provider không trừ ngân sách người dùng.
   - AC-63.4: Hết quota và không đủ Credit thì dừng trước lần gọi model kế tiếp, báo trạng thái từng bước và yêu cầu bổ sung ngân sách để tiếp tục.
   - AC-63.5: Member có trang xem chính xác gói, token đã dùng/còn lại, ngày reset, Credit balance và mức Credit đã dùng; không lộ dữ liệu tài khoản khác.
+  - AC-63.6: Response rỗng, sai cấu trúc hoặc bị chặn khiến Backend không thể sử dụng được là lượt lỗi và không trừ quota/Credit; từ chối hợp lệ về nội dung là kết quả sử dụng được. Backend vẫn tính lượt thành công đã xác minh dù client đã ngắt kết nối. Nếu metadata token thiếu/không hợp lệ, vẫn trả response nhưng đánh dấu usage chưa ghi nhận, không ước lượng hoặc trừ ngân sách.
+  - AC-63.7: Lượt bắt đầu trước reset/nâng gói được ghi vào chu kỳ đã xác định lúc bắt đầu dù hoàn tất sau đó. Chi tiết mỗi lượt được giữ 90 ngày sau khi chu kỳ kết thúc; lịch sử giao dịch Credit được giữ trong thời gian tài khoản tồn tại.
 
 ---
 
@@ -4003,7 +4005,7 @@ Trang này là cách duyệt trực tiếp từ điển nguyên liệu hiện c�
 - **Mã yêu cầu:** FR-64
 - **Module:** M08, M06
 - **Actor:** Member, payment provider.
-- **Mô tả:** Member nhập số tiền nạp trong min/max do Admin cấu hình, xem số Credit quy đổi, tự tạo đơn và thanh toán. Sau khi quota tháng hết, hệ thống tự động tính và trừ Credit cho token overage theo tỷ lệ hiện hành; Credit có thể dùng xuyên các chu kỳ và không hết hạn. Credit mua thêm không mở quyền chọn model.
+- **Mô tả:** Member nhập số tiền nạp trong min/max do Admin cấu hình, xem số Credit quy đổi, tự tạo đơn và thanh toán. Sau khi quota tháng hết, hệ thống tự động tính và trừ Credit cho token overage theo tỷ lệ hiện hành; Credit có thể dùng xuyên các chu kỳ và không hết hạn. Credit hỗ trợ phần thập phân và tính chính xác theo token thực tế, không làm tròn lên từng lượt hoặc block; pilot 1.000 token = 400 Credit (1 token = 0,4 Credit). Đơn nạp chờ hết hạn sau 15 phút. Thanh toán xảy ra sau khi đơn hết hạn cần đối soát thủ công, chưa tự cộng Credit và phải thông báo người dùng; webhook đến muộn vẫn được ghi nhận nếu xác minh được thanh toán xảy ra trước hạn. Credit mua thêm không mở quyền chọn model.
 - **Acceptance Criteria:**
   - AC-64.1: Cấu hình khởi đầu 1.000đ = 1.000 Credit; min 10.000đ, max 500.000đ mỗi đơn; người dùng tự xác nhận thanh toán.
   - AC-64.2: Mọi Member kể cả Free được nạp; Credit mua thêm không đổi model access, vẫn theo cấu hình tier hiện hành (pilot Free mặc định Flash-Lite).
@@ -4011,6 +4013,9 @@ Trang này là cách duyệt trực tiếp từ điển nguyên liệu hiện c�
   - AC-64.4: Credit không hết hạn; không lưu token mua thêm thành balance hết hạn.
   - AC-64.5: Đơn chờ thanh toán giữ số tiền/Credit tại thời điểm tạo đến khi đơn hết hạn, dù Admin đổi tỷ lệ.
   - AC-64.6: Lỗi provider không trừ quota hoặc Credit; mọi khoản ghi sổ được đối soát với kết quả provider/thanh toán và không ghi trùng.
+  - AC-64.7: Tính Credit chính xác theo token overage thực tế, cho phép phần thập phân; ví dụ 1.001 token tính 400,4 Credit theo tỷ lệ pilot. Không làm tròn lên theo lượt.
+  - AC-64.8: Đơn nạp chờ hết hạn 15 phút từ lúc tạo và giữ nguyên snapshot tiền/Credit. Thanh toán sau hạn cần đối soát thủ công, chưa tự cộng Credit và thông báo Member; thanh toán trước hạn có webhook muộn vẫn được xác minh và cộng Credit idempotently.
+  - AC-64.9: Không giữ trước ngân sách. Lượt đã được phép bắt đầu khi còn quota hoặc Credit dương có thể vượt ngân sách; chỉ trừ phần Credit khả dụng, hệ thống chịu phần vượt, không tạo số dư âm và dừng trước lần gọi tiếp theo khi quota/Credit đều cạn.
 
 ---
 

@@ -1,8 +1,8 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v2.18.0
+> **Version:** v2.19.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-30
+> **Last Updated:** 2026-10-31
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -30,7 +30,7 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-03 — Xác thực quyền, model và ngân sách trước khi gọi dịch vụ AI
 
 - **Mã quy tắc:** BR-03
-- **Nội dung:** Backend xác thực người dùng, quyền truy cập dữ liệu/chức năng gốc, model preference của tài khoản với tier/subscription hiện tại và catalog đang bật, consent dữ liệu cá nhân và ngân sách trước mỗi lần gọi Gemini. Khi hết quota tháng, hệ thống tự tính phí vượt mức bằng AI Credit theo BR-77; không đủ Credit thì dừng trước lần gọi tiếp theo. Model thay thế chỉ được dùng sau xác nhận rõ ràng và tối đa một lần retry; không sửa preference đã lưu. Admin endpoints không được gọi qua AI Assistant.
+- **Nội dung:** Backend xác thực người dùng, quyền truy cập dữ liệu/chức năng gốc, model preference của tài khoản với tier/subscription hiện tại và catalog đang bật, consent dữ liệu cá nhân và khả năng sử dụng ngân sách trước mỗi lần gọi Gemini. Không giữ trước (reserve) quota hoặc Credit. Khi hết quota tháng, hệ thống tính phí vượt mức bằng AI Credit theo BR-77; nếu Credit không đủ, vẫn cho phép một lần gọi khi tài khoản còn quota hoặc Credit dương, chỉ trừ tối đa Credit hiện có và hệ thống chịu phần chi phí vượt; số dư không được âm. Khi cả quota và Credit đều cạn, dừng trước lần gọi model tiếp theo. Chu kỳ quota được xác định tại thời điểm bắt đầu lần gọi. Model thay thế chỉ được dùng sau xác nhận rõ ràng và tối đa một lần retry; không sửa preference đã lưu. Admin endpoints không được gọi qua AI Assistant.
 
 ---
 
@@ -38,7 +38,7 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-04 — Xử lý lỗi provider, timeout AI và lưu trữ telemetry
 
 - **Mã quy tắc:** BR-04
-- **Nội dung:** Lỗi provider/timeout không được báo thành công và không trừ quota/Credit người dùng, kể cả khi provider có báo chi phí; chi phí lỗi do hệ thống chịu và được ghi riêng để đối soát. Với lượt thành công, cộng tổng token provider ghi nhận (input, output và reasoning nếu có) đúng một lần cho mọi lần gọi model. Telemetry vận hành lưu tối đa 90 ngày, không lưu raw prompt; số dư/ledger nghiệp vụ có vòng đời riêng theo FR-63/64.
+- **Nội dung:** Lượt gọi chỉ được tính quota/Credit khi Backend nhận và xác minh được response Gemini sử dụng được; việc trình duyệt đã đóng, tải lại hoặc mất kết nối không miễn trừ khoản tính nếu Backend vẫn nhận được kết quả hợp lệ. Lỗi provider/timeout, response rỗng, sai cấu trúc hoặc bị bộ lọc an toàn chặn khiến Backend không thể sử dụng response đều là lượt lỗi: không trừ quota/Credit người dùng, kể cả khi provider báo có chi phí; chi phí lỗi do hệ thống chịu. Từ chối hợp lệ về nội dung ngoài phạm vi là một kết quả sử dụng được, không phải lỗi kỹ thuật. Nếu metadata token thiếu hoặc không hợp lệ, Backend vẫn trả response sử dụng được nhưng đánh dấu usage chưa ghi nhận, không ước lượng token và không trừ quota/Credit. Với lượt thành công có metadata hợp lệ, cộng tổng token provider ghi nhận (input, output và reasoning nếu có) đúng một lần cho mọi lần gọi model. Lượt gọi gắn với chu kỳ quota được xác định lúc bắt đầu; hoàn tất sau reset/nâng gói vẫn ghi vào chu kỳ đã chụp lúc bắt đầu. Chi tiết usage từng lần gọi được giữ 90 ngày sau khi chu kỳ tương ứng kết thúc. Telemetry vận hành lưu tối đa 90 ngày, không lưu raw prompt; lịch sử giao dịch AI Credit được giữ trong thời gian tài khoản tồn tại.
 
 ---
 
@@ -46,7 +46,7 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-77 — AI Credit, thanh toán nạp và overage
 
 - **Mã quy tắc:** BR-77
-- **Nội dung:** AI Credit không hết hạn; tỷ lệ khởi đầu 1.000đ = 1.000 Credit, nạp tối thiểu 10.000đ và tối đa 500.000đ/lần. Sau khi dùng hết token tháng, hệ thống tự động trừ 400 Credit cho mỗi 1.000 token vượt hạn mức, dùng cùng tỷ lệ cho mọi Gemini model và loại token. Hệ thống dùng quota tháng trước Credit. Đơn nạp đang chờ thanh toán giữ nguyên số tiền/Credit được báo lúc tạo cho đến khi hết hạn. Thay đổi tỷ lệ có hiệu lực với yêu cầu/đơn mới ngay lập tức; gửi thông báo in-app và Admin có thể gửi email toàn bộ khách hàng. Người dùng tự chọn gói/tạo đơn/thanh toán; AI chỉ điều hướng tới trang thanh toán.
+- **Nội dung:** AI Credit không hết hạn; tỷ lệ khởi đầu 1.000đ = 1.000 Credit, nạp tối thiểu 10.000đ và tối đa 500.000đ/lần. Credit hỗ trợ phần thập phân và được tính chính xác theo token overage thực tế, không làm tròn lên theo lượt hoặc theo block token: tỷ lệ pilot 1.000 token = 400 Credit, do đó 1 token = 0,4 Credit. Sau khi dùng hết token tháng, hệ thống tự động dùng quota tháng trước rồi mới trừ Credit; cùng tỷ lệ áp dụng cho mọi Gemini model và loại token. Không giữ trước ngân sách. Nếu một lượt được phép bắt đầu khi còn quota hoặc Credit dương nhưng mức tiêu thụ vượt ngân sách còn lại, hệ thống chỉ trừ tối đa Credit khả dụng, chịu phần vượt và không để số dư âm; chặn trước lượt gọi model tiếp theo nếu quota và Credit đều đã cạn. Đơn nạp đang chờ thanh toán giữ nguyên số tiền/Credit quy đổi theo tỷ lệ lúc tạo và hết hạn sau 15 phút. Thanh toán thực sự xảy ra sau khi đơn hết hạn được đưa vào trạng thái cần đối soát thủ công, chưa tự cộng Credit và phải thông báo người dùng; thanh toán xảy ra trước hạn nhưng webhook đến muộn vẫn được xác minh và cộng Credit bình thường. Thay đổi tỷ lệ overage có hiệu lực ngay cho lần gọi mới; tỷ lệ VND/Credit và giới hạn nạp áp dụng cho đơn mới. Thay đổi tỷ lệ gửi thông báo in-app; Admin có thể chọn gửi thêm email tới toàn bộ khách hàng đủ điều kiện theo BR-78. Người dùng tự chọn gói/tạo đơn/thanh toán; AI chỉ điều hướng tới trang thanh toán.
 
 ---
 

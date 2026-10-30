@@ -18,6 +18,12 @@ public interface AiTokenUsageLedgerRepository extends JpaRepository<AiTokenUsage
             + "where row.anonymousSessionId = :sessionId")
     long sumGuestTokens(@Param("sessionId") String sessionId);
 
+    @Query("select coalesce(sum(row.tokenCount), 0) from AiTokenUsageLedgerEntity row "
+            + "where row.userId = :userId and row.periodStart = :periodStart and row.periodEnd = :periodEnd "
+            + "and row.tokenCount is not null")
+    long sumMemberTokensIncludingExpired(@Param("userId") long userId,
+            @Param("periodStart") LocalDateTime periodStart, @Param("periodEnd") LocalDateTime periodEnd);
+
     @Modifying
     @Query("delete from AiTokenUsageLedgerEntity row where row.expiresAt <= :now")
     int deleteExpired(@Param("now") LocalDateTime now);
