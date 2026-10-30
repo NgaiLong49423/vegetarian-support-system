@@ -32,6 +32,9 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(GeminiAiClient.class);
     // Reserve application overhead within the NFR-18 ten-second provider budget.
     private static final int REQUEST_TIMEOUT_MS = 9_000;
+    // Give the extra sequential classification call enough time for normal provider/network latency.
+    private static final int CHAT_SCOPE_TIMEOUT_MS = 6_000;
+    private static final int CHAT_ANSWER_TIMEOUT_MS = 7_000;
     private static final int MIN_RETRY_BUDGET_MS = 2_000;
     // Confirmed model in TECHNOLOGY-STACK.md; shared by all account tiers.
     private static final String MODEL = "gemini-3.8-flash";
@@ -106,6 +109,38 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
     }
 
     @Override
+    public ChatResult classifyChatScope(String systemInstruction, String prompt) {
+        Schema schema = Schema.builder().type(Type.Known.OBJECT)
+                .properties(Map.of("decisionId", Schema.builder().type(Type.Known.STRING).build(),
+                        "reasonId", Schema.builder().type(Type.Known.STRING).build()))
+                .required(List.of("decisionId", "reasonId")).build();
+        GenerateContentConfig config = GenerateContentConfig.builder()
+                .systemInstruction(Content.fromParts(Part.fromText(systemInstruction)))
+                .responseMimeType("application/json")
+                .responseSchema(schema)
+                .candidateCount(1)
+                .maxOutputTokens(128)
+                .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build())
+                .build();
+        return request("CHAT_SCOPE", "Gemini chat scope classification failed", CHAT_SCOPE_TIMEOUT_MS, () -> {
+            var response = client.models.generateContent(MODEL, prompt, config);
+            String finishReason = response.candidates().orElse(List.of()).stream().findFirst()
+                    .flatMap(candidate -> candidate.finishReason()).map(Object::toString).orElse("STOP");
+            String text = response.text();
+            var usage = tokenUsage(response);
+            if (!"STOP".equals(finishReason) || text == null || text.isBlank()) {
+                // Provider safety filters can suppress a classifier response for high-risk text.
+                // Fail closed into the Backend's prepared warning instead of surfacing a 502.
+                LOG.warn("Gemini chat scope response incomplete; returning fail-closed classification finishReason={}", finishReason);
+                return new ChatResult(null,
+                        "{\"decisionId\":\"MX_CHAT_SENSITIVE\",\"reasonId\":\"OTHER_HIGH_RISK\"}",
+                        usage.promptTokens(), usage.responseTokens(), usage.totalTokens(), usage);
+            }
+            return new ChatResult(null, text.strip(), usage.promptTokens(), usage.responseTokens(), usage.totalTokens(), usage);
+        });
+    }
+
+    @Override
     public ChatResult answerChat(String systemInstruction, String prompt) {
         Schema recommendationSchema = Schema.builder().type(Type.Known.OBJECT)
                 .properties(Map.of("recipeId", Schema.builder().type(Type.Known.INTEGER).build(),
@@ -126,7 +161,7 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                 .maxOutputTokens(2048)
                 .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build())
                 .build();
-        return request("CHAT", "Gemini chat request failed", () -> {
+        return request("CHAT", "Gemini chat request failed", CHAT_ANSWER_TIMEOUT_MS, () -> {
             var response = client.models.generateContent(MODEL, prompt, config);
             String finishReason = response.candidates().orElse(List.of()).stream().findFirst()
                     .flatMap(candidate -> candidate.finishReason()).map(Object::toString).orElse("STOP");
@@ -198,12 +233,16 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
     }
 
     private <T> T request(String operation, String failureMessage, Supplier<T> action) {
+        return request(operation, failureMessage, REQUEST_TIMEOUT_MS, action);
+    }
+
+    private <T> T request(String operation, String failureMessage, int timeoutMillis, Supplier<T> action) {
         long started = System.nanoTime();
         try {
             if (client == null) throw new AiProviderException("Gemini is not configured", null,
                     FailureKind.CONFIGURATION, null);
             // Both attempts and their backoff share one deadline; SDK retries remain disabled.
-            long deadline = started + TimeUnit.MILLISECONDS.toNanos(REQUEST_TIMEOUT_MS);
+            long deadline = started + TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
             var pending = requests.submit(() -> attemptWithBoundedRetry(operation, action, deadline));
             try {
                 return pending.get(Math.max(1, deadline - System.nanoTime()), TimeUnit.NANOSECONDS);

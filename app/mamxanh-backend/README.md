@@ -1,6 +1,6 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.52.0
+> **Version:** v0.53.0
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-10-30
 > **Status:** Active  
@@ -25,6 +25,8 @@
 
 
 Chatbot phân luồng yêu cầu rõ ràng về thực đơn tuần và hỗ trợ soạn Recipe Post trước provider: yêu cầu tuần kiểm tra Pro; soạn bài kiểm tra Expert và Plus/Pro. Guest nhận yêu cầu đăng nhập; Member thiếu gói nhận 403 kèm `requiredTier`/`upgradeUrl`. Tài khoản đủ quyền nhận liên kết workflow, không sinh thực đơn hoặc ghi bài từ chat và không phát usage event Gemini cho việc điều hướng. Hỏi đáp dinh dưỡng tổng quát và bản nháp công thức được yêu cầu rõ vẫn thuộc FR-51.
+
+Với yêu cầu hỏi đáp còn lại, Backend gọi Gemini để phân loại tin nhắn mới trước khi tải ngữ cảnh hồ sơ/công thức và trước khi gọi Gemini sinh câu trả lời. Classifier trả `decisionId` trong allowlist `MX_CHAT_OK`, `MX_CHAT_OFF_TOPIC`, `MX_CHAT_SENSITIVE`; `reasonId` phân biệt các vùng nhạy cảm nội bộ. Chỉ `MX_CHAT_OK` tiếp tục luồng chat; hai mã còn lại được Backend chuyển thành câu trả lời chuẩn bị sẵn và không trả recommendation cards. Nếu Gemini safety filter chặn response phân loại, Backend chuyển sang cảnh báo nhạy cảm chuẩn bị sẵn; timeout/lỗi phân loại trả response dự phòng và không gọi bước sinh câu trả lời. Cả hai lượt provider được ghi token usage riêng; timeout tối đa là 6 giây cho phân loại và 7 giây cho câu trả lời. API response giữ nguyên schema; frontend đặt timeout Chatbox 15 giây cho luồng có tối đa hai lần gọi Gemini.
 
 Tìm món tiếp dùng câu hỏi và ngữ cảnh phiên, có thể lọc thể loại trước phân trang. Chỉ kiểm tra tối đa bốn trang, mỗi trang 50 bài và đưa tối đa 50 ứng viên hợp lệ cho AI. `history[].recommendedRecipeIds` chỉ dùng để tránh lặp khi hỏi món khác; Backend vẫn kiểm tra công khai, điều kiện ăn uống và dữ liệu thẻ hiện tại. Không suy ra toàn bộ database trống từ phạm vi tìm kiếm có giới hạn.
 ## Admin account management — FR-06
