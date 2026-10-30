@@ -9,6 +9,7 @@ export type ProblemDetails = {
   title?: string;
   detail?: string;
   errors?: FieldError[];
+  requiredTier?: 'PLUS' | 'PRO';
 };
 
 /** Returns the ProblemDetail of a failed request, or null for network errors and unexpected bodies. */

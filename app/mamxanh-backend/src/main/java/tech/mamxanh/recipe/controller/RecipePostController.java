@@ -134,10 +134,10 @@ public class RecipePostController {
     @PostMapping(path = "/ai-assistance", consumes = MediaType.APPLICATION_JSON_VALUE)
     @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
     @Operation(summary = "Generate editable AI-assisted recipe text",
-            description = "Requires an active Expert account with an active Plus or Pro subscription. Does not create or publish a recipe draft.")
+            description = "Requires an active Expert account with an active Pro subscription. Does not create or publish a recipe draft.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Editable recipe text generated."),
-            @ApiResponse(responseCode = "403", description = "Expert role or Plus/Pro entitlement is required."),
+            @ApiResponse(responseCode = "403", description = "Expert role or Pro entitlement is required."),
             @ApiResponse(responseCode = "502", description = "AI response did not satisfy the recipe output constraints."),
             @ApiResponse(responseCode = "503", description = "Gemini is not configured or unavailable.")
     })

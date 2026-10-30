@@ -31,6 +31,7 @@ class AiChatServiceTest {
     private AiClient ai;
     private ApplicationEventPublisher events;
     private AiChatService service;
+    private tech.mamxanh.subscription.service.SubscriptionEntitlementService entitlements;
 
     @BeforeEach
     void setup() {
@@ -40,10 +41,10 @@ class AiChatServiceTest {
         preferences = mock(DietaryPreferenceService.class);
         ai = mock(AiClient.class);
         events = mock(ApplicationEventPublisher.class);
-        service = new AiChatService(users, recipes, recipePosts, preferences, ai, new JsonMapper(), events, Clock.systemUTC(),
-                new GuestChatRateLimiter(Clock.systemUTC()));
-        when(users.findAuthenticatedUserId()).thenReturn(java.util.Optional.of(7L));
+        entitlements = mock(tech.mamxanh.subscription.service.SubscriptionEntitlementService.class);
+        service = new AiChatService(users, recipes, recipePosts, preferences, ai, new JsonMapper(), events, Clock.systemUTC(), entitlements);
         when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(7, Role.CUSTOMER));
+        when(users.findAuthenticatedUserId()).thenReturn(java.util.Optional.of(7L));
         when(preferences.menuConstraints(7)).thenReturn(new DietaryPreferenceService.MenuDietaryConstraints(
                 "VEGAN", List.of(8L), List.of("Sữa")));
         when(recipePosts.searchPublished("", 0, 50)).thenReturn(new RecipePostService.RecipePageResponse(
@@ -51,37 +52,16 @@ class AiChatServiceTest {
     }
 
     @Test
-    void guestUsesNoAccountProfileAndPublishesAnonymousTokenMetadata() {
+    void guestUsesTheSameChatWithoutLoadingAPersonalDietaryProfile() {
         when(users.findAuthenticatedUserId()).thenReturn(java.util.Optional.empty());
         when(ai.answerChat(anyString(), anyString())).thenReturn(new AiClient.ChatResult("Nấu nhỏ lửa.", 1, 2, 3));
-        var response = service.answer(chat("Cách nấu đậu?"), java.util.UUID.randomUUID().toString(), "peer");
-        assertThat(response.answer()).isEqualTo("Nấu nhỏ lửa.");
+        assertThat(service.answer(new AiChatRequest(AiChatRequest.ContextType.GENERAL, null,
+                "Cách nấu canh?", List.of())).answer()).isEqualTo("Nấu nhỏ lửa.");
+        verifyNoInteractions(preferences);
         verify(users, never()).requireActiveMember();
-        verifyNoInteractions(preferences);
-        var event = ArgumentCaptor.forClass(AiUsageEvent.class);
-        verify(events).publishEvent(event.capture());
-        assertThat(event.getValue().userId()).isNull();
-        assertThat(event.getValue().totalTokens()).isEqualTo(3);
-    }
-
-    @Test
-    void authenticatedRejectionNeverFallsBackToGuestOrCallsProvider() {
-        when(users.requireActiveMember()).thenThrow(new AppException(ErrorCode.ACCESS_DENIED));
-        assertThatThrownBy(() -> service.answer(chat("Cách nấu đậu?"))).isInstanceOf(AppException.class);
-        verifyNoInteractions(ai, preferences, events);
-    }
-
-    @Test
-    void guestRateLimitStopsProviderAndProfileAccess() {
-        when(users.findAuthenticatedUserId()).thenReturn(java.util.Optional.empty());
-        when(ai.answerChat(anyString(), anyString())).thenReturn(new AiClient.ChatResult("Câu trả lời.", 1, 2, 3));
-        String guestId = java.util.UUID.randomUUID().toString();
-        for (int i = 0; i < 3; i++) service.answer(chat("Cách nấu đậu?"), guestId, "peer");
-        assertThatThrownBy(() -> service.answer(chat("Cách nấu đậu?"), guestId, "peer"))
-                .isInstanceOfSatisfying(AppException.class,
-                        error -> assertThat(error.errorCode()).isEqualTo(ErrorCode.GUEST_CHAT_RATE_LIMITED));
-        verify(ai, times(3)).answerChat(anyString(), anyString());
-        verifyNoInteractions(preferences);
+        ArgumentCaptor<AiUsageEvent> usage = ArgumentCaptor.forClass(AiUsageEvent.class);
+        verify(events).publishEvent(usage.capture());
+        assertThat(usage.getValue().userId()).isNull();
     }
 
     @Test
@@ -101,6 +81,28 @@ class AiChatServiceTest {
         verify(events).publishEvent(usage.capture());
         assertThat(usage.getValue().feature()).isEqualTo("FR-51");
         assertThat(usage.getValue().totalTokens()).isEqualTo(20);
+    }
+
+    @Test
+    void completeLongAnswersRemainUsableInTheNextConversationTurn() {
+        String answer = "a".repeat(2500);
+        when(ai.answerChat(anyString(), anyString())).thenReturn(new AiClient.ChatResult(answer, 1, 2, 3));
+        var first = service.answer(new AiChatRequest(AiChatRequest.ContextType.GENERAL, null, "Hello", List.of()));
+        assertThat(first.answer()).isEqualTo(answer);
+        when(ai.answerChat(anyString(), anyString())).thenReturn(new AiClient.ChatResult("Next answer", 1, 2, 3));
+        assertThat(service.answer(new AiChatRequest(AiChatRequest.ContextType.GENERAL, null, "Next",
+                List.of(new AiChatRequest.Turn(AiChatRequest.Speaker.ASSISTANT, first.answer())))).answer())
+                .isEqualTo("Next answer");
+    }
+
+    @Test
+    void oversizedProviderAnswersAreRejectedWithoutPublishingSuccessfulUsage() {
+        when(ai.answerChat(anyString(), anyString()))
+                .thenReturn(new AiClient.ChatResult("a".repeat(AiClient.MAX_CHAT_ANSWER_LENGTH + 1), 1, 2, 3));
+        assertThatThrownBy(() -> service.answer(new AiChatRequest(AiChatRequest.ContextType.GENERAL,
+                null, "Hello", List.of()))).isInstanceOfSatisfying(AppException.class,
+                failure -> assertThat(failure.errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_INVALID));
+        verifyNoInteractions(events);
     }
 
     @Test
@@ -372,6 +374,83 @@ class AiChatServiceTest {
 
     private static AiChatRequest chat(String question) {
         return new AiChatRequest(AiChatRequest.ContextType.GENERAL, null, question, List.of());
+    }
+
+    @Test
+    void weeklyMenuIsDeniedBeforePreferencesCatalogProviderOrUsageAndAllowedPaidMemberIsRoutedWithoutGeneration() {
+        doThrow(new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED).withProperty("requiredTier", "PLUS"))
+                .when(entitlements).requirePlusOrPro(7L);
+        assertThatThrownBy(() -> service.answer(chat("Lập thực đơn tuần 7 ngày theo dinh dưỡng cá nhân cho tôi.")))
+                .isInstanceOf(AppException.class).extracting("errorCode").isEqualTo(ErrorCode.AI_SUBSCRIPTION_REQUIRED);
+        verifyNoInteractions(preferences, recipes, recipePosts, ai, events);
+        reset(entitlements);
+        var routed = service.answer(chat("Lập thực đơn tuần"));
+        assertThat(routed.workflowUrl()).isEqualTo("/ke-hoach?view=for-you");
+        assertThat(routed.recommendations()).isEmpty();
+        verify(entitlements).requirePlusOrPro(7L);
+        verifyNoInteractions(preferences, recipes, recipePosts, ai, events);
+    }
+
+    @Test
+    void guestCannotAskChatToRunAMemberWorkflow() {
+        when(users.findAuthenticatedUserId()).thenReturn(java.util.Optional.empty());
+        assertThatThrownBy(() -> service.answer(chat("Lên menu cho tuần này")))
+                .isInstanceOf(AppException.class).extracting("errorCode").isEqualTo(ErrorCode.UNAUTHENTICATED);
+        verifyNoInteractions(entitlements, preferences, recipes, recipePosts, ai, events);
+    }
+
+    @Test
+    void recipePostAuthoringRechecksRoleAndProBeforeReturningTheDedicatedForm() {
+        var routed = service.answer(chat("Viết mô tả cho bài đăng công thức"));
+        verify(users).requireActiveExpert();
+        verify(entitlements).requirePro(7L);
+        assertThat(routed.workflowUrl()).isEqualTo("/dang-cong-thuc");
+        verifyNoInteractions(ai, events);
+    }
+
+    @Test
+    void followUpLoadsRealCatalogAndExcludesOnlyEarlierAssistantCardIds() {
+        var old = post(41, "VEGAN", "PUBLISHED", List.of(), List.of(), "Cũ");
+        var next = post(42, "VEGAN", "PUBLISHED", List.of(), List.of(), "Mới");
+        when(recipePosts.searchPublished("", 0, 50)).thenReturn(new RecipePostService.RecipePageResponse(List.of(old, next), 0, 50, 2, 1));
+        when(ai.answerChat(anyString(), anyString())).thenReturn(structured(
+                "{\"action\":\"FIND_RECIPES\",\"answer\":\"Database không còn món\",\"recommendations\":[{\"recipeId\":42,\"reason\":\"Món công khai\"}]}"));
+        when(recipePosts.getPublishedCards(List.of(42L))).thenReturn(List.of(next));
+        var history = List.of(new AiChatRequest.Turn(AiChatRequest.Speaker.USER, "Gợi ý món chay"),
+                new AiChatRequest.Turn(AiChatRequest.Speaker.ASSISTANT, "Món trước", List.of(41L, 999L)));
+        var response = service.answer(new AiChatRequest(AiChatRequest.ContextType.GENERAL, null, "còn món khác không", history));
+        assertThat(response.recommendations()).extracting(item -> item.id()).containsExactly(42L);
+        assertThat(response.answer()).doesNotContain("không còn");
+        var prompt = ArgumentCaptor.forClass(String.class);
+        verify(ai).answerChat(anyString(), prompt.capture());
+        assertThat(prompt.getValue()).contains("Allowed public RecipePost IDs: [42]", "bounded search");
+    }
+
+    @Test
+    void categoryQueryRunsBeforePagingAndReadsAnotherPageWhenDietaryFiltersRemoveTheFirst() {
+        var restricted = post(51, "LACTO", "PUBLISHED", List.of(), List.of(), "Không hợp Vegan");
+        var original = post(52, "VEGAN", "PUBLISHED", List.of(), List.of(), "Món kho thật");
+        var braised = new RecipePostResponse(original.id(), original.authorId(), original.authorName(), original.authorAvatarUrl(),
+                original.title(), original.description(), original.instructions(), "BRAISED", original.vegetarianType(), original.difficulty(),
+                original.servings(), original.prepTimeMin(), original.cookTimeMin(), original.youtubeUrl(), original.status(), original.media(),
+                original.ingredients(), original.likes(), original.dislikes(), original.likePercentage(), original.viewCount());
+        when(recipePosts.searchPublished("", 0, 50, RecipeSortMode.NEWEST, RecipeViewPeriod.ALL_TIME, null, "BRAISED", List.of(), null))
+                .thenReturn(new RecipePostService.RecipePageResponse(List.of(restricted), 0, 50, 51, 2));
+        when(recipePosts.searchPublished("", 1, 50, RecipeSortMode.NEWEST, RecipeViewPeriod.ALL_TIME, null, "BRAISED", List.of(), null))
+                .thenReturn(new RecipePostService.RecipePageResponse(List.of(braised), 1, 50, 51, 2));
+        when(ai.answerChat(anyString(), anyString())).thenReturn(structured(
+                "{\"action\":\"FIND_RECIPES\",\"answer\":\"Món kho\",\"recommendations\":[{\"recipeId\":52,\"reason\":\"Món kho công khai\"}]}"));
+        when(recipePosts.getPublishedCards(List.of(52L))).thenReturn(List.of(braised));
+        assertThat(service.answer(chat("các món kho thử xem")).recommendations()).extracting(item -> item.id()).containsExactly(52L);
+        verify(recipePosts, never()).searchPublished("", 0, 50);
+    }
+
+    @Test
+    void boundedCatalogNeverBecomesAGlobalAbsenceClaim() {
+        when(ai.answerChat(anyString(), anyString())).thenReturn(structured(
+                "{\"action\":\"FIND_RECIPES\",\"answer\":\"Toàn hệ thống không có món\",\"recommendations\":[]}"));
+        var response = service.answer(chat("còn món khác không"));
+        assertThat(response.answer()).contains("phần danh mục đã kiểm tra").doesNotContain("Toàn hệ thống");
     }
 
     private static AiClient.ChatResult structured(String json) {

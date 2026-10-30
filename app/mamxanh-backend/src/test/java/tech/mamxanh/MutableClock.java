@@ -43,6 +43,12 @@ public class MutableClock extends Clock {
 
     @Override
     public Clock withZone(ZoneId zone) {
-        return this.zone.equals(zone) ? this : new MutableClock(instant, zone);
+        java.util.Objects.requireNonNull(zone, "zone");
+        if (getZone().equals(zone)) return this;
+        return new Clock() {
+            @Override public Instant instant() { return MutableClock.this.instant(); }
+            @Override public ZoneId getZone() { return zone; }
+            @Override public Clock withZone(ZoneId other) { return MutableClock.this.withZone(other); }
+        };
     }
 }

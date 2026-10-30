@@ -76,7 +76,9 @@ class AiCookingGuideServiceTest {
 
     @Test
     void generatesValidatedGuideFromOnlyPublishedRecipeIngredients() {
-        when(ai.generateRecipeText(anyString(), anyList())).thenReturn(VALID_GUIDE);
+        when(ai.generateRecipeContent(anyString(), anyList())).thenReturn(new AiClient.RecommendationResult(VALID_GUIDE,
+                150, 300, 500, new tech.mamxanh.integration.ai.AiTokenUsage(
+                        "gemini-3.8-flash", "STANDARD", 150, 300, 500, 50, 20, 0)));
 
         var result = service.generate(RECIPE_ID);
 
@@ -86,8 +88,16 @@ class AiCookingGuideServiceTest {
         assertThat(result.steps().get(1)).isEqualTo("Rửa và sơ chế đậu phụ. — Nguyên liệu: Đậu phụ");
         assertThat(result.aiNotice()).contains("ước tính");
         verify(preferences).requirePersonalizedAiEligible(MEMBER_ID);
-        verify(ai).generateRecipeText(anyString(), org.mockito.ArgumentMatchers.eq(List.of(1L)));
-        verify(events).publishEvent(org.mockito.ArgumentMatchers.any(AiUsageEvent.class));
+        verify(ai).generateRecipeContent(anyString(), org.mockito.ArgumentMatchers.eq(List.of(1L)));
+        var telemetry = org.mockito.ArgumentCaptor.forClass(AiUsageEvent.class);
+        verify(events).publishEvent(telemetry.capture());
+        assertThat(telemetry.getValue().feature()).isEqualTo("FR-34");
+        assertThat(telemetry.getValue().userId()).isEqualTo(MEMBER_ID);
+        assertThat(telemetry.getValue().usage().promptTokens()).isEqualTo(150);
+        assertThat(telemetry.getValue().usage().responseTokens()).isEqualTo(300);
+        assertThat(telemetry.getValue().usage().totalTokens()).isEqualTo(500);
+        assertThat(telemetry.getValue().usage().thinkingTokens()).isEqualTo(50);
+        assertThat(telemetry.getValue().usage().cachedTokens()).isEqualTo(20);
     }
 
     @Test
@@ -97,7 +107,7 @@ class AiCookingGuideServiceTest {
 
         assertError(ErrorCode.RECIPE_NOT_FOUND);
 
-        verify(ai, never()).generateRecipeText(anyString(), anyList());
+        verify(ai, never()).generateRecipeContent(anyString(), anyList());
     }
 
     @Test
@@ -110,60 +120,60 @@ class AiCookingGuideServiceTest {
                 List.of(new PreferenceItem(null, "  ĐẬU PHỤ  "))));
         assertError(ErrorCode.RECIPE_NOT_FOUND);
 
-        verify(ai, never()).generateRecipeText(anyString(), anyList());
+        verify(ai, never()).generateRecipeContent(anyString(), anyList());
     }
 
     @Test
     void translatesProviderAndUnexpectedRuntimeFailures() {
-        when(ai.generateRecipeText(anyString(), anyList())).thenThrow(new AiProviderException("private provider detail"));
+        when(ai.generateRecipeContent(anyString(), anyList())).thenThrow(new AiProviderException("private provider detail"));
         assertError(ErrorCode.AI_PROVIDER_UNAVAILABLE);
 
         doThrow(new IllegalStateException("private internal detail"))
-                .when(ai).generateRecipeText(anyString(), anyList());
+                .when(ai).generateRecipeContent(anyString(), anyList());
         assertError(ErrorCode.AI_PROVIDER_UNAVAILABLE);
     }
 
     @Test
     void rejectsMalformedNullAndTooShortProviderResponses() {
-        when(ai.generateRecipeText(anyString(), anyList())).thenReturn("not-json");
+        when(ai.generateRecipeContent(anyString(), anyList())).thenReturn(new AiClient.RecommendationResult("not-json", 150, 300, 450));
         assertError(ErrorCode.AI_RESPONSE_INVALID);
 
-        when(ai.generateRecipeText(anyString(), anyList())).thenReturn("null");
+        when(ai.generateRecipeContent(anyString(), anyList())).thenReturn(new AiClient.RecommendationResult("null", 150, 300, 450));
         assertError(ErrorCode.AI_RESPONSE_INVALID);
 
-        when(ai.generateRecipeText(anyString(), anyList())).thenReturn("{\"steps\":[]}");
+        when(ai.generateRecipeContent(anyString(), anyList())).thenReturn(new AiClient.RecommendationResult("{\"steps\":[]}", 150, 300, 450));
         assertError(ErrorCode.AI_RESPONSE_INVALID);
     }
 
     @Test
     void rejectsMalformedStepFieldsAndUnlistedIngredientIds() {
-        when(ai.generateRecipeText(anyString(), anyList())).thenReturn(guideWithSteps(
-                "{\"text\":\"ok\",\"ingredientIds\":[999]}", 6));
+        when(ai.generateRecipeContent(anyString(), anyList())).thenReturn(new AiClient.RecommendationResult(guideWithSteps(
+                "{\"text\":\"ok\",\"ingredientIds\":[999]}", 6), 150, 300, 450));
         assertError(ErrorCode.AI_RESPONSE_INVALID);
 
-        when(ai.generateRecipeText(anyString(), anyList())).thenReturn(guideWithSteps(
-                "{\"text\":\"  \",\"ingredientIds\":[]}", 6));
+        when(ai.generateRecipeContent(anyString(), anyList())).thenReturn(new AiClient.RecommendationResult(guideWithSteps(
+                "{\"text\":\"  \",\"ingredientIds\":[]}", 6), 150, 300, 450));
         assertError(ErrorCode.AI_RESPONSE_INVALID);
 
-        when(ai.generateRecipeText(anyString(), anyList())).thenReturn(guideWithSteps(
-                "{\"text\":\"ok\",\"ingredientIds\":null}", 6));
+        when(ai.generateRecipeContent(anyString(), anyList())).thenReturn(new AiClient.RecommendationResult(guideWithSteps(
+                "{\"text\":\"ok\",\"ingredientIds\":null}", 6), 150, 300, 450));
         assertError(ErrorCode.AI_RESPONSE_INVALID);
     }
 
     @Test
     void rejectsTooManyStepsOversizedStepsAndUnlistedCatalogMentions() {
-        when(ai.generateRecipeText(anyString(), anyList())).thenReturn(guideWithSteps(
-                "{\"text\":\"ok\",\"ingredientIds\":[]}", 11));
+        when(ai.generateRecipeContent(anyString(), anyList())).thenReturn(new AiClient.RecommendationResult(guideWithSteps(
+                "{\"text\":\"ok\",\"ingredientIds\":[]}", 11), 150, 300, 450));
         assertError(ErrorCode.AI_RESPONSE_INVALID);
 
-        when(ai.generateRecipeText(anyString(), anyList())).thenReturn(guideWithSteps(
-                "{\"text\":\"" + "x".repeat(1501) + "\",\"ingredientIds\":[]}", 6));
+        when(ai.generateRecipeContent(anyString(), anyList())).thenReturn(new AiClient.RecommendationResult(guideWithSteps(
+                "{\"text\":\"" + "x".repeat(1501) + "\",\"ingredientIds\":[]}", 6), 150, 300, 450));
         assertError(ErrorCode.AI_RESPONSE_INVALID);
 
         when(ingredientCatalog.findActiveIngredients("")).thenReturn(List.of(catalogIngredient(1L, "Đậu phụ"),
                 catalogIngredient(2L, "Nấm")));
-        when(ai.generateRecipeText(anyString(), anyList())).thenReturn(guideWithSteps(
-                "{\"text\":\"Thêm nấm vào chảo.\",\"ingredientIds\":[]}", 6));
+        when(ai.generateRecipeContent(anyString(), anyList())).thenReturn(new AiClient.RecommendationResult(guideWithSteps(
+                "{\"text\":\"Thêm nấm vào chảo.\",\"ingredientIds\":[]}", 6), 150, 300, 450));
         assertError(ErrorCode.AI_RESPONSE_INVALID);
     }
 

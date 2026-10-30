@@ -49,7 +49,8 @@ import tech.mamxanh.recipe.service.*;
         SpringDocConfiguration.class, SpringDocSpecPropertiesConfiguration.class, SpringDocWebMvcConfiguration.class})
 class GuestAiChatControllerTest {
     private static final String URL = "/api/v1/recipes/ai/chat";
-    private static final String BODY = "{\"contextType\":\"GENERAL\",\"question\":\"Cách nấu đậu?\"}";
+    private static final String GUEST_ID = UUID.randomUUID().toString();
+    private static final String BODY = "{\"contextType\":\"GENERAL\",\"question\":\"Cách nấu đậu?\",\"anonymousViewerId\":\"" + GUEST_ID + "\"}";
     @Autowired MockMvc mvc;
     @Autowired Clock clock;
     @Autowired GuestChatRateLimiter limiter;
@@ -60,6 +61,7 @@ class GuestAiChatControllerTest {
     @MockitoBean AiClient ai;
     @MockitoBean JwtDecoder jwtDecoder;
     @MockitoBean AccountStatusJwtAuthenticationConverter jwtAuthenticationConverter;
+    @MockitoBean tech.mamxanh.subscription.service.SubscriptionEntitlementService entitlements;
 
     @TestConfiguration
     static class TimeConfig { @Bean Clock clock() { return new MutableClock(); } }
@@ -80,7 +82,7 @@ class GuestAiChatControllerTest {
                 19L, "Canh rau", "Mô tả", "Nấu trong 10 phút", "SOUP", "Món canh", "VEGAN", "Thuần chay",
                 "EASY", "Dễ", 2, 5, 10, null, null, null, List.of(), true, List.of(), null, null, List.of()));
         mvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"contextType\":\"RECIPE\",\"recipeId\":19,\"question\":\"Nấu bao lâu?\"}"))
+                        .content("{\"contextType\":\"RECIPE\",\"recipeId\":19,\"question\":\"Nấu bao lâu?\",\"anonymousViewerId\":\"" + GUEST_ID + "\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.recipeId").value(19));
         verify(ai).answerChat(anyString(), contains("Canh rau"));
         verifyNoInteractions(preferences);
@@ -94,7 +96,7 @@ class GuestAiChatControllerTest {
         mvc.perform(post(URL).header("X-Guest-Chat-Id", id).contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isTooManyRequests()).andExpect(header().exists("Retry-After"))
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
-                .andExpect(jsonPath("$.code").value("GUEST_CHAT_RATE_LIMITED"));
+                .andExpect(jsonPath("$.code").value("AI_GUEST_RATE_LIMITED"));
         verify(ai, times(3)).answerChat(anyString(), anyString());
         ((MutableClock) clock).advance(Duration.ofDays(1));
         mvc.perform(post(URL).header("X-Guest-Chat-Id", id).contentType(MediaType.APPLICATION_JSON).content(BODY))
@@ -127,20 +129,23 @@ class GuestAiChatControllerTest {
 
     @Test
     void historyTurnAcceptsUpToFourThousandCharactersAndRejectsLonger() throws Exception {
-        String validLongHistory = BODY.replace("?\"}", "?\",\"history\":[{\"speaker\":\"ASSISTANT\",\"content\":\"" + "a".repeat(2500) + "\"}]}");
+        String validLongHistory = "{\"contextType\":\"GENERAL\",\"question\":\"Cách nấu đậu?\",\"anonymousViewerId\":\"" + GUEST_ID
+                + "\",\"history\":[{\"speaker\":\"ASSISTANT\",\"content\":\"" + "a".repeat(2500) + "\"}]}";
         mvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON).content(validLongHistory))
                 .andExpect(status().isOk());
-        String invalidTooLong = BODY.replace("?\"}", "?\",\"history\":[{\"speaker\":\"ASSISTANT\",\"content\":\"" + "a".repeat(4001) + "\"}]}");
+        String invalidTooLong = "{\"contextType\":\"GENERAL\",\"question\":\"Cách nấu đậu?\",\"anonymousViewerId\":\"" + GUEST_ID
+                + "\",\"history\":[{\"speaker\":\"ASSISTANT\",\"content\":\"" + "a".repeat(8001) + "\"}]}";
         mvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON).content(invalidTooLong))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void invalidRequestsAndUnavailableRecipesNeverReachTheProvider() throws Exception {
-        for (String invalid : List.of("{}", "{\"contextType\":\"GENERAL\",\"question\":\" \"}",
-                BODY.replace("Cách nấu đậu?", "a".repeat(1001)),
-                BODY.replace("GENERAL", "RECIPE"), BODY.replace("?\"}", "?\",\"recipeId\":1}"),
-                BODY.replace("?\"}", "?\",\"history\":[null]}"))) {
+        for (String invalid : List.of("{}", "{\"contextType\":\"GENERAL\",\"question\":\" \",\"anonymousViewerId\":\"" + GUEST_ID + "\"}",
+                "{\"contextType\":\"GENERAL\",\"question\":\"" + "a".repeat(1001) + "\",\"anonymousViewerId\":\"" + GUEST_ID + "\"}",
+                "{\"contextType\":\"RECIPE\",\"question\":\"Cách nấu?\",\"anonymousViewerId\":\"" + GUEST_ID + "\"}",
+                "{\"contextType\":\"GENERAL\",\"question\":\"Cách nấu?\",\"recipeId\":1,\"anonymousViewerId\":\"" + GUEST_ID + "\"}",
+                "{\"contextType\":\"GENERAL\",\"question\":\"Cách nấu?\",\"history\":[null],\"anonymousViewerId\":\"" + GUEST_ID + "\"}")) {
             mvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON).content(invalid))
                     .andExpect(status().isBadRequest());
         }
@@ -148,7 +153,7 @@ class GuestAiChatControllerTest {
                 .andExpect(status().isBadRequest());
         when(recipes.getPublishedRecipe(999L)).thenThrow(new AppException(ErrorCode.RECIPE_NOT_FOUND));
         mvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"contextType\":\"RECIPE\",\"recipeId\":999,\"question\":\"Cách nấu?\"}"))
+                        .content("{\"contextType\":\"RECIPE\",\"recipeId\":999,\"question\":\"Cách nấu?\",\"anonymousViewerId\":\"" + GUEST_ID + "\"}"))
                 .andExpect(status().isNotFound());
         verifyNoInteractions(ai);
     }

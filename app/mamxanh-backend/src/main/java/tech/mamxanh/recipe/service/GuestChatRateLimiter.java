@@ -17,12 +17,15 @@ import org.springframework.stereotype.Service;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 
-/** FR-02: Daily quota of 3 requests for Guest, resetting at midnight Vietnam time; no Guest entity, raw IP, or prompt storage. */
+/**
+ * FR-02 / FR-10: Daily quota of 3 requests for Guest, resetting at midnight Vietnam time;
+ * bounded, process-local state; never stores prompts or raw IPs.
+ */
 @Service
 public class GuestChatRateLimiter {
     public static final String ID_HEADER = "X-Guest-Chat-Id";
     public static final int DAILY_CALL_LIMIT = 3;
-    private static final int DAILY_IP_LIMIT = 60;
+    public static final int DAILY_IP_LIMIT = 60;
     private static final int MAX_KEYS = 10_000;
     private static final ZoneId VIETNAM = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final Pattern UUID_PATTERN = Pattern.compile(
@@ -42,11 +45,14 @@ public class GuestChatRateLimiter {
     private final String salt = UUID.randomUUID().toString();
     private final Clock clock;
 
-    public GuestChatRateLimiter(Clock clock) { this.clock = clock; }
+    public GuestChatRateLimiter(Clock clock) {
+        this.clock = clock;
+    }
 
-    public synchronized void acquire(String anonymousId, String remoteAddress) {
-        if (anonymousId != null && !UUID_PATTERN.matcher(anonymousId).matches()) {
-            throw new AppException(ErrorCode.VALIDATION_FAILED);
+    public synchronized void check(String cookieId, String peerAddress) {
+        if (cookieId == null || !UUID_PATTERN.matcher(cookieId).matches()) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED,
+                    "Hãy cho phép cookie của trang để sử dụng Chatbot dành cho khách.");
         }
         Instant now = clock.instant();
         LocalDate today = now.atZone(VIETNAM).toLocalDate();
@@ -54,12 +60,11 @@ public class GuestChatRateLimiter {
         // Evict expired daily records
         usage.values().removeIf(record -> record.date.isBefore(today));
 
-        // Use only the servlet peer address; never trust client-supplied forwarding headers here.
-        String address = digest("ip:" + remoteAddress);
-        String identity = digest(anonymousId == null ? "no-cookie:" + remoteAddress : "id:" + anonymousId.toLowerCase(java.util.Locale.ROOT));
+        String cookie = key("cookie:", cookieId.toLowerCase(java.util.Locale.ROOT));
+        String ip = key("ip:", peerAddress == null ? "unknown" : peerAddress);
 
-        UsageRecord idRecord = usage.get(identity);
-        UsageRecord ipRecord = usage.get(address);
+        UsageRecord idRecord = usage.get(cookie);
+        UsageRecord ipRecord = usage.get(ip);
 
         Instant nextMidnight = today.plusDays(1).atStartOfDay(VIETNAM).toInstant();
         Duration retryAfter = Duration.between(now, nextMidnight);
@@ -79,12 +84,16 @@ public class GuestChatRateLimiter {
             throw limited(retryAfter);
         }
 
-        usage.compute(identity, (k, existing) -> existing == null || !existing.date.equals(today)
+        usage.compute(cookie, (k, existing) -> existing == null || !existing.date.equals(today)
                 ? new UsageRecord(today, 1)
                 : new UsageRecord(today, existing.count + 1));
-        usage.compute(address, (k, existing) -> existing == null || !existing.date.equals(today)
+        usage.compute(ip, (k, existing) -> existing == null || !existing.date.equals(today)
                 ? new UsageRecord(today, 1)
                 : new UsageRecord(today, existing.count + 1));
+    }
+
+    public synchronized void acquire(String anonymousId, String remoteAddress) {
+        check(anonymousId, remoteAddress);
     }
 
     public synchronized void reset() {
@@ -92,15 +101,15 @@ public class GuestChatRateLimiter {
     }
 
     private static AppException limited(Duration retryAfter) {
-        return AppException.retryAfter(ErrorCode.GUEST_CHAT_RATE_LIMITED, retryAfter);
+        return AppException.retryAfter(ErrorCode.AI_GUEST_RATE_LIMITED, retryAfter);
     }
 
-    private String digest(String value) {
+    private String key(String prefix, String value) {
         try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+            return prefix + HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
                     .digest((salt + value).getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256 is required", exception);
+            throw new IllegalStateException("SHA-256 is unavailable", exception);
         }
     }
 }

@@ -90,7 +90,7 @@ public class AiMenuService {
         validateWeek(request.weekStartDate());
         long userId = users.requireActiveMember().id();
         // Entitlement and health-profile gates intentionally run before catalog work or Gemini.
-        entitlements.requirePro(userId);
+        entitlements.requirePlusOrPro(userId);
         var profile = nutritionProfiles.requireMenuNutritionContext(userId);
         LocalDate firstSuggestionDate = firstActionableDate(request.weekStartDate());
         LocalDate lastSuggestionDate = lastActionableDate(request.weekStartDate());
@@ -123,7 +123,7 @@ public class AiMenuService {
                             .map(candidate -> new AiMenuOptimizer.Candidate(candidate.recipe().id(), candidate.nutritionPerServing())).toList(),
                     profile.dailyTargets());
             events.publishEvent(new AiUsageEvent(userId, "FR-36", clock.instant(),
-                    result.promptTokens(), result.responseTokens(), result.totalTokens()));
+                    result.usage()));
             return preview(request.weekStartDate(), request.mode(), goal, selections, pool, preferred, profile);
         } catch (AiProviderException exception) {
             throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE,
@@ -139,7 +139,7 @@ public class AiMenuService {
     public MealPlanWeekResponse apply(ApplyAiMenuRequest request) {
         validateWeek(request.weekStartDate());
         long userId = users.requireActiveMember().id();
-        entitlements.requirePro(userId);
+        entitlements.requirePlusOrPro(userId);
         nutritionProfiles.requireMenuNutritionContext(userId);
         LocalDate firstReplaceDate = firstActionableDate(request.weekStartDate());
         LocalDate lastReplaceDate = lastActionableDate(request.weekStartDate());

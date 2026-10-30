@@ -29,7 +29,9 @@ import { MemberProfilePage } from "../pages/MemberProfilePage"
 import { ProfileSettingsPage } from "../pages/ProfileSettingsPage"
 import { AiChatPage } from "../pages/AiChatPage"
 import { AdminDashboard } from "../pages/AdminDashboard"
+import { AiTelemetryPage } from "../pages/AiTelemetryPage"
 import { AdminPendingModule } from "../pages/AdminPendingModule"
+import { AdminTransactionsPage } from "../pages/AdminTransactionsPage"
 import { AdminReportsPage } from "../pages/AdminReportsPage"
 import { ExpertDirectoryPage } from "../pages/ExpertDirectoryPage"
 import { IngredientDirectoryPage } from "../pages/IngredientDirectoryPage"
@@ -117,6 +119,7 @@ export default function ApplicationRoutes() {
                 element={<ExpertApplicationPage />}
               />
               <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/ai-telemetry" element={<AiTelemetryPage />} />
               <Route path="/admin/tong-quan" element={<AdminDashboard />} />
               <Route
                 path="/admin/bao-cao"
@@ -128,7 +131,7 @@ export default function ApplicationRoutes() {
               />
               <Route
                 path="/admin/giao-dich"
-                element={<AdminPendingModule module="transactions" />}
+                element={<AdminTransactionsPage />}
               />
               <Route path="/so-sanh" element={<RecipeComparePage />} />
               <Route path="/so-sanh/chon-mon" element={<RecipeComparePickerPage />} />

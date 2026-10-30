@@ -1,3 +1,4 @@
+import { aiRequiredTier, aiUpgradeMessage, type AiPaidTier } from '../lib/aiUpgrade';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { LoaderCircle, Sparkles } from 'lucide-react';
@@ -16,6 +17,7 @@ export function RelatedRecipes({ recipeId }: { recipeId: number }) {
   const [aiItems, setAiItems] = useState<RecipePost[] | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState('');
+  const [upgradeTier, setUpgradeTier] = useState<AiPaidTier>('PRO');
   const [upgradeRequired, setUpgradeRequired] = useState(false);
   const alive = useRef(false);
   const member = isAuthenticated && (account?.role === 'CUSTOMER' || account?.role === 'EXPERT');
@@ -61,14 +63,20 @@ export function RelatedRecipes({ recipeId }: { recipeId: number }) {
       if (alive.current) setAiItems(result.items);
     } catch (cause) {
       if (!alive.current) return;
-      const upgrade = asApiError(cause).code === 'AI_SUBSCRIPTION_REQUIRED';
+      const apiError = asApiError(cause);
+      const upgrade = apiError.code === 'AI_SUBSCRIPTION_REQUIRED';
+      setUpgradeTier(aiRequiredTier(apiError, 'PRO'));
       setUpgradeRequired(upgrade);
-      setAiError(upgrade ? 'Gợi ý AI dành cho gói Plus và Pro.'
+      setAiError(upgrade ? aiUpgradeMessage(apiError, 'PRO', 'AI gợi ý món ăn kèm hoặc biến tấu')
         : 'Chưa thể lấy gợi ý từ AI. Bạn có thể thử lại hoặc xem các công thức liên quan bên dưới.');
     } finally {
       if (alive.current) setAiLoading(false);
     }
   }
+
+  const aiRecipeIds = new Set(aiItems?.map((item) => item.id));
+  const regularItems = items.filter((item) => !aiRecipeIds.has(item.id));
+  const showRegular = loading || Boolean(error) || regularItems.length > 0 || !aiItems?.length;
 
   return <section aria-label="Công thức liên quan" className="recipe-detail-no-print mt-10 border-t border-brand-200 pt-8">
     <div className="flex flex-wrap items-center justify-between gap-4">
@@ -82,7 +90,7 @@ export function RelatedRecipes({ recipeId }: { recipeId: number }) {
     </div>
     {aiLoading && <p role="status" className="mt-3 text-sm text-ink-muted">AI đang lựa chọn từ các công thức có sẵn.</p>}
     {aiError && <div role="alert" className="mt-4 text-sm text-ink-muted">{aiError}
-      {upgradeRequired && <Link to="/goi-ai" className="ml-2 font-semibold text-brand-700">Xem các gói</Link>}
+      {upgradeRequired && <Link to="/goi-ai" className="ml-2 font-semibold text-brand-700">Nâng cấp gói AI {upgradeTier}</Link>}
     </div>}
     {aiItems !== null && <div className="mt-6">
       <h3 className="mb-4 text-base font-bold text-ink">Gợi ý từ AI</h3>
@@ -90,8 +98,8 @@ export function RelatedRecipes({ recipeId }: { recipeId: number }) {
       {aiItems.length === 0 ? <p className="text-sm text-ink-muted">AI chưa tìm được món phù hợp trong các công thức hiện có.</p>
         : <RecipeGrid items={aiItems} options={options} />}
     </div>}
-    <div className="mt-5"><RegularRecommendations loading={loading} error={error} items={items}
-      options={options} onRetry={() => setRetry((value) => value + 1)} /></div>
+    {showRegular && <div className="mt-5"><RegularRecommendations loading={loading} error={error} items={regularItems}
+      options={options} onRetry={() => setRetry((value) => value + 1)} /></div>}
   </section>;
 }
 

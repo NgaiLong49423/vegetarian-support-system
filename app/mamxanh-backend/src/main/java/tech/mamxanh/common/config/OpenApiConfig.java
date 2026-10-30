@@ -101,6 +101,9 @@ public class OpenApiConfig {
         problem.addProperty("instance", new StringSchema());
         problem.addProperty("code", new StringSchema().description("Stable `ErrorCode` value."));
         problem.addProperty("errors", new ArraySchema().items(fieldError));
+        problem.addProperty("requiredTier", new StringSchema()._enum(java.util.List.of("PLUS", "PRO"))
+                .description("Minimum paid tier for AI_SUBSCRIPTION_REQUIRED; role and other feature prerequisites still apply."));
+        problem.addProperty("upgradeUrl", new StringSchema().description("Relative plan-information link for entitlement failures."));
         return problem;
     }
 }

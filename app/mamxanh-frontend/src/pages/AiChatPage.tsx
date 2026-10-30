@@ -1,3 +1,4 @@
+import { aiRequiredTier, aiUpgradeMessage, type AiPaidTier } from "../lib/aiUpgrade"
 import {
   FormEvent,
   useEffect,
@@ -20,10 +21,12 @@ import { useAuth } from "../components/AuthContext"
 import { useAiChat } from "../components/AiChatContext"
 import { recipesApi, type AiChatTurn } from "../api/recipes"
 import { asApiError } from "../lib/apiClient"
+import { anonymousRecipeViewer } from "../lib/recipeViewer"
 
 interface ChatMessage extends AiChatTurn {
   id: number
   recommendations?: Awaited<ReturnType<typeof recipesApi.chat>>["recommendations"]
+  workflowUrl?: string | null
 }
 
 function formatResetDateTime(timestamp: number): string {
@@ -42,6 +45,7 @@ export function AiChatPage() {
   const { isOpen, recipeId, recipeTitle, recipeArticle, closeChat } =
     useAiChat()
   const hasRecipeContext = recipeId !== null
+  const requestVersion = useRef(0)
   const activeRecipeTitle =
     recipeTitle?.trim() || (recipeId === null ? "" : `công thức #${recipeId}`)
 
@@ -49,6 +53,8 @@ export function AiChatPage() {
   const [question, setQuestion] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [upgradeTier, setUpgradeTier] = useState<AiPaidTier>("PLUS")
+  const [errorAction, setErrorAction] = useState<"plans" | "login" | null>(null)
   const [retryQuestion, setRetryQuestion] = useState("")
   const [retryAt, setRetryAt] = useState(0)
   const [retrySeconds, setRetrySeconds] = useState(0)
@@ -161,19 +167,21 @@ export function AiChatPage() {
   )
 
   useEffect(() => {
-    contextVersion.current += 1
+    requestVersion.current += 1
+    setLoading(false)
     setMessages([])
     setQuestion("")
     setError("")
+    setErrorAction(null)
     setRetryQuestion("")
     setSequence(0)
     setLoading(false)
     setRetryAt(0)
     setRetrySeconds(0)
     return () => {
-      contextVersion.current += 1
+      requestVersion.current += 1
     }
-  }, [recipeId, account?.id])
+  }, [recipeId, account?.id, isAuthenticated])
 
   useEffect(() => {
     if (!retryAt) return
@@ -213,9 +221,10 @@ export function AiChatPage() {
     const normalized = questionText.trim()
     if (!normalized || loading || retrySeconds > 0) return
 
-    const version = contextVersion.current
+    const version = requestVersion.current
     setLoading(true)
     setError("")
+    setErrorAction(null)
     setRetryQuestion(normalized)
 
     const currentId = sequence + 1
@@ -230,15 +239,26 @@ export function AiChatPage() {
     try {
       const response = await recipesApi.chat({
         contextType,
+        ...(!isAuthenticated
+          ? { anonymousViewerId: anonymousRecipeViewer() }
+          : {}),
         ...(hasRecipeContext ? { recipeId } : {}),
         question: normalized,
         history: previous
           .slice(-8)
-          .map(({ speaker, content }) => ({ speaker, content: content.slice(0, 4000) })),
+          .map(({ speaker, content, recommendations }) => ({
+            speaker,
+            content: content.slice(0, 4000),
+            ...(speaker === "ASSISTANT" && recommendations?.length
+              ? {
+                  recommendedRecipeIds: recommendations
+                    .slice(0, 4)
+                    .map((recipe) => recipe.id),
+                }
+              : {}),
+          })),
       })
-
-      if (version !== contextVersion.current) return
-
+      if (version !== requestVersion.current) return
       setMessages((current) => [
         ...current,
         {
@@ -246,31 +266,42 @@ export function AiChatPage() {
           speaker: "ASSISTANT",
           content: response.answer,
           recommendations: response.recommendations ?? [],
+          workflowUrl: response.workflowUrl,
         },
       ])
       setSequence(currentId + 1)
       setRetryQuestion("")
     } catch (cause) {
-      if (version !== contextVersion.current) return
-
+      if (version !== requestVersion.current) return
       const apiError = asApiError(cause)
       if (apiError.status === 429) {
         const wait = Math.ceil(apiError.retryAfter ?? 60)
         setRetryAt(Date.now() + wait * 1000)
         setRetrySeconds(wait)
       }
-
+      setUpgradeTier(aiRequiredTier(apiError, "PLUS"))
+      setErrorAction(
+        apiError.code === "AI_SUBSCRIPTION_REQUIRED"
+          ? "plans"
+          : apiError.status === 401
+            ? "login"
+            : null,
+      )
+      if (apiError.status === 401 || apiError.status === 403)
+        setRetryQuestion("")
       setError(
-        apiError.status === 429
-          ? "Bạn đã gửi nhiều câu hỏi trong thời gian ngắn. Vui lòng tạm dừng và thử lại sau."
-          : apiError.code === "AI_PROVIDER_UNAVAILABLE" ||
-              apiError.code === "AI_RESPONSE_INVALID" ||
-              apiError.status === 0
+        apiError.code === "AI_SUBSCRIPTION_REQUIRED"
+          ? aiUpgradeMessage(apiError, "PLUS", "Tính năng AI bạn yêu cầu")
+          : apiError.status === 429
+          ? "Bạn đã gửi nhiều câu hỏi trong thời gian ngắn. Hãy thử lại sau; bạn cũng có thể đăng ký tài khoản để tiếp tục."
+          : apiError.status === 0 ||
+              ((apiError.code === "AI_PROVIDER_UNAVAILABLE" || apiError.code === "AI_RESPONSE_INVALID") &&
+                apiError.message === "Yêu cầu không thành công. Vui lòng thử lại.")
             ? "Dịch vụ trả lời đang gặp sự cố. Vui lòng thử lại sau."
             : apiError.message,
       )
     } finally {
-      if (version === contextVersion.current) {
+      if (version === requestVersion.current) {
         setLoading(false)
       }
     }
@@ -324,6 +355,18 @@ export function AiChatPage() {
           </button>
         </header>
 
+        {!isAuthenticated && (
+          <p className="border-b border-brand-100 px-4 py-2 text-xs text-ink-muted">
+            Bạn đang trò chuyện với tư cách khách.{" "}
+            <Link
+              to="/dang-ky"
+              className="font-semibold text-brand-700 underline"
+            >
+              Đăng ký
+            </Link>{" "}
+            để dùng các tính năng dành cho thành viên.
+          </p>
+        )}
         <p className="flex gap-2 border-b border-brand-100 bg-brand-50/70 px-4 py-2.5 text-[11px] leading-4 text-ink-soft">
           <ShieldAlert
             className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-700"
@@ -592,6 +635,20 @@ export function AiChatPage() {
                       ))}
                     </div>
                   )}
+                {message.workflowUrl &&
+                  ["/ke-hoach?view=for-you", "/dang-cong-thuc"].includes(
+                    message.workflowUrl,
+                  ) && (
+                    <Link
+                      to={message.workflowUrl}
+                      onClick={closeChat}
+                      className="mt-3 inline-flex font-semibold text-brand-700 underline"
+                    >
+                      {message.workflowUrl === "/dang-cong-thuc"
+                        ? "Mở biểu mẫu soạn công thức"
+                        : "Mở chức năng lập thực đơn"}
+                    </Link>
+                  )}
               </div>
               {message.speaker === "USER" && (
                 <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-stone-100 text-ink-muted">
@@ -633,6 +690,29 @@ export function AiChatPage() {
                 >
                   Thử lại
                 </button>
+              )}
+              {error.includes("đăng ký") && (
+                <Link to="/dang-ky" className="ml-2 font-bold underline">
+                  Đăng ký
+                </Link>
+              )}
+              {errorAction === "plans" && (
+                <Link
+                  to="/goi-ai"
+                  onClick={closeChat}
+                  className="ml-2 font-bold underline"
+                >
+                  Nâng cấp gói AI {upgradeTier}
+                </Link>
+              )}
+              {errorAction === "login" && (
+                <Link
+                  to="/dang-nhap"
+                  onClick={closeChat}
+                  className="ml-2 font-bold underline"
+                >
+                  Đăng nhập
+                </Link>
               )}
             </div>
           )}

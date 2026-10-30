@@ -99,8 +99,7 @@ public class MealPlanNutritionAiService {
                     return new MealPlanNutritionRecommendationsResponse.Recommendation(id, cards.get(id).title(),
                             value.complete(), value.ingredientsMissingData());
                 }).toList();
-        events.publishEvent(new AiUsageEvent(owner, "FR-37", clock.instant(), result.promptTokens(),
-                result.responseTokens(), result.totalTokens()));
+        events.publishEvent(new AiUsageEvent(owner, "FR-37", clock.instant(), result.usage()));
         return new MealPlanNutritionRecommendationsResponse(entryId, explanation, recommendations);
     }
 

@@ -21,14 +21,19 @@ public class SubscriptionEntitlementService {
     @Transactional(readOnly = true)
     public void requirePlusOrPro(long userId) {
         if (!repository.hasActivePaidSubscription(userId, LocalDateTime.now(clock))) {
-            throw new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED);
+            throw upgradeRequired("PLUS", "Tính năng AI này yêu cầu gói AI PLUS còn hiệu lực. Hãy nâng cấp lên gói AI PLUS để tiếp tục.");
         }
     }
 
     @Transactional(readOnly = true)
     public void requirePro(long userId) {
         if (!repository.hasActiveProSubscription(userId, LocalDateTime.now(clock))) {
-            throw new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED);
+            throw upgradeRequired("PRO", "Tính năng AI này yêu cầu gói AI PRO còn hiệu lực. Hãy nâng cấp lên gói AI PRO để tiếp tục.");
         }
+    }
+
+    private static AppException upgradeRequired(String tier, String detail) {
+        return new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED, detail)
+                .withProperty("requiredTier", tier).withProperty("upgradeUrl", "/goi-ai");
     }
 }

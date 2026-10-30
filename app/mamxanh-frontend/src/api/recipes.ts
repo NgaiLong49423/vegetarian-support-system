@@ -268,8 +268,9 @@ export interface RecipeReferenceData {
 }
 
 export type AiChatContext = 'GENERAL' | 'RECIPE';
-export interface AiChatTurn { speaker: 'USER' | 'ASSISTANT'; content: string }
+export interface AiChatTurn { speaker: 'USER' | 'ASSISTANT'; content: string; recommendedRecipeIds?: number[] }
 export interface AiChatRequest {
+  anonymousViewerId?: string;
   contextType: AiChatContext;
   recipeId?: number;
   question: string;
@@ -279,6 +280,7 @@ export interface AiChatResponse {
   contextType: AiChatContext;
   recipeId: number | null;
   answer: string;
+  workflowUrl?: string | null;
   recommendations: Array<{
     id: number;
     title: string;

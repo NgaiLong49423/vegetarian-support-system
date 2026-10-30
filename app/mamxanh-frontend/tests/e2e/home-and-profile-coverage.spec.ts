@@ -162,7 +162,7 @@ test('administrator can view admin dashboard and pending modules', async ({ page
   await expect(page.getByRole('heading', { name: 'Quản lý tài khoản & phân quyền', exact: true })).toBeVisible();
 
   await page.goto('/admin/giao-dich');
-  await expect(page.getByRole('heading', { name: 'Giám sát giao dịch gói AI hệ thống' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Giám sát giao dịch gói AI', exact: true })).toBeVisible();
 });
 
 test('non-admin member accessing admin route is denied access', async ({ page }) => {

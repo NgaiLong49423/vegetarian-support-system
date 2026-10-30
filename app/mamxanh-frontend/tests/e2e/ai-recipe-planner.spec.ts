@@ -104,3 +104,19 @@ test('AI menu stays a preview until explicit apply and applies all 21 slots', as
   expect(applyCalls).toBe(1);
   expect(appliedBody?.slots).toHaveLength(21);
 });
+
+
+test('weekly menu denial names PLUS as the minimum plan without suggesting PRO', async ({ page }) => {
+  await seedDemoSession(page);
+  await page.route('**/api/v1/nutrition/dietary-preferences', route => route.fulfill({ json: profile }));
+  await page.route('**/api/v1/recipes/ai/weekly-menu', route => route.fulfill({ status: 403, json: {
+    status: 403, code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PLUS', detail: 'Gói chưa phù hợp.',
+  } }));
+  await page.goto('/ke-hoach?view=for-you');
+  await page.getByRole('tab', { name: 'Thực đơn tuần', exact: true }).click();
+  await page.getByRole('button', { name: 'Tạo thực đơn tuần', exact: true }).click();
+  const alert = page.getByRole('alert');
+  await expect(alert).toContainText('AI lập thực đơn tuần yêu cầu gói AI PLUS');
+  await expect(alert.getByRole('link', { name: 'Nâng cấp gói AI PLUS' })).toHaveAttribute('href', '/goi-ai');
+  await expect(alert).not.toContainText('PRO');
+});

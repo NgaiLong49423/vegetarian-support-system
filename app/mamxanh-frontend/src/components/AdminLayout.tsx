@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { useLocation, Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   BadgeCheck,
+  Activity,
   Boxes,
   CreditCard,
   ExternalLink,
@@ -52,6 +53,7 @@ const adminNavigationGroups: { title: string; items: AdminNavItem[] }[] = [
       { to: '/admin/bao-cao', label: 'Hậu kiểm nội dung', icon: ShieldAlert },
       { to: '/admin/nguoi-dung', label: 'Quản lý người dùng', icon: Users },
       { to: '/admin/giao-dich', label: 'Giám sát giao dịch', icon: CreditCard },
+      { to: '/admin/ai-telemetry', label: 'Mức sử dụng AI', icon: Activity },
     ],
   },
 ];
@@ -65,6 +67,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
   const getPageTitle = () => {
     if (pathname === '/admin' || pathname === '/admin/tong-quan') return 'Bảng điều phối hệ thống';
+    if (pathname.startsWith('/admin/ai-telemetry')) return 'Mức sử dụng AI';
     if (pathname.startsWith('/quan-tri/danh-muc')) return 'Danh mục nguyên liệu dinh dưỡng';
     if (pathname.startsWith('/admin/xet-duyet-chuyen-gia')) return 'Xét duyệt Chuyên gia';
     if (pathname.startsWith('/admin/bao-cao')) return 'Hậu kiểm nội dung';
