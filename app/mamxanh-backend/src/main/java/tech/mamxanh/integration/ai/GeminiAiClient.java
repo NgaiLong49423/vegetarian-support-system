@@ -34,7 +34,7 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
     }
 
     @Override
-    public String generateRecipeText(String prompt, List<Long> allowedIngredientIds) {
+    public String generateRecipeText(String prompt, List<Long> enteredIngredientIds) {
         if (client == null) {
             throw new AiProviderException("Gemini is not configured");
         }
@@ -56,7 +56,7 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                 .build();
         try {
             var response = client.models.generateContent(MODEL,
-                    prompt + "\nAllowed ingredient IDs: " + allowedIngredientIds, config);
+                    prompt + "\nIngredient IDs entered by the author: " + enteredIngredientIds, config);
             String finishReason = response.candidates().orElse(List.of()).stream().findFirst()
                     .flatMap(candidate -> candidate.finishReason()).map(Object::toString).orElse("STOP");
             if (!"STOP".equals(finishReason)) {

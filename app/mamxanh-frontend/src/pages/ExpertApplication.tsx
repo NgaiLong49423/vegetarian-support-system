@@ -26,7 +26,7 @@ import { expertApplicationsApi, type ApplicationStatus, type ExpertApplication }
 const types = [
   ['VEGAN', 'Thuần chay'], ['LACTO', 'Lacto'], ['OVO', 'Ovo'], ['LACTO_OVO', 'Lacto-Ovo'], ['MACROBIOTIC', 'Thực dưỡng'],
 ];
-const statuses: Array<'' | ApplicationStatus> = ['', 'PENDING', 'APPROVED', 'REJECTED'];
+const statuses: Array<'' | ApplicationStatus> = ['', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'];
 const errorText = (error: unknown) => {
   const api = asApiError(error);
   if (api.status === 409) return api.message || 'Đơn đã thay đổi. Tải lại dữ liệu trước khi tiếp tục.';
@@ -201,7 +201,7 @@ export function ExpertApplicationPage() {
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Bộ lọc hiện tại</p>
               <p className="truncate text-lg font-extrabold text-ink">
-                {filter === 'PENDING' ? 'Chờ duyệt' : filter === 'APPROVED' ? 'Đã duyệt' : filter === 'REJECTED' ? 'Đã từ chối' : 'Tất cả'}
+                {filter === 'PENDING' ? 'Chờ duyệt' : filter === 'APPROVED' ? 'Đã duyệt' : filter === 'REJECTED' ? 'Đã từ chối' : filter === 'CANCELLED' ? 'Đã kết thúc' : 'Tất cả'}
               </p>
             </div>
           </div>
@@ -274,7 +274,7 @@ export function ExpertApplicationPage() {
                 ? 'border-l-leaf-500'
                 : app.status === 'REJECTED'
                   ? 'border-l-rose-500'
-                  : 'border-l-brand-500';
+                  : app.status === 'CANCELLED' ? 'border-l-ink-muted' : 'border-l-brand-500';
             return (
               <Card
                 key={app.id}
@@ -369,8 +369,8 @@ export function ExpertApplicationPage() {
                     <p className="mt-1 break-all text-sm text-ink-muted">{selected.email}</p>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <span className="rounded-md bg-brand-50 px-2 py-1 text-xs font-semibold text-ink-muted">Mã hồ sơ #{selected.id}</span>
-                      <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${selected.status === 'PENDING' ? 'bg-amber-100 text-amber-800' : selected.status === 'APPROVED' ? 'bg-leaf-100 text-leaf-800' : 'bg-rose-100 text-rose-800'}`}>
-                        {selected.status === 'PENDING' ? 'Chờ duyệt' : selected.status === 'APPROVED' ? 'Đã phê duyệt' : 'Đã từ chối'}
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${selected.status === 'PENDING' ? 'bg-amber-100 text-amber-800' : selected.status === 'APPROVED' ? 'bg-leaf-100 text-leaf-800' : selected.status === 'CANCELLED' ? 'bg-gray-100 text-gray-700' : 'bg-rose-100 text-rose-800'}`}>
+                        {selected.status === 'PENDING' ? 'Chờ duyệt' : selected.status === 'APPROVED' ? 'Đã phê duyệt' : selected.status === 'CANCELLED' ? 'Đã kết thúc' : 'Đã từ chối'}
                       </span>
                     </div>
                   </div>
@@ -563,7 +563,7 @@ export function ExpertApplicationPage() {
         {account.role === 'EXPERT' && <p className="mt-3 rounded-xl bg-leaf-50 p-3 text-sm text-leaf-800">Tài khoản đã được phê duyệt Chuyên gia.</p>}
         <div className="mt-4 space-y-3">{loading ? <p className="text-sm text-ink-muted">Đang tải lịch sử…</p> : history.map((app) => <article key={app.id} className="rounded-xl border border-brand-100 p-3">
           <p className="font-semibold">#{app.id} · {app.status}</p><p className="text-xs text-ink-muted">Gửi lúc {new Date(app.submittedAt).toLocaleString('vi-VN')}</p>
-          {app.status === 'REJECTED' && app.adminNote && <p className="mt-2 rounded-lg bg-rose-50 p-2 text-sm text-rose-800"><strong>Lý do:</strong> {app.adminNote}</p>}
+          {app.adminNote && app.status !== 'APPROVED' && <p className={`mt-2 rounded-lg p-2 text-sm ${app.status === 'REJECTED' ? 'bg-rose-50 text-rose-800' : 'bg-gray-50 text-ink-soft'}`}><strong>{app.status === 'CANCELLED' ? 'Lý do kết thúc:' : 'Lý do:'}</strong> {app.adminNote}</p>}
         </article>)}{!loading && history.length === 0 && <p className="text-sm text-ink-muted">Bạn chưa có hồ sơ nào.</p>}</div>
         {!loading && totalPages > 1 && <div className="mt-4 flex items-center justify-center gap-3"><Button variant="outline" disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>Trang trước</Button><span className="text-sm">Trang {page + 1}/{totalPages}</span><Button variant="outline" disabled={page + 1 >= totalPages} onClick={() => setPage((value) => value + 1)}>Trang sau</Button></div>}
       </Card>}
