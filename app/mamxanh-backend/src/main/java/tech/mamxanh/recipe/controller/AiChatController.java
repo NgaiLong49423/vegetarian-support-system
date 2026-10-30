@@ -33,8 +33,8 @@ public class AiChatController {
     @PostMapping
     @Operation(summary = "Ask the vegetarian cooking assistant",
             description = "Guest and active Member use the same chatbot. Guest sends a first-party cookie UUID in X-Guest-Chat-Id; "
-                    + "without it the peer IP shares a fallback window. Guest limits are 10 requests per rolling minute per identity and 60 per peer IP. "
-                    + "There is no daily quota. General context or the latest public RecipePost is loaded server-side. "
+                    + "without it the peer IP shares a fallback window. Guest limits are 3 requests per calendar day per identity and 60 per peer IP, "
+                    + "resetting on each new day. General context or the latest public RecipePost is loaded server-side. "
                     + "Recipe discovery selects only current public RecipePosts from the Backend catalog; explicitly requested recipe drafts remain chat text only. "
                     + "Conversation history is request-scoped and is not persisted.",
             security = {@SecurityRequirement, @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)})

@@ -52,6 +52,7 @@ class GuestAiChatControllerTest {
     private static final String BODY = "{\"contextType\":\"GENERAL\",\"question\":\"Cách nấu đậu?\"}";
     @Autowired MockMvc mvc;
     @Autowired Clock clock;
+    @Autowired GuestChatRateLimiter limiter;
     @MockitoBean CurrentUserService users;
     @MockitoBean RecipeService recipes;
     @MockitoBean RecipePostService posts;
@@ -65,7 +66,8 @@ class GuestAiChatControllerTest {
 
     @BeforeEach
     void setup() {
-        ((MutableClock) clock).advance(Duration.ofMinutes(2));
+        limiter.reset();
+        ((MutableClock) clock).advance(Duration.ofDays(1));
         when(ai.answerChat(anyString(), anyString())).thenReturn(new AiClient.ChatResult("Nấu nhỏ lửa.", 1, 2, 3));
     }
 
@@ -85,16 +87,16 @@ class GuestAiChatControllerTest {
     }
 
     @Test
-    void eleventhRequestIs429WithRetryAfterAndDoesNotReachGemini() throws Exception {
+    void fourthRequestIs429WithRetryAfterAndDoesNotReachGemini() throws Exception {
         String id = UUID.randomUUID().toString();
-        for (int i = 0; i < 10; i++) mvc.perform(post(URL).header("X-Guest-Chat-Id", id)
+        for (int i = 0; i < 3; i++) mvc.perform(post(URL).header("X-Guest-Chat-Id", id)
                 .contentType(MediaType.APPLICATION_JSON).content(BODY)).andExpect(status().isOk());
         mvc.perform(post(URL).header("X-Guest-Chat-Id", id).contentType(MediaType.APPLICATION_JSON).content(BODY))
-                .andExpect(status().isTooManyRequests()).andExpect(header().string("Retry-After", "60"))
+                .andExpect(status().isTooManyRequests()).andExpect(header().exists("Retry-After"))
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
                 .andExpect(jsonPath("$.code").value("GUEST_CHAT_RATE_LIMITED"));
-        verify(ai, times(10)).answerChat(anyString(), anyString());
-        ((MutableClock) clock).advance(Duration.ofMinutes(1));
+        verify(ai, times(3)).answerChat(anyString(), anyString());
+        ((MutableClock) clock).advance(Duration.ofDays(1));
         mvc.perform(post(URL).header("X-Guest-Chat-Id", id).contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isOk());
     }

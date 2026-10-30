@@ -76,11 +76,11 @@ class AiChatServiceTest {
         when(users.findAuthenticatedUserId()).thenReturn(java.util.Optional.empty());
         when(ai.answerChat(anyString(), anyString())).thenReturn(new AiClient.ChatResult("Câu trả lời.", 1, 2, 3));
         String guestId = java.util.UUID.randomUUID().toString();
-        for (int i = 0; i < 10; i++) service.answer(chat("Cách nấu đậu?"), guestId, "peer");
+        for (int i = 0; i < 3; i++) service.answer(chat("Cách nấu đậu?"), guestId, "peer");
         assertThatThrownBy(() -> service.answer(chat("Cách nấu đậu?"), guestId, "peer"))
                 .isInstanceOfSatisfying(AppException.class,
                         error -> assertThat(error.errorCode()).isEqualTo(ErrorCode.GUEST_CHAT_RATE_LIMITED));
-        verify(ai, times(10)).answerChat(anyString(), anyString());
+        verify(ai, times(3)).answerChat(anyString(), anyString());
         verifyNoInteractions(preferences);
     }
 

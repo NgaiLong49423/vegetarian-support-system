@@ -9,6 +9,20 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-30 — Limit Guest AI Chat to 3 Daily Requests with Midnight Reset
+
+**Status:** Committed — 1c4b4eee.
+
+**Scope:** Update FR-02 Guest rate limiting policy to restrict anonymous/guest AI chat requests to a maximum of 3 calls per calendar day (resetting at midnight Vietnam time Asia/Ho_Chi_Minh).
+
+### Changed
+
+- Update GuestChatRateLimiter from a 1-minute sliding window to a daily limit of 3 requests per guest identity (X-Guest-Chat-Id cookie) per calendar day (Asia/Ho_Chi_Minh).
+- Reset daily count automatically at 00:00:00 ICT on the next calendar day with Retry-After calculated until the next midnight.
+- Retain coarse IP threshold (60 requests/day/IP) to defend against cookie cycling spam.
+- Update OpenAPI documentation on /api/v1/recipes/ai/chat to declare the daily quota and daily reset behavior.
+- Update Backend and Frontend integration tests (GuestChatRateLimiterTest, GuestAiChatControllerTest, AiChatServiceTest, guest-chat-real-stack.spec.ts) to assert the 3-request daily limit and 4th request 429 status.
+
 ## 2026-10-24 — Guest Chatbot Access and Technical Rate Limiting
 
 **Status:** Committed — `699f19b` (implementation checkpoint; live Gemini inference and full quality gates remain unverified).

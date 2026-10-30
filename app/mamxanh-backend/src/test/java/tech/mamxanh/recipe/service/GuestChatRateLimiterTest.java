@@ -18,25 +18,28 @@ class GuestChatRateLimiterTest {
     private final String id = UUID.randomUUID().toString();
 
     @Test
-    void rollingWindowExpiresEachRequestWithoutDailyQuotaOrMidnightReset() {
-        for (int i = 0; i < 5; i++) limiter.acquire(id, "peer");
-        clock.advance(Duration.ofSeconds(30));
-        for (int i = 0; i < 5; i++) limiter.acquire(id, "peer");
+    void dailyLimitEnforcesThreeCallsPerDayAndResetsOnNewDay() {
+        for (int i = 0; i < 3; i++) limiter.acquire(id, "peer");
         assertThatThrownBy(() -> limiter.acquire(id, "peer"))
                 .isInstanceOfSatisfying(AppException.class, error -> {
                     assertThat(error.errorCode()).isEqualTo(ErrorCode.GUEST_CHAT_RATE_LIMITED);
-                    assertThat(error.retryAfter()).isEqualTo(Duration.ofSeconds(30));
+                    assertThat(error.retryAfter()).isNotNull();
+                    assertThat(error.retryAfter().getSeconds()).isGreaterThan(0);
                 });
-        clock.advance(Duration.ofSeconds(30));
-        for (int i = 0; i < 5; i++) limiter.acquire(id, "peer");
+
+        // Still within same day
+        clock.advance(Duration.ofHours(2));
         assertThatThrownBy(() -> limiter.acquire(id, "peer")).isInstanceOf(AppException.class);
+
+        // Advance past midnight to next day
         clock.advance(Duration.ofDays(1));
-        assertThatCode(() -> limiter.acquire(id, "peer")).doesNotThrowAnyException();
+        for (int i = 0; i < 3; i++) limiter.acquire(id, "peer");
+        assertThatThrownBy(() -> limiter.acquire(id, "peer")).isInstanceOf(AppException.class);
     }
 
     @Test
     void cookieIdentitySurvivesIpChangesAndCaseChanges() {
-        for (int i = 0; i < 10; i++) limiter.acquire(id, "peer-" + i);
+        for (int i = 0; i < 3; i++) limiter.acquire(id, "peer-" + i);
         assertThatThrownBy(() -> limiter.acquire(id.toUpperCase(), "another-peer"))
                 .isInstanceOf(AppException.class);
     }
@@ -52,7 +55,7 @@ class GuestChatRateLimiterTest {
 
     @Test
     void missingCookieSharesAnIpFallbackAndMalformedIdentityIsRejected() {
-        for (int i = 0; i < 10; i++) limiter.acquire(null, "peer");
+        for (int i = 0; i < 3; i++) limiter.acquire(null, "peer");
         assertThatThrownBy(() -> limiter.acquire(null, "peer")).isInstanceOf(AppException.class);
         for (String invalid : new String[]{"", "not-a-uuid", "x".repeat(1000)}) {
             assertThatThrownBy(() -> limiter.acquire(invalid, "other"))
@@ -70,7 +73,7 @@ class GuestChatRateLimiterTest {
             }).toList();
             int accepted = 0;
             for (var result : executor.invokeAll(calls)) if (result.get()) accepted++;
-            assertThat(accepted).isEqualTo(10);
+            assertThat(accepted).isEqualTo(3);
         }
     }
 
@@ -78,7 +81,7 @@ class GuestChatRateLimiterTest {
     void fullStorageFailsClosedAndExpiredEntriesAreReclaimed() {
         for (int i = 0; i < 5000; i++) limiter.acquire(UUID.randomUUID().toString(), "peer-" + i);
         assertThatThrownBy(() -> limiter.acquire(id, "new-peer")).isInstanceOf(AppException.class);
-        clock.advance(Duration.ofMinutes(1));
+        clock.advance(Duration.ofDays(1));
         assertThatCode(() -> limiter.acquire(id, "new-peer")).doesNotThrowAnyException();
     }
 }

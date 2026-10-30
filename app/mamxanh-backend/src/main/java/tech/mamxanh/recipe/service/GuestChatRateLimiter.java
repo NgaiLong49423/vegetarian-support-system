@@ -6,7 +6,8 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayDeque;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.Map;
@@ -16,17 +17,28 @@ import org.springframework.stereotype.Service;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 
-/** FR-02: bounded, per-process sliding windows; no Guest entity, raw IP, or prompt storage. */
+/** FR-02: Daily quota of 3 requests for Guest, resetting at midnight Vietnam time; no Guest entity, raw IP, or prompt storage. */
 @Service
 public class GuestChatRateLimiter {
     public static final String ID_HEADER = "X-Guest-Chat-Id";
+    public static final int DAILY_CALL_LIMIT = 3;
+    private static final int DAILY_IP_LIMIT = 60;
+    private static final int MAX_KEYS = 10_000;
+    private static final ZoneId VIETNAM = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final Pattern UUID_PATTERN = Pattern.compile(
             "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
-    private static final Duration WINDOW = Duration.ofMinutes(1);
-    private static final int ID_LIMIT = 10;
-    private static final int IP_LIMIT = 60;
-    private static final int MAX_KEYS = 10_000;
-    private final Map<String, ArrayDeque<Instant>> windows = new HashMap<>();
+
+    static final class UsageRecord {
+        final LocalDate date;
+        final int count;
+
+        UsageRecord(LocalDate date, int count) {
+            this.date = date;
+            this.count = count;
+        }
+    }
+
+    private final Map<String, UsageRecord> usage = new HashMap<>();
     private final String salt = UUID.randomUUID().toString();
     private final Clock clock;
 
@@ -37,27 +49,46 @@ public class GuestChatRateLimiter {
             throw new AppException(ErrorCode.VALIDATION_FAILED);
         }
         Instant now = clock.instant();
-        Instant cutoff = now.minus(WINDOW);
-        windows.values().forEach(queue -> {
-            while (!queue.isEmpty() && !queue.peekFirst().isAfter(cutoff)) queue.removeFirst();
-        });
-        windows.values().removeIf(ArrayDeque::isEmpty);
+        LocalDate today = now.atZone(VIETNAM).toLocalDate();
+
+        // Evict expired daily records
+        usage.values().removeIf(record -> record.date.isBefore(today));
+
         // Use only the servlet peer address; never trust client-supplied forwarding headers here.
         String address = digest("ip:" + remoteAddress);
         String identity = digest(anonymousId == null ? "no-cookie:" + remoteAddress : "id:" + anonymousId.toLowerCase(java.util.Locale.ROOT));
-        ArrayDeque<Instant> byId = windows.get(identity);
-        ArrayDeque<Instant> byIp = windows.get(address);
-        long waitMillis = Math.max(waitMillis(byId, ID_LIMIT, now), waitMillis(byIp, IP_LIMIT, now));
-        if (waitMillis > 0) throw limited(Duration.ofMillis(waitMillis));
-        int newKeys = (byId == null ? 1 : 0) + (byIp == null ? 1 : 0);
-        if (windows.size() + newKeys > MAX_KEYS) throw limited(WINDOW);
-        windows.computeIfAbsent(identity, key -> new ArrayDeque<>()).addLast(now);
-        windows.computeIfAbsent(address, key -> new ArrayDeque<>()).addLast(now);
+
+        UsageRecord idRecord = usage.get(identity);
+        UsageRecord ipRecord = usage.get(address);
+
+        Instant nextMidnight = today.plusDays(1).atStartOfDay(VIETNAM).toInstant();
+        Duration retryAfter = Duration.between(now, nextMidnight);
+        if (retryAfter.isNegative() || retryAfter.isZero()) {
+            retryAfter = Duration.ofSeconds(1);
+        }
+
+        if (idRecord != null && idRecord.date.equals(today) && idRecord.count >= DAILY_CALL_LIMIT) {
+            throw limited(retryAfter);
+        }
+        if (ipRecord != null && ipRecord.date.equals(today) && ipRecord.count >= DAILY_IP_LIMIT) {
+            throw limited(retryAfter);
+        }
+
+        int newKeys = (idRecord == null ? 1 : 0) + (ipRecord == null ? 1 : 0);
+        if (usage.size() + newKeys > MAX_KEYS) {
+            throw limited(retryAfter);
+        }
+
+        usage.compute(identity, (k, existing) -> existing == null || !existing.date.equals(today)
+                ? new UsageRecord(today, 1)
+                : new UsageRecord(today, existing.count + 1));
+        usage.compute(address, (k, existing) -> existing == null || !existing.date.equals(today)
+                ? new UsageRecord(today, 1)
+                : new UsageRecord(today, existing.count + 1));
     }
 
-    private static long waitMillis(ArrayDeque<Instant> queue, int limit, Instant now) {
-        return queue == null || queue.size() < limit ? 0
-                : Math.max(1, Duration.between(now, queue.peekFirst().plus(WINDOW)).toMillis());
+    public synchronized void reset() {
+        usage.clear();
     }
 
     private static AppException limited(Duration retryAfter) {

@@ -3,12 +3,12 @@ import { expect, test } from '@playwright/test';
 
 const backend = process.env.MAMXANX_E2E_BACKEND_URL ?? 'http://localhost:8080/api/v1';
 
-test('FR-02: real Backend blocks the eleventh Guest request before provider access and UI shows registration', async ({ page, context, request, baseURL }) => {
+test('FR-02: real Backend blocks the fourth Guest request before provider access and UI shows registration', async ({ page, context, request, baseURL }) => {
   const id = randomUUID();
   await context.addCookies([{ name: 'mamxanh.guest-chat', value: id, url: baseURL! }]);
   // A missing public RecipePost is rejected by the real SQL query before calling Gemini.
   // Valid attempts still consume the technical rate window, including failed context lookups.
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 3; i++) {
     const response = await request.post(`${backend}/recipes/ai/chat`, {
       headers: { 'X-Guest-Chat-Id': id },
       data: { contextType: 'RECIPE', recipeId: 9_000_000_000, question: 'Cách nấu?' },
