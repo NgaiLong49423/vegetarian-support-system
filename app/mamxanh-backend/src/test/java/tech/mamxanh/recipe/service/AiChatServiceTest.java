@@ -32,6 +32,7 @@ class AiChatServiceTest {
     private ApplicationEventPublisher events;
     private AiChatService service;
     private tech.mamxanh.subscription.service.SubscriptionEntitlementService entitlements;
+    private tech.mamxanh.subscription.service.AiTokenQuotaService aiQuota;
 
     @BeforeEach
     void setup() {
@@ -44,7 +45,9 @@ class AiChatServiceTest {
                 new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 1, 1, 2));
         events = mock(ApplicationEventPublisher.class);
         entitlements = mock(tech.mamxanh.subscription.service.SubscriptionEntitlementService.class);
-        service = new AiChatService(users, recipes, recipePosts, preferences, ai, new JsonMapper(), events, Clock.systemUTC(), entitlements);
+        aiQuota = mock(tech.mamxanh.subscription.service.AiTokenQuotaService.class);
+        service = new AiChatService(users, recipes, recipePosts, preferences, ai, new JsonMapper(), events,
+                Clock.systemUTC(), entitlements, aiQuota);
         when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(7, Role.CUSTOMER));
         when(users.findAuthenticatedUserId()).thenReturn(java.util.Optional.of(7L));
         when(preferences.menuConstraints(7)).thenReturn(new DietaryPreferenceService.MenuDietaryConstraints(
@@ -104,7 +107,7 @@ class AiChatServiceTest {
         assertThatThrownBy(() -> service.answer(new AiChatRequest(AiChatRequest.ContextType.GENERAL,
                 null, "Hello", List.of()))).isInstanceOfSatisfying(AppException.class,
                 failure -> assertThat(failure.errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_INVALID));
-        verify(events).publishEvent(any(AiUsageEvent.class));
+        verify(events, times(2)).publishEvent(any(AiUsageEvent.class));
     }
 
     @Test

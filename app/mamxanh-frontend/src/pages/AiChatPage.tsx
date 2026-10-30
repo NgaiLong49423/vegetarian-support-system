@@ -296,11 +296,14 @@ export function AiChatPage() {
             ? "login"
             : null,
       )
+      if (apiError.code === "AI_TOKEN_QUOTA_EXCEEDED") setRetryQuestion("")
       if (apiError.status === 401 || apiError.status === 403)
         setRetryQuestion("")
       setError(
         apiError.code === "AI_SUBSCRIPTION_REQUIRED"
           ? aiUpgradeMessage(apiError, "PLUS", "Tính năng AI bạn yêu cầu")
+          : apiError.code === "AI_TOKEN_QUOTA_EXCEEDED" && !isAuthenticated
+          ? "Bạn đã dùng hết 20.000 token dùng thử trong phiên này. Đăng ký tài khoản để tiếp tục sử dụng AI."
           : apiError.status === 429
           ? "Bạn đã gửi nhiều câu hỏi trong thời gian ngắn. Hãy thử lại sau; bạn cũng có thể đăng ký tài khoản để tiếp tục."
           : apiError.status === 0

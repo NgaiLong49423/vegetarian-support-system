@@ -253,7 +253,7 @@ class AiMenuServiceTest {
     }
 
     @Test
-    void rejectsProviderFailureAndMalformedAiOutputWithoutPublishingUsage() {
+    void providerFailureIsNotRecordedButMalformedSuccessfulResponseStillCountsUsage() {
         prepareCandidates();
         when(ai.recommendRecipes(any(), anyList(), eq(2)))
                 .thenThrow(new tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException("unavailable"));
@@ -266,7 +266,7 @@ class AiMenuServiceTest {
                 .thenReturn(new AiClient.RecommendationResult("not-json", 1, 1, 2));
         assertThatThrownBy(() -> service.createPreview(new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null)))
                 .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_RESPONSE_INVALID);
-        verifyNoInteractions(events);
+        verify(events).publishEvent(any(tech.mamxanh.integration.ai.AiUsageEvent.class));
     }
 
     @Test
@@ -287,7 +287,7 @@ class AiMenuServiceTest {
                 .thenReturn(new AiClient.RecommendationResult("{\"recipeIds\":[11,999]}", 1, 1, 2));
         assertThatThrownBy(() -> service.createPreview(new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null)))
                 .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_RESPONSE_INVALID);
-        verifyNoInteractions(events);
+        verify(events).publishEvent(any(tech.mamxanh.integration.ai.AiUsageEvent.class));
 
         reset(ai);
         when(ai.recommendRecipes(any(), anyList(), eq(2)))
@@ -344,7 +344,8 @@ class AiMenuServiceTest {
 
     private AiMenuService serviceAt(Clock clock) {
         return new AiMenuService(users, entitlements, profiles, dietary, recipes, nutrition, ingredients,
-                conversions, ai, events, clock, new JsonMapper(), plans, entries, reads);
+                conversions, ai, events, clock, new JsonMapper(), plans, entries, reads,
+                mock(tech.mamxanh.subscription.service.AiTokenQuotaService.class));
     }
 
     private static RecipePostResponse recipe(long id, String title, long ingredientId) {

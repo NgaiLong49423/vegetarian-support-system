@@ -21,6 +21,7 @@ import tech.mamxanh.recipe.dto.request.RecipeAiAssistanceRequest;
 import tech.mamxanh.recipe.dto.request.RecipeAiAssistanceRequest.ContentType;
 import tech.mamxanh.recipe.dto.response.RecipeAiAssistanceResponse;
 import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
+import tech.mamxanh.subscription.service.AiTokenQuotaService;
 
 @Service
 public class RecipeAiAssistanceService {
@@ -33,10 +34,12 @@ public class RecipeAiAssistanceService {
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher events;
     private final Clock clock;
+    private final AiTokenQuotaService aiQuota;
 
     public RecipeAiAssistanceService(CurrentUserService currentUserService,
             SubscriptionEntitlementService entitlementService, IngredientCatalogLookupService ingredientCatalog,
-            AiClient aiClient, ObjectMapper objectMapper, ApplicationEventPublisher events, Clock clock) {
+            AiClient aiClient, ObjectMapper objectMapper, ApplicationEventPublisher events, Clock clock,
+            AiTokenQuotaService aiQuota) {
         this.currentUserService = currentUserService;
         this.entitlementService = entitlementService;
         this.ingredientCatalog = ingredientCatalog;
@@ -44,6 +47,7 @@ public class RecipeAiAssistanceService {
         this.objectMapper = objectMapper;
         this.events = events;
         this.clock = clock;
+        this.aiQuota = aiQuota;
     }
 
     public RecipeAiAssistanceResponse generate(RecipeAiAssistanceRequest request) {
@@ -62,9 +66,10 @@ public class RecipeAiAssistanceService {
         String prompt = prompt(request, ingredients);
         String raw;
         AiClient.RecommendationResult result;
+        aiQuota.requireAvailable(expert.id(), null);
         try {
             result = aiClient.generateRecipeContent(prompt, ingredientIds);
-            raw = result.json();
+            raw = result == null ? null : result.json();
         } catch (AiProviderException exception) {
             log.warn("Recipe AI provider is unavailable: {}", exception.getClass().getSimpleName());
             if (exception.kind() == tech.mamxanh.integration.ai.GeminiAiClient.FailureKind.INVALID_RESPONSE) {
@@ -75,12 +80,16 @@ public class RecipeAiAssistanceService {
             log.warn("Recipe AI provider failed: {}", exception.getClass().getSimpleName());
             throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE);
         }
+        if (result == null) throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+
+        var usageEvent = new AiUsageEvent(expert.id(), "FR-21", clock.instant(), result.usage());
+        aiQuota.record(usageEvent);
+        events.publishEvent(usageEvent);
 
         GeneratedContent generated = parse(raw);
         String content = request.contentType() == ContentType.DESCRIPTION
                 ? validateDescription(generated.description())
                 : validateInstructions(generated.steps(), ingredients);
-        events.publishEvent(new AiUsageEvent(expert.id(), "FR-21", clock.instant(), result.usage()));
         return new RecipeAiAssistanceResponse(request.contentType(), content);
     }
 

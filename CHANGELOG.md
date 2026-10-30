@@ -9,6 +9,26 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-30 — Add AI Token Quota Tracking
+
+**Status:** Committed — `0302a970`.
+
+**Scope:** Track Gemini token usage against Guest sessions and Member subscription periods, and show Members their current quota.
+
+### Added
+
+- Add an idempotent token usage ledger, quota checks before Gemini calls, a Member usage endpoint, and token usage details on the AI plans page.
+- Set initial Free, Plus, and Pro subscription quotas while preserving the quota snapshot for active subscriptions.
+
+### Changed
+
+- Record provider-reported usage for successful Gemini calls, including calls whose generated content later fails application validation.
+- Keep usage records for 90 days after the associated quota period ends and exclude incomplete or failed provider calls from token totals.
+
+### Fixed
+
+- None.
+
 ## 2026-10-30 — Define AI Credit and Feature-First MVP Scope
 
 **Status:** Committed — `e6201ab5`.

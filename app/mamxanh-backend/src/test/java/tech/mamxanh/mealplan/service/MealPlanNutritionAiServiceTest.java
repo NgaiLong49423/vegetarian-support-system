@@ -48,8 +48,9 @@ class MealPlanNutritionAiServiceTest {
     private final RecipePostService recipePosts = mock(RecipePostService.class);
     private final AiClient ai = mock(AiClient.class);
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
+    private final tech.mamxanh.subscription.service.AiTokenQuotaService aiQuota = mock(tech.mamxanh.subscription.service.AiTokenQuotaService.class);
     private final MealPlanNutritionAiService service = new MealPlanNutritionAiService(users, profiles, entitlements,
-            plans, entries, nutrition, recipePosts, ai, new JsonMapper(), events, Clock.systemUTC(), analysis);
+            plans, entries, nutrition, recipePosts, ai, new JsonMapper(), events, Clock.systemUTC(), analysis, aiQuota);
 
     @BeforeEach
     void setUp() {
@@ -104,6 +105,7 @@ class MealPlanNutritionAiServiceTest {
                 .thenThrow(new tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException("offline"));
         assertThatThrownBy(() -> service.recommend(MONDAY, 101L))
                 .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_PROVIDER_UNAVAILABLE);
+        verifyNoInteractions(events);
 
         reset(ai);
         when(ai.analyzeNutritionRecommendations(anyString(), anyList(), eq(3))).thenReturn(null);
@@ -128,7 +130,7 @@ class MealPlanNutritionAiServiceTest {
                     .as("provider response %s", response)
                     .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_RESPONSE_INVALID);
         }
-        verifyNoInteractions(events);
+        verify(events, org.mockito.Mockito.times(7)).publishEvent(any(AiUsageEvent.class));
     }
 
     private void arrangeCandidate() {

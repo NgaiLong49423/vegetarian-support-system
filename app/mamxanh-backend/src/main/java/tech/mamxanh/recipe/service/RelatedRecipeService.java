@@ -21,6 +21,7 @@ import tech.mamxanh.recipe.dto.response.RecipePostResponse;
 import tech.mamxanh.recipe.dto.response.RelatedRecipesResponse;
 import tech.mamxanh.recipe.repository.RelatedRecipeRepository;
 import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
+import tech.mamxanh.subscription.service.AiTokenQuotaService;
 
 @Service
 public class RelatedRecipeService {
@@ -34,10 +35,11 @@ public class RelatedRecipeService {
     private final ObjectMapper mapper;
     private final ApplicationEventPublisher events;
     private final Clock clock;
+    private final AiTokenQuotaService aiQuota;
 
     public RelatedRecipeService(RelatedRecipeRepository repository, RecipePostService recipes,
             CurrentUserService users, SubscriptionEntitlementService entitlement, AiClient ai,
-            ObjectMapper mapper, ApplicationEventPublisher events, Clock clock) {
+            ObjectMapper mapper, ApplicationEventPublisher events, Clock clock, AiTokenQuotaService aiQuota) {
         this.repository = repository;
         this.recipes = recipes;
         this.users = users;
@@ -46,6 +48,7 @@ public class RelatedRecipeService {
         this.mapper = mapper;
         this.events = events;
         this.clock = clock;
+        this.aiQuota = aiQuota;
     }
 
     public RelatedRecipesResponse related(long recipeId, int limit) {
@@ -66,18 +69,20 @@ public class RelatedRecipeService {
         List<Long> allowed = candidates.stream().map(RecipePostResponse::id).toList();
         AiClient.RecommendationResult result;
         try {
+            aiQuota.requireAvailable(user.id(), null);
             result = ai.recommendRecipes(prompt(original, candidates), allowed, limit);
         } catch (AiProviderException exception) {
             LOG.warn("Related recipe provider request failed ({})", exception.getClass().getSimpleName());
             throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE);
         }
         if (result == null) throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+        var usageEvent = new AiUsageEvent(user.id(), "FR-47", clock.instant(), result.usage());
+        aiQuota.record(usageEvent);
+        events.publishEvent(usageEvent);
         List<Long> ids = selection(result.json(), allowed, limit);
         RecipePostResponse current = source(recipeId);
         List<RecipePostResponse> items = recipes.getPublishedCards(ids).stream()
                 .filter(recipe -> recipe.vegetarianType().equals(current.vegetarianType())).toList();
-        events.publishEvent(new AiUsageEvent(user.id(), "FR-47", clock.instant(),
-                result.usage()));
         return new RelatedRecipesResponse(items);
     }
 

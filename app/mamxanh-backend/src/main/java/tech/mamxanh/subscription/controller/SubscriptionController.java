@@ -25,9 +25,11 @@ import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.subscription.dto.request.CheckoutRequest;
 import tech.mamxanh.subscription.dto.response.CheckoutResponse;
 import tech.mamxanh.subscription.dto.response.MySubscriptionResponse;
+import tech.mamxanh.subscription.dto.response.MyAiUsageResponse;
 import tech.mamxanh.subscription.dto.response.PlanResponse;
 import tech.mamxanh.subscription.dto.response.TransactionHistoryResponse;
 import tech.mamxanh.subscription.service.SubscriptionService;
+import tech.mamxanh.subscription.service.AiTokenQuotaService;
 
 @RestController
 @RequestMapping(path = "/api/v1/subscriptions", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -36,10 +38,13 @@ public class SubscriptionController {
     private final SubscriptionService subscriptionService;
 
     private final PaymentResultService paymentResults;
+    private final AiTokenQuotaService aiTokenQuota;
 
-    public SubscriptionController(SubscriptionService subscriptionService, PaymentResultService paymentResults) {
+    public SubscriptionController(SubscriptionService subscriptionService, PaymentResultService paymentResults,
+            AiTokenQuotaService aiTokenQuota) {
         this.subscriptionService = subscriptionService;
         this.paymentResults = paymentResults;
+        this.aiTokenQuota = aiTokenQuota;
     }
 
     /**
@@ -85,6 +90,17 @@ public class SubscriptionController {
     public ResponseEntity<MySubscriptionResponse> getMySubscription(Authentication authentication) {
         Long userId = extractUserId(authentication);
         return ResponseEntity.ok(subscriptionService.getMySubscription(userId));
+    }
+
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Current token usage and quota for the caller."),
+            @ApiResponse(responseCode = "401", description = "Authentication is missing or invalid."),
+            @ApiResponse(responseCode = "403", description = "The account is locked or is not an active Member.")
+    })
+    @GetMapping("/my-ai-usage")
+    public ResponseEntity<MyAiUsageResponse> getMyAiUsage(Authentication authentication) {
+        return ResponseEntity.ok(aiTokenQuota.getMyUsage(extractUserId(authentication)));
     }
 
     /**
