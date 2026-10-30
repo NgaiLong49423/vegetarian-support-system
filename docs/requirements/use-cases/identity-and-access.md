@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M02
 > **File:** `docs/requirements/use-cases/identity-and-access.md`
-> **Version:** v2.7.0
+> **Version:** v2.8.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-21
+> **Last Updated:** 2026-10-30
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -474,14 +474,14 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-04).
 
 #### 2. Tác nhân (Actors)
 - **Primary Actor:**
-  - `Chuyên gia` (`Role = EXPERT`): Người dùng đã được Administrator phê duyệt đơn đăng ký Chuyên gia, có toàn quyền tạo, sửa, xóa và công khai bài viết của mình.
+  - `Chuyên gia` (`Role = EXPERT`): Tài khoản được Administrator cấp role qua FR-05 hoặc FR-06, có toàn quyền tạo, sửa, xóa và công khai bài viết của mình.
 - **Secondary Actor / External System:**
   - `Dịch vụ lưu trữ tệp đám mây (Azure Blob Storage)`: Lưu trữ ảnh minh họa bài viết.
   - `Administrator`: Quản trị viên xử lý báo cáo vi phạm sau khi bài đã công khai (hậu kiểm).
   - `Customer`: Người dùng thông thường chỉ có quyền đọc, bình chọn Like/Dislike, bình luận và lưu công thức; bị chặn khi cố gắng đăng bài.
 
 #### 4. Tiền điều kiện (Preconditions) & Điều kiện kích hoạt (Trigger)
-- **Preconditions:** Người dùng đã đăng nhập với tài khoản Chuyên gia (`Role = EXPERT`) ở trạng thái hoạt động (`ACTIVE`) đã được Administrator phê duyệt qua quy trình FR-05. Đối với sửa/xóa bài: người dùng phải là chính chủ tác giả của bài viết (`authenticatedUser.id == recipe.authorId`).
+- **Preconditions:** Người dùng đã đăng nhập với tài khoản Chuyên gia (`Role = EXPERT`) ở trạng thái hoạt động (`ACTIVE`) do Administrator cấp qua FR-05 hoặc FR-06. Đối với sửa/xóa bài: người dùng phải là chính chủ tác giả của bài viết (`authenticatedUser.id == recipe.authorId`).
 - **Trigger:** Chuyên gia nhấn nút "Đăng công thức" trên thanh điều hướng, hoặc nhấn "Chỉnh sửa" / "Xóa" trên trang chi tiết bài viết của mình.
 
 #### 5. Luồng sự kiện (Flow of Events)
@@ -597,6 +597,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-05).
    - Customer được xem đơn `PENDING` nhưng không có thao tác rút/hủy đơn. Nếu cần dừng xử lý, Customer liên hệ Administrator theo kênh hỗ trợ ngoài phạm vi chức năng này.
 5. **Chống xử lý đồng thời hoặc xử lý lại:**
    - Chỉ đơn còn `PENDING` mới được phê duyệt/từ chối. Nếu một Administrator khác đã xử lý đơn hoặc tài khoản không còn `ACTIVE`/`CUSTOMER`, hệ thống từ chối quyết định mới với `HTTP 409 Conflict`, rollback thay đổi quyết định, không ghi đè kết quả trước đó, không đổi role/ghi notification và yêu cầu tải lại dữ liệu.
+   - Nếu Administrator cấp trực tiếp role `EXPERT` từ quản lý tài khoản FR-06 trước khi request duyệt hoàn tất, đơn `PENDING` được chuyển `CANCELLED`; request duyệt còn lại nhận `409 Conflict`, không phát notification phê duyệt.
 6. **Xem lịch sử đơn của chính mình:**
    - Customer xem danh sách các đơn đã gửi theo thứ tự mới nhất trước, gồm ngày gửi, trạng thái, thời điểm xử lý và `admin_note` khi có; không xem được đơn của tài khoản khác.
 7. **Tệp không hợp lệ:**
@@ -605,7 +606,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-05).
    - Nếu Guest, Customer, Expert hoặc tài khoản khác yêu cầu tệp theo ID đơn, Backend trả `403 Forbidden` (hoặc `404 Not Found` khi đơn/tệp không tồn tại theo chính sách API) và không trả dữ liệu hay địa chỉ Blob.
 
 #### 6. Hậu điều kiện (Postconditions)
-- Bản ghi `EXPERT_APPLICATION` được tạo với trạng thái `PENDING` hoặc cập nhật trạng thái `APPROVED` / `REJECTED`.
+- Bản ghi `EXPERT_APPLICATION` được tạo với trạng thái `PENDING` hoặc cập nhật trạng thái `APPROVED` / `REJECTED` / `CANCELLED`.
 - Khi được phê duyệt: Vai trò của tài khoản trong cơ sở dữ liệu chuyển thành `EXPERT`, mở khóa toàn bộ quyền đăng bài tại FR-04.
 - Khi bị từ chối: Lý do từ chối được lưu trữ và hiển thị cho người dùng; vai trò tài khoản vẫn là `CUSTOMER`.
 - Lịch sử các lần nộp được bảo toàn; đơn mới sau khi bị từ chối không ghi đè bản ghi cũ.

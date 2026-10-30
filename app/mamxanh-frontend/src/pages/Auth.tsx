@@ -16,7 +16,7 @@ type VerifyState = 'idle' | 'verifying' | 'verified' | 'failed';
 type ResetState = 'ready' | 'unusable' | 'done';
 
 const copy = {
-  login: { title: 'Chào mừng bạn trở lại', subtitle: 'Tiếp tục hành trình ăn chay theo cách của bạn.', action: 'Đăng nhập' },
+  login: { title: '', subtitle: '', action: 'Đăng nhập' },
   register: { title: 'Bắt đầu cùng Mâm Xanh', subtitle: 'Tạo tài khoản để lưu món ngon và xây dựng thực đơn của riêng bạn.', action: 'Tạo tài khoản' },
   forgot: { title: 'Quên mật khẩu?', subtitle: 'Nhập email của bạn để yêu cầu hướng dẫn đặt lại mật khẩu.', action: 'Yêu cầu đặt lại mật khẩu' },
   verify: { title: 'Xác minh email của bạn', subtitle: 'Xác minh email là bước cần thiết trước khi đăng nhập bằng mật khẩu.', action: 'Yêu cầu gửi lại email' },
@@ -329,8 +329,8 @@ export function AuthPage({ mode }: { mode: Mode }) {
                 </span>
               </div>
 
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">{details.title}</h1>
-              <p className="mt-1 text-xs sm:text-sm leading-relaxed text-slate-300/90">{details.subtitle}</p>
+              {details.title && <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">{details.title}</h1>}
+              {details.subtitle && <p className="mt-1 text-xs sm:text-sm leading-relaxed text-slate-300/90">{details.subtitle}</p>}
 
               {(mode === 'login' || mode === 'register') && (
                 <>

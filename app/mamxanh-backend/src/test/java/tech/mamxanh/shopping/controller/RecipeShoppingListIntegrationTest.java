@@ -154,7 +154,7 @@ class RecipeShoppingListIntegrationTest extends AbstractIntegrationTest {
                 "\"selectedIngredientIds\":[],\"manualItems\":[{\"name\":\"Rau thơm\",\"quantity\":1,\"unitId\":" + grams + "}]")
                 .andExpect(status().isOk());
 
-        assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id=?",
+        assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id=? AND source_kind='RECIPE'",
                 Integer.class, list)).isZero();
         assertThat(sql.queryForObject("SELECT custom_ingredient_name FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id=?",
                 String.class, list)).isEqualTo("Rau thơm");
@@ -251,7 +251,7 @@ class RecipeShoppingListIntegrationTest extends AbstractIntegrationTest {
                 Integer.class, list, excluded)).isZero();
         assertThat(sql.queryForObject("SELECT quantity FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id=? AND custom_ingredient_name='Napkins'",
                 BigDecimal.class, list)).isEqualByComparingTo("2");
-        assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id=?",
+        assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id=? AND source_kind='RECIPE'",
                 Integer.class, list)).isEqualTo(1);
     }
 
@@ -262,7 +262,7 @@ class RecipeShoppingListIntegrationTest extends AbstractIntegrationTest {
         assertThat(quantity(list)).isEqualByComparingTo("2");
         assertThat(sql.queryForObject("SELECT custom_ingredient_name FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id=?",
                 String.class, list)).isEqualTo("Napkins");
-        assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id=?",
+        assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id=? AND source_kind='RECIPE'",
                 Integer.class, list)).isZero();
     }
 
@@ -273,7 +273,7 @@ class RecipeShoppingListIntegrationTest extends AbstractIntegrationTest {
         addSelection(list, "[" + ingredient + "]", "[" + manualItemBody(grams) + "]").andExpect(status().isOk());
         assertThat(sql.queryForObject("SELECT quantity FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id=? AND ingredient_id=?",
                 BigDecimal.class, list, ingredient)).isEqualByComparingTo("300");
-        assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id=?",
+        assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id=? AND source_kind='RECIPE'",
                 Integer.class, list)).isEqualTo(1);
         assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id=? AND custom_ingredient_name='Napkins'",
                 Integer.class, list)).isEqualTo(1);

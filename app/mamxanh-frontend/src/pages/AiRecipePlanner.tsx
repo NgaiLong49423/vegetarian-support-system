@@ -216,7 +216,7 @@ export function AiRecipePlanner({ weekStartDate, embedded = false, plannerMode =
       <div className="mt-3 flex min-h-8 flex-wrap gap-2">
         {selected.map((ingredient) => <button key={ingredient.ingredientId} type="button" onClick={() => { setSelected((items) => items.filter((item) => item.ingredientId !== ingredient.ingredientId)); setSuggestions(null); setPreview(null); setApplied(false); }} className="rounded-full bg-brand-50 px-3 py-1.5 text-sm font-medium text-brand-800 hover:bg-brand-100" aria-label={`Bỏ ${ingredient.name}`}>{ingredient.name} <span aria-hidden="true">×</span></button>)}
         {!selected.length && <p className="text-sm text-ink-muted">{plannerMode === 'weekly'
-          ? 'Có thể bỏ trống để AI chọn từ toàn bộ công thức công khai phù hợp; chọn nguyên liệu để giới hạn món theo nguyên liệu đó.'
+          ? 'Có thể bỏ trống để AI chọn từ toàn bộ công thức công khai phù hợp. Chọn nguyên liệu để giới hạn món theo nguyên liệu đó.'
           : 'Chọn ít nhất một nguyên liệu.'}</p>}
       </div>
       <div className="mt-5 flex flex-wrap gap-3">

@@ -197,10 +197,12 @@ test("AC-55.2/3: UTF-8 BOM download matches clipboard, filename and saved bought
   await page
     .getByRole("button", { name: "Đánh dấu Đậu hũ g", exact: true })
     .click();
+  await page.getByRole("button", { name: /Tất cả \(/ }).click();
   await expect(
     page.getByRole("button", { name: "Đánh dấu Đậu hũ g", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await page.reload();
+  await page.getByRole("button", { name: /Tất cả \(/ }).click();
   await expect(
     page.getByRole("button", { name: "Đánh dấu Đậu hũ g", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");

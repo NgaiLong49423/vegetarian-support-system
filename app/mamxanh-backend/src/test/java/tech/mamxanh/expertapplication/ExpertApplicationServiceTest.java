@@ -70,6 +70,29 @@ class ExpertApplicationServiceTest {
     }
 
     @Test
+    void directRoleGrantCancelsPendingApplicationAndNotifiesApplicant() {
+        when(applications.cancelPendingForDirectRoleGrant(42L, 7L,
+                "Đơn được hủy do cấp vai trò Chuyên gia trực tiếp. Lý do: Đủ điều kiện chia sẻ công thức", NOW))
+                .thenReturn(9L);
+
+        assertThat(service.cancelPendingForDirectRoleGrant(42L, 7L, "  Đủ điều kiện chia sẻ công thức  "))
+                .isEqualTo(9L);
+
+        verify(notifications).expertApplicationCancelled(42L, 9L);
+    }
+
+    @Test
+    void directRoleGrantWithoutPendingApplicationDoesNotSendNotification() {
+        when(applications.cancelPendingForDirectRoleGrant(42L, 7L,
+                "Đơn được hủy do cấp vai trò Chuyên gia trực tiếp. Lý do: Đủ điều kiện chia sẻ công thức", NOW))
+                .thenReturn(null);
+
+        assertThat(service.cancelPendingForDirectRoleGrant(42L, 7L, "Đủ điều kiện chia sẻ công thức")).isNull();
+
+        org.mockito.Mockito.verifyNoInteractions(notifications);
+    }
+
+    @Test
     void legacySubmissionConstructorKeepsTextOnlyApplicationsAvailable() {
         var request = request();
         var expected = response("PENDING", null);

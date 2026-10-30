@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react"
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react"
 
 import { Link, useSearchParams } from "react-router-dom"
 
@@ -378,8 +378,15 @@ function WeekContents({
     requestAnimationFrame(() => {
       if (!alive.current) return
 
-      if (returnFocus.current?.isConnected) returnFocus.current.focus()
-      else document.querySelector<HTMLElement>("h1")?.focus()
+      const target = returnFocus.current
+
+      if (target?.isConnected && target.getClientRects().length > 0) {
+        target.focus()
+
+        if (document.activeElement === target) return
+      }
+
+      document.querySelector<HTMLElement>("h1")?.focus()
     })
   }
 
@@ -602,7 +609,7 @@ function WeekContents({
               ? [...rawDays.slice(todayIndex), ...rawDays.slice(0, todayIndex)]
               : rawDays
 
-          return days.map((day) => {
+          return days.map((day, index) => {
             const date = new Date(`${day}T12:00:00`)
 
             const label = date.toLocaleDateString("vi-VN", {
@@ -618,13 +625,24 @@ function WeekContents({
             const expanded = selectedDay === day
 
             const today = day === todayKey
+            const pastDaysStart = day < todayKey && (index === 0 || days[index - 1] >= todayKey)
 
           return (
-            <section
-              key={day}
-              aria-label={date.toLocaleDateString("vi-VN")}
-              className="py-3"
-            >
+            <Fragment key={day}>
+              {pastDaysStart && (
+                <div role="separator" aria-label="Các ngày đã qua" className="flex items-center gap-3 py-5">
+                  <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-r from-transparent via-brand-200 to-brand-300" />
+                  <span className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3.5 py-1.5 text-[11px] font-bold tracking-wide text-brand-800 shadow-xs">
+                    <Clock3 aria-hidden="true" className="size-3.5" />
+                    NGÀY ĐÃ QUA
+                  </span>
+                  <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-l from-transparent via-brand-200 to-brand-300" />
+                </div>
+              )}
+              <section
+                aria-label={date.toLocaleDateString("vi-VN")}
+                className="py-3"
+              >
               <div className="flex items-center gap-2">
                 <h2 className="min-w-0 flex-1">
                   <button
@@ -874,7 +892,8 @@ function WeekContents({
                     </div>
                 </div>
               )}
-            </section>
+              </section>
+            </Fragment>
           )
         })
       })()}
@@ -1500,6 +1519,9 @@ function AiWeeklyMenu({ week }: { week: string }) {
   }, {})
   const today = localDateKey(new Date())
   const weekDates = datesInWeek(week)
+  const upcomingDates = weekDates.filter((day) => day >= today)
+  const pastDates = weekDates.filter((day) => day < today)
+  const previewDates = [...upcomingDates, ...pastDates]
   const currentWeekEnd = datesInWeek(mondayOf(new Date()))[6]
   const hasActionableDates = weekDates.some((day) => day >= today && day <= currentWeekEnd)
   const passedDays = weekDates.filter((day) => day < today)
@@ -1558,20 +1580,33 @@ function AiWeeklyMenu({ week }: { week: string }) {
       {successMessage && <p role="status" className="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-800">{successMessage}</p>}
       {preview && <div className="mt-5 space-y-4 border-t border-brand-100 pt-4">
         <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-semibold text-ink">Bản xem trước · {selected.length} món được chọn</p><Button variant="ghost" size="sm" onClick={() => { setSelected(selected.length === preview.meals.length ? [] : preview.meals.map((_, i) => i)); setConfirmArmed(false) }}>{selected.length === preview.meals.length ? "Bỏ chọn tất cả" : "Chọn tất cả"}</Button></div>
-        <div className="space-y-3">{weekDates.map((day) => {
+        <div className="space-y-3">{previewDates.map((day, index) => {
           const dayMeals = grouped?.[day] ?? []
           const isPast = day < today
-          if (isPast) return <section key={day} className="rounded-xl bg-raised p-3">
-            <h3 className="text-sm font-semibold capitalize text-ink">{new Date(`${day}T12:00:00`).toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long" })}</h3>
-            <p className="mt-2 rounded-lg border border-brand-100 bg-surface p-3 text-sm text-ink-muted">Ngày này đã qua — AI không đề xuất món.</p>
-          </section>
+          const pastDaysStart = isPast && (index === 0 || previewDates[index - 1] >= today)
+          const pastSeparator = pastDaysStart && <div role="separator" aria-label="Các ngày đã qua" className="flex items-center gap-3 py-2">
+            <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-r from-transparent via-brand-200 to-brand-300" />
+            <span className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3.5 py-1.5 text-[11px] font-bold tracking-wide text-brand-800 shadow-xs">
+              <Clock3 aria-hidden="true" className="size-3.5" />
+              NGÀY ĐÃ QUA
+            </span>
+            <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-l from-transparent via-brand-200 to-brand-300" />
+          </div>
+          if (isPast) return <Fragment key={day}>
+            {pastSeparator}
+            <section className="rounded-xl bg-raised p-3">
+              <h3 className="text-sm font-semibold capitalize text-ink">{new Date(`${day}T12:00:00`).toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long" })}</h3>
+              <p className="mt-2 rounded-lg border border-brand-100 bg-surface p-3 text-sm text-ink-muted">Ngày này đã qua — AI không đề xuất món.</p>
+            </section>
+          </Fragment>
           if (day > currentWeekEnd) return <section key={day} className="rounded-xl bg-raised p-3">
             <h3 className="text-sm font-semibold capitalize text-ink">{new Date(`${day}T12:00:00`).toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long" })}</h3>
             <p className="mt-2 rounded-lg border border-brand-100 bg-surface p-3 text-sm text-ink-muted">Ngoài khoảng AI đề xuất của tuần này.</p>
           </section>
           const totals = dailyTotals[day] ?? {}
           const dayEnergy = totals.ENERGY_KCAL ?? 0
-          return <section key={day} className="space-y-3 rounded-xl bg-raised p-3">
+          return <Fragment key={day}>
+            <section className="space-y-3 rounded-xl bg-raised p-3">
             <h3 className="text-sm font-semibold capitalize text-ink">{new Date(`${day}T12:00:00`).toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long" })}</h3>
             <div className="rounded-lg border border-brand-100 bg-surface p-3">
               <p className="text-xs font-semibold text-ink">Tổng dinh dưỡng dự kiến trong ngày</p>
@@ -1616,7 +1651,8 @@ function AiWeeklyMenu({ week }: { week: string }) {
                 })}</div>
               </section>
             })}</div>
-          </section>
+            </section>
+          </Fragment>
         })}</div>
         <p className="text-xs text-ink-muted">BMI {preview.bmi.toFixed(1)} ({preview.bmiCategory}) được dùng để cá nhân hóa lựa chọn, không thay đổi mục tiêu dinh dưỡng. {preview.nutritionDisclaimer}</p>
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Khi xác nhận, lịch từ hôm nay đến hết tuần sẽ được thay bằng các món đang chọn. Các ngày đã qua được giữ nguyên.</div>

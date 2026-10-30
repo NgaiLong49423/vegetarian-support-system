@@ -4,7 +4,7 @@
 -- Project         : Mâm Xanh — Vegetarian Support System (SWP391)
 -- Issue           : Refs #63 — Pha 2 Physical ERD & Schema
 -- Author          : Trương Văn Khải
--- Date            : 2026-09-25
+-- Date            : 2026-10-30
 -- Source          : Logical ERD v1.0.0 + Data Dictionary v0.7.5
 --                   (Nguyễn Hải Dương — Pha 1, commit 827353e)
 -- Synchronized with: V1__baseline_schema.sql + V2__unit_code_unicode.sql
@@ -31,6 +31,11 @@
 --                   + V23__report_supplement.sql
 --                   + V24__expert_application_private_attachments.sql
 --                   + V25__persist_nutrition_bmi.sql
+--                   + V26__standard_recipe_units.sql
+--                   + V27__shopping_list_recipe_sources.sql
+--                   + V28__shopping_list_item_sources.sql
+--                   + V29__shopping_unknown_contributions.sql
+--                   + V30__admin_user_management_audit.sql
 --                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
@@ -372,7 +377,7 @@ CREATE TABLE [EXPERT_APPLICATION] (
     CONSTRAINT FK_EXPERT_APP_REVIEWER FOREIGN KEY (reviewed_by)
         REFERENCES [USER](user_id) ON DELETE NO ACTION,
     CONSTRAINT CK_EXPERT_APP_status CHECK (
-        status IN ('PENDING', 'APPROVED', 'REJECTED')
+        status IN ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED')
     ),
     CONSTRAINT CK_EXPERT_APP_vegetarian_type CHECK (
         vegetarian_type IN ('VEGAN', 'LACTO', 'OVO', 'LACTO_OVO', 'MACROBIOTIC')
@@ -669,6 +674,40 @@ CREATE TABLE [REPORT] (
 );
 GO
 
+-- 6.1b USER_ACCOUNT_AUDIT — Administrator account status and role changes
+CREATE TABLE [USER_ACCOUNT_AUDIT] (
+    user_account_audit_id BIGINT IDENTITY(1,1) NOT NULL,
+    target_user_id BIGINT NOT NULL,
+    administrator_id BIGINT NOT NULL,
+    action VARCHAR(20) NOT NULL,
+    old_role VARCHAR(20) NULL,
+    new_role VARCHAR(20) NULL,
+    old_account_status VARCHAR(20) NULL,
+    new_account_status VARCHAR(20) NULL,
+    reason NVARCHAR(500) NOT NULL,
+    expert_application_id BIGINT NULL,
+    created_at DATETIME2(7) NOT NULL,
+    CONSTRAINT PK_USER_ACCOUNT_AUDIT PRIMARY KEY (user_account_audit_id),
+    CONSTRAINT FK_USER_ACCOUNT_AUDIT_TARGET FOREIGN KEY (target_user_id) REFERENCES [USER](user_id),
+    CONSTRAINT FK_USER_ACCOUNT_AUDIT_ADMIN FOREIGN KEY (administrator_id) REFERENCES [USER](user_id),
+    CONSTRAINT FK_USER_ACCOUNT_AUDIT_APPLICATION FOREIGN KEY (expert_application_id) REFERENCES [EXPERT_APPLICATION](application_id),
+    CONSTRAINT CK_USER_ACCOUNT_AUDIT_ACTION CHECK (action IN ('STATUS_CHANGED','ROLE_CHANGED')),
+    CONSTRAINT CK_USER_ACCOUNT_AUDIT_REASON CHECK (LEN(LTRIM(RTRIM(reason))) BETWEEN 10 AND 500),
+    CONSTRAINT CK_USER_ACCOUNT_AUDIT_VALUES CHECK (
+        (action='STATUS_CHANGED' AND old_account_status IS NOT NULL
+            AND old_account_status IN ('ACTIVE','LOCKED') AND new_account_status IS NOT NULL
+            AND new_account_status IN ('ACTIVE','LOCKED')
+            AND old_role IS NULL AND new_role IS NULL AND expert_application_id IS NULL)
+        OR
+        (action='ROLE_CHANGED' AND old_role IS NOT NULL AND old_role IN ('CUSTOMER','EXPERT')
+            AND new_role IS NOT NULL AND new_role IN ('CUSTOMER','EXPERT')
+            AND old_account_status IS NULL AND new_account_status IS NULL)
+    )
+);
+CREATE INDEX IX_USER_ACCOUNT_AUDIT_TARGET_CREATED
+    ON [USER_ACCOUNT_AUDIT](target_user_id, created_at DESC, user_account_audit_id DESC);
+GO
+
 -- 6.1a REPORT_SUPPLEMENT — Append-only information added to an open report
 -- Source: V23__report_supplement.sql, FR-30 AC-30.1
 CREATE TABLE [REPORT_SUPPLEMENT] (
@@ -802,7 +841,7 @@ CREATE TABLE [SHOPPING_LIST_ITEM] (
     ingredient_id          BIGINT         NULL,
     unit_id                INT            NOT NULL,
     custom_ingredient_name NVARCHAR(200)  NULL,
-    quantity               DECIMAL(10,2)  NOT NULL,
+    quantity               DECIMAL(18,6)  NOT NULL,
     is_bought              BIT            NOT NULL
         CONSTRAINT DF_SLI_is_bought DEFAULT 0,
 
@@ -835,12 +874,11 @@ GO
 CREATE TABLE [INGREDIENT_UNIT_CONVERSION] (
     ingredient_id   BIGINT         NOT NULL,
     unit_id         INT            NOT NULL,
-    grams_per_unit  DECIMAL(10,2)  NOT NULL,
+    grams_per_unit  DECIMAL(18,9)  NOT NULL,
     is_approximate  BIT            NOT NULL
         CONSTRAINT DF_IUC_is_approximate DEFAULT 0,
     is_active       BIT            NOT NULL
         CONSTRAINT DF_IUC_is_active DEFAULT 1,
-
     CONSTRAINT PK_INGREDIENT_UNIT_CONVERSION PRIMARY KEY (ingredient_id, unit_id),
     CONSTRAINT FK_IUC_INGREDIENT FOREIGN KEY (ingredient_id)
         REFERENCES [INGREDIENT](ingredient_id) ON DELETE NO ACTION,
@@ -1064,6 +1102,7 @@ GO
 -- ============================================================================
 
 INSERT INTO [UNIT] (code, name, dimension, base_factor) VALUES
+    (N'mg',     N'miligram',        'MASS',    0.001),
     (N'g',      N'gram',            'MASS',    1.0),
     (N'kg',     N'kilogram',        'MASS',    1000.0),
     (N'ml',     N'mililít',         'VOLUME',  1.0),
@@ -1149,18 +1188,33 @@ CREATE UNIQUE INDEX UX_SHOPPING_LIST_personal_owner ON [SHOPPING_LIST](user_id) 
 CREATE TABLE [SHOPPING_RECIPE_CONTRIBUTION] (
     contribution_id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     shopping_list_id BIGINT NOT NULL,
-    recipe_id BIGINT NOT NULL,
-    ingredient_id BIGINT NOT NULL,
+    recipe_id BIGINT NULL,
+    ingredient_id BIGINT NULL,
     unit_id INT NOT NULL,
-    quantity DECIMAL(10,2) NOT NULL CHECK (quantity > 0),
+    quantity DECIMAL(18,6) NOT NULL CHECK (quantity > 0),
     shopping_list_item_id BIGINT NULL,
+    source_id UNIQUEIDENTIFIER NOT NULL,
+    source_kind VARCHAR(16) NOT NULL CONSTRAINT DF_SRC_source_kind DEFAULT 'RECIPE',
+    expected_ingredient_count INT NULL,
+    servings DECIMAL(4,1) NULL,
+    meal_plan_entry_id BIGINT NULL,
+    meal_date DATE NULL,
+    meal_type VARCHAR(20) NULL,
     CONSTRAINT FK_SRC_LIST FOREIGN KEY (shopping_list_id) REFERENCES [SHOPPING_LIST](shopping_list_id) ON DELETE CASCADE,
     CONSTRAINT FK_SRC_RECIPE FOREIGN KEY (recipe_id) REFERENCES [RECIPE_POST](recipe_id),
     CONSTRAINT FK_SRC_INGREDIENT FOREIGN KEY (ingredient_id) REFERENCES [INGREDIENT](ingredient_id),
     CONSTRAINT FK_SRC_UNIT FOREIGN KEY (unit_id) REFERENCES [UNIT](unit_id),
-    CONSTRAINT FK_SRC_ITEM FOREIGN KEY (shopping_list_item_id) REFERENCES [SHOPPING_LIST_ITEM](shopping_list_item_id)
+    CONSTRAINT FK_SRC_ITEM FOREIGN KEY (shopping_list_item_id) REFERENCES [SHOPPING_LIST_ITEM](shopping_list_item_id),
+    CONSTRAINT CK_SRC_source_kind CHECK (
+        (source_kind = 'RECIPE' AND recipe_id IS NOT NULL AND ingredient_id IS NOT NULL
+            AND (expected_ingredient_count IS NULL OR expected_ingredient_count > 0))
+        OR (source_kind = 'MANUAL' AND recipe_id IS NULL AND expected_ingredient_count IS NULL)
+        OR (source_kind = 'UNKNOWN' AND ingredient_id IS NOT NULL
+            AND (expected_ingredient_count IS NULL OR expected_ingredient_count > 0))
+    )
 );
 CREATE INDEX IX_SRC_LIST_RECIPE ON [SHOPPING_RECIPE_CONTRIBUTION](shopping_list_id,recipe_id);
 CREATE INDEX IX_SRC_ITEM ON [SHOPPING_RECIPE_CONTRIBUTION](shopping_list_item_id);
+CREATE INDEX IX_SRC_LIST_SOURCE ON [SHOPPING_RECIPE_CONTRIBUTION](shopping_list_id,source_id);
 
 GO

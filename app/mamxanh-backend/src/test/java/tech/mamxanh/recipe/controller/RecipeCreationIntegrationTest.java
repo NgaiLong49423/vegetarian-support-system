@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -48,14 +49,20 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     private int countUnitId;
     private int blockUnitId;
 
-    @BeforeEach
-    void prepareCatalogAndAccounts() {
+    /** Remove only this suite's fixtures before another suite reuses the SQL Server container. */
+    @AfterEach
+    void cleanupFixtures() {
         jdbcTemplate.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue22-%@test.local')");
         jdbcTemplate.update("DELETE FROM [INGREDIENT_UNIT_CONVERSION] WHERE ingredient_id IN (SELECT ingredient_id FROM [INGREDIENT] WHERE name = ?)", INGREDIENT_NAME);
         jdbcTemplate.update("DELETE FROM [INGREDIENT_UNIT_CONVERSION] WHERE ingredient_id IN (SELECT ingredient_id FROM [INGREDIENT] WHERE name = ?)", INGREDIENT_WITHOUT_NUTRITION_NAME);
         jdbcTemplate.update("DELETE FROM [INGREDIENT] WHERE name = ?", INGREDIENT_NAME);
         jdbcTemplate.update("DELETE FROM [INGREDIENT] WHERE name = ?", INGREDIENT_WITHOUT_NUTRITION_NAME);
         jdbcTemplate.update("DELETE FROM [USER] WHERE email LIKE 'issue22-%@test.local'");
+    }
+
+    @BeforeEach
+    void prepareCatalogAndAccounts() {
+        cleanupFixtures();
 
         expertId = insertUser(EXPERT_EMAIL, "EXPERT", "ACTIVE");
         customerId = insertUser(CUSTOMER_EMAIL, "CUSTOMER", "ACTIVE");
@@ -269,17 +276,17 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     @Test
     void acceptsCountUnitWhenActiveIngredientSpecificConversionExists() throws Exception {
         jdbcTemplate.update("INSERT INTO [INGREDIENT_UNIT_CONVERSION] (ingredient_id, unit_id, grams_per_unit) VALUES (?, ?, 150)",
-                ingredientId, blockUnitId);
+                ingredientId, countUnitId);
 
         mockMvc.perform(post("/api/v1/recipes")
                         .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(json(request(List.of(ingredient(blockUnitId, "2")), null))))
+                        .content(json(request(List.of(ingredient(countUnitId, "2")), null))))
                 .andExpect(status().isCreated());
 
         org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM [RECIPE_INGREDIENT] ri JOIN [RECIPE_POST] rp ON rp.recipe_id = ri.recipe_id WHERE rp.author_id = ? AND ri.ingredient_id = ? AND ri.unit_id = ? AND ri.quantity = 2",
-                Integer.class, expertId, ingredientId, blockUnitId)).isEqualTo(1);
+                Integer.class, expertId, ingredientId, countUnitId)).isEqualTo(1);
     }
 
     @Test
@@ -324,12 +331,12 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     void calculatesAllNineNutrientsFromDatabaseCatalogAndIngredientConversion() throws Exception {
         setSupportedNutritionFixture();
         jdbcTemplate.update("INSERT INTO [INGREDIENT_UNIT_CONVERSION] (ingredient_id, unit_id, grams_per_unit) VALUES (?, ?, 150)",
-                ingredientId, blockUnitId);
+                ingredientId, countUnitId);
 
         var created = mockMvc.perform(post("/api/v1/recipes")
                         .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(json(request(List.of(ingredient(blockUnitId, "2")), null))))
+                        .content(json(request(List.of(ingredient(countUnitId, "2")), null))))
                 .andExpect(status().isCreated())
                 .andReturn();
         long recipeId = jsonMapper.readTree(created.getResponse().getContentAsString()).path("recipeId").asLong();
@@ -362,8 +369,8 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     void returnsPartialNutritionAndMissingCatalogIngredientNames() throws Exception {
         setSupportedNutritionFixture();
         jdbcTemplate.update("INSERT INTO [INGREDIENT_UNIT_CONVERSION] (ingredient_id, unit_id, grams_per_unit) VALUES (?, ?, 150)",
-                ingredientId, blockUnitId);
-        var recipeIngredients = List.of(ingredient(blockUnitId, "2"),
+                ingredientId, countUnitId);
+        var recipeIngredients = List.of(ingredient(countUnitId, "2"),
                 new RecipeIngredientInput(ingredientWithoutNutritionId, gramUnitId, new BigDecimal("80")));
 
         var created = mockMvc.perform(post("/api/v1/recipes")
