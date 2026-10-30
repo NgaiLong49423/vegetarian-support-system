@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-30 — Define AI Credit and Feature-First MVP Scope
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `e6201ab5`.
 
 **Scope:** Synchronize the active AI requirements with the approved token-quota and AI Credit model, then create linked implementation Issues for the MVP.
 
