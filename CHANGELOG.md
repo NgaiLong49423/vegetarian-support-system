@@ -2,12 +2,52 @@
 > **File:** `CHANGELOG.md`
 > **Version:** v2.127.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-29
+> **Last Updated:** 2026-10-30
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-30 — Align CI Checks for Admin Account Management
+
+**Status:** Committed — `3ec1ed3c`.
+
+**Scope:** Keep the generated API contract and Frontend coverage test aligned with the Admin account-management page.
+
+### Added
+
+- None.
+
+### Changed
+
+- Refresh the OpenAPI snapshot from the runtime contract generated for the pull request commit.
+- Update the Admin page coverage assertion to match the current heading.
+
+### Fixed
+
+- None.
+
+## 2026-10-30 — Implement Backend-Backed Admin Account Management
+
+**Status:** Committed — `8632da92`.
+
+**Scope:** Replace the account-management preview with protected SQL Server-backed account lookup and administration.
+
+### Added
+
+- Add paginated account search, global counts, minimal account details, and an append-only account audit history for Administrators.
+- Add reason-required account status and CUSTOMER/EXPERT role changes. Direct Expert grants close any pending application and notify its applicant in the same transaction.
+- Add Frontend coverage for API-backed account search, role/status changes, and read-only Administrator rows.
+
+### Changed
+
+- Remove sample accounts, account export, and the preview banner from the account-management page; retain the separate transaction preview.
+- Clarify FR-05/FR-06 and related business rules for direct Expert grants and cancellation of pending applications.
+
+### Fixed
+
+- None.
 
 ## 2026-10-29 — Restore Meal Planner Focus After React Commits
 

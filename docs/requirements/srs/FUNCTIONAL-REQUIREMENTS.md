@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.45.0
+> **Version:** v2.46.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-29
+> **Last Updated:** 2026-10-30
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -279,7 +279,7 @@ Cung cấp giải pháp định danh, xác thực an toàn và quản lý vòng 
 
 - **Mã yêu cầu:** FR-04
 - **Module:** M02 (Identity & Access), M03 (Community Recipes & Social)
-- **Tóm tắt yêu cầu:** Hệ thống cho phép tài khoản có vai trò Chuyên gia (`Role = EXPERT`) đã được phê duyệt tạo, xem, chỉnh sửa, xóa và công khai trực tiếp Recipe Post của chính mình khi đạt các tiêu chuẩn kiểm tra tính hợp lệ; người đăng **không bắt buộc phải viết từng bước nấu ăn** vào bài viết mà có thể nhập hướng dẫn chế biến dạng văn bản tổng thể (10–5.000 ký tự) hoặc phân đoạn tùy ý; upload tối đa 5 ảnh minh họa (`RECIPE_MEDIA`, $\le 5$ MB/ảnh) kèm đúng 1 ảnh bìa, và gắn tối đa 1 link YouTube; hệ thống bắt buộc các nguyên liệu phải có định lượng số học và tỷ lệ quy đổi hợp lệ sang gam (BR-73); `Customer`, `Guest` và `Administrator` không có quyền tạo/đăng hoặc sửa nội dung bài công thức.
+- **Tóm tắt yêu cầu:** Hệ thống cho phép tài khoản có vai trò Chuyên gia (`Role = EXPERT`) được Administrator cấp qua FR-05 hoặc FR-06 tạo, xem, chỉnh sửa, xóa và công khai trực tiếp Recipe Post của chính mình khi đạt các tiêu chuẩn kiểm tra tính hợp lệ; người đăng **không bắt buộc phải viết từng bước nấu ăn** vào bài viết mà có thể nhập hướng dẫn chế biến dạng văn bản tổng thể (10–5.000 ký tự) hoặc phân đoạn tùy ý; upload tối đa 5 ảnh minh họa (`RECIPE_MEDIA`, $\le 5$ MB/ảnh) kèm đúng 1 ảnh bìa, và gắn tối đa 1 link YouTube; hệ thống bắt buộc các nguyên liệu phải có định lượng số học và tỷ lệ quy đổi hợp lệ sang gam (BR-73); `Customer`, `Guest` và `Administrator` không có quyền tạo/đăng hoặc sửa nội dung bài công thức.
 
 - **Use Case detail:** [Open interaction flows](../use-cases/identity-and-access.md#fr-04).
 
@@ -366,7 +366,7 @@ Thiết lập Mâm Xanh thành sân chơi ẩm thực chay chuyên nghiệp, nơ
 
 - **Mã yêu cầu:** FR-05
 - **Module:** M02 (Identity & Access), M03 (Community Recipes & Social), M09 (Administration & Moderation)
-- **Tóm tắt yêu cầu:** Hệ thống cho phép người dùng thông thường (`Customer`) có nguyện vọng chia sẻ công thức nộp đơn đăng ký Chuyên gia theo format văn bản có cấu trúc (`EXPERT_APPLICATION`) và tùy chọn đính kèm tối đa một tài liệu chứng chỉ/văn bằng chuyên môn cùng một ảnh thẻ chân dung khung 3:4 riêng của đơn; đây là quy trình xét duyệt **tư cách Chuyên gia và quyền đăng bài**, không phải xác minh danh tính/KYC. Hệ thống không yêu cầu giấy tờ tùy thân. Tệp đính kèm được lưu riêng tư và chỉ Administrator có quyền tải/xem khi thẩm định; ảnh không cập nhật avatar hồ sơ công khai. Administrator ghi nhận xét thẩm định và quyết định phê duyệt (`APPROVED`) hoặc từ chối (`REJECTED`) kèm lý do; khi được phê duyệt, tài khoản được thăng cấp tức thời lên vai trò `EXPERT`; nếu bị từ chối, người dùng có thể nộp lại đơn mới.
+- **Tóm tắt yêu cầu:** Hệ thống cho phép người dùng thông thường (`Customer`) có nguyện vọng chia sẻ công thức nộp đơn đăng ký Chuyên gia theo format văn bản có cấu trúc (`EXPERT_APPLICATION`) và tùy chọn đính kèm tối đa một tài liệu chứng chỉ/văn bằng chuyên môn cùng một ảnh thẻ chân dung khung 3:4 riêng của đơn; đây là quy trình xét duyệt **tư cách Chuyên gia và quyền đăng bài**, không phải xác minh danh tính/KYC. Hệ thống không yêu cầu giấy tờ tùy thân. Tệp đính kèm được lưu riêng tư và chỉ Administrator có quyền tải/xem khi thẩm định; ảnh không cập nhật avatar hồ sơ công khai. Administrator ghi nhận xét thẩm định và quyết định phê duyệt (`APPROVED`) hoặc từ chối (`REJECTED`) kèm lý do; phê duyệt đơn sẽ thăng cấp tài khoản tức thời lên `EXPERT`. Việc cấp vai trò `EXPERT` trực tiếp qua quản lý người dùng FR-06 không cần đơn đã duyệt; nếu có đơn `PENDING`, đơn được chuyển `CANCELLED`, ghi người xử lý/lý do và gửi thông báo. Nếu bị từ chối, người dùng có thể nộp lại đơn mới.
 
 - **Use Case detail:** [Open interaction flows](../use-cases/identity-and-access.md#fr-05).
 
@@ -459,6 +459,16 @@ Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặ
 - **AC-05.11 — Nhãn và hướng dẫn Portfolio URL:**
   - **Then:** Form hiển thị nhãn “Đường dẫn portfolio”; hướng dẫn “Không bắt buộc. Chấp nhận HTTP/HTTPS, tối đa 500 ký tự.” nằm riêng bên dưới, không có dấu ngoặc.
 
+- **AC-05.12 — Kết thúc đơn PENDING khi Admin cấp Expert trực tiếp:**
+  - **Given:** Administrator đổi vai trò tài khoản CUSTOMER sang EXPERT tại quản lý người dùng FR-06 và tài khoản đang có đơn `PENDING`.
+  - **When:** Thao tác đổi vai trò hoàn tất.
+  - **Then:** Cùng transaction, hệ thống đổi role, chuyển đơn sang `CANCELLED` với người xử lý/thời điểm/lý do, ghi audit thay đổi tài khoản và tạo thông báo in-app cho người dùng. Nếu bất kỳ bước nào lỗi, toàn bộ thay đổi được rollback; yêu cầu duyệt đồng thời chỉ có một kết quả thắng.
+
+- **AC-05.13 — Cấp Expert trực tiếp không phụ thuộc đơn đã duyệt:**
+  - **Given:** Administrator đổi CUSTOMER sang EXPERT với lý do hợp lệ qua FR-06.
+  - **When:** Tài khoản không có đơn PENDING hoặc có đơn PENDING được đóng thành công.
+  - **Then:** Tài khoản được cấp quyền Expert ngay và có thể dùng chức năng FR-04; không yêu cầu tạo đơn mới hoặc giả lập trạng thái `APPROVED`.
+
 ---
 
 ---
@@ -468,7 +478,7 @@ Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặ
 
 - **Mã yêu cầu:** FR-06
 - **Module:** M09 (Administration & Moderation)
-- **Tóm tắt yêu cầu:** Hệ thống cho phép Administrator tiếp nhận, quản lý và xử lý báo cáo vi phạm đối với thành viên, Recipe Post, bình luận và danh mục; Administrator không duyệt quyền đăng hoặc duyệt từng Recipe Post trước khi công khai; toàn bộ việc kiểm soát nội dung tuân thủ cơ chế hậu kiểm (post-moderation) dựa trên phản ánh của cộng đồng.
+- **Tóm tắt yêu cầu:** Hệ thống cho phép Administrator quản lý tài khoản người dùng thật và tiếp nhận, quản lý, xử lý báo cáo vi phạm đối với thành viên, Recipe Post, bình luận và danh mục. Quản lý tài khoản gồm tìm kiếm/lọc/phân trang, thống kê, xem chi tiết/lịch sử, khóa/mở khóa và đổi role giữa `CUSTOMER` với `EXPERT`; mọi thay đổi cần lý do 10–500 ký tự và được audit. Tài khoản `ADMIN` chỉ xem, không phải đối tượng khóa hoặc đổi role. Administrator không duyệt từng Recipe Post trước khi công khai; kiểm soát nội dung vẫn theo cơ chế hậu kiểm (post-moderation).
 
 - **Use Case detail:** [Open interaction flows](../use-cases/administration.md#fr-06).
 
@@ -479,12 +489,16 @@ Cung cấp trung tâm điều hành hậu kiểm nội dung toàn diện cho Qu�
 - **Các Use Case con:**
   - `UC-06.1`: Quản lý danh sách nội dung bị báo cáo hậu kiểm (Manage reported content dashboard).
   - `UC-06.2`: Thực hiện hành động hậu kiểm đối với nội dung hoặc tài khoản vi phạm (Execute moderation actions on content or user).
+  - `UC-06.3`: Tra cứu và quản lý trạng thái/vai trò tài khoản thành viên (Manage member accounts and roles).
 - **User Stories:**
   - `US-06.1`: Là một Administrator, tôi muốn có bảng tổng hợp trực quan các bài viết và bình luận bị báo cáo nhiều nhất để ưu tiên xử lý nhanh các trường hợp vi phạm nghiêm trọng.
   - `US-06.2`: Là một Administrator, tôi muốn áp dụng chế tài ẩn bài hoặc khóa tài khoản kèm lý do rõ ràng để bảo đảm tính minh bạch và công bằng.
+  - `US-06.3`: Là một Administrator, tôi muốn quản lý tài khoản bằng dữ liệu thật, xem lịch sử và ghi lý do cho mọi lần khóa/mở khóa hoặc đổi vai trò.
 
 #### Quy tắc phân quyền và bảo mật (Permissions & Security)
 - Chỉ tài khoản có vai trò Administrator mới có quyền truy cập trung tâm hậu kiểm và áp dụng chế tài (NFR-09).
+- API quản lý tài khoản chỉ dành cho role `ADMIN` ở Backend; response không được trả dữ liệu sức khỏe hoặc hồ sơ riêng tư. Tài khoản `ADMIN` có thể được tra cứu nhưng không thể là mục tiêu thao tác khóa/mở khóa/đổi role.
+- Role được đổi trực tiếp chỉ giữa `CUSTOMER` và `EXPERT`; mọi thay đổi role hoặc trạng thái yêu cầu lý do đã trim dài 10–500 ký tự và ghi audit actor, thời gian, hành động, giá trị trước/sau, lý do. Không ghi audit khi trạng thái/role không đổi.
 - Tuyệt đối không áp dụng cơ chế phê duyệt trước (pre-moderation) từng bài viết trước khi đăng (BR-07).
 
 #### Truy vết quy tắc nghiệp vụ và phi chức năng (Traceability)
@@ -517,6 +531,26 @@ Cung cấp trung tâm điều hành hậu kiểm nội dung toàn diện cho Qu�
   - **Given:** Quá trình hậu kiểm đang diễn ra song song trên hệ thống.
   - **When:** Các thành viên khác tạo và công khai bài công thức hợp lệ mới.
   - **Then:** Các bài viết mới vẫn được công khai ngay lập tức mà không bị nghẽn hay chờ duyệt trước (BR-07).
+
+- **AC-06.5 — Danh sách người dùng từ Backend:**
+  - **Given:** Administrator mở trang Quản lý người dùng.
+  - **When:** Tìm kiếm theo tên/email/mã, lọc theo role/trạng thái hoặc chuyển trang.
+  - **Then:** Bảng trả dữ liệu SQL Server có phân trang giới hạn; số liệu tổng quan tính trên toàn hệ thống, độc lập với bộ lọc; số công thức chỉ đếm bài `PUBLISHED`.
+
+- **AC-06.6 — Bảo vệ API và dữ liệu tối thiểu:**
+  - **Given:** Request không phải Administrator hoặc yêu cầu quá giới hạn.
+  - **When:** Gọi API danh sách, chi tiết, lịch sử hoặc thay đổi tài khoản.
+  - **Then:** Backend từ chối request trái quyền/validation; chỉ trả dữ liệu tài khoản cần thiết và không trả trường sức khỏe/hồ sơ riêng tư.
+
+- **AC-06.7 — Lý do, audit và không tác động tài khoản Admin:**
+  - **Given:** Administrator thực hiện đổi trạng thái hoặc role.
+  - **When:** Lý do thiếu hoặc ngoài 10–500 ký tự, mục tiêu là ADMIN, hoặc cập nhật cạnh tranh đã làm thay đổi trạng thái.
+  - **Then:** Request không tạo audit/thay đổi trái phép; thao tác hợp lệ ghi trước/sau, actor, thời điểm và lý do trong cùng transaction. Yêu cầu lặp không đổi dữ liệu thì không thêm audit.
+
+- **AC-06.8 — Role trực tiếp và đơn Chuyên gia đang chờ:**
+  - **Given:** Admin chuyển CUSTOMER sang EXPERT, có thể có hoặc không có đơn `PENDING`.
+  - **When:** Thay đổi được xác nhận.
+  - **Then:** Không cần đơn `APPROVED`; nếu đơn `PENDING` tồn tại, đơn chuyển `CANCELLED`, lưu người xử lý/lý do và gửi notification cùng transaction. Luồng duyệt FR-05 vẫn chỉ chuyển đơn còn `PENDING` của CUSTOMER đang `ACTIVE`.
 
 ---
 
@@ -1503,13 +1537,14 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **Use Case detail:** [Open interaction flows](../use-cases/recipe-contribution-and-community.md#fr-21).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cung cấp tính năng trợ lý AI tương tác thông minh hỗ trợ Chuyên gia trong quá trình tạo hoặc chỉnh sửa bài công thức nấu ăn: AI hỗ trợ gợi ý đoạn văn bản giới thiệu món ăn hấp dẫn (Description $\le 2.000$ ký tự) hoặc đề xuất nội dung hướng dẫn chế biến (văn bản từ 10 đến 5.000 ký tự theo FR-16, BR-19) dựa trên thông tin tác giả đã cung cấp (tên món, loại ăn chay, thể loại món `dish_category`, danh sách nguyên liệu và khẩu phần); AI tuyệt đối không tự ý thêm bất kỳ nguyên liệu mới nào ngoài danh sách tác giả đã nhập; kết quả do AI sinh ra được đưa trực tiếp vào các ô nhập liệu của biểu mẫu ở phía client (ô mô tả `description` hoặc ô hướng dẫn chế biến `instructions`) ở dạng có thể chỉnh sửa tự do và chỉ được công khai khi người dùng chủ động xem xét, xác nhận (BR-15); hệ thống không tự động công khai hoặc lưu persistent server-side Recipe Post draft trong baseline hiện tại; tính năng thuộc gói Pro (FR-10, BR-02); nếu AI gặp sự cố kỹ thuật hoặc tài khoản không thuộc gói Pro, tác giả vẫn có toàn quyền tiếp tục tự viết hướng dẫn chế biến và xuất bản bài viết bình thường (BR-16).
+- **Tóm tắt yêu cầu:** Cung cấp trợ lý AI cho Chuyên gia đã đăng nhập thuộc gói Pro để gợi ý mô tả hoặc hướng dẫn chế biến cho Recipe Post. AI ưu tiên nguyên liệu và định lượng tác giả đã nhập, có thể nêu thêm nguyên liệu phù hợp dưới dạng gợi ý để tác giả tự rà soát, chỉnh sửa. Kết quả chỉ được đưa vào biểu mẫu có thể chỉnh sửa; hệ thống không tự lưu bản nháp hoặc tự công khai. Tác giả luôn có thể tiếp tục soạn và đăng thủ công nếu AI lỗi hoặc tài khoản không đủ quyền (FR-10, BR-15, BR-16).
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Chuyên gia đã đăng nhập và đang đăng ký gói Pro còn hiệu lực (FR-03, FR-10, BR-02).
   - Khả năng hỗ trợ:
     1. Gợi ý đoạn giới thiệu món ăn (Description $\le 2.000$ ký tự).
     2. Đề xuất nội dung hướng dẫn chế biến linh hoạt (`instructions`, từ 10 đến 5.000 ký tự).
-  - Không hỗ trợ: AI không tự thêm nguyên liệu, không tự động công khai và không lưu persistent server-side Recipe Post draft trong baseline hiện tại.
+  - Hệ thống hướng prompt để AI ưu tiên nguyên liệu đã nhập nhưng không áp dụng kiểm tra Backend bắt buộc nội dung chỉ nhắc các nguyên liệu đó; tác giả rà soát và chỉnh sửa mọi gợi ý trước khi đăng.
+  - Không hỗ trợ: AI không tự động công khai và không lưu persistent server-side Recipe Post draft trong baseline hiện tại.
 - **Phân loại Actor:**
   - Primary Actor: `Chuyên gia (Role = EXPERT)` (tác giả bài viết).
   - Supporting Actor: `Google Gemini AI` (trợ lý sinh nội dung), `Hệ thống xác thực quyền tính năng (Feature Entitlement)`.
@@ -1523,7 +1558,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 
 #### Phân quyền & Ràng buộc phê duyệt
 - **Quyền hạn:** Chỉ Chuyên gia đã đăng nhập và đang sử dụng gói Pro còn hiệu lực mới được sử dụng.
-- **Ràng buộc an toàn:** AI không tự thêm nguyên liệu; kết quả AI phải ở dạng chỉnh sửa được; AI không tự ý công khai và không lưu persistent server-side Recipe Post draft trong baseline hiện tại; không chặn đăng bài khi AI lỗi (BR-16).
+- **Ràng buộc an toàn:** Prompt hướng AI ưu tiên nguyên liệu tác giả đã nhập; nội dung AI có thể đề xuất thêm nguyên liệu và không bị Backend từ chối chỉ vì khác danh sách. Tác giả có thể rà soát, chỉnh sửa nội dung trong biểu mẫu trước khi chủ động đăng; bài đã đăng tiếp tục theo cơ chế hậu kiểm hiện hành. AI không tự ý công khai hoặc lưu persistent server-side Recipe Post draft trong baseline hiện tại; không chặn đăng bài khi AI lỗi (BR-16).
 
 #### Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
@@ -1544,14 +1579,14 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - [NFR-13](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13): Giao diện Responsive tiếng Việt trên đa kích thước màn hình.
 
 #### Tiêu chí chấp nhận nguyên tử (Acceptance Criteria)
-- **AC-21.1 (AI sinh nội dung không tự ý thêm nguyên liệu mới):**
+- **AC-21.1 (AI ưu tiên nguyên liệu đã nhập và cho phép tác giả rà soát gợi ý thêm):**
   - *Given* tác giả khai báo danh sách nguyên liệu chỉ gồm "Đậu phụ, Cà chua, Hành boa-rô",
   - *When* AI sinh nội dung hướng dẫn chế biến,
-  - *Then* toàn bộ nội dung hướng dẫn chỉ sử dụng các nguyên liệu đã khai báo và tuyệt đối không xuất hiện nguyên liệu mới (như nấm, ớt chuông...).
+  - *Then* prompt hướng AI ưu tiên các nguyên liệu đã khai báo; nội dung có thể gợi ý thêm nguyên liệu phù hợp, Backend không từ chối chỉ vì nội dung nhắc nguyên liệu ngoài danh sách, và tác giả nhận nội dung ở dạng có thể rà soát/chỉnh sửa trước khi đăng.
 - **AC-21.2 (Đưa nội dung AI sinh vào form soạn thảo dưới dạng có thể chỉnh sửa):**
   - *Given* AI phản hồi thành công nội dung hướng dẫn chế biến (10–5.000 ký tự),
   - *When* dữ liệu trả về client,
-  - *Then* nội dung được tự động điền vào ô nhập liệu `instructions` trên form để tác giả có thể chỉnh sửa trực tiếp và chỉ được công khai khi tác giả chủ động bấm đăng.
+  - *Then* nội dung được tự động điền vào ô nhập liệu `instructions` trên form để tác giả rà soát, chỉnh sửa trực tiếp và chỉ được công khai khi tác giả chủ động bấm đăng; sau khi đăng, áp dụng cơ chế hậu kiểm hiện hành.
 - **AC-21.3 (Tuyệt đối không lưu trữ bản nháp trên server):**
   - *Given* tác giả sử dụng AI hỗ trợ soạn bài nhưng chưa nhấn nút "Đăng công thức",
   - *When* kiểm tra cơ sở dữ liệu hệ thống trên máy chủ,

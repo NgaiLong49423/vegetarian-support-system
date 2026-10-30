@@ -49,11 +49,10 @@ class RecipeAiAssistanceServiceTest {
                 aiClient, new JsonMapper());
         when(currentUserService.requireActiveExpert()).thenReturn(new CurrentUser(7L, Role.EXPERT));
         lenient().when(ingredientCatalog.findActiveIngredientsByIds(List.of(1L, 2L))).thenReturn(List.of(TOFU, TOMATO));
-        lenient().when(ingredientCatalog.findActiveIngredients("")).thenReturn(List.of(TOFU, TOMATO));
     }
 
     @Test
-    void generatedStepsUseOnlyAllowedIdsAndResolveNamesFromCatalog() {
+    void selectedIngredientIdsResolveNamesFromCatalog() {
         when(aiClient.generateRecipeText(anyString(), anyList())).thenReturn(generatedInstructions(
                 "Đun nóng chảo rồi đảo đều đến khi mềm.", List.of(1L, 2L)));
 
@@ -65,12 +64,10 @@ class RecipeAiAssistanceServiceTest {
     }
 
     @Test
-    void instructionsWithSelectedSoySauceDoNotIntroduceUnselectedWater() {
+    void selectedSoySauceInstructionsCanMentionWater() {
         var soySauce = ingredient(3L, "Nước tương");
         when(ingredientCatalog.findActiveIngredientsByIds(List.of(1L, 2L, 3L)))
                 .thenReturn(List.of(TOFU, TOMATO, soySauce));
-        when(ingredientCatalog.findActiveIngredients(""))
-                .thenReturn(List.of(TOFU, TOMATO, soySauce, ingredient(4L, "Nước")));
         when(aiClient.generateRecipeText(anyString(), anyList())).thenReturn(generatedInstructions(
                 "Cho nước tương vào nồi, kho đến khi nước sốt sánh lại.", List.of(1L, 2L, 3L)));
         var withSoySauce = new RecipeAiAssistanceRequest(ContentType.INSTRUCTIONS, "Đậu phụ kho cà chua",
@@ -86,25 +83,26 @@ class RecipeAiAssistanceServiceTest {
     }
 
     @Test
-    void rejectsIngredientIdNotSuppliedByAuthor() {
-        when(aiClient.generateRecipeText(anyString(), anyList())).thenReturn("""
-                {"description":"Món ngon.","steps":[{"text":"Nấu thật ngon món ăn này.","ingredientIds":[99]}]}
-                """);
+    void unknownGeneratedIngredientIdsDoNotRejectInstructionText() {
+        when(aiClient.generateRecipeText(anyString(), anyList())).thenReturn(generatedInstructions(
+                "Nấu thật ngon món ăn này.", List.of(99L)));
 
-        assertThatThrownBy(() -> service.generate(request(ContentType.INSTRUCTIONS)))
-                .isInstanceOf(AppException.class)
-                .extracting(error -> ((AppException) error).errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_INVALID);
+        var result = service.generate(request(ContentType.INSTRUCTIONS));
+
+        assertThat(result.content()).contains("Nấu thật ngon món ăn này.");
+        assertThat(result.content()).doesNotContain("(Đậu phụ", "(Cà chua");
+        assertThat(result.content().lines()).hasSize(6);
     }
 
     @Test
-    void rejectsUnselectedCatalogIngredientMentionedInGeneratedText() {
+    void allowsAdditionalIngredientMentionedInGeneratedText() {
         when(aiClient.generateRecipeText(anyString(), anyList())).thenReturn(generatedInstructions(
                 "Thêm nấm và đảo đều.", List.of(1L)));
-        when(ingredientCatalog.findActiveIngredients("")).thenReturn(List.of(TOFU, TOMATO, ingredient(3L, "Nấm")));
 
-        assertThatThrownBy(() -> service.generate(request(ContentType.INSTRUCTIONS)))
-                .isInstanceOf(AppException.class)
-                .extracting(error -> ((AppException) error).errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_INVALID);
+        var result = service.generate(request(ContentType.INSTRUCTIONS));
+
+        assertThat(result.content()).contains("Thêm nấm và đảo đều.");
+        assertThat(result.content().lines()).hasSize(6);
     }
 
     @Test

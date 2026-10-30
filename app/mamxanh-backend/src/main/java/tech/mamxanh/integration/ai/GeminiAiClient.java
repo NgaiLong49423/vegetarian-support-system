@@ -57,6 +57,9 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
 
     @Override
     public String generateRecipeText(String prompt, List<Long> allowedIngredientIds) {
+        if (client == null) {
+            throw new AiProviderException("Gemini is not configured");
+        }
         Schema textSchema = Schema.builder().type(Type.Known.STRING).build();
         Schema ingredientIdsSchema = Schema.builder().type(Type.Known.ARRAY)
                 .items(Schema.builder().type(Type.Known.INTEGER)).build();

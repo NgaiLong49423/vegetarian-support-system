@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M09
 > **File:** `docs/requirements/use-cases/administration.md`
-> **Version:** v2.1.0
+> **Version:** v2.2.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-10-30
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -22,6 +22,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-06).
 
 - [UC-06.1 — Quản lý danh sách nội dung bị báo cáo hậu kiểm](#uc-06-1)
 - [UC-06.2 — Thực hiện hành động hậu kiểm](#uc-06-2)
+- [UC-06.3 — Tra cứu và quản lý tài khoản](#uc-06-3)
 
 ---
 
@@ -93,5 +94,51 @@ Quyết định hậu kiểm và lý do được lưu lại trong lịch sử ki
 #### Acceptance Coverage
 - [AC-06.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-06) — Ẩn bài vi phạm và thông báo lý do.
 - [AC-06.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-06) — Khóa tài khoản vi phạm nghiêm trọng.
+
+---
+
+<a id="uc-06-3"></a>
+### UC-06.3 — Tra cứu và quản lý trạng thái/vai trò tài khoản
+
+#### Goal
+Cho phép Administrator tra cứu tài khoản thật và quản lý trạng thái hoặc vai trò với lý do có thể kiểm tra lại.
+
+#### Primary Actor
+`Administrator`.
+
+#### Trigger
+Administrator mở mục “Quản lý người dùng”.
+
+#### Preconditions
+Administrator đã đăng nhập bằng tài khoản role `ADMIN`; Backend xác định actor từ phiên đăng nhập.
+
+#### Main Flow
+1. Frontend tải danh sách phân trang và bộ đếm toàn hệ thống từ API Admin.
+2. Administrator tìm theo tên/email/mã, lọc theo role/trạng thái, chuyển trang hoặc mở chi tiết và lịch sử.
+3. Administrator chọn khóa/mở khóa hoặc chuyển role giữa `CUSTOMER` và `EXPERT`; tài khoản `ADMIN` chỉ xem.
+4. Administrator nhập lý do 10–500 ký tự và xác nhận.
+5. Backend khóa hàng tài khoản, kiểm tra quyền và trạng thái hiện tại, thực hiện cập nhật cùng audit trong transaction; không thêm audit nếu không có thay đổi.
+6. Khi cấp `EXPERT` trực tiếp, nếu có đơn `PENDING`, Backend chuyển đơn thành `CANCELLED`, lưu người xử lý/lý do, ghi audit và gửi notification cùng transaction.
+7. Frontend chỉ tải lại danh sách sau khi nhận response thành công; lỗi được hiển thị để Administrator thử lại.
+
+#### Alternative / Exception Flows
+- Tài khoản mục tiêu là `ADMIN`: Backend từ chối thao tác, không ghi audit.
+- Lý do ngoài 10–500 ký tự, bộ lọc/phân trang không hợp lệ hoặc actor không phải `ADMIN`: Backend từ chối request.
+- Dữ liệu không đổi: thao tác không tạo audit.
+- Cập nhật trực tiếp cạnh tranh với phê duyệt FR-05: khóa tài khoản theo thứ tự thống nhất; chỉ một quyết định trên đơn `PENDING` được ghi nhận.
+
+#### Postconditions
+Trạng thái/role và lịch sử tài khoản phản ánh dữ liệu Backend. Không trả dữ liệu sức khỏe hoặc hồ sơ riêng tư.
+
+#### Traceability
+- **Parent FR:** [FR-06](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-06).
+- **Relevant BR:** [BR-07](../srs/BUSINESS-RULES.md#br-07), [BR-26](../srs/BUSINESS-RULES.md#br-26), [BR-74](../srs/BUSINESS-RULES.md#br-74).
+- **Relevant NFR:** [NFR-08](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08), [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09).
+
+#### Acceptance Coverage
+- [AC-06.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-06) — Danh sách và tổng quan người dùng từ Backend.
+- [AC-06.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-06) — Phân quyền API và dữ liệu tối thiểu.
+- [AC-06.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-06) — Lý do, audit và tài khoản Admin chỉ đọc.
+- [AC-06.8](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-06) — Cấp Expert và kết thúc đơn đang chờ.
 
 ---
