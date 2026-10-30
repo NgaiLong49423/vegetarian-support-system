@@ -58,7 +58,7 @@ public class RelatedRecipeService {
     public RelatedRecipesResponse recommend(long recipeId, int limit) {
         validate(recipeId, limit);
         var user = users.requireActiveMember();
-        entitlement.requirePlusOrPro(user.id());
+        entitlement.requirePro(user.id());
         RecipePostResponse original = source(recipeId);
         List<RecipePostResponse> candidates = recipes.getPublishedCards(
                 repository.findCandidates(recipeId, CANDIDATE_LIMIT, true));
@@ -77,7 +77,7 @@ public class RelatedRecipeService {
         List<RecipePostResponse> items = recipes.getPublishedCards(ids).stream()
                 .filter(recipe -> recipe.vegetarianType().equals(current.vegetarianType())).toList();
         events.publishEvent(new AiUsageEvent(user.id(), "FR-47", clock.instant(),
-                result.promptTokens(), result.responseTokens(), result.totalTokens()));
+                result.usage()));
         return new RelatedRecipesResponse(items);
     }
 

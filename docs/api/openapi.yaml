@@ -1349,8 +1349,9 @@ paths:
       tags:
       - ai-menu-controller
       summary: Replace a member's entire week with selected AI preview meals
-      description: "Revalidates Pro, eligibility and every selected published nutrition-complete\
-        \ recipe. The operation is atomic; any invalid entry preserves the old week."
+      description: "Revalidates Plus or Pro, eligibility and every selected published\
+        \ nutrition-complete recipe. The operation is atomic; any invalid entry preserves\
+        \ the old week."
       operationId: apply
       requestBody:
         content:
@@ -1372,7 +1373,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "403":
-          description: Pro entitlement or nutrition eligibility is required.
+          description: Plus or Pro entitlement or nutrition eligibility is required.
           content:
             application/problem+json:
               schema:
@@ -2905,7 +2906,7 @@ paths:
       tags:
       - related-recipe-controller
       summary: Ask Gemini to select existing pairing or variation recipes
-      description: Active Customer/Expert with Plus/Pro required before calling Gemini.
+      description: Active Customer/Expert with Pro required before calling Gemini.
         No recipe or meal plan is written.
       operationId: recommend
       parameters:
@@ -2945,7 +2946,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "403":
-          description: Member role and active Plus/Pro required.
+          description: Member role and active Pro required.
           content:
             application/problem+json:
               schema:
@@ -3139,10 +3140,10 @@ paths:
       tags:
       - ai-recipe-controller
       summary: Generate a 7-day AI meal-plan preview
-      description: "Requires an active Pro Member and complete FR-31 profile. Ingredient\
-        \ filters are optional. Returns 21 slots from the public safety-filtered catalog\
-        \ without writing the member's Meal Plan. Recipe IDs may repeat, but adjacent\
-        \ slots cannot."
+      description: "Requires an active Plus or Pro Member and complete FR-31 profile.\
+        \ Ingredient filters are optional. Returns 21 slots from the public safety-filtered\
+        \ catalog without writing the member's Meal Plan. Recipe IDs may repeat, but\
+        \ adjacent slots cannot."
       operationId: weeklyMenu
       requestBody:
         content:
@@ -3158,7 +3159,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/AiWeeklyMenuPreviewResponse"
         "403":
-          description: An active Pro subscription is required.
+          description: An active Plus or Pro subscription is required.
           content:
             application/problem+json:
               schema:
@@ -3320,11 +3321,16 @@ paths:
       tags:
       - ai-chat-controller
       summary: Ask the vegetarian cooking assistant
-      description: Requires an active Member. General context or the latest public
-        RecipePost is loaded server-side. Recipe discovery selects only current public
-        RecipePosts from the Backend catalog; explicitly requested recipe drafts remain
-        chat text only. Conversation history is request-scoped and is not persisted.
-        Guest access will be enabled with FR-02 rate limiting.
+      description: Guest and active Member use the same chatbot. Guest must supply
+        a session-cookie UUID in anonymousViewerId; a rolling limit of 10 requests
+        per minute applies independently to cookie and peer IP. No daily quota. General
+        context or the latest public RecipePost is loaded server-side. Recipe discovery
+        selects only current public RecipePosts from the Backend catalog; explicitly
+        requested recipe drafts remain chat text only. Conversation history is request-scoped
+        and is not persisted. Guest has no account dietary context. Explicit weekly-menu
+        and recipe-authoring requests are checked for entitlement and routed to their
+        dedicated workflow without calling Gemini. Follow-up recipe searches use current
+        public data; assistant recipe IDs are untrusted exclusion hints only.
       operationId: answer
       requestBody:
         content:
@@ -3347,7 +3353,30 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
-          description: An authenticated Member session is required.
+          description: "Bearer token invalid/expired, or a Guest requests a Member-only\
+            \ workflow; no provider call."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "Account/role denied, or workflow requires a higher subscription.\
+            \ AI_SUBSCRIPTION_REQUIRED includes requiredTier and upgradeUrl; no provider\
+            \ call."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "429":
+          description: Guest exceeded the cookie or peer-IP limit; Retry-After gives
+            the wait in seconds.
+          headers:
+            Retry-After:
+              description: Seconds until Guest can try again.
+              style: simple
+              schema:
+                type: integer
+                minimum: 1
           content:
             application/problem+json:
               schema:
@@ -3370,21 +3399,15 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
-            \ this operation."
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
       security:
+      - {}
       - bearerAuth: []
   /api/v1/recipes/ai-assistance:
     post:
       tags:
       - recipe-post-controller
       summary: Generate editable AI-assisted recipe text
-      description: Requires an active Expert account with an active Plus or Pro subscription.
+      description: Requires an active Expert account with an active Pro subscription.
         Does not create or publish a recipe draft.
       operationId: generateAiAssistance
       requestBody:
@@ -3401,7 +3424,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecipeAiAssistanceResponse"
         "403":
-          description: Expert role or Plus/Pro entitlement is required.
+          description: Expert role or Pro entitlement is required.
           content:
             application/problem+json:
               schema:
@@ -3738,7 +3761,7 @@ paths:
       tags:
       - ai-menu-controller
       summary: Generate a nutrition-aware weekly meal-plan preview
-      description: "Requires an active Member, Pro entitlement, FR-38 eligibility\
+      description: "Requires an active Member, Plus or Pro entitlement, FR-38 eligibility\
         \ and a valid FR-35 profile. PROFILE uses the saved goal; THIS_WEEK uses optional\
         \ request-only preferences. Does not write Meal Plan entries."
       operationId: preview
@@ -3763,9 +3786,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "403":
-          description: Pro entitlement is required; nutrition eligibility must be
-            confirmed (NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED) and the account
-            must be eligible (NUTRITION_ELIGIBILITY_INELIGIBLE).
+          description: Plus or Pro entitlement is required; nutrition eligibility
+            must be confirmed (NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED) and the
+            account must be eligible (NUTRITION_ELIGIBILITY_INELIGIBLE).
           content:
             application/problem+json:
               schema:
@@ -6945,6 +6968,204 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/admin/transactions:
+    get:
+      tags:
+      - admin-transaction-controller
+      summary: Read payment transactions and filtered totals (Administrator only)
+      description: "Read-only local SQL state; does not contact payOS or settle orders.\
+        \ Literal query (max 200) searches order code, TX-ID, name or email. tier\
+        \ PLUS/PRO; status PENDING/PAID/FAILED/CANCELLED. Optional dates filter creation\
+        \ time, inclusive in Asia/Ho_Chi_Minh. UTC timestamps; unknown historical\
+        \ tier is null. Newest first, ID tie-breaker. page >=0, size 1..100. Revenue\
+        \ counts PAID only across all filtered pages."
+      operationId: list_3
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: tier
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        "400":
+          description: "VALIDATION_FAILED: invalid filters, paging, date or export\
+            \ exceeds 10,000 rows."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: Administrator session required."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCESS_DENIED or ACCOUNT_LOCKED: current account is not an\
+            \ active Administrator."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: Filtered transactions and cross-page totals.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTransactionReport"
+      security:
+      - bearerAuth: []
+  /api/v1/admin/transactions/{id}:
+    get:
+      tags:
+      - admin-transaction-controller
+      summary: Read a payment and its linked purchased period (not an invoice)
+      operationId: detail_1
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Local payment and linked purchased period.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTransactionResponse"
+        "404":
+          description: "PAYMENT_TRANSACTION_NOT_FOUND: no such local order."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: invalid filters, paging, date or export\
+            \ exceeds 10,000 rows."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: Administrator session required."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCESS_DENIED or ACCOUNT_LOCKED: current account is not an\
+            \ active Administrator."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/admin/transactions/export:
+    get:
+      tags:
+      - admin-transaction-controller
+      summary: "Export all filtered payment transactions as UTF-8 CSV (up to 10,000)"
+      description: "Same filters as list; ignores pagination. More than 10,000 returns\
+        \ 400, never silently truncates. Formula-safe cells, UTC timestamps and BOM\
+        \ for spreadsheets. Local accounting export, not an invoice or provider reconciliation."
+      operationId: export
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: tier
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      responses:
+        "400":
+          description: "VALIDATION_FAILED: invalid filters, paging, date or export\
+            \ exceeds 10,000 rows."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: Administrator session required."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCESS_DENIED or ACCOUNT_LOCKED: current account is not an\
+            \ active Administrator."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: UTF-8 CSV accounting export with BOM.
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+      security:
+      - bearerAuth: []
   /api/v1/admin/reports:
     get:
       tags:
@@ -7427,7 +7648,7 @@ paths:
     get:
       tags:
       - expert-application-controller
-      operationId: list_3
+      operationId: list_4
       parameters:
       - name: status
         in: query
@@ -7485,7 +7706,7 @@ paths:
     get:
       tags:
       - expert-application-controller
-      operationId: detail_1
+      operationId: detail_2
       parameters:
       - name: id
         in: path
@@ -7574,6 +7795,72 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
           description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/admin/ai-telemetry:
+    get:
+      tags:
+      - ai-telemetry-controller
+      summary: Aggregate retained AI token usage and estimated Standard paid-equivalent
+        USD cost
+      description: "Administrator only. Dates are inclusive in Asia/Ho_Chi_Minh; weeks\
+        \ start Monday. At most the latest 90 days are available; retainedFrom exposes\
+        \ partial first-day coverage. Granularity DAY/WEEK/MONTH. No raw prompts,\
+        \ responses or actor identifiers are returned. estimatedCostUsd is null when\
+        \ any call is unpriced; knownEstimatedCostUsd is the priced subtotal, not\
+        \ an invoice."
+      operationId: report
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: granularity
+        in: query
+        required: false
+        schema:
+          type: string
+          default: DAY
+      - name: feature
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AiTelemetryReport"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
           content:
             application/problem+json:
               schema:
@@ -7675,6 +7962,16 @@ components:
                 type: string
               message:
                 type: string
+        requiredTier:
+          type: string
+          description: Minimum paid tier for AI_SUBSCRIPTION_REQUIRED; role and other
+            feature prerequisites still apply.
+          enum:
+          - PLUS
+          - PRO
+        upgradeUrl:
+          type: string
+          description: Relative plan-information link for entitlement failures.
     ShoppingListItemResponse:
       type: object
       properties:
@@ -9335,6 +9632,11 @@ components:
             $ref: "#/components/schemas/Turn"
           maxItems: 8
           minItems: 0
+        anonymousViewerId:
+          type: string
+          description: Session-cookie UUID required for Guest rate limiting; ignored
+            for authenticated Members.
+          pattern: "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
       required:
       - contextType
       - question
@@ -9348,8 +9650,21 @@ components:
           - ASSISTANT
         content:
           type: string
-          maxLength: 1000
+          description: USER content is limited to 1000 characters; ASSISTANT content
+            may contain a complete answer up to 8000 characters.
+          maxLength: 8000
           minLength: 0
+        recommendedRecipeIds:
+          type: array
+          description: IDs of up to four recipe cards shown in this ASSISTANT turn.
+            Untrusted hints used only to avoid repeats; never authorization or recipe
+            data.
+          items:
+            type: integer
+            format: int64
+            minimum: 1
+          maxItems: 4
+          minItems: 0
       required:
       - content
       - speaker
@@ -9369,12 +9684,17 @@ components:
           type: string
           description: AI answer or explicitly requested draft. Treat as reference
             information.
+          maxLength: 8000
         recommendations:
           type: array
           description: Real public RecipePosts selected from the Backend catalog;
             empty when the user did not ask to find recipes.
           items:
             $ref: "#/components/schemas/RecipeRecommendation"
+        workflowUrl:
+          type: string
+          description: Optional local workflow link. Routing guidance is returned
+            without a Gemini call; currently /ke-hoach?view=for-you or /dang-cong-thuc.
     RecipeRecommendation:
       type: object
       properties:
@@ -9458,12 +9778,12 @@ components:
           type: string
         paymentSuccess:
           type: boolean
-        amount:
-          type: integer
-          format: int32
         orderCode:
           type: integer
           format: int64
+        amount:
+          type: integer
+          format: int32
     ConfirmNutritionEligibilityRequest:
       type: object
       properties:
@@ -10894,6 +11214,104 @@ components:
         timestamp:
           type: string
           format: date-time
+    AdminTransactionReport:
+      type: object
+      properties:
+        transactions:
+          $ref: "#/components/schemas/PageResponseAdminTransactionResponse"
+        summary:
+          $ref: "#/components/schemas/AdminTransactionSummary"
+    AdminTransactionResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        orderCode:
+          type: string
+        userId:
+          type: integer
+          format: int64
+        customerName:
+          type: string
+        customerEmail:
+          type: string
+        tier:
+          type:
+          - string
+          - "null"
+        amountVnd:
+          type: integer
+          format: int32
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        paidAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+        subscriptionId:
+          type:
+          - integer
+          - "null"
+          format: int64
+        subscriptionStartsAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+        subscriptionEndsAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+        subscriptionStatus:
+          type:
+          - string
+          - "null"
+    AdminTransactionSummary:
+      type: object
+      properties:
+        total:
+          type: integer
+          format: int64
+        paid:
+          type: integer
+          format: int64
+        pending:
+          type: integer
+          format: int64
+        failed:
+          type: integer
+          format: int64
+        cancelled:
+          type: integer
+          format: int64
+        revenueVnd:
+          type: integer
+          format: int64
+    PageResponseAdminTransactionResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminTransactionResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
     PageResponseAdminReportResponse:
       type: object
       properties:
@@ -11130,6 +11548,77 @@ components:
           type: array
           items:
             type: string
+    AiTelemetryReport:
+      type: object
+      properties:
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        granularity:
+          type: string
+        timezone:
+          type: string
+        retainedFrom:
+          type: string
+          format: date-time
+        currency:
+          type: string
+        costBasis:
+          type: string
+        totals:
+          $ref: "#/components/schemas/Totals"
+        buckets:
+          type: array
+          items:
+            $ref: "#/components/schemas/Bucket"
+    Bucket:
+      type: object
+      properties:
+        periodStart:
+          type: string
+          format: date
+        feature:
+          type: string
+        totals:
+          $ref: "#/components/schemas/Totals"
+    Totals:
+      type: object
+      properties:
+        calls:
+          type: integer
+          format: int64
+        promptTokens:
+          type: integer
+          format: int64
+        responseTokens:
+          type: integer
+          format: int64
+        totalTokens:
+          type: integer
+          format: int64
+        thinkingTokens:
+          type: integer
+          format: int64
+        cachedTokens:
+          type: integer
+          format: int64
+        incompleteUsageCalls:
+          type: integer
+          format: int64
+        unpricedCalls:
+          type: integer
+          format: int64
+        knownEstimatedCostUsd:
+          type: number
+        estimatedCostUsd:
+          type:
+          - number
+          - "null"
+          description: Unknown when at least one call is unpriced; knownEstimatedCostUsd
+            remains the priced subtotal.
     ApiResponseVoid:
       type: object
       properties:

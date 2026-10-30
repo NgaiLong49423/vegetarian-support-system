@@ -7,6 +7,10 @@
 
 # Database Workspace
 
+## Migration V31 — Telemetry AI thử nghiệm (FR-11 / Issue #17)
+
+`V31__ai_usage_telemetry.sql` bổ sung bảng log kỹ thuật `AI_USAGE_TELEMETRY` và index thời gian/tính năng. Bảng không lưu prompt/answer, không có FK tài khoản hoặc cơ chế quota. `database/schema.sql` chứa cùng DDL; không chỉnh ERD. Migration dùng V31 vì V30 đã thuộc audit tài khoản trên `develop`; V26–V29 giữ nguyên cho đơn vị chuẩn và Shopping List. Retention xóa bản ghi quá 90 ngày theo UTC; xem API Guide và Backend README cho cách ghi, thống kê và giới hạn ước tính chi phí.
+
 ## Migration V30 — Quản trị tài khoản
 
 `V30__admin_user_management_audit.sql` tạo nhật ký append-only cho thay đổi vai trò/trạng thái và mở rộng trạng thái đơn chuyên gia để hủy đơn đang chờ khi Admin cấp vai trò `EXPERT` trực tiếp. Chưa chạy hoặc xác minh migration trên SQL Server local vì dịch vụ không sẵn sàng.

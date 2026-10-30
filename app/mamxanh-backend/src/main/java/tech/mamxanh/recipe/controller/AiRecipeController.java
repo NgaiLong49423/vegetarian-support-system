@@ -43,12 +43,12 @@ public class AiRecipeController {
     }
 
     @Operation(summary = "Generate a 7-day AI meal-plan preview",
-            description = "Requires an active Pro Member and complete FR-31 profile. Ingredient filters are optional. "
+            description = "Requires an active Plus or Pro Member and complete FR-31 profile. Ingredient filters are optional. "
                     + "Returns 21 slots from the public safety-filtered catalog without writing the member's Meal Plan. "
                     + "Recipe IDs may repeat, but adjacent slots cannot.")
     @ApiResponse(responseCode = "200", description = "The generated 21-slot preview.",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = AiWeeklyMenuPreviewResponse.class)))
-    @ApiResponse(responseCode = "403", description = "An active Pro subscription is required.",
+    @ApiResponse(responseCode = "403", description = "An active Plus or Pro subscription is required.",
             content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
     @ApiResponse(responseCode = "409", description = "Profile incomplete or not enough suitable recipes.",
             content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))

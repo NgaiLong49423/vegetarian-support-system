@@ -831,7 +831,7 @@ export function AppHeader() {
           </div>
         </div>
       </dialog>
-      {isAuthenticated && role !== "ADMIN" && !isOpen && (
+      {role !== "ADMIN" && !isOpen && (
         <button
           type="button"
           onClick={() => openChat()}
