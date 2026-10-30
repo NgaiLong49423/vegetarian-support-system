@@ -1,8 +1,8 @@
 > **Document:** Non-Functional Requirements Specification
 > **File:** `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.1.5
+> **Version:** v2.2.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-21
+> **Last Updated:** 2026-10-30
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`
 
@@ -316,15 +316,15 @@ This document contains only requirements included in Requirements / Implementati
 ---
 
 <a id="nfr-22"></a>
-#### NFR-22 — Giới hạn lưu trữ Prompt và Lịch sử trò chuyện AI
+#### NFR-22 — Bảo vệ dữ liệu hội thoại AI và lưu trữ usage
 
 - **Mã yêu cầu:** NFR-22
 - **Nhóm chất lượng:** Privacy
 - **Mô tả yêu cầu:** Bảo vệ sự riêng tư của các cuộc trò chuyện tư vấn dinh dưỡng giữa người dùng và AI.
 - **Nghiệp vụ liên quan:** `FR-02`, `FR-51` (Chatbot AI).
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
-  - *Threshold:* MVP không lưu lịch sử hội thoại AI theo account; telemetry không giữ raw prompt content và được xóa sau 90 ngày. Người dùng được thông báo câu hỏi sẽ được chuyển tới Google Gemini API để xử lý.
-- **Phương pháp kiểm chứng (Verification Method):** Kiểm tra schema, log/telemetry configuration và retention job để xác nhận không có raw prompt, không có account chat history và dữ liệu telemetry quá 90 ngày được loại bỏ.
+  - *Threshold:* MVP lưu session hội thoại tạm thời để tiếp tục tác vụ trong session; khi consent bị thu hồi, các lần gửi dữ liệu thuộc consent đó phải dừng; session/context được dọn theo chính sách hết hạn. Telemetry không giữ raw prompt content và được xóa sau 90 ngày. Người dùng được thông báo loại dữ liệu, mục đích và bên nhận trước khi đồng ý gửi dữ liệu cá nhân tới Google Gemini API. Usage/credit ledger lưu dữ liệu kế toán tối thiểu riêng với telemetry; không lưu nội dung prompt.
+- **Phương pháp kiểm chứng (Verification Method):** Kiểm tra schema, log/telemetry configuration và retention job để xác nhận không có raw prompt, session/context tuân thời hạn đã cấu hình; không lưu raw prompt trong telemetry; ledger không chứa nội dung hội thoại; telemetry quá 90 ngày được loại bỏ.
 
 ---
 

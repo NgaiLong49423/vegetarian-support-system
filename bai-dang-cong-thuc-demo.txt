@@ -1,0 +1,58 @@
+DU LIEU DEMO NHAP NHANH - BAI DANG CONG THUC
+==================================================
+
+Gợi ý thao tác: mở trang Đăng công thức, sao chép từng giá trị bên dưới vào trường tương ứng. Với nguyên liệu, tìm và chọn đúng nguyên liệu trong catalog chuẩn của hệ thống, sau đó chọn đơn vị mà hệ thống cung cấp. ID nguyên liệu/đơn vị không thể nhập trực tiếp từ file này.
+
+TÊN MÓN
+Đậu hũ sốt cà chua ăn cùng cơm gạo lứt
+
+MÔ TẢ NGẮN
+Đậu hũ mềm rim trong sốt cà chua chua ngọt, dùng kèm cơm gạo lứt và rau thơm. Món thuần chay dễ nấu cho bữa trưa gia đình.
+
+DANH MỤC MÓN
+Món kho (BRAISED)
+
+TRƯỜNG PHÁI ĂN CHAY
+Thuần chay (VEGAN)
+
+ĐỘ KHÓ
+Dễ (EASY)
+
+KHẨU PHẦN
+2
+
+THỜI GIAN CHUẨN BỊ (PHÚT)
+15
+
+THỜI GIAN NẤU (PHÚT)
+20
+
+NGUYÊN LIỆU (chọn từng nguyên liệu trong catalog; số lượng bên dưới là dữ liệu demo)
+1. Đậu hũ — 300 g
+2. Cà chua — 250 g
+3. Hành tím — 20 g
+4. Hành lá — 10 g
+5. Nước tương — 15 ml (nếu catalog không có đơn vị ml, chọn đơn vị được hệ thống hỗ trợ và điều chỉnh lượng phù hợp)
+6. Đường — 5 g
+7. Dầu ăn — 10 ml (nếu catalog không có đơn vị ml, chọn đơn vị được hệ thống hỗ trợ và điều chỉnh lượng phù hợp)
+8. Tiêu đen — 1 g
+
+HƯỚNG DẪN CHẾ BIẾN
+1. Vo gạo lứt, nấu với lượng nước phù hợp theo hướng dẫn trên bao bì hoặc loại gạo đang dùng.
+2. Rửa cà chua và cắt hạt lựu. Băm nhỏ hành tím, cắt nhỏ hành lá. Cắt đậu hũ thành miếng vừa ăn và thấm khô nhẹ.
+3. Làm nóng dầu trong chảo. Cho hành tím vào phi thơm, sau đó thêm cà chua và đảo đến khi cà chua mềm.
+4. Thêm nước tương, đường và khoảng 50 ml nước. Đun nhỏ lửa vài phút để tạo sốt; nêm lại cho vừa khẩu vị.
+5. Cho đậu hũ vào chảo, đảo nhẹ để sốt phủ đều. Rim khoảng 5–7 phút cho đậu thấm gia vị, tránh đảo mạnh làm vỡ miếng.
+6. Rắc tiêu đen và hành lá, tắt bếp. Dọn đậu hũ sốt cà chua cùng cơm gạo lứt khi còn nóng.
+
+LINK YOUTUBE (TÙY CHỌN)
+Để trống
+
+ẢNH MINH HỌA (TÙY CHỌN)
+Có thể bỏ qua khi nhập demo. Nếu thêm ảnh, tải ảnh lên và đánh dấu đúng 1 ảnh làm ảnh bìa.
+
+LƯU Ý
+- Đây là dữ liệu minh họa, không phải hướng dẫn dinh dưỡng hay khẩu phần đã được thẩm định.
+- Trang đăng công thức dành cho tài khoản Chuyên gia đã đăng nhập.
+- Hệ thống yêu cầu ít nhất 1 nguyên liệu hợp lệ từ catalog; tên nguyên liệu tự gõ nhưng không chọn kết quả catalog sẽ không đủ để đăng.
+- Giá trị trường dùng mã kỹ thuật trong ngoặc khi cần đối chiếu API; trên biểu mẫu hãy chọn nhãn tiếng Việt tương ứng.

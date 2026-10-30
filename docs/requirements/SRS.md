@@ -1,6 +1,6 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v2.17.0
+> **Version:** v2.18.0
 > **Created:** 2026-09-11
 > **Last Updated:** 2026-10-30
 > **Status:** Active
@@ -48,7 +48,7 @@ AI hỗ trợ hỏi đáp, tìm kiếm/gợi ý, soạn bản nháp bài công t
 - Hồ sơ công khai hiển thị tổng lượt thích và lượt xem của tất cả Recipe Post đang công khai của tác giả; thống kê không phụ thuộc trang phân trang đang xem (`FR-23`).
 - Kiểm duyệt sau đăng: người dùng báo cáo nội dung có vấn đề và Administrator xử lý báo cáo. Baseline hiện tại không cung cấp AI quét hoặc gắn cờ nội dung.
 - Người dùng: tìm kiếm/lọc, xem nội dung, tương tác cộng đồng, lưu công thức (`Saved Recipe`), lập thực đơn ngày/tuần (`Meal Plan`), so sánh thống kê dinh dưỡng tuần, và **xuất file công thức (.txt/.pdf) / báo cáo dinh dưỡng ngày hoặc tuần (.pdf, gồm thực đơn dự kiến) / danh sách mua sắm (.txt)**.
-- AI Gemini: hỏi đáp/gợi ý với Guest Free, Free, Plus và Pro theo gói tính năng (Feature-based Entitlement).
+- AI Gemini: các chức năng theo quyền nghiệp vụ người dùng; quota token theo gói; Gemini model catalog theo gói; AI Credit thanh toán overage (FR-63–66).
 - Quản trị: quản lý người dùng, từ điển nguyên liệu, đơn vị đo lường `UNIT` và bảng quy đổi nguyên liệu `INGREDIENT_UNIT_CONVERSION`, video nhúng, bình luận, nội dung bị gắn cờ và thẩm định đơn Chuyên gia. Không quản lý bảng danh mục động.
 - Danh sách mua sắm cơ bản (`Shopping List`): Tạo danh sách từ Meal Plan hoặc Recipe; nguyên liệu chuẩn hóa theo 3 chiều đo lường (`MASS`, `VOLUME`, `COUNT`), gom nguyên liệu cùng chiều an toàn; cấm hoàn toàn giá trị phi số học như “vừa đủ”. Danh sách được phân nhóm theo danh mục và cho phép thêm/sửa/xóa item thủ công, tick đã mua, copy clipboard, xuất file.
 
@@ -56,7 +56,7 @@ AI hỗ trợ hỏi đáp, tìm kiếm/gợi ý, soạn bản nháp bài công t
 
 - Customer không có quyền tự đăng bài công thức; tài khoản phải được cấp role `EXPERT` qua xét duyệt FR-05 hoặc quản lý người dùng FR-06.
 - Chẩn đoán, điều trị, tư vấn sức khỏe chuyên nghiệp hoặc thay thế bác sĩ.
-- Lưu nháp Recipe Post trên server và lịch sử hội thoại AI theo tài khoản.
+- Lưu nháp Recipe Post trên server và lịch sử hội thoại AI dài hạn theo tài khoản; có session AI tạm thời theo NFR-22.
 - Tính nhu cầu dinh dưỡng, AI menu dinh dưỡng hoặc đánh giá menu cho người dưới 18 tuổi, người mang thai/cho con bú hay người cần chế độ ăn điều trị bệnh.
 - Mobile/native app riêng. MVP là web responsive tiếng Việt; thanh toán gói AI thật thuộc phạm vi theo Q26 với giá/chính sách đã chốt. SRS giữ hành vi độc lập provider; Technology Stack hiện chọn payOS cho triển khai.
 - Chức năng tìm kiếm/quản lý nhà hàng chay; không tích hợp Apple Health, Google Fit, wearable hoặc lấy vị trí hiện tại bằng GPS/trình duyệt.
@@ -134,7 +134,7 @@ Quyết định này thay thế phạm vi nhập tên nguyên liệu tự do đ�
 - Chuyên gia (`Role = EXPERT`) đã đăng nhập quản lý Recipe Post của chính mình theo quyền tác giả: tạo, xem, chỉnh sửa và xóa bài. Bài mới hoặc thay đổi hợp lệ được công khai trực tiếp; hệ thống kiểm tra tài khoản sở hữu bài, vai trò Chuyên gia và các trường bắt buộc. Người dùng thông thường (`Customer`) không có quyền tạo bài viết.
 - Khi tác giả xóa bài của mình, bài không còn hiển thị công khai và không được dùng cho kết quả tìm kiếm hoặc gợi ý AI. Tác giả không được dùng quyền sửa/xóa của mình để khôi phục bài đang bị Administrator ẩn do hậu kiểm.
 - Khi tác giả bấm công khai, hệ thống kiểm tra đăng nhập, vai trò Chuyên gia, cấu trúc, các trường bắt buộc và tính khả toán của đơn vị nguyên liệu. Bài hợp lệ được công khai trực tiếp. AI không tự công khai bài. Đúng format không đồng nghĩa công thức đúng hoặc an toàn.
-- Khi AI gặp sự cố kỹ thuật hoặc tài khoản không thuộc gói có quyền sử dụng AI hỗ trợ soạn bài (FR-21), Chuyên gia vẫn toàn quyền tiếp tục tự viết/chỉnh sửa và công khai bài bình thường nếu thỏa mãn điều kiện validation. Quyền gọi AI soạn bài được phân quyền theo mô hình Feature-based Entitlement (thuộc gói Pro).
+- Khi AI gặp sự cố kỹ thuật hoặc tài khoản không thuộc gói có quyền sử dụng AI hỗ trợ soạn bài (FR-21), Chuyên gia vẫn toàn quyền tiếp tục tự viết/chỉnh sửa và công khai bài bình thường nếu thỏa mãn điều kiện validation. AI soạn bài không mở quyền đăng bài; áp dụng role/ownership của FR-04 và hạn mức/model theo FR-10, BR-02.
 
 Luồng cấp cao: Tài khoản có role `EXPERT` do Admin cấp qua FR-05 hoặc FR-06 → tác giả nhập thông tin → tự viết hoặc yêu cầu AI hỗ trợ → tác giả rà soát/chỉnh sửa → hệ thống kiểm tra vai trò/format/conversion → công khai thẻ món và trang chi tiết từ cùng Recipe Post.
 
@@ -258,7 +258,7 @@ Mọi quyết định xử lý được ghi nhận trực tiếp trên thực th
 
 - Sau lần xác thực thành công đầu tiên của Member vừa đăng ký (sau xác minh email hoặc đăng nhập Google lần đầu), hệ thống mời Member thực hiện Onboarding Questionnaire một lần. Tài khoản đã tồn tại trước khi quy tắc này có hiệu lực không tự động bị hỏi lại.
 - Nếu Member chọn Skip, hệ thống ghi nhận đã đóng lời mời Onboarding; các lần đăng nhập sau không tự hiển thị lại questionnaire. Member có thể mở mục sở thích ăn uống trong Cài đặt để hoàn tất hoặc cập nhật hồ sơ bất cứ lúc nào.
-- Member chưa hoàn thành Onboarding vẫn được xem/tìm món, tự thêm món vào thực đơn, đọc/bình luận và dùng AI hỏi đáp thông thường theo quyền tính năng của gói. Chuyên gia được đăng bài dù chưa hoàn thành Onboarding nếu đáp ứng các điều kiện của `FR-04`.
+- Member chưa hoàn thành Onboarding vẫn được xem/tìm món, tự thêm món vào thực đơn, đọc/bình luận và dùng AI theo role, quyền nghiệp vụ và quyền dữ liệu hiện có; hạng gói chỉ quyết định quota token và model. Chuyên gia được đăng bài dù chưa hoàn thành Onboarding nếu đáp ứng các điều kiện của `FR-04`.
 - Trước khi dùng AI gợi ý món hoặc tạo thực đơn cá nhân hóa, hồ sơ phải có ba nhóm thông tin tối thiểu: loại ăn chay; nguyên liệu cần tránh do dị ứng/kiêng; món hoặc nguyên liệu không thích.
 - Với hai nhóm danh sách, người dùng phải được chủ động xác nhận “Không có” nếu không có mục cần khai báo. Bỏ trống không được tự hiểu là không có dị ứng/kiêng hoặc không có món không thích.
 - Nếu thiếu thông tin tối thiểu, hệ thống không gọi Gemini cho yêu cầu cá nhân hóa và hướng người dùng tới đúng mục cần bổ sung; không gọi Gemini.
@@ -308,7 +308,7 @@ Khi bài công thức bị ẩn/xóa/không khả dụng, Saved Recipe và Meal 
 - Khi không có công thức phù hợp, hệ thống thông báo không tìm thấy hoặc chỉ trả danh sách chưa đầy đủ kèm lý do; không bịa công thức để lấp kết quả.
 - Bản menu AI chỉ là đề xuất. Người dùng chọn từng món hoặc xác nhận menu trước khi lịch ăn thay đổi.
 
-Nguyên liệu “đang có” được nhập theo từng request; MVP không có pantry. AI ưu tiên tận dụng nhưng không bắt buộc dùng hết, phải hiển thị phần còn thiếu. Quyền sử dụng các tính năng AI tuân theo mô hình Feature-based Entitlement: Guest dùng AI Chatbot cơ bản. Free Member dùng thêm gợi ý món theo nguyên liệu. Plus mở thêm AI lập thực đơn tuần thông thường và theo dinh dưỡng. Pro kế thừa Plus, thêm AI soạn bài cho Chuyên gia, gợi ý món liên quan/biến tấu và AI đề xuất điều chỉnh dinh dưỡng (FR-37). Không áp dụng daily quota theo số lượt/ngày.
+Nguyên liệu “đang có” được nhập theo từng request; MVP không có pantry. AI ưu tiên tận dụng nhưng không bắt buộc dùng hết, phải hiển thị phần còn thiếu. Các tính năng AI tuân theo quyền nghiệp vụ/role của chức năng gốc, không khóa theo gói; quota token và model Gemini phụ thuộc gói (BR-02).
 
 ### 3.18 Hồ sơ nhu cầu dinh dưỡng và kiểm tra menu ngày — đã chốt ranh giới 12/09/2026
 
@@ -371,7 +371,7 @@ Mục này tóm tắt các quyết định sản phẩm hiện hành được ph
 | Actors | Guest, Member, Expert, Administrator | Vai trò, quyền và quyền sở hữu được chi tiết trong SRS con; Guest không phải tài khoản lưu trữ. |
 | Content | Chuyên gia đã được xác nhận đăng Recipe Post trực tiếp; nội dung được hậu kiểm qua báo cáo. Bài viết dùng nguyên liệu chọn từ danh mục chuẩn FR-18, `instructions` dạng văn bản, `dish_category` chuẩn hóa và tối đa 5 ảnh. | Không có persistent server-side Recipe Post draft; bản nháp chỉ tồn tại trong biểu mẫu client trước khi gửi. |
 | Community | Recipe Post hỗ trợ Like/Dislike và `like_percentage`; bình luận/reply không có Like/Dislike. Hệ thống ghi nhận lượt xem. | Guest chỉ đọc nội dung công khai. |
-| AI | Quyền truy cập theo Feature Entitlement cho Guest/Free/Plus/Pro; AI chỉ đề xuất Recipe Post có thật, còn công khai, và dùng dữ liệu dinh dưỡng tin cậy khi tính năng yêu cầu. | Không áp dụng daily request quota; Guest chịu technical rate limiting. Không lưu lịch sử chat theo tài khoản. |
+| AI | Quyền chức năng theo quyền nghiệp vụ/role; token quota và Gemini model theo gói; AI chỉ đề xuất Recipe Post có thật và dùng dữ liệu dinh dưỡng tin cậy khi tính năng yêu cầu. | Không áp dụng daily request quota; Guest chịu technical rate limiting và quota 20.000 token/session. Session AI tạm thời; không lưu raw prompt trong telemetry. |
 | Meal planning | Member quản lý lịch tuần 7 ngày với ba bữa cố định mỗi ngày; AI tạo preview và chỉ lưu sau khi Member xác nhận. | Dữ liệu dinh dưỡng là ước tính theo kế hoạch, không phải nhật ký lượng ăn thực tế. |
 | Nutrition | Tính toán dựa trên nguyên liệu, khẩu phần, dữ liệu dinh dưỡng có nguồn và hồ sơ tham khảo; hiển thị chín chỉ tiêu. | Không đưa chẩn đoán, điều trị hoặc health score. |
 | Comparison | Guest và Member so sánh đúng hai Recipe Post công khai theo thông tin tổng quan, nguyên liệu và chín chỉ tiêu trên một khẩu phần. | Không lưu lịch sử so sánh hoặc xếp hạng món tốt/xấu. |
@@ -409,9 +409,9 @@ Các external/supporting actor dưới đây không phải tài khoản đăng n
 | M03 | Recipe Contribution & Post-moderation | Chuyên gia quản lý/công khai bài trực tiếp (hướng dẫn chế biến `instructions`, thể loại món ăn `dish_category`, tối đa 5 ảnh kèm cover `RECIPE_MEDIA`, 1 link YouTube); Customer/Expert bình chọn Like / Dislike (`RECIPE_REACTION`); lưu vết lượt xem (`RECIPE_VIEW`); reply tối đa 5 cấp (chỉ công thức mới có Like/Dislike, bình luận không có); Admin hậu kiểm thủ công trên Report | M02, Azure Blob, quy trình báo cáo | Validation, tombstone, lý do và audit/history được quy định tại FR/BR; UI phải giữ đúng quyền tác giả và hậu kiểm. |
 | M04 | Recipe Classification & Discovery | Phân loại, tìm, lọc và chọn hai bài công thức chay để so sánh; chọn nhiều nguyên liệu từ danh mục công khai; Admin quản lý từ điển nguyên liệu, đơn vị `UNIT` và bảng quy đổi `INGREDIENT_UNIT_CONVERSION` | M01, M03 | Dữ liệu, profile validation và so sánh hai công thức đã chốt; các capability khác theo FR tương ứng. |
 | M05 | Saved Recipes, Meal Planning & Shopping List | Lưu công thức để xem lại, xếp món vào lịch ăn ngày/tuần ba bữa cố định, so sánh thống kê dinh dưỡng tuần, xuất file công thức và báo cáo PDF dinh dưỡng, tạo/quản lý và xuất danh sách mua sắm nguyên liệu cơ bản | M02, M04 | Đã chốt ranh giới Saved/Planner/Shopping List; quy tắc gom an toàn và xuất file đã xác nhận. |
-| M06 | Gemini AI Access & Usage | Guest/Free/Plus/Pro gọi AI theo gói tính năng (Feature Entitlement), rate limit kỹ thuật cho Guest và telemetry chi phí | M02 một phần, Gemini backend | Entitlement, safety, telemetry và actor-goal Use Case được quy định tại FR/BR/NFR liên quan. |
-| M08 | Subscription Administration | Hiển thị/đổi gói và phân quyền tính năng AI (Feature-based Entitlement) | M02, M06 | FREE 0, PLUS 49,000, PRO 99,000 VND/tháng; payment provider đã chọn là payOS. |
-| M09 | Administration | Xét duyệt đơn đăng ký Chuyên gia và tệp đính kèm riêng tư (`FR-05`), xử lý báo cáo vi phạm, quản lý user/bài công thức/bình luận và danh mục nguyên liệu dinh dưỡng | M02–M07, M10 | Quy trình xét duyệt chuyên gia theo format; tệp đơn chỉ Admin được tải/xem qua Backend; quyết định hậu kiểm thủ công có lý do, giữ audit/history. Không quản lý bảng danh mục động. |
+| M06 | Gemini AI Access & Usage | AI theo quyền role/ownership, quota token/model theo gói, rate limit Guest và telemetry chi phí | M02 một phần, Gemini backend | Authorization, quota, model, safety, telemetry và AI Credit được quy định tại FR/BR/NFR liên quan. |
+| M08 | Subscription & AI Credit | Gói tháng, thanh toán, nạp AI Credit và overage | M02, M06, M09 | Giá/hạn mức khởi đầu và chu kỳ theo BR-02; payment provider là payOS. |
+| M09 | Administration | Xét duyệt đơn Chuyên gia, xử lý báo cáo, quản lý user/nội dung/catalog, cấu hình gói/model/rates AI và grant quyền lợi | M02–M07, M10 | Quyền Admin được thực hiện trực tiếp; AI Assistant không gọi Admin capabilities. |
 | M10 | Nutrition Profile & Daily Menu Check | Với Member đủ điều kiện, tính chín chỉ tiêu từ danh mục nguyên liệu dinh dưỡng nội bộ, quy đổi theo khẩu phần và đối chiếu tổng ba bữa với hồ sơ | M02, M04, M05 | Đã chốt đối tượng, chỉ tiêu, nguồn dữ liệu cấp MVP và cách cộng menu; còn dữ liệu khởi tạo, quy đổi và khoảng tham khảo chi tiết khi triển khai. |
 
 ## 6. Thứ tự sử dụng baseline cho thiết kế và kiểm thử
@@ -434,14 +434,14 @@ Tài liệu này là **Authoritative Registry** cho sự tồn tại của requi
 | ID | Short Name | Module | Detail |
 | --- | --- | --- | --- |
 | FR-01 | Guest xem và tìm kiếm nội dung công khai | M01 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-01) |
-| FR-02 | Quyền Guest trải nghiệm AI Chatbot chung có giới hạn tần suất kỹ thuật | M06 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-02) |
+| FR-02 | Quyền Guest dùng AI Chatbot với giới hạn tần suất và token theo phiên | M06 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-02) |
 | FR-03 | Đăng ký, đăng nhập và quản lý tài khoản cơ bản | M02 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-03) |
 | FR-04 | Chuyên gia tạo và công khai trực tiếp Recipe Post | M02, M03 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-04) |
 | FR-05 | Nộp đơn đăng ký Chuyên gia theo format và Administrator phê duyệt | M02, M03, M09 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-05) |
 | FR-06 | Administrator quản lý tài khoản, xử lý báo cáo và quản lý hậu kiểm | M09 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-06) |
 | FR-08 | Tìm kiếm và lọc bài công thức đa tiêu chí | M04 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-08) |
 | FR-09 | Authorized User tạo và chỉnh lịch ăn tuần | M05 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) |
-| FR-10 | Phân quyền tính năng AI theo gói tài khoản (Feature-based AI Entitlement) | M06 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) |
+| FR-10 | Quyền sử dụng và lựa chọn Gemini Model theo gói | M06 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) |
 | FR-11 | Ghi nhận dữ liệu đo lường kỹ thuật (Telemetry) sử dụng AI | M06 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-11) |
 | FR-13 | Đăng ký gói AI qua thanh toán thật | M08 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-13) |
 | FR-14 | Lưu trữ ảnh bài công thức trên Azure Blob Storage | M03 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-14) |
@@ -485,6 +485,10 @@ Tài liệu này là **Authoritative Registry** cho sự tồn tại của requi
 | FR-60 | So sánh hai Recipe Post công khai theo nguyên liệu và chín chỉ tiêu dinh dưỡng | M01, M04, M10 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-60) |
 | FR-61 | Khám phá và theo dõi Chuyên gia ẩm thực chay | M01, M02 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-61) |
 | FR-62 | Xem chi tiết nguyên liệu và tìm công thức | M01, M04 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-62) |
+| FR-63 | Quản lý hạn mức token và mức sử dụng AI | M06 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-63) |
+| FR-64 | Nạp AI Credit và thanh toán overage | M08, M06 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-64) |
+| FR-65 | Quản trị cấu hình AI, cấp quyền lợi và thông báo | M09, M06, M08 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-65) |
+| FR-66 | AI Assistant điều phối chức năng Mâm Xanh theo Execution Mode | M06 và module chức năng liên quan | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-66) |
 
 ## 8. Business Rules hiện hành
 
@@ -495,20 +499,23 @@ Tài liệu này là **Authoritative Registry** cho sự tồn tại và mã ID 
 | ID | Short Name | Module | Detail |
 | --- | --- | --- | --- |
 | BR-01 | Quyền sử dụng AI Chat cho Guest và Member Free | M06 | [Chi tiết](srs/BUSINESS-RULES.md#br-01) |
-| BR-02 | Phân quyền tính năng AI cho gói Plus và Pro | M06 | [Chi tiết](srs/BUSINESS-RULES.md#br-02) |
+| BR-02 | Hạn mức token và quyền chọn Gemini Model theo gói | M06 | [Chi tiết](srs/BUSINESS-RULES.md#br-02) |
 | BR-03 | Xác thực quyền tính năng trước khi gọi dịch vụ AI | M06 | [Chi tiết](srs/BUSINESS-RULES.md#br-03) |
 | BR-04 | Xử lý lỗi provider, timeout AI và lưu trữ telemetry | M06 | [Chi tiết](srs/BUSINESS-RULES.md#br-04) |
 | BR-05 | Giới hạn tính năng đối với Guest | M01, M06 | [Chi tiết](srs/BUSINESS-RULES.md#br-05) |
 | BR-06 | Bảo mật Gemini API Key | M06 | [Chi tiết](srs/BUSINESS-RULES.md#br-06) |
 | BR-07 | Quyền đăng và công khai Recipe Post dành riêng cho Chuyên gia | M02, M03 | [Chi tiết](srs/BUSINESS-RULES.md#br-07) |
 | BR-09 | Ranh giới y tế và sức khỏe của câu trả lời AI | M06 | [Chi tiết](srs/BUSINESS-RULES.md#br-09) |
+| BR-77 | AI Credit, thanh toán nạp và overage | M06, M08 | [Chi tiết](srs/BUSINESS-RULES.md#br-77) |
+| BR-78 | Quản trị AI và chu kỳ gói | M06, M08, M09 | [Chi tiết](srs/BUSINESS-RULES.md#br-78) |
+| BR-79 | Execution Mode, consent và xác nhận thao tác AI | M06 | [Chi tiết](srs/BUSINESS-RULES.md#br-79) |
 | BR-10 | Giới hạn định dạng video Phase 1 | M01, M03 | [Chi tiết](srs/BUSINESS-RULES.md#br-10) |
 | BR-11 | Media công khai trực tiếp và hậu kiểm | M03 | [Chi tiết](srs/BUSINESS-RULES.md#br-11) |
 | BR-12 | Bắt buộc liên kết nguyên liệu công thức với catalog chuẩn | M03, M04 | [Chi tiết](srs/BUSINESS-RULES.md#br-12) |
 | BR-13 | Xử lý nguyên liệu chưa nhận diện trong ràng buộc ăn uống | M04, M06 | [Chi tiết](srs/BUSINESS-RULES.md#br-13) |
 | BR-14 | Quy tắc định lượng nguyên liệu số học và tổng hợp Shopping List an toàn theo đơn vị chuẩn | M03, M05, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-14) |
 | BR-15 | Đồng nhất chính sách bài viết tự soạn và bài có AI hỗ trợ | M03, M06 | [Chi tiết](srs/BUSINESS-RULES.md#br-15) |
-| BR-16 | Không chặn công khai bài viết khi AI lỗi hoặc gói không hỗ trợ tính năng AI | M03, M06 | [Chi tiết](srs/BUSINESS-RULES.md#br-16) |
+| BR-16 | Không chặn công khai bài viết khi AI lỗi hoặc hết ngân sách AI | M03, M06 | [Chi tiết](srs/BUSINESS-RULES.md#br-16) |
 | BR-17 | Gắn quyền tác giả với tài khoản đăng bài | M02, M03 | [Chi tiết](srs/BUSINESS-RULES.md#br-17) |
 | BR-18 | Bảo vệ quyền riêng tư trong thông tin tác giả công khai | M01, M02 | [Chi tiết](srs/BUSINESS-RULES.md#br-18) |
 | BR-19 | Điều kiện bắt buộc để công khai Recipe Post (hướng dẫn chế biến linh hoạt, 0..5 RECIPE_MEDIA, đơn vị quy đổi hợp lệ) | M03 | [Chi tiết](srs/BUSINESS-RULES.md#br-19) |
@@ -569,7 +576,7 @@ Tài liệu này duy trì bảng chỉ mục tóm tắt các nhóm yêu cầu ph
 | Security | NFR-06 – NFR-10 | Mã hóa mật khẩu, rate limit 5 lần sai khóa tài khoản 10 phút trên `USER`, stateless JWT Bearer token, bảo vệ dữ liệu sức khỏe, RBAC và OWASP Top 10 | 100% hash BCrypt; HTTPS/TLS 1.2+; Backend 401/403; kiểm tra tức thời `account_status`, client-side logout | [Chi tiết](srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-security) |
 | Usability | NFR-11 – NFR-15 | Đăng ký $\le 3$ bước, Chatbot trực quan, Responsive tiếng Việt 360px–1920px, tương thích đa trình duyệt và mobile | $\ge 90\%$ dùng Chatbot không cần trợ giúp; responsive đa thiết bị; tương thích 2 bản gần nhất Chrome, Firefox, Safari, Edge, Mobile | [Chi tiết](srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-usability) |
 | Reliability | NFR-16 – NFR-19 | Transaction không mất dữ liệu đã commit, xử lý lỗi/timeout Gemini $\le 10$s không ghi nhận lượt gọi thành công hoặc thay đổi entitlement; uptime 99,5% và 1.000–10.000 users là design goals | Database rollback khi lỗi; fallback thân thiện theo BR-04; design goals không phải MVP release gates | [Chi tiết](srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-reliability) |
-| Privacy | NFR-20 – NFR-22 | Consent dữ liệu cá nhân/sức khỏe, PCI-DSS không lưu số thẻ, không lưu account chat history hoặc raw prompt telemetry | Thông báo forwarding tới Gemini; telemetry retention 90 ngày | [Chi tiết](srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-privacy) |
+| Privacy | NFR-20 – NFR-22 | Consent dữ liệu cá nhân/sức khỏe, PCI-DSS không lưu số thẻ, session AI tạm thời, không lưu raw prompt trong telemetry | Thông báo forwarding tới Gemini; telemetry retention 90 ngày | [Chi tiết](srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-privacy) |
 | Auditability | NFR-23 – NFR-25 | OpenAPI, Modular Monolith dùng MVC/layered structure trong từng business module, AI quality theo curated evaluation set | Một Spring Boot deployable backend; $\ge 80\%$ curated cases đạt rule | [Chi tiết](srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-auditability) |
 
 ## 10. Việc còn mở cho thiết kế/triển khai
@@ -589,8 +596,8 @@ Dùng Use Cases và Acceptance Criteria hiện có để lập ERD, API contract
 | Thống kê lượt xem và xu hướng khám phá | FR-08, FR-58 | Ghi nhận RECIPE_VIEW khử trùng lặp theo phiên; 6 chế độ khám phá (Newest, Most Liked, Most Viewed, Most Commented, Most Active, Trending) |
 | Thực đơn tuần theo nguyên liệu và BMI | FR-09, FR-31, FR-33–FR-39 | Hồ sơ rộng hơn BMI, AI chọn công thức có sẵn |
 | Bài liên quan công thức đã tìm | FR-47 | Thông thường hoặc tùy chọn AI |
-| AI Chatbot hỏi đáp ẩm thực chay theo ngữ cảnh | FR-51 | Không tạo công thức/số liệu ngoài hệ thống; hỗ trợ ngữ cảnh chung và ngữ cảnh bài công thức |
-| Phân quyền và đăng ký gói AI | FR-10, FR-11, FR-13 | Phân quyền tính năng (Feature Entitlement); FREE 0, PLUS 49,000, PRO 99,000 VND/tháng; thanh toán thật và entitlement sau xác minh; không áp dụng daily quota |
-| Guest tìm/xem video, Blog và thử AI | FR-01, FR-02, FR-15, FR-20 | Khám phá công thức, YouTube nhúng, dùng thử AI Chatbot chung FR-51 có Technical Rate Limiting |
+| AI Assistant hỏi đáp và điều phối theo ngữ cảnh | FR-51, FR-66 | RAG nội bộ; hỗ trợ điều hướng, điền preview và tool theo quyền; thao tác rủi ro cần xác nhận |
+| Quota, model và gói AI Credit | FR-10, FR-11, FR-13, FR-63–65 | Token quota theo chu kỳ; model Gemini theo gói; 1.000đ=1.000 Credit; overage 1.000 token=400 Credit; giá pilot Plus 99.000đ, Pro 199.000đ |
+| Guest tìm/xem video, Blog và thử AI | FR-01, FR-02, FR-15, FR-20 | Khám phá công thức, YouTube nhúng, AI Chatbot FR-51 có Technical Rate Limiting và quota Guest |
 
 Đây là truy vết yêu cầu, không phải chứng cứ tính năng đã triển khai.

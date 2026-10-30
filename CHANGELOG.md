@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.129.0
+> **Version:** v2.130.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-30
 > **Status:** Active
@@ -8,6 +8,26 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-30 — Define AI Credit and Feature-First MVP Scope
+
+**Status:** Working tree — not committed.
+
+**Scope:** Synchronize the active AI requirements with the approved token-quota and AI Credit model, then create linked implementation Issues for the MVP.
+
+### Added
+
+- Add FR-63–FR-66 and BR-77–BR-79 for token usage, AI Credit overage, Admin configuration and grants, and feature-first AI Assistant orchestration.
+- Create parent Issue #208 and seven linked Task sub-issues; update the SRS-managed scope in Issue #16.
+
+### Changed
+
+- Set the pilot Guest/Free/Plus/Pro token limits, model access, subscription prices, top-up conversion, and overage rate in the active requirements.
+- Make role, ownership, eligibility, and business validation govern AI capabilities; subscription tier governs token quota and Gemini model access.
+
+### Fixed
+
+- Reconcile older package feature gates and always-confirm menu wording with the accepted Execution Mode policy.
 
 ## 2026-10-30 — Restore Meal Plan Focus After Moving an Entry
 

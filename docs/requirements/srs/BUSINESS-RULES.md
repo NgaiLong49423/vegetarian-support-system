@@ -1,6 +1,6 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v2.15.0
+> **Version:** v2.16.0
 > **Created:** 2026-09-14
 > **Last Updated:** 2026-10-30
 > **Status:** Active
@@ -14,23 +14,23 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-01 — Quyền sử dụng AI Chat cho Guest và Member Free
 
 - **Mã quy tắc:** BR-01
-- **Nội dung:** Guest và Member Free có quyền sử dụng tính năng AI Chatbot cơ bản (FR-51). Member Free được xác thực theo tài khoản; Guest được trải nghiệm trực tiếp không cần đăng nhập và được bảo vệ bằng cơ chế giới hạn tần suất kỹ thuật (Technical Rate Limiting) theo anonymous cookie/IP để chống spam. Hệ thống không áp dụng daily quota theo số lượt/ngày cho Guest và Member Free.
+- **Nội dung:** Guest và Member được dùng các khả năng AI phù hợp với quyền truy cập dữ liệu/chức năng hiện có; AI không cấp thêm quyền so với người dùng. Guest tiếp tục chịu giới hạn tần suất kỹ thuật và có 20.000 token dùng thử mỗi phiên; Member Free có hạn mức khởi đầu 50.000 token mỗi chu kỳ tháng. Khi Guest hết token, mời đăng ký; không có quota theo số request/ngày.
 
 ---
 
 <a id="br-02"></a>
-### BR-02 — Phân quyền tính năng AI cho gói Plus và Pro
+### BR-02 — Hạn mức token và quyền chọn Gemini Model theo gói
 
 - **Mã quy tắc:** BR-02
-- **Nội dung:** Gói Plus và Pro mở quyền truy cập các tính năng AI nâng cao theo mô hình Feature-based Entitlement (không giới hạn số lượt request/ngày và không có chu kỳ reset 00:00). Gói Plus mở thêm AI lập thực đơn tuần thông thường (UC-34.2/UC-34.3 thuộc FR-34), AI lập thực đơn theo dinh dưỡng (FR-36). Gói Pro kế thừa toàn bộ quyền Plus và mở thêm AI hỗ trợ soạn Recipe Post cho Chuyên gia (FR-21) cùng AI gợi ý món liên quan hoặc biến tấu (FR-47) và AI đề xuất điều chỉnh dinh dưỡng (FR-37). Ma trận quyền hiện hành áp dụng cả với gói đã mua còn hiệu lực, không đổi giá, mã gói hoặc thời hạn Subscription.
+- **Nội dung:** Gói không khóa riêng từng chức năng AI; các chức năng vẫn chịu role, ownership, eligibility và validation của chức năng gốc. Hạn mức khởi đầu: Free 50.000 token/tháng; Plus 300.000 token/tháng, 99.000đ/tháng; Pro 600.000 token/tháng, 199.000đ/tháng. Plus/Pro bắt đầu chu kỳ khi kích hoạt/gia hạn; Free có chu kỳ tháng riêng. Hạn mức tháng không cộng dồn. Guest/Free chỉ dùng Gemini Flash-Lite; Plus/Pro chọn Flash-Lite hoặc Flash, mặc định Flash. Chưa hỗ trợ model ngoài Gemini. Admin có thể đổi cấu hình; chu kỳ đã mua giữ giá/hạn mức đã cấp.
 
 ---
 
 <a id="br-03"></a>
-### BR-03 — Xác thực quyền tính năng trước khi gọi dịch vụ AI
+### BR-03 — Xác thực quyền, model và ngân sách trước khi gọi dịch vụ AI
 
 - **Mã quy tắc:** BR-03
-- **Nội dung:** Mọi yêu cầu gọi tính năng AI phải được Backend xác thực quyền tính năng (Feature Entitlement) dựa trên hạng gói Subscription hiện tại của tài khoản trước khi gửi yêu cầu tới dịch vụ Gemini; yêu cầu không đủ quyền bị chặn ngay tại server và trả về hướng dẫn nâng cấp gói thích hợp.
+- **Nội dung:** Backend xác thực người dùng, quyền truy cập dữ liệu/chức năng gốc, quyền model theo gói, consent dữ liệu cá nhân và ngân sách trước mỗi lần gọi Gemini. Khi hết quota tháng, hệ thống tự tính phí vượt mức bằng AI Credit theo BR-77; không đủ Credit thì dừng trước lần gọi tiếp theo. Admin endpoints không được gọi qua AI Assistant.
 
 ---
 
@@ -38,7 +38,31 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-04 — Xử lý lỗi provider, timeout AI và lưu trữ telemetry
 
 - **Mã quy tắc:** BR-04
-- **Nội dung:** Lỗi provider hoặc timeout trước khi có phản hồi hợp lệ không được coi là hoàn tất thành công; hệ thống trả về thông báo lỗi thân thiện và ghi error log kỹ thuật. Dữ liệu đo lường kỹ thuật (telemetry token) do provider trả về chỉ dùng để đối soát chi phí vận hành, lưu trữ tối đa 90 ngày và TUYỆT ĐỐI KHÔNG lưu trữ nội dung câu hỏi thô (raw prompt).
+- **Nội dung:** Lỗi provider/timeout không được báo thành công và không trừ quota/Credit người dùng, kể cả khi provider có báo chi phí; chi phí lỗi do hệ thống chịu và được ghi riêng để đối soát. Với lượt thành công, cộng tổng token provider ghi nhận (input, output và reasoning nếu có) đúng một lần cho mọi lần gọi model. Telemetry vận hành lưu tối đa 90 ngày, không lưu raw prompt; số dư/ledger nghiệp vụ có vòng đời riêng theo FR-63/64.
+
+---
+
+<a id="br-77"></a>
+### BR-77 — AI Credit, thanh toán nạp và overage
+
+- **Mã quy tắc:** BR-77
+- **Nội dung:** AI Credit không hết hạn; tỷ lệ khởi đầu 1.000đ = 1.000 Credit, nạp tối thiểu 10.000đ và tối đa 500.000đ/lần. Sau khi dùng hết token tháng, hệ thống tự động trừ 400 Credit cho mỗi 1.000 token vượt hạn mức, dùng cùng tỷ lệ cho mọi Gemini model và loại token. Hệ thống dùng quota tháng trước Credit. Đơn nạp đang chờ thanh toán giữ nguyên số tiền/Credit được báo lúc tạo cho đến khi hết hạn. Thay đổi tỷ lệ có hiệu lực với yêu cầu/đơn mới ngay lập tức; gửi thông báo in-app và Admin có thể gửi email toàn bộ khách hàng. Người dùng tự chọn gói/tạo đơn/thanh toán; AI chỉ điều hướng tới trang thanh toán.
+
+---
+
+<a id="br-78"></a>
+### BR-78 — Quản trị AI và chu kỳ gói
+
+- **Mã quy tắc:** BR-78
+- **Nội dung:** Chỉ Administrator trực tiếp trong giao diện quản trị được quản lý giá/hạn mức gói, model Gemini khả dụng theo gói, tỷ lệ tiền/Credit, tỷ lệ Credit/token overage, giới hạn nạp, grant gói/Credit cho tài khoản và thông báo. Grant phải tạo thông báo in-app cho người nhận. Plus→Pro áp dụng ngay sau thanh toán đủ, mở chu kỳ Pro mới và không hoàn tiền phần Plus còn lại; mua lại cùng gói khi còn hạn và hạ Pro→Plus khi Pro còn hạn không được phép. AI Assistant không thao tác chức năng Admin.
+
+---
+
+<a id="br-79"></a>
+### BR-79 — Execution Mode, consent và xác nhận thao tác AI
+
+- **Mã quy tắc:** BR-79
+- **Nội dung:** Ba mode là Hỏi đáp/Gợi ý, Có xác nhận, Tự động; mặc định Có xác nhận, đổi mode chỉ áp dụng yêu cầu mới. Hỏi đáp/Gợi ý được điều hướng và điền form xem trước nhưng không lưu backend. Có xác nhận phải hiển thị preview trước khi ghi; Tự động thực hiện thay đổi dữ liệu được phép theo yêu cầu rõ. Đăng công thức và xóa vĩnh viễn luôn cần xác nhận rõ. AI chỉ mở trang thanh toán và trang bảo mật tài khoản, người dùng tự nhập bí mật/xác nhận. Consent gửi dữ liệu cá nhân cho Gemini có hiệu lực trong hội thoại đến khi session hết hạn hoặc thu hồi; thay đổi loại dữ liệu/mục đích/bên nhận cần xin lại. Tác vụ nhiều bước lỗi hoặc hết token phải dừng, báo từng bước và hỏi trước khi tiếp tục; giữ các bước đã thành công. Khi điền đè form, chỉ thay trường cần theo yêu cầu rõ và báo trường đã đổi. Đổi model sau lỗi chỉ khi người dùng đồng ý.
 
 ---
 
@@ -123,10 +147,10 @@ This document contains only requirements included in Requirements / Implementati
 ---
 
 <a id="br-16"></a>
-### BR-16 — Không chặn công khai bài viết khi AI lỗi hoặc gói không hỗ trợ tính năng AI
+### BR-16 — Không chặn công khai bài viết khi AI lỗi hoặc hết ngân sách AI
 
 - **Mã quy tắc:** BR-16
-- **Nội dung:** Khi AI gặp sự cố kỹ thuật hoặc tài khoản Chuyên gia không thuộc gói có quyền sử dụng AI hỗ trợ soạn bài (FR-21), Chuyên gia vẫn toàn quyền tự viết, chỉnh sửa và công khai Recipe Post của mình nếu bài đạt đúng profile validation.
+- **Nội dung:** Khi AI gặp sự cố kỹ thuật, quota/Credit không đủ hoặc model được chọn không khả dụng, Chuyên gia vẫn toàn quyền tự viết, chỉnh sửa và công khai Recipe Post của mình nếu có quyền tác giả và bài đạt đúng profile validation. Gói không khóa khả năng AI theo chức năng; role, ownership và validation gốc vẫn áp dụng.
 
 ---
 
@@ -243,7 +267,7 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-31 — Không gọi AI khi thiếu dữ liệu bắt buộc
 
 - **Mã quy tắc:** BR-31
-- **Nội dung:** Backend không gửi yêu cầu Gemini khi thiếu dữ liệu được requirement của chức năng đó xác định là bắt buộc. Các FR có câu trả lời tùy chọn phải giữ giá trị chưa khai báo là `null`, không hiểu là xác nhận “Không có”. FR-36 không bắt buộc Member hoàn tất onboarding FR-31 hoặc trả lời mục tiêu/nguyên liệu tuần này; chỉ các ràng buộc đã khai báo mới được áp dụng và hệ thống phải giải thích giới hạn cá nhân hóa khi dữ liệu còn thiếu. Hồ sơ dinh dưỡng/eligibility FR-35/38 và Plus hoặc Pro vẫn là điều kiện bắt buộc của FR-36.
+- **Nội dung:** Backend không gửi yêu cầu Gemini khi thiếu dữ liệu được requirement của chức năng đó xác định là bắt buộc. Các FR có câu trả lời tùy chọn phải giữ giá trị chưa khai báo là `null`, không hiểu là xác nhận “Không có”. FR-36 không bắt buộc Member hoàn tất onboarding FR-31 hoặc trả lời mục tiêu/nguyên liệu tuần này; chỉ các ràng buộc đã khai báo mới được áp dụng và hệ thống phải giải thích giới hạn cá nhân hóa khi dữ liệu còn thiếu. Hồ sơ dinh dưỡng và eligibility theo FR-35/FR-38 vẫn bắt buộc; gói dịch vụ không phải điều kiện truy cập FR-36.
 
 ---
 
