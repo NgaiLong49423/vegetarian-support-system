@@ -43,6 +43,17 @@ export interface MyAiUsageResponse {
   resetsAt: string;
 }
 
+export interface AiChatSettingsResponse {
+  tier: SubscriptionTier | 'GUEST';
+  consumedTokens: number;
+  quotaTokens: number;
+  remainingTokens: number;
+  resetsAt: string | null;
+  selectedModelId: string | null;
+  selectionRequired: boolean;
+  models: Array<{ modelId: string; displayName: string; isDefault: boolean }>;
+}
+
 export interface TransactionHistoryResponse {
   paymentTransactionId: number;
   orderCode: string;
@@ -87,6 +98,14 @@ export const subscriptionApi = {
 
   /** Retrieves the authenticated member's token usage for the current quota period. */
   getMyAiUsage: () => request(() => apiClient.get<MyAiUsageResponse>('/subscriptions/my-ai-usage')),
+
+  getChatSettings: (anonymousViewerId?: string) => request(() => apiClient.get<AiChatSettingsResponse>(
+    '/ai/chat-settings', { params: anonymousViewerId ? { anonymousViewerId } : undefined },
+  )),
+
+  selectChatModel: (modelId: string) => request(() => apiClient.put<AiChatSettingsResponse>(
+    '/ai/chat-settings/model', { modelId },
+  )),
 
   /**
    * Creates a payOS payment link for upgrading to PLUS or PRO (AC-13.2).

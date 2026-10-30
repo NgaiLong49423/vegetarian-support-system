@@ -1,6 +1,6 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.48.0
+> **Version:** v2.50.0
 > **Created:** 2026-09-14
 > **Last Updated:** 2026-10-30
 > **Status:** Active
@@ -740,7 +740,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **Use Case detail:** [Open interaction flows](../use-cases/ai-and-personalization.md#fr-10).
 
 #### Mục đích và phạm vi
-Hệ thống cho phép Guest và Member sử dụng chức năng AI theo quyền truy cập dữ liệu, vai trò, quyền sở hữu và điều kiện nghiệp vụ của chức năng gốc; gói AI không cấp thêm quyền nghiệp vụ. Hạn mức token và model Gemini được chọn phụ thuộc gói hiện hành theo BR-02. Backend kiểm tra quyền và hạn mức trước mỗi lần gọi provider. Admin không thao tác qua AI Assistant.
+Hệ thống cho phép Guest và Member sử dụng chức năng AI theo quyền truy cập dữ liệu, vai trò, quyền sở hữu và điều kiện nghiệp vụ của chức năng gốc; gói AI không cấp thêm quyền nghiệp vụ. Hạn mức token và model Gemini được chọn phụ thuộc gói hiện hành theo BR-02. Member có thể lưu model preference theo tài khoản trong chatbox dùng chung; preference áp dụng cho mọi chức năng AI mà tài khoản được phép sử dụng. Backend kiểm tra quyền, model preference, catalog đang bật, consent và hạn mức trước mỗi lần gọi provider. Admin không thao tác qua AI Assistant.
 
 #### Actors và Use Cases
 - Primary Actor: Guest, Member (Free/Plus/Pro).
@@ -748,16 +748,20 @@ Hệ thống cho phép Guest và Member sử dụng chức năng AI theo quyền
 - `UC-10.2`: Chọn model Gemini khả dụng theo gói.
 
 #### Phân quyền và ràng buộc
-- Guest/Free chỉ dùng Gemini Flash-Lite; Plus/Pro chọn Flash-Lite hoặc Flash; mặc định Flash. Chưa hỗ trợ model ngoài Gemini.
-- Model list lấy từ cấu hình hệ thống; lựa chọn không thay đổi quyền role hoặc token balance.
-- Từ chối trước provider call nếu quyền dữ liệu/chức năng, model access, consent hoặc ngân sách không hợp lệ.
+- Pilot mặc định Guest theo cấu hình Free; Free dùng Gemini Flash-Lite; Plus/Pro dùng Flash-Lite hoặc Flash, mặc định Flash. Admin có thể gán bất kỳ Gemini model đã xác minh cho từng tier; mỗi tier phải có model đang bật và default hợp lệ. Chưa hỗ trợ model ngoài Gemini.
+- Model list và model access lấy từ catalog do Admin cấu hình. Guest không lưu preference; Member preference được lưu theo chính tài khoản đã xác thực. Credit mua thêm không mở quyền model; khi gói hết hạn, model access trở về Free.
+- Từ chối trước provider call nếu quyền dữ liệu/chức năng, model access, consent hoặc ngân sách không hợp lệ. Nếu preference đã lưu không còn được phép hoặc model bị Admin tắt, yêu cầu người dùng chọn lại; không tự thay model và không gọi provider.
+- Khi model lỗi hoặc không hỗ trợ tác vụ, giải thích lý do và đề xuất model hợp lệ khác. Chỉ retry bằng model thay thế sau khi người dùng đồng ý; đồng ý cho phép đúng một lần retry và không thay đổi preference đã lưu.
 
 #### Tiêu chí chấp nhận
 - **AC-10.1:** Guest và Member được dùng chức năng AI khi thỏa quyền của chức năng gốc; gói không mở rộng role/ownership.
-- **AC-10.2:** Guest/Free chỉ chọn Flash-Lite; Plus/Pro chọn Flash-Lite hoặc Flash; model mặc định đúng cấu hình BR-02.
-- **AC-10.3:** Backend từ chối model không thuộc danh sách gói trước khi gọi Gemini.
-- **AC-10.4:** Thiếu quyền dữ liệu/chức năng hoặc consent thì không gửi dữ liệu tương ứng tới Gemini.
-- **AC-10.5:** Khi model lỗi/không hỗ trợ, hệ thống báo lý do và đề xuất model hợp lệ; chỉ chuyển model sau khi người dùng đồng ý.
+- **AC-10.2:** Guest dùng cùng catalog/access/default với Free. Catalog pilot mặc định Free là Flash-Lite; Plus/Pro là Flash-Lite và Flash, default Flash. Access/default thực tế lấy từ cấu hình Admin; mỗi tier có ít nhất một model bật và một default hợp lệ.
+- **AC-10.3:** Backend từ chối model không thuộc danh sách được phép theo gói hoặc catalog đang bật trước khi gọi Gemini. Nếu model preference lưu trước đó không còn hợp lệ, yêu cầu người dùng chọn lại; không tự thay model. Gói hết hạn trở về quyền model Free; Credit mua thêm không mở quyền model.
+- **AC-10.4:** Thiếu quyền dữ liệu/chức năng hoặc consent thì không gửi dữ liệu tương ứng tới Gemini; mọi luồng dùng model đã được Backend xác thực và không đưa Gemini API key ra Frontend.
+- **AC-10.5:** Khi model lỗi/không hỗ trợ, hệ thống báo lý do và đề xuất model hợp lệ; chỉ retry đúng một lần sau khi người dùng đồng ý, không đổi preference tài khoản.
+- **AC-10.6:** Model picker nằm trong chatbox dùng chung; Guest không lưu preference, Member preference được lưu theo tài khoản và khôi phục khi đăng nhập lại.
+- **AC-10.7:** Preference chỉ đọc/sửa cho tài khoản hiện tại; Guest dùng default của cấu hình Free (pilot là Flash-Lite) và Backend không nhận account ID do client chỉ định.
+- **AC-10.8:** Member có thể chọn và lưu model preference cho mọi chức năng AI được phép; preference được xác thực lại theo tier/subscription hiện tại trước mỗi provider call.
 
 ---
 
@@ -1510,7 +1514,7 @@ Hệ thống cho phép Guest và Member sử dụng chức năng AI theo quyền
   - [BR-06](BUSINESS-RULES.md#br-06): Bảo mật API Key của AI Provider.
   - [BR-07](BUSINESS-RULES.md#br-07): Quyền đăng và công khai Recipe Post dành riêng cho Chuyên gia (Role = EXPERT).
   - [BR-15](BUSINESS-RULES.md#br-15): Đồng nhất chính sách bài viết tự soạn và bài có AI hỗ trợ.
-  - [BR-16](BUSINESS-RULES.md#br-16): Không chặn công khai bài viết khi AI lỗi hoặc gói không hỗ trợ tính năng AI.
+  - [BR-16](BUSINESS-RULES.md#br-16): Không chặn công khai bài viết khi AI lỗi hoặc ngân sách/model AI không khả dụng.
   - [BR-19](BUSINESS-RULES.md#br-19): Điều kiện bắt buộc để công khai Recipe Post (hướng dẫn chế biến linh hoạt, 0..5 ảnh với 1 ảnh bìa, tỷ lệ quy đổi đơn vị).
 - **Yêu cầu phi chức năng liên quan:**
   - [NFR-03](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03): Thời gian phản hồi của tính năng AI Chatbot.
@@ -1539,7 +1543,7 @@ Hệ thống cho phép Guest và Member sử dụng chức năng AI theo quyền
 - **AC-21.5 (Xác thực quyền Chuyên gia và ngân sách trước khi gọi AI):**
   - *Given* Chuyên gia đăng nhập và có đủ token/Credit theo FR-63/64,
   - *When* tác giả yêu cầu AI hỗ trợ soạn bài,
-  - *Then* Backend kiểm tra role, quyền sở hữu/dữ liệu, model theo tier, consent và ngân sách trước Gemini; tài khoản Free được phép nếu còn ngân sách và dùng model Flash-Lite. Tài khoản không có role Expert bị từ chối theo FR-04.
+  - *Then* Backend kiểm tra role, quyền sở hữu/dữ liệu, model theo tier, consent và ngân sách trước Gemini; tài khoản Free được phép nếu còn ngân sách và dùng model đang được cấu hình cho tier Free (pilot mặc định Flash-Lite). Tài khoản không có role Expert bị từ chối theo FR-04.
 
 ---
 
@@ -3171,7 +3175,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **AC-47.4 (Xác thực quyền dữ liệu, model và ngân sách):**
   - *Given* Guest hoặc Member chủ động yêu cầu AI gợi ý trên bài công khai,
   - *When* Backend kiểm tra access/model/quota trước Gemini,
-  - *Then* yêu cầu được gọi nếu đủ điều kiện; nếu thiếu budget thì thông báo nạp/đợi quota, còn Guest chỉ dùng Flash-Lite và không truy cập dữ liệu riêng tư. Free không bị chặn chỉ vì hạng gói.
+  - *Then* yêu cầu được gọi nếu đủ điều kiện; nếu thiếu budget thì thông báo nạp/đợi quota, Guest dùng model theo cấu hình Free (pilot mặc định Flash-Lite) và không truy cập dữ liệu riêng tư. Free không bị chặn chỉ vì hạng gói.
 
 ---
 
@@ -4002,7 +4006,7 @@ Trang này là cách duyệt trực tiếp từ điển nguyên liệu hiện c�
 - **Mô tả:** Member nhập số tiền nạp trong min/max do Admin cấu hình, xem số Credit quy đổi, tự tạo đơn và thanh toán. Sau khi quota tháng hết, hệ thống tự động tính và trừ Credit cho token overage theo tỷ lệ hiện hành; Credit có thể dùng xuyên các chu kỳ và không hết hạn. Credit mua thêm không mở quyền chọn model.
 - **Acceptance Criteria:**
   - AC-64.1: Cấu hình khởi đầu 1.000đ = 1.000 Credit; min 10.000đ, max 500.000đ mỗi đơn; người dùng tự xác nhận thanh toán.
-  - AC-64.2: Mọi Member kể cả Free được nạp; Free vẫn chỉ dùng Flash-Lite.
+  - AC-64.2: Mọi Member kể cả Free được nạp; Credit mua thêm không đổi model access, vẫn theo cấu hình tier hiện hành (pilot Free mặc định Flash-Lite).
   - AC-64.3: Khi quota hết, quy đổi 1.000 token overage = 400 Credit theo cùng tỷ lệ cho mọi model/loại token; quota tháng được dùng trước Credit.
   - AC-64.4: Credit không hết hạn; không lưu token mua thêm thành balance hết hạn.
   - AC-64.5: Đơn chờ thanh toán giữ số tiền/Credit tại thời điểm tạo đến khi đơn hết hạn, dù Admin đổi tỷ lệ.
@@ -4016,15 +4020,16 @@ Trang này là cách duyệt trực tiếp từ điển nguyên liệu hiện c�
 - **Mã yêu cầu:** FR-65
 - **Module:** M09, M06, M08
 - **Actor:** Administrator.
-- **Mô tả:** Administrator quản lý giá và quota gói Free/Plus/Pro, catalog/access Gemini model, tỷ lệ VND/Credit, tỷ lệ Credit/token overage, min/max nạp; cấp gói hoặc Credit cho tài khoản bất kỳ và thông báo người nhận. Admin cũng quản lý giá/config model theo các thay đổi mới. Thay đổi gói áp dụng cho lần kích hoạt/mua mới; chu kỳ đã mua giữ nguyên. Đổi tỷ lệ overage có hiệu lực ngay; luôn gửi in-app notification và có thể chọn email cho toàn bộ khách hàng. AI Assistant không được gọi các chức năng quản trị.
+- **Mô tả:** Administrator quản lý quota Free/Plus/Pro và giá Plus/Pro (Free luôn 0đ), catalog Gemini (model ID/tên hiển thị/trạng thái), access/default theo tier, tỷ lệ VND/Credit, tỷ lệ Credit/token overage và giới hạn nạp. Admin cấp AI Credit cho tài khoản bất kỳ nhưng không cấp gói thủ công. Thay đổi quota Free giữa chu kỳ có hiệu lực từ tháng kế tiếp `Asia/Saigon`; thay đổi giá/quota Plus/Pro áp dụng cho lần mua/kích hoạt mới, chu kỳ đã kích hoạt giữ snapshot. Model mới phải được xác minh trực tiếp với Gemini trước khi lưu; lỗi provider hoặc ID không được hỗ trợ thì từ chối lưu và giữ nguyên cấu hình hiện tại. Mọi thay đổi cấu hình thực tế gửi thông báo in-app cho CUSTOMER/EXPERT đang hoạt động; Admin có thể chọn gửi thêm email bất đồng bộ tới CUSTOMER/EXPERT đang hoạt động và đã xác minh email. Thông báo chứa giá trị cũ/mới và thời điểm hiệu lực. Tỷ lệ overage có hiệu lực ngay; tỷ lệ VND/Credit và giới hạn nạp áp dụng đơn mới, còn đơn chờ giữ snapshot đến khi hết hạn. Grant Credit cần số lượng dương và lý do 10–500 ký tự, ghi vào AI Credit ledger theo FR-64, Credit không hết hạn và người nhận được thông báo. AI Assistant không được gọi chức năng quản trị.
 - **Acceptance Criteria:**
   - AC-65.1: Chỉ Admin được phép đọc/sửa cấu hình; mọi thao tác bị kiểm tra RBAC tại Backend.
-  - AC-65.2: Cấu hình khởi đầu Plus 99.000đ/300.000 token/tháng, Pro 199.000đ/600.000 token/tháng, model access theo BR-02; Admin sửa được cho lần mua/kích hoạt mới.
-  - AC-65.3: Admin sửa tỷ lệ tiền/Credit, Credit/token và giới hạn nạp; thay đổi overage có hiệu lực ngay, thông báo in-app; email broadcast là lựa chọn.
-  - AC-65.4: Thông báo thay đổi nêu tỷ lệ cũ/mới và thời điểm hiệu lực; đơn nạp đang chờ giữ quy đổi cũ.
-  - AC-65.5: Admin có thể cấp AI Credit hoặc gói AI cho đúng tài khoản và người nhận nhận được in-app notification.
-  - AC-65.6: Không cho mua lại cùng gói khi gói còn hạn; không hạ Pro xuống Plus khi Pro còn hạn; nâng Plus→Pro cần thanh toán đủ giá Pro, bắt đầu chu kỳ Pro mới và không hoàn phần Plus còn lại.
-  - AC-65.7: Hành động Admin không xuất hiện như tool có thể gọi qua AI Assistant.
+  - AC-65.2: Cấu hình khởi đầu là Free 0đ/50.000 token mỗi tháng, Plus 99.000đ/300.000 token mỗi tháng, Pro 199.000đ/600.000 token mỗi tháng; Admin sửa quota mọi tier và giá Plus/Pro. Free quota đổi giữa tháng chỉ hiệu lực từ chu kỳ sau; giá/quota Plus/Pro mới chỉ áp dụng lần mua/kích hoạt mới, chu kỳ đang chạy giữ snapshot.
+  - AC-65.3: Admin thêm/sửa/bật/tắt Gemini model, gán quyền và default theo tier. Guest dùng Free. Mỗi tier luôn có ít nhất một model đang bật và default hợp lệ; không lưu thay đổi làm vi phạm điều kiện này. Model ID mới phải được Gemini xác minh trước khi lưu; lỗi/ID không hỗ trợ thì không lưu model mới và giữ nguyên cấu hình trước đó.
+  - AC-65.4: Admin cấu hình tỷ lệ VND/Credit, Credit/token và min/max nạp; giá trị khởi đầu lần lượt là 1.000đ/1.000 Credit, 400 Credit/1.000 overage token và 10.000–500.000đ/lần. Overage đổi có hiệu lực ngay; tỷ lệ nạp và giới hạn áp dụng cho đơn mới; đơn chờ giữ snapshot cũ đến hết hạn.
+  - AC-65.5: Mọi thay đổi cấu hình thực tế gửi in-app notification cho CUSTOMER/EXPERT đang hoạt động; Admin có thể chọn email bất đồng bộ cho CUSTOMER/EXPERT đang hoạt động và xác minh email. Nội dung có giá trị cũ/mới và thời điểm hiệu lực.
+  - AC-65.6: Admin chỉ cấp AI Credit, không cấp gói. Grant yêu cầu Credit dương và lý do 10–500 ký tự, được ghi qua AI Credit ledger theo FR-64, không hết hạn và gửi in-app notification cho tài khoản nhận.
+  - AC-65.7: Không cho mua lại cùng gói khi gói còn hạn; không hạ Pro xuống Plus khi Pro còn hạn; nâng Plus→Pro cần thanh toán đủ giá Pro, bắt đầu chu kỳ Pro mới và không hoàn phần Plus còn lại.
+  - AC-65.8: Hành động Admin không xuất hiện như tool có thể gọi qua AI Assistant.
 
 ---
 

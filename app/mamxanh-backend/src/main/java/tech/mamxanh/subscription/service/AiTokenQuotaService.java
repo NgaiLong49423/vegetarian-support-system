@@ -23,26 +23,28 @@ import tech.mamxanh.subscription.entity.SubscriptionEntity;
 import tech.mamxanh.subscription.entity.SubscriptionStatus;
 import tech.mamxanh.subscription.entity.SubscriptionTier;
 import tech.mamxanh.subscription.repository.AiTokenUsageLedgerRepository;
+import tech.mamxanh.subscription.repository.AiConfigurationRepository;
 import tech.mamxanh.subscription.repository.SubscriptionRepository;
 
 /** Synchronous quota accounting; telemetry remains a separate operational stream. */
 @Service
 public class AiTokenQuotaService {
     public static final long GUEST_QUOTA = 20_000;
-    public static final long FREE_QUOTA = 50_000;
     private static final ZoneId FREE_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final long RETENTION_DAYS = 90;
 
     private final AiTokenUsageLedgerRepository ledger;
     private final SubscriptionRepository subscriptions;
     private final CurrentUserService users;
+    private final AiConfigurationRepository configuration;
     private final Clock clock;
 
     public AiTokenQuotaService(AiTokenUsageLedgerRepository ledger, SubscriptionRepository subscriptions,
-            CurrentUserService users, Clock clock) {
+            CurrentUserService users, AiConfigurationRepository configuration, Clock clock) {
         this.ledger = ledger;
         this.subscriptions = subscriptions;
         this.users = users;
+        this.configuration = configuration;
         this.clock = clock;
     }
 
@@ -62,6 +64,17 @@ public class AiTokenQuotaService {
         if (users.requireActiveMember().id() != userId) throw new AppException(ErrorCode.ACCESS_DENIED);
         Period period = currentPeriod(userId, null, clock.instant());
         long consumed = consumed(userId, null, period);
+        return new MyAiUsageResponse(period.tier(), consumed, period.limit(), Math.max(0, period.limit() - consumed),
+                period.start().atOffset(ZoneOffset.UTC).toInstant(), period.end().atOffset(ZoneOffset.UTC).toInstant());
+    }
+
+    @Transactional(readOnly = true)
+    public MyAiUsageResponse getGuestUsage(String guestSessionId) {
+        if (guestSessionId == null) throw new AppException(ErrorCode.VALIDATION_FAILED);
+        try { UUID.fromString(guestSessionId); }
+        catch (IllegalArgumentException exception) { throw new AppException(ErrorCode.VALIDATION_FAILED); }
+        Period period = currentPeriod(null, guestSessionId, clock.instant());
+        long consumed = consumed(null, guestSessionId, period);
         return new MyAiUsageResponse(period.tier(), consumed, period.limit(), Math.max(0, period.limit() - consumed),
                 period.start().atOffset(ZoneOffset.UTC).toInstant(), period.end().atOffset(ZoneOffset.UTC).toInstant());
     }
@@ -113,7 +126,7 @@ public class AiTokenQuotaService {
         LocalDate localDate = at.atZone(FREE_ZONE).toLocalDate();
         Instant start = localDate.withDayOfMonth(1).atStartOfDay(FREE_ZONE).toInstant();
         Instant end = localDate.withDayOfMonth(1).plusMonths(1).atStartOfDay(FREE_ZONE).toInstant();
-        return new Period("FREE", FREE_QUOTA, LocalDateTime.ofInstant(start, ZoneOffset.UTC),
+        return new Period("FREE", configuration.currentFreeQuota(at), LocalDateTime.ofInstant(start, ZoneOffset.UTC),
                 LocalDateTime.ofInstant(end, ZoneOffset.UTC));
     }
 

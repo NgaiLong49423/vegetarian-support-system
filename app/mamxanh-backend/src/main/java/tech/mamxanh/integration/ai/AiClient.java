@@ -18,7 +18,14 @@ public interface AiClient {
     /** Classifies the latest chat request without generating a user-facing answer. */
     ChatResult classifyChatScope(String systemInstruction, String prompt);
 
+    default ChatResult classifyChatScope(String modelId, String systemInstruction, String prompt) {
+        return classifyChatScope(systemInstruction, prompt);
+    }
+
     ChatResult answerChat(String systemInstruction, String prompt);
+    default ChatResult answerChat(String modelId, String systemInstruction, String prompt) {
+        return answerChat(systemInstruction, prompt);
+    }
     /** Selects an ordered sequence; IDs may repeat when the caller explicitly permits it. */
     default RecommendationResult recommendRecipeSequence(String prompt, List<Long> allowedRecipeIds, int slots) {
         return recommendRecipes(prompt, allowedRecipeIds, slots);

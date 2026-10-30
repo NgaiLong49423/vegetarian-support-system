@@ -23,7 +23,7 @@ public class TransactionAuditRepository {
             JOIN [USER] u ON u.user_id = p.user_id
             LEFT JOIN SUBSCRIPTION s ON s.subscription_id = p.subscription_id AND s.user_id = p.user_id
             """;
-    private static final String TIER = "COALESCE(s.tier, CASE p.amount_vnd WHEN "
+    private static final String TIER = "COALESCE(s.tier, p.subscription_tier, CASE p.amount_vnd WHEN "
             + SubscriptionTier.PLUS.priceVnd() + " THEN 'PLUS' WHEN " + SubscriptionTier.PRO.priceVnd() + " THEN 'PRO' END)";
     private static final String SELECT = """
             SELECT p.payment_transaction_id, p.order_code, p.user_id, u.display_name, u.email,

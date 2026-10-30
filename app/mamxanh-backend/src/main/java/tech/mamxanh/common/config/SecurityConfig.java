@@ -44,6 +44,7 @@ public class SecurityConfig {
 
     private static final String[] PUBLIC_GET_ENDPOINTS = {
             "/api/v1/subscriptions/plans",
+            "/api/v1/ai/chat-settings",
     };
 
     private static final String[] API_DOCS_ENDPOINTS = {

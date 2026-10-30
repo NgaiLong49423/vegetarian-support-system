@@ -56,6 +56,22 @@ class PaymentSettlementServiceTest {
         order.verify(users).findByIdForUpdate(1L);
         order.verify(payments).findByOrderCodeForUpdate("123");
     }
+    @Test void activatesConfiguredTierAndQuotaSnapshotFromTheOrder() {
+        payment = new PaymentTransactionEntity(1L, "123", 123456);
+        payment.setSubscriptionTier(SubscriptionTier.PLUS);
+        payment.setTokenQuotaSnapshot(345_678L);
+        existingOrder();
+        when(subscriptions.saveAndFlush(any())).thenAnswer(call -> {
+            SubscriptionEntity sub = call.getArgument(0); sub.setId(8L); return sub;
+        });
+
+        service.settle("123", 123456, PaymentStatus.PAID);
+
+        var activated = org.mockito.ArgumentCaptor.forClass(SubscriptionEntity.class);
+        verify(subscriptions).saveAndFlush(activated.capture());
+        assertThat(activated.getValue().getTier()).isEqualTo(SubscriptionTier.PLUS);
+        assertThat(activated.getValue().getTokenQuota()).isEqualTo(345_678L);
+    }
     @Test void duplicateDoesNotGrantAgainOrOverwritePaidAt() {
         existingOrder(); payment.setStatus(PaymentStatus.PAID); payment.setSubscriptionId(7L);
         var paidAt = LocalDateTime.now(clock).minusHours(1); payment.setPaidAt(paidAt);

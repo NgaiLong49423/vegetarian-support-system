@@ -50,7 +50,8 @@ public class PaymentResultService {
             payment = ownPayment(userId, orderCode);
         }
         var currentSubscription = subscriptionService.getMySubscription(userId);
-        var purchasedTier = PaymentSettlementService.tierForAmount(payment.getAmountVnd());
+        var purchasedTier = payment.getSubscriptionTier() == null
+                ? PaymentSettlementService.tierForAmount(payment.getAmountVnd()) : payment.getSubscriptionTier();
         boolean activated = payment.getStatus() == PaymentStatus.PAID && payment.getSubscriptionId() != null
                 && subscriptions.findById(payment.getSubscriptionId())
                 .filter(s -> s.getUserId().equals(userId) && s.getTier() == purchasedTier

@@ -42,6 +42,13 @@ public class PaymentTransactionEntity {
     private int amountVnd;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "subscription_tier", length = 10)
+    private SubscriptionTier subscriptionTier;
+
+    @Column(name = "token_quota_snapshot")
+    private Long tokenQuotaSnapshot;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private PaymentStatus status;
 

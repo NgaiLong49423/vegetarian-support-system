@@ -1,11 +1,23 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.33.0<br>
+> **Version:** v0.35.0<br>
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-30<br>
+> **Last Updated:** 2026-10-31<br>
 > **Status:** Active  
 
 # Database Workspace
+
+## Migration V34 — Snapshot gói trong đơn thanh toán
+
+`V34__subscription_order_plan_snapshot.sql` bổ sung tier và quota tại thời điểm tạo đơn. Giá đơn tiếp tục được lưu trong `amount_vnd`; webhook đối chiếu chính xác số tiền rồi kích hoạt tier/quota đã chụp, không suy tier từ giá có thể thay đổi. Đơn cũ được backfill từ Subscription đã mua hoặc mức giá pilot cũ.
+
+## Migration V33 — Cấu hình AI do Admin quản lý (Issue #212)
+
+`V33__admin_ai_configuration.sql` lưu giá và quota gói, catalog Gemini cùng quyền/default theo tier, và tỷ lệ AI Credit/top-up. Dữ liệu pilot được khởi tạo theo quyết định đã duyệt. Thay đổi quota Free được hẹn sang đầu tháng kế tiếp; chu kỳ Plus/Pro hiện tại không bị ghi đè. `database/schema.sql` đồng bộ DDL và dữ liệu khởi tạo của migration này. Không chỉnh ERD theo chính sách bảo vệ `docs/diagrams/`.
+
+## Migration V32 — Sổ usage token và snapshot quota (Issue #209)
+
+`V32__ai_token_quota_usage_ledger.sql` thêm `SUBSCRIPTION.token_quota` để giữ quota của chu kỳ đã kích hoạt và bảng `AI_TOKEN_USAGE_LEDGER` để tính quota đồng bộ theo từng event Gemini. Ledger giữ event ID idempotent, gắn với Member hoặc Guest session, ghi trạng thái usage thiếu/sai mà không ước lượng token và đặt thời điểm hết hạn sau chu kỳ. `database/schema.sql` chứa DDL tương ứng.
 
 ## Migration V31 — Telemetry AI thử nghiệm (FR-11 / Issue #17)
 
