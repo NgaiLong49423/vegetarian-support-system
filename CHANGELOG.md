@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-30 — Add AI Token Quota Tracking
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `0302a970`.
 
 **Scope:** Track Gemini token usage against Guest sessions and Member subscription periods, and show Members their current quota.
 
