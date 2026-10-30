@@ -50,7 +50,6 @@ class RecipeAiAssistanceServiceTest {
                 aiClient, new JsonMapper(), events, java.time.Clock.systemUTC());
         when(currentUserService.requireActiveExpert()).thenReturn(new CurrentUser(7L, Role.EXPERT));
         lenient().when(ingredientCatalog.findActiveIngredientsByIds(List.of(1L, 2L))).thenReturn(List.of(TOFU, TOMATO));
-        lenient().when(ingredientCatalog.findActiveIngredients("")).thenReturn(List.of(TOFU, TOMATO));
     }
 
     @Test
@@ -62,7 +61,7 @@ class RecipeAiAssistanceServiceTest {
 
         assertThat(result.content()).startsWith("1. Đun nóng chảo rồi đảo đều đến khi mềm. (Đậu phụ, Cà chua)\n");
         assertThat(result.content().lines()).hasSize(6);
-        verify(entitlementService).requirePro(7L);
+        verify(entitlementService).requirePlusOrPro(7L);
         org.mockito.ArgumentCaptor<tech.mamxanh.integration.ai.AiUsageEvent> telemetry =
                 org.mockito.ArgumentCaptor.forClass(tech.mamxanh.integration.ai.AiUsageEvent.class);
         verify(events).publishEvent(telemetry.capture());
@@ -71,12 +70,10 @@ class RecipeAiAssistanceServiceTest {
     }
 
     @Test
-    void instructionsWithSelectedSoySauceDoNotIntroduceUnselectedWater() {
+    void selectedSoySauceInstructionsCanMentionWater() {
         var soySauce = ingredient(3L, "Nước tương");
         when(ingredientCatalog.findActiveIngredientsByIds(List.of(1L, 2L, 3L)))
                 .thenReturn(List.of(TOFU, TOMATO, soySauce));
-        when(ingredientCatalog.findActiveIngredients(""))
-                .thenReturn(List.of(TOFU, TOMATO, soySauce, ingredient(4L, "Nước")));
         when(aiClient.generateRecipeContent(anyString(), anyList())).thenReturn(new AiClient.RecommendationResult(generatedInstructions(
                 "Cho nước tương vào nồi, kho đến khi nước sốt sánh lại.", List.of(1L, 2L, 3L)), 150, 300, 450));
         var withSoySauce = new RecipeAiAssistanceRequest(ContentType.INSTRUCTIONS, "Đậu phụ kho cà chua",
@@ -92,31 +89,32 @@ class RecipeAiAssistanceServiceTest {
     }
 
     @Test
-    void rejectsIngredientIdNotSuppliedByAuthor() {
-        when(aiClient.generateRecipeContent(anyString(), anyList())).thenReturn(new tech.mamxanh.integration.ai.AiClient.RecommendationResult("""
-                {"description":"Món ngon.","steps":[{"text":"Nấu thật ngon món ăn này.","ingredientIds":[99]}]}
-                """, 150, 300, 450));
+    void unknownGeneratedIngredientIdsDoNotRejectInstructionText() {
+        when(aiClient.generateRecipeContent(anyString(), anyList())).thenReturn(new AiClient.RecommendationResult(
+                generatedInstructions("Nấu thật ngon món ăn này.", List.of(99L)), 150, 300, 450));
 
-        assertThatThrownBy(() -> service.generate(request(ContentType.INSTRUCTIONS)))
-                .isInstanceOf(AppException.class)
-                .extracting(error -> ((AppException) error).errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_INVALID);
+        var result = service.generate(request(ContentType.INSTRUCTIONS));
+
+        assertThat(result.content()).contains("Nấu thật ngon món ăn này.");
+        assertThat(result.content()).doesNotContain("(Đậu phụ", "(Cà chua");
+        assertThat(result.content().lines()).hasSize(6);
     }
 
     @Test
-    void rejectsUnselectedCatalogIngredientMentionedInGeneratedText() {
+    void allowsAdditionalIngredientMentionedInGeneratedText() {
         when(aiClient.generateRecipeContent(anyString(), anyList())).thenReturn(new AiClient.RecommendationResult(generatedInstructions(
                 "Thêm nấm và đảo đều.", List.of(1L)), 150, 300, 450));
-        when(ingredientCatalog.findActiveIngredients("")).thenReturn(List.of(TOFU, TOMATO, ingredient(3L, "Nấm")));
 
-        assertThatThrownBy(() -> service.generate(request(ContentType.INSTRUCTIONS)))
-                .isInstanceOf(AppException.class)
-                .extracting(error -> ((AppException) error).errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_INVALID);
+        var result = service.generate(request(ContentType.INSTRUCTIONS));
+
+        assertThat(result.content()).contains("Thêm nấm và đảo đều.");
+        assertThat(result.content().lines()).hasSize(6);
     }
 
     @Test
     void blocksProviderWhenEntitlementIsDenied() {
         org.mockito.Mockito.doThrow(new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED))
-                .when(entitlementService).requirePro(anyLong());
+                .when(entitlementService).requirePlusOrPro(anyLong());
 
         assertThatThrownBy(() -> service.generate(request(ContentType.INSTRUCTIONS)))
                 .isInstanceOf(AppException.class);

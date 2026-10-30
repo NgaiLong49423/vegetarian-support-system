@@ -4,10 +4,10 @@ import java.util.List;
 
 public interface AiClient {
     int MAX_CHAT_ANSWER_LENGTH = 8_000;
-    String generateRecipeText(String prompt, List<Long> allowedIngredientIds);
+    String generateRecipeText(String prompt, List<Long> enteredIngredientIds);
 
-    default RecommendationResult generateRecipeContent(String prompt, List<Long> allowedIngredientIds) {
-        return new RecommendationResult(generateRecipeText(prompt, allowedIngredientIds), null, null, null);
+    default RecommendationResult generateRecipeContent(String prompt, List<Long> enteredIngredientIds) {
+        return new RecommendationResult(generateRecipeText(prompt, enteredIngredientIds), null, null, null);
     }
 
     RecommendationResult recommendRecipes(String prompt, List<Long> allowedRecipeIds, int limit);

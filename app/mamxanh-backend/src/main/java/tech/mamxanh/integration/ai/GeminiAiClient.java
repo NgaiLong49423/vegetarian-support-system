@@ -56,12 +56,15 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
     }
 
     @Override
-    public String generateRecipeText(String prompt, List<Long> allowedIngredientIds) {
-        return generateRecipeContent(prompt, allowedIngredientIds).json();
+    public String generateRecipeText(String prompt, List<Long> enteredIngredientIds) {
+        return generateRecipeContent(prompt, enteredIngredientIds).json();
     }
 
     @Override
-    public RecommendationResult generateRecipeContent(String prompt, List<Long> allowedIngredientIds) {
+    public RecommendationResult generateRecipeContent(String prompt, List<Long> enteredIngredientIds) {
+        if (client == null) {
+            throw new AiProviderException("Gemini is not configured");
+        }
         Schema textSchema = Schema.builder().type(Type.Known.STRING).build();
         Schema ingredientIdsSchema = Schema.builder().type(Type.Known.ARRAY)
                 .items(Schema.builder().type(Type.Known.INTEGER)).build();
@@ -80,7 +83,7 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                 .build();
         return request("RECIPE_TEXT", "Gemini request failed", () -> {
             var response = client.models.generateContent(MODEL,
-                    prompt + "\nAllowed ingredient IDs: " + allowedIngredientIds, config);
+                    prompt + "\nIngredient IDs entered by the author: " + enteredIngredientIds, config);
             String finishReason = response.candidates().orElse(List.of()).stream().findFirst()
                     .flatMap(candidate -> candidate.finishReason()).map(Object::toString).orElse("STOP");
             if (!"STOP".equals(finishReason)) throw AiProviderException.invalidResponse("Gemini recipe output is incomplete");

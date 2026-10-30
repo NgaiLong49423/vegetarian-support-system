@@ -73,7 +73,7 @@ public class ExpertApplicationController {
     @PreAuthorize("hasRole('ADMIN')")
     public PageResponse<ExpertApplicationResponse> list(@RequestParam(required=false) String status,
             @RequestParam(defaultValue="0") @Min(0) @Max(1000000) int page, @RequestParam(defaultValue="20") @Min(1) @Max(100) int size) {
-        if (status != null && !status.isBlank() && !status.matches("PENDING|APPROVED|REJECTED")) throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST);
+        if (status != null && !status.isBlank() && !status.matches("PENDING|APPROVED|REJECTED|CANCELLED")) throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST);
         return service.adminList(status, page, size);
     }
 

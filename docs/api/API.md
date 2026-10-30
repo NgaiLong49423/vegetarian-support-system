@@ -2,7 +2,7 @@
 > **File:** `docs/api/API.md`
 > **Version:** v0.51.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-29
+> **Last Updated:** 2026-10-30
 > **Status:** Active
 
 # API Integration Guide
@@ -396,11 +396,11 @@ Dùng `GET /api/v1/recipes/form-options` để lấy mã/nhãn loại ăn chay v
 
 ## 11. AI hỗ trợ soạn Recipe Post — FR-21
 
-`POST /api/v1/recipes/ai-assistance` yêu cầu Bearer token của Expert đang hoạt động và gói Pro còn hiệu lực. Backend xác thực entitlement trước khi gọi Gemini. Generated OpenAPI runtime là hợp đồng chi tiết cho request/response và các lỗi.
+`POST /api/v1/recipes/ai-assistance` yêu cầu Bearer token của Expert đang hoạt động và gói Plus hoặc Pro còn hiệu lực. Backend xác thực entitlement trước khi gọi Gemini. Generated OpenAPI runtime là hợp đồng chi tiết cho request/response và các lỗi.
 
-Request chọn `contentType` là `DESCRIPTION` hoặc `INSTRUCTIONS`, gửi tiêu đề, mã danh mục, loại ăn chay, khẩu phần và các dòng nguyên liệu gồm `ingredientId`, `unitId`, `quantity`. Backend đối chiếu ingredient ID với danh mục đang hoạt động, yêu cầu Gemini trả các bước có cấu trúc và chỉ chấp nhận ingredient ID trong request. Nội dung không hợp lệ hoặc nhắc tên nguyên liệu có trong danh mục nhưng không được chọn bị từ chối.
+Request chọn `contentType` là `DESCRIPTION` hoặc `INSTRUCTIONS`, gửi tiêu đề, mã danh mục, loại ăn chay, khẩu phần và các dòng nguyên liệu gồm `ingredientId`, `unitId`, `quantity`. Backend đối chiếu ingredient ID đầu vào với danh mục đang hoạt động, rồi hướng prompt để Gemini ưu tiên nguyên liệu tác giả đã nhập. Nội dung có thể gợi ý thêm nguyên liệu để tác giả rà soát/chỉnh sửa; Backend không từ chối chỉ vì nội dung nhắc thêm nguyên liệu. Với hướng dẫn, ingredient ID dùng để hiển thị tên nguyên liệu đã nhập; nguyên liệu gợi ý thêm được nêu trong text.
 
-Response trả `contentType` và `content` để Frontend điền trực tiếp vào trường có thể chỉnh sửa. API không tạo RecipePost hoặc bản nháp; chỉ thao tác đăng/lưu hiện có mới ghi công thức sau khi tác giả chủ động xác nhận. Free, Plus, hết hạn hoặc thiếu subscription nhận `403 AI_SUBSCRIPTION_REQUIRED` trước khi provider được gọi. Gemini thiếu cấu hình/lỗi nhận `503 AI_PROVIDER_UNAVAILABLE`; kết quả sai định dạng/giới hạn nhận `502 AI_RESPONSE_INVALID`. Các lỗi không ngăn tác giả tự nhập và đăng theo validation hiện hành.
+Response trả `contentType` và `content` để Frontend điền trực tiếp vào trường có thể chỉnh sửa. API không tạo RecipePost hoặc bản nháp; chỉ thao tác đăng/lưu hiện có mới ghi công thức sau khi tác giả rà soát và chủ động xác nhận. Free, hết hạn hoặc thiếu subscription nhận `403 AI_SUBSCRIPTION_REQUIRED` trước khi provider được gọi. Gemini thiếu cấu hình/lỗi nhận `503 AI_PROVIDER_UNAVAILABLE`; kết quả sai định dạng hoặc vượt giới hạn cấu trúc nhận `502 AI_RESPONSE_INVALID`. Các lỗi không ngăn tác giả tự nhập và đăng theo validation hiện hành; công thức sau khi đăng tiếp tục theo cơ chế hậu kiểm hiện hành.
 
 Backend gọi model cố định `gemini-3.8-flash` qua Google Gen AI Java SDK; khóa chỉ được đọc từ `GEMINI_API_KEY` ở Backend. Không gửi API key xuống Frontend. Không ghi prompt thô vào log.
 
@@ -503,11 +503,11 @@ SDK Gemini tắt retry nội bộ (một attempt mỗi lần gọi HTTP). Toàn 
 
 ### Quy ước lỗi entitlement — FR-10
 
-Chatbot áp dụng cùng ranh giới tính năng: yêu cầu rõ ràng lập thực đơn tuần kiểm tra Plus hoặc Pro; hỗ trợ viết mô tả/bước làm cho Recipe Post kiểm tra Expert cùng Pro. Việc điều hướng không gọi Gemini: Guest nhận 401, Member thiếu gói nhận 403 `AI_SUBSCRIPTION_REQUIRED` với `requiredTier` và `upgradeUrl`, tài khoản đủ quyền nhận response 200 cùng `workflowUrl` nội bộ (`/ke-hoach?view=for-you` hoặc `/dang-cong-thuc`). Đây chỉ là hướng dẫn tới chức năng sở hữu workflow, không phải kết quả AI hoặc bằng chứng đã kiểm tra xong hồ sơ/chấp nhận áp dụng. Hỏi đáp chung và yêu cầu viết/biến tấu bản nháp công thức trong phạm vi FR-51 vẫn được giữ.
+Chatbot áp dụng cùng ranh giới tính năng: yêu cầu rõ ràng lập thực đơn tuần kiểm tra Plus hoặc Pro; hỗ trợ viết mô tả/bước làm cho Recipe Post kiểm tra Expert cùng Plus hoặc Pro. Việc điều hướng không gọi Gemini: Guest nhận 401, Member thiếu gói nhận 403 `AI_SUBSCRIPTION_REQUIRED` với `requiredTier` và `upgradeUrl`, tài khoản đủ quyền nhận response 200 cùng `workflowUrl` nội bộ (`/ke-hoach?view=for-you` hoặc `/dang-cong-thuc`). Đây chỉ là hướng dẫn tới chức năng sở hữu workflow, không phải kết quả AI hoặc bằng chứng đã kiểm tra xong hồ sơ/chấp nhận áp dụng. Hỏi đáp chung và yêu cầu viết/biến tấu bản nháp công thức trong phạm vi FR-51 vẫn được giữ.
 
 `history[].recommendedRecipeIds` là field tùy chọn, tối đa bốn số nguyên dương, chỉ thuộc lượt ASSISTANT. FE gửi ID của các thẻ đã hiển thị, không tự thêm danh sách vào lượt USER. Backend xem đây là gợi ý loại trừ không đáng tin cậy khi yêu cầu món khác; không dùng ID này để cấp quyền, tải nội dung riêng hoặc xác thực công thức còn công khai. Tìm món tiếp nhận diện ngữ cảnh câu hỏi, lọc thể loại trước phân trang và kiểm tra tối đa bốn trang 50 bài để lấy tối đa 50 ứng viên hợp lệ. Thẻ kết quả được kiểm tra lại theo trạng thái hiện tại; thông báo rỗng chỉ nói về phần danh mục đã kiểm tra ở lượt này. Client cũ bỏ qua hai field tùy chọn vẫn gửi được request cũ, nhưng không có đủ ID thẻ để tránh lặp chính xác.
 
-Các guard hiện có vẫn dùng `403 AI_SUBSCRIPTION_REQUIRED`. ProblemDetail bổ sung `requiredTier` (`PLUS` hoặc `PRO`) và `upgradeUrl` (`/goi-ai`); `detail` hướng dẫn đúng gói tối thiểu. Pro cho FR-21 vẫn đồng thời yêu cầu vai trò Expert. FR-47 (AI gợi ý món liên quan/biến tấu) và AI đề xuất điều chỉnh dinh dưỡng FR-37 tiếp tục yêu cầu Pro. Plus/Pro cho FR-36 vẫn yêu cầu eligibility và hồ sơ hợp lệ. Frontend giữ lại `requiredTier` khi chuẩn hóa lỗi và hiển thị đúng tên gói AI PLUS hoặc PRO trong cả thông báo lẫn liên kết nâng cấp. Không dùng lời nhắc “Plus hoặc Pro” ở lỗi thiếu quyền tính năng. Nếu response cũ thiếu metadata, giao diện dùng mức tối thiểu đã xác định của chức năng. Backend quyết định quyền từ Subscription đang hiệu lực, không từ thông tin gói do client khai. Preview và apply menu tuần kiểm tra lại Plus hoặc Pro ở từng bước; lỗi không đổi Subscription hoặc gọi Gemini. Nội dung tính toán dinh dưỡng/gợi ý thông thường không bị đưa vào paywall bởi thay đổi này.
+Các guard hiện có vẫn dùng `403 AI_SUBSCRIPTION_REQUIRED`. ProblemDetail bổ sung `requiredTier` (`PLUS` hoặc `PRO`) và `upgradeUrl` (`/goi-ai`); `detail` hướng dẫn đúng gói tối thiểu. FR-21 yêu cầu vai trò Expert cùng gói Plus hoặc Pro. FR-47 (AI gợi ý món liên quan/biến tấu) và AI đề xuất điều chỉnh dinh dưỡng FR-37 tiếp tục yêu cầu Pro. Plus/Pro cho FR-36 vẫn yêu cầu eligibility và hồ sơ hợp lệ. Frontend giữ lại `requiredTier` khi chuẩn hóa lỗi và hiển thị đúng tên gói AI PLUS hoặc PRO trong cả thông báo lẫn liên kết nâng cấp. Không dùng lời nhắc “Plus hoặc Pro” ở lỗi thiếu quyền tính năng. Nếu response cũ thiếu metadata, giao diện dùng mức tối thiểu đã xác định của chức năng. Backend quyết định quyền từ Subscription đang hiệu lực, không từ thông tin gói do client khai. Preview và apply menu tuần kiểm tra lại Plus hoặc Pro ở từng bước; lỗi không đổi Subscription hoặc gọi Gemini. Nội dung tính toán dinh dưỡng/gợi ý thông thường không bị đưa vào paywall bởi thay đổi này.
 
 `GET /api/v1/subscriptions/my-subscription` hiển thị quyền trả phí theo cùng cửa sổ `starts_at <= now < ends_at` với guard AI. Gói bắt đầu trong tương lai chưa mở tính năng: response dùng Free hiện tại và giữ nguyên bản ghi gói tương lai; không tự hủy hoặc đánh dấu gói tương lai là hết hạn.
 
