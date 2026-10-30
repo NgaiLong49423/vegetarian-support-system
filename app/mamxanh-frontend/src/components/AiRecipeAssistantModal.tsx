@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from './AuthContext';
+import { subscriptionApi, type MySubscriptionResponse } from '../api/subscription';
 import {
   Sparkles,
   ArrowDownToLine,
@@ -44,6 +47,7 @@ interface AiRecipeAssistantModalProps {
   onClose: () => void;
   options: RecipeFormOptions | null;
   onApplyRecipe: (recipe: GeneratedRecipeData) => void;
+  isPro?: boolean;
 }
 
 // Bảng phân bổ 3 buổi ăn chính + bữa phụ theo khuyến nghị dinh dưỡng (chuẩn 2.000 kcal/ngày)
@@ -303,7 +307,44 @@ export function AiRecipeAssistantModal({
   onClose,
   options: _options,
   onApplyRecipe,
+  isPro,
 }: AiRecipeAssistantModalProps) {
+  const { account } = useAuth();
+  const [internalSubscription, setInternalSubscription] = useState<MySubscriptionResponse | null>(null);
+  const [entitlementError, setEntitlementError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof isPro === 'boolean') return;
+    let active = true;
+    subscriptionApi.getMySubscription()
+      .then((sub) => {
+        if (active) setInternalSubscription(sub);
+      })
+      .catch(() => {
+        if (active) setInternalSubscription(null);
+      });
+    return () => { active = false; };
+  }, [isPro, open]);
+
+  const isDemoPro = account?.email === 'demo-expert@mamxanh.local';
+  const effectiveIsPro = typeof isPro === 'boolean'
+    ? isPro
+    : (internalSubscription
+        ? internalSubscription.status === 'ACTIVE' && internalSubscription.tier === 'PRO'
+        : isDemoPro);
+
+  useEffect(() => {
+    if (!open) {
+      setEntitlementError(null);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!effectiveIsPro) {
+      setGeneratedResult(null);
+    }
+  }, [effectiveIsPro]);
+
   const [selectedMeal, setSelectedMeal] = useState<MealSession>('BREAKFAST');
   const [dishIdea, setDishIdea] = useState('Xào cà chua với trứng');
   const [rawIngredients, setRawIngredients] = useState('cà chua, trứng gà, hành lá, dầu thực vật, gia vị chay');
@@ -332,6 +373,11 @@ export function AiRecipeAssistantModal({
 
   // Thuật toán AI phân giải nguyên liệu & tối ưu hóa calo chuẩn xác cao
   const generateRecipe = () => {
+    if (!effectiveIsPro) {
+      setEntitlementError('Tính năng Trợ lý AI phân tích nguyên liệu & gợi ý định lượng yêu cầu gói AI PRO còn hiệu lực. Hãy nâng cấp lên gói AI PRO để tiếp tục.');
+      return;
+    }
+    setEntitlementError(null);
     setIsGenerating(true);
 
     setTimeout(() => {
@@ -663,6 +709,10 @@ export function AiRecipeAssistantModal({
     : null;
 
   const handleApply = () => {
+    if (!effectiveIsPro) {
+      setEntitlementError('Tính năng Trợ lý AI phân tích nguyên liệu & gợi ý định lượng yêu cầu gói AI PRO còn hiệu lực. Hãy nâng cấp lên gói AI PRO để tiếp tục.');
+      return;
+    }
     if (generatedResult) {
       onApplyRecipe(generatedResult);
       onClose();
@@ -672,6 +722,32 @@ export function AiRecipeAssistantModal({
   return (
     <Modal open={open} onClose={onClose} title="Trợ lý AI đồng hành cùng Chuyên gia ẩm thực" size="lg">
       <div className="space-y-5">
+        {!effectiveIsPro && (
+          <div
+            role="alert"
+            className="flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 shadow-sm dark:border-amber-700 dark:bg-amber-950/60 dark:text-amber-100"
+          >
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+            <div className="flex-1 space-y-1">
+              <p className="font-bold text-amber-950 dark:text-amber-200">
+                Tính năng Trợ lý AI yêu cầu gói AI PRO còn hiệu lực
+              </p>
+              <p className="text-xs text-amber-900/90 dark:text-amber-100/90">
+                Trợ lý AI phân tích nguyên liệu, gợi ý định lượng chuẩn và tối ưu hóa calo là tính năng cao cấp dành riêng cho Chuyên gia sở hữu gói AI PRO. Tài khoản của bạn hiện chưa kích hoạt gói PRO.
+              </p>
+              <div className="pt-1.5">
+                <Link
+                  to="/goi-ai"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-md hover:from-amber-600 hover:to-orange-700 transition"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Nâng cấp lên gói AI PRO
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Lời dẫn & Tuyên bố miễn trừ chuyên môn: Không khẳng định AI luôn đúng, tôn trọng chuyên môn chuyên gia */}
         <div className="flex items-start gap-2.5 rounded-xl border border-amber-300 bg-amber-50 p-3.5 text-xs leading-relaxed text-amber-950 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-100">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
@@ -836,15 +912,40 @@ export function AiRecipeAssistantModal({
         </div>
 
         {/* Nút kích hoạt AI phân tích & tối ưu calo */}
-        <div className="flex justify-end pt-1">
+        <div className="flex flex-col items-end gap-2 pt-1">
+          {entitlementError && (
+            <div role="alert" className="w-full flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-red-600" />
+                <span>{entitlementError}</span>
+              </div>
+              <Link to="/goi-ai" className="font-bold underline text-red-900 hover:text-red-700 shrink-0 ml-2">
+                Nâng cấp gói PRO
+              </Link>
+            </div>
+          )}
           <Button
             type="button"
-            onClick={generateRecipe}
-            disabled={isGenerating || !rawIngredients.trim()}
-            className="flex items-center gap-2 bg-gradient-to-r from-brand-600 to-amber-600 hover:from-brand-700 hover:to-amber-700 text-white font-bold px-4 py-2.5 rounded-xl shadow-sm"
+            onClick={() => {
+              if (!effectiveIsPro) {
+                setEntitlementError('Tính năng Trợ lý AI phân tích nguyên liệu & gợi ý định lượng yêu cầu gói AI PRO còn hiệu lực. Hãy nâng cấp lên gói AI PRO để tiếp tục.');
+                return;
+              }
+              generateRecipe();
+            }}
+            disabled={isGenerating || !rawIngredients.trim() || !effectiveIsPro}
+            className={`flex items-center gap-2 font-bold px-4 py-2.5 rounded-xl shadow-sm transition ${
+              !effectiveIsPro
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400'
+                : 'bg-gradient-to-r from-brand-600 to-amber-600 hover:from-brand-700 hover:to-amber-700 text-white'
+            }`}
           >
             <Sparkles className="h-4 w-4" />
-            {isGenerating ? 'Đang giải bài toán định lượng calo...' : 'Phân tích nguyên liệu & gợi ý định lượng'}
+            {!effectiveIsPro
+              ? 'Yêu cầu gói AI PRO để phân tích'
+              : isGenerating
+                ? 'Đang giải bài toán định lượng calo...'
+                : 'Phân tích nguyên liệu & gợi ý định lượng'}
           </Button>
         </div>
 
@@ -888,13 +989,13 @@ export function AiRecipeAssistantModal({
 
             {/* BẢNG 2 THỨ CỐT LÕI: NGUYÊN LIỆU & ĐỊNH LƯỢNG */}
             <div>
-              <div className="mb-2 flex items-center justify-between">
+              <div className="mb-2.5 space-y-1">
                 <h4 className="text-xs font-extrabold uppercase text-ink flex items-center gap-1.5">
                   <Utensils className="h-4 w-4 text-brand-600" /> 2 Yếu tố cốt lõi: Nguyên liệu & Định lượng chuẩn xác
                 </h4>
-                <span className="text-[11px] text-ink-muted">
+                <div className="text-[11px] text-ink-muted">
                   Tổng calo: <strong className="text-brand-700 font-bold">{generatedResult.totalCalories} kcal</strong> / Mục tiêu: {generatedResult.targetCaloriesPerServing * generatedResult.servings} kcal
-                </span>
+                </div>
               </div>
 
               <div className="overflow-hidden rounded-xl border border-brand-200">
@@ -925,7 +1026,7 @@ export function AiRecipeAssistantModal({
                               aria-label={`Định lượng ${item.name}`}
                               className="w-20 rounded-lg border border-brand-300 bg-paper px-2 py-1 text-right text-xs font-bold text-brand-800 outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-200"
                             />
-                            <span className="text-[11px] font-medium text-ink-muted">{item.unitCode}</span>
+                            <span className="w-8 text-left text-[11px] font-medium text-ink-muted shrink-0">{item.unitCode}</span>
                           </div>
                         </td>
                         <td className="p-3 text-right font-medium text-ink-soft">

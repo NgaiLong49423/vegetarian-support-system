@@ -13,6 +13,7 @@ import type { UserRole } from '../types';
 import { RecipeImageUploader, type ImageItem } from '../components/RecipeImageUploader';
 import { RecipeAiAssistance } from '../components/RecipeAiAssistance';
 import type { RecipeAiContentType } from '../api/recipes';
+import { subscriptionApi } from '../api/subscription';
 import { AiRecipeAssistantModal, type GeneratedRecipeData } from '../components/AiRecipeAssistantModal';
 import { assessRecipeDifficulty } from '../utils/difficultyCalculator';
 
@@ -117,6 +118,24 @@ function CreateRecipeForm() {
   const [aiError, setAiError] = useState<{ contentType: RecipeAiContentType; message: string; upgradeRequired?: boolean; requiredTier?: AiPaidTier } | null>(null);
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [aiNotice, setAiNotice] = useState<string | null>(null);
+  const { account } = useAuth();
+  const [isPro, setIsPro] = useState<boolean>(() => account?.email === 'demo-expert@mamxanh.local');
+
+  useEffect(() => {
+    let active = true;
+    subscriptionApi.getMySubscription()
+      .then((sub) => {
+        if (!active) return;
+        setIsPro(sub.status === 'ACTIVE' && sub.tier === 'PRO');
+      })
+      .catch(() => {
+        if (!active) return;
+        setIsPro(account?.email === 'demo-expert@mamxanh.local');
+      });
+    return () => {
+      active = false;
+    };
+  }, [account?.email]);
   const navigate = useNavigate();
 
   const suggestedDifficulty = assessRecipeDifficulty({
@@ -550,6 +569,7 @@ function CreateRecipeForm() {
         onClose={() => setAiModalOpen(false)}
         options={options}
         onApplyRecipe={handleApplyAiRecipe}
+        isPro={isPro}
       />
     </PageContainer>
   );
