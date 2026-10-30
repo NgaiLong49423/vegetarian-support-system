@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.126.0
+> **Version:** v2.127.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-30
 > **Status:** Active
@@ -100,6 +100,24 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Changed
 
 - Document the new Expert demo collection and local seed behavior.
+
+### Fixed
+
+- None.
+
+## 2026-10-28 — Remove Semicolons from the Recipe Comparison Text ([PR #195](https://github.com/NgaiLong49423/vegetarian-support-system/pull/195))
+
+**Status:** Committed — `f7abbe11`.
+
+**Scope:** Apply the lecturer's feedback that text shown on the website does not use semicolons to the FR-60 recipe comparison page.
+
+### Added
+
+- Add a Playwright check that the text on the comparison page contains no semicolon.
+
+### Changed
+
+- Split the three comparison notes joined by a semicolon (ingredient alignment, nutrition difference and estimate disclaimer) into separate sentences without changing their meaning.
 
 ### Fixed
 
