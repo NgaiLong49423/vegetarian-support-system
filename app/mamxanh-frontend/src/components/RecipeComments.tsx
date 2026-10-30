@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { LoaderCircle, MessageCircle } from 'lucide-react';
 import {
   commentsApi,
@@ -50,6 +50,9 @@ export function RecipeComments({ recipeId, className = 'w-full' }: { recipeId: n
   const [totalPages, setTotalPages] = useState(0);
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [loadingMore, setLoadingMore] = useState(false);
+  const { hash } = useLocation();
+  const linkedId = /^#comment-(\d+)$/.exec(hash)?.[1];
+  const [highlighted, setHighlighted] = useState<number | null>(null);
   const [body, setBody] = useState('');
   const [replyTo, setReplyTo] = useState<RecipeComment | null>(null);
   const [editing, setEditing] = useState<RecipeComment | null>(null);
@@ -89,6 +92,20 @@ export function RecipeComments({ recipeId, className = 'w-full' }: { recipeId: n
   }, [load]);
 
   useEffect(() => { loadFirstPage(); }, [loadFirstPage]);
+
+  // FR-49 notification links open `#comment-{id}`: load further pages until that comment is shown, then focus it.
+  useEffect(() => {
+    if (!linkedId || loadState !== 'ready' || loadingMore || highlighted === Number(linkedId)) return;
+    const element = document.getElementById(`comment-${linkedId}`);
+    if (element) {
+      setHighlighted(Number(linkedId));
+      element.scrollIntoView({ block: 'center' });
+      element.focus({ preventScroll: true });
+    } else if (page + 1 < totalPages) {
+      setLoadingMore(true);
+      load(page + 1).finally(() => setLoadingMore(false));
+    }
+  }, [linkedId, loadState, loadingMore, highlighted, page, totalPages, threads, load]);
 
   const loadMore = () => {
     setLoadingMore(true);
@@ -159,8 +176,11 @@ export function RecipeComments({ recipeId, className = 'w-full' }: { recipeId: n
     return (
       <article
         key={comment.commentId}
+        id={`comment-${comment.commentId}`}
+        tabIndex={-1}
         aria-label={comment.deleted ? 'Bình luận đã xóa' : `Bình luận của ${comment.author?.displayName ?? ''}`}
-        className={`border-l border-brand-100 py-3 pl-3 ${comment.depth > 1 ? 'ml-2 sm:ml-6' : ''}`}
+        className={`scroll-mt-24 border-l py-3 pl-3 outline-none ${comment.depth > 1 ? 'ml-2 sm:ml-6' : ''} ${
+          highlighted === comment.commentId ? 'rounded-r-xl border-brand-500 bg-brand-50' : 'border-brand-100'}`}
       >
         <div className="flex gap-3">
           {comment.author?.avatarUrl

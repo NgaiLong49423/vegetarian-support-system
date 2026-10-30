@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.129.0
+> **Version:** v2.130.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-30
 > **Status:** Active
@@ -746,6 +746,26 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Reject unfinished recipe provider responses and preserve the documented 502 invalid-response mapping (BUG-067).
 - Redact chat request, history-turn and response diagnostic representations while preserving their JSON payloads; port the privacy correction recorded as BUG-076 on the FR-11 branch.
 
+## 2026-10-24 — Notify Members of Replies In-App and by Email (Issue #51)
+
+**Status:** Committed — `a0157f9`, `1386e6e`, `1338052`, `c1237af`, `9294dcd`.
+
+**Scope:** Deliver the FR-49 parts that do not depend on the report-handling workflow (Issue #33): reply notifications (AC-49.1), best-effort reply emails (AC-49.2, AC-49.3), the notification center and read state (UC-49.1, UC-49.2) and the reply email preference (UC-49.4). Moderation-outcome notifications (AC-49.4) were completed by the report-handling workflow.
+
+### Added
+
+- Create a `COMMENT_REPLY` notification for the author of the answered comment in the same transaction as the reply; root comments and replies to one's own comment create none, and a reply to a level-5 comment notifies that comment's author although it is stored under the level-4 parent.
+- Send the reply email after commit on an async thread when `USER.reply_email_enabled` is on and the account is active and verified; a delivery failure is logged without the address and keeps the reply and its notification.
+- Add owner-scoped endpoints `GET /api/v1/me/notifications`, `GET /api/v1/me/notifications/unread-count`, `PUT /api/v1/me/notifications/{notificationId}/read`, `PUT /api/v1/me/notifications/read-all` and `GET`/`PUT /api/v1/me/notification-preferences`, with `404 NOTIFICATION_NOT_FOUND` for another user's notification.
+- Add the header bell with the unread count, the `/thong-bao` notification center with an unread filter, paging and "mark all read", and the reply email switch in profile settings.
+- Add SQL Server integration tests for every Acceptance Criterion above and Playwright tests for the bell, center, deep link and preference.
+
+### Changed
+
+- Give each recipe comment a `comment-{id}` anchor; a notification link loads further comment pages until the reply is shown and focuses it.
+- Document the endpoints in `docs/api/API.md` section 23 and the Backend and Frontend READMEs; no migration is needed because `USER.reply_email_enabled` exists since V1.
+- Split the email notification note in profile settings into two sentences instead of joining them with a semicolon.
+- Split the closing sentence of the reply email in two instead of joining them with a semicolon, and check the email text in the reply email test.
 ## 2026-10-24 — Refine Shopping List Workflow ([PR #185](https://github.com/NgaiLong49423/vegetarian-support-system/pull/185))
 
 **Status:** Committed — `c4822f9`.
