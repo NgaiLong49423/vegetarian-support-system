@@ -130,7 +130,7 @@ class RelatedRecipeIntegrationTest extends AbstractIntegrationTest {
     void guestFreeExpiredAndAdminNeverReachProvider() throws Exception {
         mockMvc.perform(post(path() + "/ai")).andExpect(status().isUnauthorized());
         mockMvc.perform(post(path() + "/ai").with(principal())).andExpect(status().isForbidden());
-        paid("PLUS");
+        paid("PRO");
         jdbc.update("UPDATE [SUBSCRIPTION] SET ends_at='2026-01-02' WHERE user_id=?", member);
         mockMvc.perform(post(path() + "/ai").with(principal())).andExpect(status().isForbidden());
         jdbc.update("UPDATE [USER] SET role='ADMIN' WHERE user_id=?", member);
@@ -138,13 +138,24 @@ class RelatedRecipeIntegrationTest extends AbstractIntegrationTest {
         verifyNoInteractions(ai);
     }
 
+    @Test
+    void activePlusCannotReachTheRelatedRecipeProvider() throws Exception {
+        paid("PLUS");
+        mockMvc.perform(post(path() + "/ai").with(principal()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("AI_SUBSCRIPTION_REQUIRED"))
+                .andExpect(jsonPath("$.requiredTier").value("PRO"))
+                .andExpect(jsonPath("$.upgradeUrl").value("/goi-ai"));
+        verifyNoInteractions(ai);
+    }
+
     @ParameterizedTest
-    @ValueSource(strings = {"PLUS", "PRO"})
-    void paidMembersGetRealRecipesAndCanUseExpertRole(String tier) throws Exception {
-        paid(tier);
-        if ("PRO".equals(tier)) jdbc.update("UPDATE [USER] SET role='EXPERT' WHERE user_id=?", member);
+    @ValueSource(strings = {"CUSTOMER", "EXPERT"})
+    void proMembersGetRealRecipesWithBothMemberRoles(String role) throws Exception {
+        paid("PRO");
+        jdbc.update("UPDATE [USER] SET role=? WHERE user_id=?", role, member);
         when(ai.recommendRecipes(anyString(), anyList(), anyInt())).thenReturn(result(best));
-        mockMvc.perform(post(path() + "/ai").with(principal())).andExpect(status().isOk())
+        mockMvc.perform(post(path() + "/ai").with(user(Long.toString(member)).roles(role))).andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(best));
         assertThat(related.findCandidates(source, 50, true)).doesNotContain(source);
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM [RECIPE_POST] WHERE author_id=?", Integer.class, member)).isEqualTo(2);
@@ -152,7 +163,7 @@ class RelatedRecipeIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void providerFailureAndForeignIdsReturnExplicitErrors() throws Exception {
-        paid("PLUS");
+        paid("PRO");
         when(ai.recommendRecipes(anyString(), anyList(), anyInt())).thenThrow(new AiProviderException("timeout"));
         mockMvc.perform(post(path() + "/ai").with(principal())).andExpect(status().isServiceUnavailable());
         doReturn(result(source)).when(ai).recommendRecipes(anyString(), anyList(), anyInt());
@@ -161,7 +172,7 @@ class RelatedRecipeIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void recipeHiddenDuringGeminiIsNotReturned() throws Exception {
-        paid("PLUS");
+        paid("PRO");
         when(ai.recommendRecipes(anyString(), anyList(), anyInt())).thenAnswer(call -> {
             jdbc.update("UPDATE [RECIPE_POST] SET status='HIDDEN' WHERE recipe_id=?", best);
             return result(best);

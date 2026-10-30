@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M08
 > **File:** `docs/requirements/use-cases/subscription-and-payment.md`
-> **Version:** v2.2.0
+> **Version:** v2.3.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-10-29
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -45,7 +45,7 @@ Người dùng mở trang Bảng giá dịch vụ.
 
 #### Main Flow
 1. Hệ thống hiển thị ba gói: Free (0 VNĐ/tháng), Plus (49.000 VNĐ/tháng) và Pro (99.000 VNĐ/tháng).
-2. Hệ thống trình bày quyền lợi AI của từng gói theo bảng quyền lợi trong FR-13: Free có Chatbot và gợi ý món cơ bản; Plus bổ sung AI soạn bài và gợi ý biến tấu; Pro bổ sung AI lập thực đơn tuần 7 ngày.
+2. Hệ thống trình bày quyền lợi AI của từng gói theo bảng quyền lợi trong FR-13: Free có Chatbot và gợi ý món cơ bản; Plus bổ sung AI lập thực đơn tuần thông thường và theo dinh dưỡng. Pro kế thừa Plus, bổ sung AI soạn bài cho Chuyên gia, gợi ý món liên quan/biến tấu và AI đề xuất điều chỉnh dinh dưỡng.
 3. Hệ thống không hiển thị gói năm, mã giảm giá, khuyến mãi hoặc gói dùng thử trong bảng giá Phase 1.
 
 #### Postconditions

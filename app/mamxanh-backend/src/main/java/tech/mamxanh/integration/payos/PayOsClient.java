@@ -8,6 +8,9 @@ import tech.mamxanh.integration.payos.dto.PayOsWebhookPayload;
  */
 public interface PayOsClient {
 
+    /** Local configuration preflight only; fail before creating an order when merchant credentials are absent. */
+    void validateCheckoutConfiguration();
+
     /**
      * Creates a payment link via payOS API /v2/payment-requests. Implementations must verify
      * the signed provider response, order identity, amount and hosted HTTPS checkout URL.

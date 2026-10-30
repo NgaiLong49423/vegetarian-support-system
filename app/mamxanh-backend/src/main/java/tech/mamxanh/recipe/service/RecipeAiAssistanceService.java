@@ -1,8 +1,10 @@
 package tech.mamxanh.recipe.service;
 
+import java.time.Clock;
 import java.util.HashSet;
 import java.util.List;
 import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.core.JacksonException;
@@ -11,6 +13,7 @@ import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.integration.ai.AiClient;
+import tech.mamxanh.integration.ai.AiUsageEvent;
 import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
 import tech.mamxanh.nutrition.dto.response.IngredientResponse;
 import tech.mamxanh.nutrition.service.IngredientCatalogLookupService;
@@ -28,15 +31,19 @@ public class RecipeAiAssistanceService {
     private final IngredientCatalogLookupService ingredientCatalog;
     private final AiClient aiClient;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher events;
+    private final Clock clock;
 
     public RecipeAiAssistanceService(CurrentUserService currentUserService,
             SubscriptionEntitlementService entitlementService, IngredientCatalogLookupService ingredientCatalog,
-            AiClient aiClient, ObjectMapper objectMapper) {
+            AiClient aiClient, ObjectMapper objectMapper, ApplicationEventPublisher events, Clock clock) {
         this.currentUserService = currentUserService;
         this.entitlementService = entitlementService;
         this.ingredientCatalog = ingredientCatalog;
         this.aiClient = aiClient;
         this.objectMapper = objectMapper;
+        this.events = events;
+        this.clock = clock;
     }
 
     public RecipeAiAssistanceResponse generate(RecipeAiAssistanceRequest request) {
@@ -54,10 +61,15 @@ public class RecipeAiAssistanceService {
 
         String prompt = prompt(request, ingredients);
         String raw;
+        AiClient.RecommendationResult result;
         try {
-            raw = aiClient.generateRecipeText(prompt, ingredientIds);
+            result = aiClient.generateRecipeContent(prompt, ingredientIds);
+            raw = result.json();
         } catch (AiProviderException exception) {
             log.warn("Recipe AI provider is unavailable: {}", exception.getClass().getSimpleName());
+            if (exception.kind() == tech.mamxanh.integration.ai.GeminiAiClient.FailureKind.INVALID_RESPONSE) {
+                throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+            }
             throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE);
         } catch (RuntimeException exception) {
             log.warn("Recipe AI provider failed: {}", exception.getClass().getSimpleName());
@@ -68,6 +80,7 @@ public class RecipeAiAssistanceService {
         String content = request.contentType() == ContentType.DESCRIPTION
                 ? validateDescription(generated.description())
                 : validateInstructions(generated.steps(), ingredients);
+        events.publishEvent(new AiUsageEvent(expert.id(), "FR-21", clock.instant(), result.usage()));
         return new RecipeAiAssistanceResponse(request.contentType(), content);
     }
 

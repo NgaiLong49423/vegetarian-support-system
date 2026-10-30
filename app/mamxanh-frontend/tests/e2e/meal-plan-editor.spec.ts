@@ -337,6 +337,24 @@ test("only one day expands, and adding meals queries saved recipes with paginati
   expect(publicSearches).toBe(0)
 })
 
+test("FR-10: nutrition AI explains the Plus requirement and links to plans without changing meals", async ({ page }) => {
+  const original = entry(7, 11)
+  const state = await setup(page, [original])
+  await page.route("**/api/v1/meal-plans/ai-menu/previews", route => route.fulfill({
+    status: 403, contentType: "application/problem+json", json: {
+      status: 403, code: "AI_SUBSCRIPTION_REQUIRED", requiredTier: "PLUS", upgradeUrl: "/goi-ai",
+      detail: "Gói hiện tại chưa hỗ trợ tính năng này.",
+    },
+  }))
+  await page.goto("/ke-hoach?view=for-you")
+  await page.getByRole("tab", { name: "Theo nhu cầu dinh dưỡng" }).click()
+  await page.getByRole("button", { name: "Tạo thực đơn tuần" }).click()
+  await expect(page.getByRole("alert")).toContainText("yêu cầu gói AI PLUS")
+  await expect(page.getByRole("alert").getByRole("link", { name: "Nâng cấp gói AI PLUS" })).toHaveAttribute("href", "/goi-ai")
+  expect(state.entries).toEqual([original])
+  expect(state.writes).toBe(0)
+})
+
 test("#154: add a public recipe with an empty saved collection, search and pagination", async ({ page }) => {
   const state = await setup(page)
   const savedWrites: string[] = []
@@ -445,7 +463,10 @@ test("#154: switching sources ignores late results and supports retry, empty res
   await page.keyboard.press("Escape")
   await expect(dialog).not.toBeVisible()
   await expect(lunch(page)).toBeFocused()
+
 })
+
+
 
 test("weekly AI preview supports multiple recipes per meal and applies selected recipes only after confirmation", async ({ page }) => {
   const existing = entry(7, 11)
@@ -994,3 +1015,23 @@ for (const width of [360, 768, 1440]) {
     await page.screenshot({ path: path.join(directory, `servings-detail-light-${width}.png`) })
   })
 }
+
+
+test("FR-10: nutrition adjustment requires PRO while preserving the current meal", async ({ page }) => {
+  const original = entry(7, 11)
+  const state = await setup(page, [original])
+  await page.route("**/api/v1/meal-plans/*/nutrition/recommendations/*", route => route.fulfill({
+    status: 403, json: { status: 403, code: "AI_SUBSCRIPTION_REQUIRED", requiredTier: "PRO", detail: "Gói chưa phù hợp." },
+  }))
+  await page.goto("/ke-hoach")
+  await openMonday(page)
+  await page.getByRole("button", { name: "Xem dinh dưỡng ngày" }).click()
+  const dialog = page.getByRole("dialog")
+  await dialog.getByRole("button", { name: "Phân tích và gợi ý món" }).first().click()
+  const alert = dialog.getByRole("alert")
+  await expect(alert).toContainText("AI đề xuất điều chỉnh dinh dưỡng yêu cầu gói AI PRO")
+  await expect(alert.getByRole("link", { name: "Nâng cấp gói AI PRO" })).toHaveAttribute("href", "/goi-ai")
+  await expect(alert).not.toContainText("PLUS")
+  expect(state.entries).toEqual([original])
+  expect(state.writes).toBe(0)
+})

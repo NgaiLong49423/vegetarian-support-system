@@ -7,8 +7,8 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.hasItems;
 
 import java.time.LocalDateTime;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -32,22 +32,9 @@ class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
     private long ingredientBId;
     private int gramUnitId;
 
-    /** Keep this suite's recipe fixtures from leaking into Auth tests sharing the container. */
-    @AfterEach
-    void cleanupFixtures() {
-        jdbcTemplate.update("DELETE FROM [RECIPE_REACTION] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?))", EMAIL_PREFIX);
-        jdbcTemplate.update("DELETE FROM [RECIPE_VIEW] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?))", EMAIL_PREFIX);
-        jdbcTemplate.update("DELETE FROM [COMMENT] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?))", EMAIL_PREFIX);
-        jdbcTemplate.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?)", EMAIL_PREFIX);
-        jdbcTemplate.update("DELETE FROM [USER] WHERE email LIKE ?", EMAIL_PREFIX);
-        jdbcTemplate.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email = ?)", FILTER_EMAIL);
-        jdbcTemplate.update("DELETE FROM [USER] WHERE email = ?", FILTER_EMAIL);
-        jdbcTemplate.update("DELETE FROM [INGREDIENT] WHERE name IN (?, ?)", FILTER_INGREDIENT_A, FILTER_INGREDIENT_B);
-    }
-
     @BeforeEach
     void preparePublicRecipes() {
-        cleanupFixtures();
+        removePublicRecipes();
         jdbcTemplate.update("INSERT INTO [USER] (email, display_name, avatar_url, role, account_status, email_verified) VALUES (?, ?, ?, 'EXPERT', 'ACTIVE', 1)",
                 FILTER_EMAIL, "Tác giả lọc", "https://img.test/filter-avatar.png");
         filterAuthorId = jdbcTemplate.queryForObject("SELECT user_id FROM [USER] WHERE email = ?", Long.class, FILTER_EMAIL);
@@ -67,6 +54,18 @@ class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
         middleId = insertRecipe("Issue3-browse-token Món giữa", "Món đăng năm ngày trước", "PUBLISHED", now.minusDays(5));
         oldId = insertRecipe("Issue3-browse-token Canh chua cũ", "Công thức lâu năm", "PUBLISHED", now.minusDays(10));
         insertRecipe("Issue3-browse-token Canh chua ẩn", "Không được tìm thấy", "HIDDEN", now);
+    }
+
+    @AfterEach
+    void removePublicRecipes() {
+        jdbcTemplate.update("DELETE FROM [RECIPE_REACTION] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?))", EMAIL_PREFIX);
+        jdbcTemplate.update("DELETE FROM [RECIPE_VIEW] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?))", EMAIL_PREFIX);
+        jdbcTemplate.update("DELETE FROM [COMMENT] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?))", EMAIL_PREFIX);
+        jdbcTemplate.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?)", EMAIL_PREFIX);
+        jdbcTemplate.update("DELETE FROM [USER] WHERE email LIKE ?", EMAIL_PREFIX);
+        jdbcTemplate.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email = ?)", FILTER_EMAIL);
+        jdbcTemplate.update("DELETE FROM [USER] WHERE email = ?", FILTER_EMAIL);
+        jdbcTemplate.update("DELETE FROM [INGREDIENT] WHERE name IN (?, ?)", FILTER_INGREDIENT_A, FILTER_INGREDIENT_B);
     }
 
     @Test

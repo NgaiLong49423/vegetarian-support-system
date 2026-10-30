@@ -7,6 +7,26 @@
 
 # Backend Workspace
 
+### Giám sát giao dịch gói tài khoản
+
+- Phần giám sát được người dùng giao trực tiếp ngày 29/10/2026, chưa có Issue riêng. API Admin nằm trong module `subscription`, đọc các bảng thanh toán/đăng ký hiện có; không thêm bảng hoặc thay đổi entitlement.
+- `GET /api/v1/admin/transactions` cung cấp phân trang và thống kê theo cùng bộ lọc; `/{id}` xem chi tiết chu kỳ đã mua; `/export` xuất toàn bộ kết quả lọc tối đa 10.000 dòng CSV UTF-8. Hợp đồng chi tiết trong [API Guide](../../docs/api/API.md#giám-sát-giao-dịch-gói-tài-khoản).
+- Checkout kiểm tra cấu hình merchant trước khi tạo đơn; thiếu cấu hình trả 503 và không tạo PENDING giả. Khi có cấu hình, commit đơn PENDING bằng transaction riêng trước cuộc gọi payOS. Khi provider timeout hoặc kết quả không xác định, giữ PENDING cho webhook xác minh đến sau; phản hồi thất bại rõ ràng được ghi FAILED trong transaction riêng và không ghi đè PAID đã nhận. Không giữ SQL transaction/lock qua I/O provider. Việc xem báo cáo/chi tiết/xuất CSV không gọi provider hoặc thay đổi gói.
+- Kiểm thử `TransactionAuditIntegrationTest` dùng JWT và SQL Server thật với provider kiểm soát, gồm callback đến sớm, timeout, lỗi tạo link, quyền truy cập, lọc, phân trang, thời gian và CSV. `admin-transactions-real-stack.spec.ts` kiểm tra trình duyệt–API–SQL qua root Compose; dùng fixture và không chuyển tiền thật.
+
+### Telemetry AI — FR-11 / Issue #17
+
+- V31 bổ sung bảng log kỹ thuật `AI_USAGE_TELEMETRY`, không có nội dung prompt/answer hoặc quan hệ/quota tài khoản mới. Đây là thay đổi thử nghiệm trên nhánh riêng theo chỉ dẫn người dùng; biểu quyết nhóm chưa hoàn tất.
+- Các tính năng FR-21/34/36/37/47/51 phát metadata sau phản hồi hợp lệ, gồm cả hướng dẫn nấu FR-34 mới. Listener ghi file metadata và force xuống disk trước khi phản hồi được xác nhận; writer nền dùng transaction SQL riêng và UUID chống trùng. Queue đầy hoặc DB tạm lỗi giữ file để replay khi khởi động và mỗi 5 giây; file chỉ được xóa sau khi SQL commit. Không inject repository xuyên module và không thay executor email.
+- Root Compose gắn named volume `backend-telemetry-data` tại `/var/lib/mamxanh/ai-telemetry`. Chạy JVM trực tiếp mặc định dùng `./data/ai-telemetry` trong Backend, có thể đổi bằng `MAMXANH_AI_TELEMETRY_SPOOL_DIRECTORY`; thư mục phải nằm trên storage bền vững, writable và riêng tư. Không xóa volume/file pending để xử lý lỗi DB. Nếu disk không thể ghi bền, request trả 503 `AI_TELEMETRY_UNAVAILABLE`, không xác nhận thành công thiếu accounting. Cơ chế không phục hồi được khi chính storage bền vững bị mất/hỏng; Windows force nội dung file nhưng Java không hỗ trợ fsync thư mục như Linux.
+- Retention áp dụng cả SQL và file pending tối đa 90 ngày; SQL dọn khi khởi động và mỗi phút, file pending được kiểm tra mỗi lượt replay. File chỉ có envelope và token metadata, không có prompt, answer, API key hoặc IP.
+- Admin đọc thống kê tại `GET /api/v1/admin/ai-telemetry`; dùng Scalar và [API Guide](../../docs/api/API.md#telemetry-sử-dụng-ai--fr-11--issue-17) cho query, retention và giới hạn ước tính chi phí. Thiếu metadata có cờ kiểm toán, chi phí chưa xác định không bị đổi thành 0 USD. Bảng giá hiện là Standard text trả phí tương đương, không phải hóa đơn Google.
+- Kiểm thử liên quan: `AiTelemetryIntegrationTest` kiểm tra SQL Server thật, event/transaction, chống trùng, retention và RBAC với Gemini được kiểm soát; `AiTelemetryServiceTest` kiểm tra dữ liệu biên và tính giá. `AiTelemetrySpoolTest` kiểm tra disk/restart/queue; test opt-in trong `ai-telemetry-real-stack.spec.ts` kiểm tra Gemini thật và recovery sau ngắt SQL/kill Backend trên root Compose. Không coi kiểm tra local là nghiệm thu trên main.
+
+
+Chatbot phân luồng yêu cầu rõ ràng về thực đơn tuần và hỗ trợ soạn Recipe Post trước provider: yêu cầu tuần kiểm tra Pro; soạn bài kiểm tra Expert và Plus/Pro. Guest nhận yêu cầu đăng nhập; Member thiếu gói nhận 403 kèm `requiredTier`/`upgradeUrl`. Tài khoản đủ quyền nhận liên kết workflow, không sinh thực đơn hoặc ghi bài từ chat và không phát usage event Gemini cho việc điều hướng. Hỏi đáp dinh dưỡng tổng quát và bản nháp công thức được yêu cầu rõ vẫn thuộc FR-51.
+
+Tìm món tiếp dùng câu hỏi và ngữ cảnh phiên, có thể lọc thể loại trước phân trang. Chỉ kiểm tra tối đa bốn trang, mỗi trang 50 bài và đưa tối đa 50 ứng viên hợp lệ cho AI. `history[].recommendedRecipeIds` chỉ dùng để tránh lặp khi hỏi món khác; Backend vẫn kiểm tra công khai, điều kiện ăn uống và dữ liệu thẻ hiện tại. Không suy ra toàn bộ database trống từ phạm vi tìm kiếm có giới hạn.
 ## Admin account management — FR-06
 
 `/api/v1/admin/users` is restricted to the `ADMIN` role and provides bounded, paginated account search, global summary counts, minimal details and combined account history. Status and `CUSTOMER`/`EXPERT` role changes require a 10–500 character reason and write an audit row in the same transaction. Administrator accounts are view-only. Directly granting `EXPERT` cancels a pending expert application and sends an in-app notification. Flyway V30 owns the audit table and `CANCELLED` application status.
@@ -40,6 +60,8 @@ Kiểm thử tập trung: `.\mvnw.cmd "-Dtest=ShoppingAggregationServiceTest,Sho
 Kiểm chứng ngày 2026-10-17 trên nhánh FR-54: 67/67 test tập trung đạt; toàn Backend `clean verify` đạt 881/881 test, không failure/error/skip. JaCoCo BUNDLE: Lines 94,87%, Branches 82,97%, Methods 93,42%, Instructions 94,31%; cả bốn đều vượt cổng `>80%`. Đây là bằng chứng local của bộ tổng hợp và baseline Backend, không thay thế required CI/review hoặc nghiệm thu sau merge.
 
 Thư mục này dành cho REST API Java 21 + Spring Boot, build bằng Maven và truy cập Microsoft SQL Server qua Spring Data JPA/Hibernate theo [Technology Stack](../../docs/architecture/TECHNOLOGY-STACK.md).
+
+Model hiện tại là `gemini-3.8-flash` theo Technology Stack. Ngày 27/10/2026, người dùng yêu cầu kết thúc thử nghiệm Flash-Lite và khôi phục model Confirmed để bàn giao trưởng nhóm kiểm thử AI. Giữ cùng model cho mọi gói tài khoản, kiểm tra entitlement tại Backend và deadline provider 9 giây cho toàn thao tác. SDK tắt retry nội bộ; ứng dụng chỉ thử lại một lần với HTTP 502/503/504 trả sớm, backoff 1–1,25 giây và giữ ít nhất 2 giây ngân sách cho lần gọi tiếp. Không retry quota HTTP 429 hoặc lỗi dữ liệu/quyền. Không tự chuyển model khi lỗi hoặc sửa cấu hình billing. Kiểm thử adapter với provider kiểm soát không thay thế kiểm thử sinh nội dung bằng API key hợp lệ của trưởng nhóm.
 
 > [!IMPORTANT]
 > **Quy chuẩn kiến trúc bắt buộc:** Mọi thành viên và AI agent khi triển khai mã nguồn Backend **bắt buộc phải tuân thủ nghiêm ngặt** cấu trúc package Modular Monolith, phân tầng MVC và ranh giới liên module được quy định tại [Backend Package Structure Specification](../../docs/architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md). Cấm inject chéo Repository giữa các module và không trả JPA Entity trực tiếp ra REST API.
@@ -309,6 +331,8 @@ Dừng bằng `Ctrl+C`. Container tự xóa vì dùng `--rm`. Khi source hoặc 
 - Subscription baseline dùng FREE 0, PLUS 49,000 và PRO 99,000 VND/tháng; verified activation, end-of-period expiry, no auto-renew/no partial refund và idempotent duplicate payment processing. Cổng thanh toán đã chốt là **payOS** (REST API qua Spring `RestClient` + Webhook HMAC-SHA256).
 - Gemini, Azure, Brevo SMTP và payOS credential chỉ đến từ cấu hình môi trường/secret store (local `.env`, GitHub Secrets, Azure App Service Settings); không commit giá trị thật. Maps chỉ được cấu hình nếu M11 được kích hoạt lại bằng quyết định scope mới.
 - API được mô tả bằng OpenAPI và trả lỗi nhất quán; không để frontend suy đoán business rule.
+
+Ma trận quyền AI hiện hành: PLUS mở lập thực đơn tuần thông thường (UC-34.2/UC-34.3) và theo dinh dưỡng (FR-36). PRO kế thừa PLUS, thêm AI soạn bài cho Chuyên gia (FR-21), AI gợi ý món liên quan/biến tấu (FR-47) và AI đề xuất điều chỉnh dinh dưỡng (FR-37). FREE giữ Chatbot, gợi ý nguyên liệu và hướng dẫn chế biến. Giá và thời hạn đã mua không đổi.
 
 ## Thanh toán xác minh — FR-13 / Issue #142
 

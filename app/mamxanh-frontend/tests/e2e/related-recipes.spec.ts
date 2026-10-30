@@ -24,7 +24,8 @@ const options = {
 };
 
 async function api(page: Page, settings: { ordinaryEmpty?: boolean; failOrdinary?: boolean; failOptions?: boolean;
-  aiStatus?: number; aiCode?: string; aiEmpty?: boolean; delayAi?: boolean } = {}) {
+  aiStatus?: number; aiCode?: string; aiEmpty?: boolean; delayAi?: boolean;
+  ordinaryItems?: ReturnType<typeof card>[]; aiItems?: ReturnType<typeof card>[] } = {}) {
   const requests = { ai: 0, ordinary: 0 };
   await page.route('**/api/v1/**', async (route) => {
     const url = new URL(route.request().url());
@@ -33,12 +34,12 @@ async function api(page: Page, settings: { ordinaryEmpty?: boolean; failOrdinary
       if (settings.delayAi) await new Promise((resolve) => setTimeout(resolve, 700));
       await route.fulfill({ status: settings.aiStatus || 200, json: settings.aiStatus
         ? { status: settings.aiStatus, code: settings.aiCode ?? 'AI_PROVIDER_UNAVAILABLE', detail: 'Cannot recommend' }
-        : { items: settings.aiEmpty ? [] : [card(502, 'Canh nấm AI chọn')] } });
+        : { items: settings.aiEmpty ? [] : settings.aiItems ?? [card(502, 'Canh nấm AI chọn')] } });
     } else if (url.pathname.endsWith('/related')) {
       requests.ordinary++;
       await route.fulfill({ status: settings.failOrdinary && requests.ordinary === 1 ? 500 : 200,
         json: settings.failOrdinary && requests.ordinary === 1 ? { code: 'INTERNAL_ERROR', detail: 'Lỗi truy vấn' }
-          : { items: settings.ordinaryEmpty ? [] : [card(501, 'Canh rau liên quan')] } });
+          : { items: settings.ordinaryEmpty ? [] : settings.ordinaryItems ?? [card(501, 'Canh rau liên quan')] } });
     } else if (url.pathname.endsWith('/form-options')) {
       await route.fulfill({ status: settings.failOptions ? 500 : 200, json: options });
     } else if (/\/recipes\/\d+$/.test(url.pathname)) {
@@ -73,14 +74,52 @@ test('Member explicitly requests AI; ordinary recipes remain visible while loadi
   expect(requests.ai).toBe(1);
 });
 
+test('AI selections take priority without repeating regular recipe IDs or merging different recipes', async ({ page }) => {
+  await seedDemoSession(page, 'CUSTOMER');
+  const settings = {
+    ordinaryItems: [card(501, 'Món chung'), card(503, 'Món riêng')],
+    aiItems: [card(501, 'Món chung'), card(504, 'Món riêng')],
+  };
+  const requests = await api(page, settings);
+  await page.goto('/cong-thuc/id/500');
+  const section = page.getByRole('region', { name: 'Công thức liên quan' });
+  await expect(section.getByText('Món chung', { exact: true })).toHaveCount(1);
+  const button = section.getByRole('button', { name: 'AI gợi ý món ăn kèm hoặc biến tấu' });
+  await button.click();
+  await expect(section.getByRole('heading', { name: 'Gợi ý từ AI' })).toBeVisible();
+  await expect(section.getByText('Món chung', { exact: true })).toHaveCount(1);
+  await expect(section.getByText('Món riêng', { exact: true })).toHaveCount(2);
+  expect(requests.ai).toBe(1);
+
+  // A new AI response releases old selections back into the ordinary list.
+  settings.aiItems = [];
+  await button.click();
+  await expect(section.getByText('AI chưa tìm được món phù hợp trong các công thức hiện có.')).toBeVisible();
+  await expect(section.getByText('Món chung', { exact: true })).toHaveCount(1);
+  await expect(section.getByText('Món riêng', { exact: true })).toHaveCount(1);
+});
+
+test('complete overlap keeps the AI cards without a misleading empty regular message', async ({ page }) => {
+  await seedDemoSession(page, 'CUSTOMER');
+  const shared = card(501, 'Món chung');
+  await api(page, { ordinaryItems: [shared], aiItems: [shared] });
+  await page.goto('/cong-thuc/id/500');
+  const section = page.getByRole('region', { name: 'Công thức liên quan' });
+  await expect(section.getByText('Món chung', { exact: true })).toBeVisible();
+  await section.getByRole('button', { name: 'AI gợi ý món ăn kèm hoặc biến tấu' }).click();
+  await expect(section.getByRole('heading', { name: 'Gợi ý từ AI' })).toBeVisible();
+  await expect(section.getByText('Món chung', { exact: true })).toHaveCount(1);
+  await expect(section.getByText('Chưa có công thức liên quan.', { exact: true })).toHaveCount(0);
+});
+
 test('Free plan sees upgrade guidance while ordinary results stay available', async ({ page }) => {
   await seedDemoSession(page);
   await api(page, { aiStatus: 403, aiCode: 'AI_SUBSCRIPTION_REQUIRED' });
   await page.goto('/cong-thuc/id/500');
   const section = page.getByRole('region', { name: 'Công thức liên quan' });
   await section.getByRole('button', { name: 'AI gợi ý món ăn kèm hoặc biến tấu' }).click();
-  await expect(section.getByText('Gợi ý AI dành cho gói Plus và Pro.')).toBeVisible();
-  await expect(section.getByRole('link', { name: 'Xem các gói' })).toHaveAttribute('href', '/goi-ai');
+  await expect(section.getByText(/AI gợi ý món ăn kèm hoặc biến tấu yêu cầu gói AI PRO/)).toBeVisible();
+  await expect(section.getByRole('link', { name: 'Nâng cấp gói AI PRO' })).toHaveAttribute('href', '/goi-ai');
   await expect(section.getByText('Canh rau liên quan')).toBeVisible();
 });
 

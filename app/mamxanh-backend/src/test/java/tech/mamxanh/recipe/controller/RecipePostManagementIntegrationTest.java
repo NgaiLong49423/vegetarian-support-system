@@ -12,8 +12,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -43,22 +43,9 @@ class RecipePostManagementIntegrationTest extends AbstractIntegrationTest {
     private long ingredientId;
     private int gramUnitId;
 
-    /** Keep this suite's recipe fixtures from leaking into Auth tests sharing the container. */
-    @AfterEach
-    void cleanupFixtures() {
-        jdbcTemplate.update("DELETE FROM [MEAL_PLAN] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue47-%@test.local')");
-        jdbcTemplate.update("DELETE FROM [SAVED_RECIPE] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue47-%@test.local')");
-        jdbcTemplate.update("DELETE FROM [RECIPE_REACTION] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue47-%@test.local'))");
-        jdbcTemplate.update("DELETE FROM [RECIPE_VIEW] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue47-%@test.local'))");
-        jdbcTemplate.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue47-%@test.local')");
-        jdbcTemplate.update("DELETE FROM [USER] WHERE email LIKE 'issue47-%@test.local'");
-        jdbcTemplate.update("DELETE FROM [INGREDIENT_UNIT_CONVERSION] WHERE ingredient_id IN (SELECT ingredient_id FROM [INGREDIENT] WHERE name = ?)", INGREDIENT_NAME);
-        jdbcTemplate.update("DELETE FROM [INGREDIENT] WHERE name = ?", INGREDIENT_NAME);
-    }
-
     @BeforeEach
     void prepareDatabaseFixtures() {
-        cleanupFixtures();
+        removeFixtures();
 
         ownerId = insertUser(OWNER_EMAIL, "EXPERT", "ACTIVE");
         otherExpertId = insertUser(OTHER_EXPERT_EMAIL, "EXPERT", "ACTIVE");
@@ -89,6 +76,18 @@ class RecipePostManagementIntegrationTest extends AbstractIntegrationTest {
                 Long.class, customerId, WEEK_START);
         jdbcTemplate.update("INSERT INTO [MEAL_PLAN_ENTRY] (meal_plan_id, recipe_id, meal_date, meal_type, planned_servings) VALUES (?, ?, ?, 'LUNCH', 2)",
                 mealPlanId, publishedRecipeId, WEEK_START.plusDays(1));
+    }
+
+    @AfterEach
+    void removeFixtures() {
+        jdbcTemplate.update("DELETE FROM [MEAL_PLAN] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue47-%@test.local')");
+        jdbcTemplate.update("DELETE FROM [SAVED_RECIPE] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue47-%@test.local')");
+        jdbcTemplate.update("DELETE FROM [RECIPE_REACTION] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue47-%@test.local'))");
+        jdbcTemplate.update("DELETE FROM [RECIPE_VIEW] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue47-%@test.local'))");
+        jdbcTemplate.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue47-%@test.local')");
+        jdbcTemplate.update("DELETE FROM [USER] WHERE email LIKE 'issue47-%@test.local'");
+        jdbcTemplate.update("DELETE FROM [INGREDIENT_UNIT_CONVERSION] WHERE ingredient_id IN (SELECT ingredient_id FROM [INGREDIENT] WHERE name = ?)", INGREDIENT_NAME);
+        jdbcTemplate.update("DELETE FROM [INGREDIENT] WHERE name = ?", INGREDIENT_NAME);
     }
 
     @Test

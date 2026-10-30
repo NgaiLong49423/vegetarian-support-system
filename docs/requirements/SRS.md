@@ -1,8 +1,8 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v2.15.0
+> **Version:** v2.17.0
 > **Created:** 2026-09-11
-> **Last Updated:** 2026-10-29
+> **Last Updated:** 2026-10-30
 > **Status:** Active
 > **Related Docs:** `docs/requirements/PRD.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`, `docs/architecture/ARCHITECTURE.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -134,7 +134,7 @@ Quyết định này thay thế phạm vi nhập tên nguyên liệu tự do đ�
 - Chuyên gia (`Role = EXPERT`) đã đăng nhập quản lý Recipe Post của chính mình theo quyền tác giả: tạo, xem, chỉnh sửa và xóa bài. Bài mới hoặc thay đổi hợp lệ được công khai trực tiếp; hệ thống kiểm tra tài khoản sở hữu bài, vai trò Chuyên gia và các trường bắt buộc. Người dùng thông thường (`Customer`) không có quyền tạo bài viết.
 - Khi tác giả xóa bài của mình, bài không còn hiển thị công khai và không được dùng cho kết quả tìm kiếm hoặc gợi ý AI. Tác giả không được dùng quyền sửa/xóa của mình để khôi phục bài đang bị Administrator ẩn do hậu kiểm.
 - Khi tác giả bấm công khai, hệ thống kiểm tra đăng nhập, vai trò Chuyên gia, cấu trúc, các trường bắt buộc và tính khả toán của đơn vị nguyên liệu. Bài hợp lệ được công khai trực tiếp. AI không tự công khai bài. Đúng format không đồng nghĩa công thức đúng hoặc an toàn.
-- Khi AI gặp sự cố kỹ thuật hoặc tài khoản không thuộc gói có quyền sử dụng AI hỗ trợ soạn bài (FR-21), Chuyên gia vẫn toàn quyền tiếp tục tự viết/chỉnh sửa và công khai bài bình thường nếu thỏa mãn điều kiện validation. Quyền gọi AI soạn bài được phân quyền theo mô hình Feature-based Entitlement (thuộc gói Plus và Pro).
+- Khi AI gặp sự cố kỹ thuật hoặc tài khoản không thuộc gói có quyền sử dụng AI hỗ trợ soạn bài (FR-21), Chuyên gia vẫn toàn quyền tiếp tục tự viết/chỉnh sửa và công khai bài bình thường nếu thỏa mãn điều kiện validation. Quyền gọi AI soạn bài được phân quyền theo mô hình Feature-based Entitlement (thuộc gói Pro).
 
 Luồng cấp cao: Tài khoản có role `EXPERT` do Admin cấp qua FR-05 hoặc FR-06 → tác giả nhập thông tin → tự viết hoặc yêu cầu AI hỗ trợ → tác giả rà soát/chỉnh sửa → hệ thống kiểm tra vai trò/format/conversion → công khai thẻ món và trang chi tiết từ cùng Recipe Post.
 
@@ -308,7 +308,7 @@ Khi bài công thức bị ẩn/xóa/không khả dụng, Saved Recipe và Meal 
 - Khi không có công thức phù hợp, hệ thống thông báo không tìm thấy hoặc chỉ trả danh sách chưa đầy đủ kèm lý do; không bịa công thức để lấp kết quả.
 - Bản menu AI chỉ là đề xuất. Người dùng chọn từng món hoặc xác nhận menu trước khi lịch ăn thay đổi.
 
-Nguyên liệu “đang có” được nhập theo từng request; MVP không có pantry. AI ưu tiên tận dụng nhưng không bắt buộc dùng hết, phải hiển thị phần còn thiếu. Quyền sử dụng các tính năng AI tuân theo mô hình Feature-based Entitlement: Free/Guest dùng AI Chatbot và gợi ý món theo nguyên liệu; Plus dùng thêm AI soạn bài và gợi ý biến tấu; Pro dùng thêm AI lập thực đơn tuần 7 ngày. Không áp dụng daily quota theo số lượt/ngày.
+Nguyên liệu “đang có” được nhập theo từng request; MVP không có pantry. AI ưu tiên tận dụng nhưng không bắt buộc dùng hết, phải hiển thị phần còn thiếu. Quyền sử dụng các tính năng AI tuân theo mô hình Feature-based Entitlement: Guest dùng AI Chatbot cơ bản. Free Member dùng thêm gợi ý món theo nguyên liệu. Plus mở thêm AI lập thực đơn tuần thông thường và theo dinh dưỡng. Pro kế thừa Plus, thêm AI soạn bài cho Chuyên gia, gợi ý món liên quan/biến tấu và AI đề xuất điều chỉnh dinh dưỡng (FR-37). Không áp dụng daily quota theo số lượt/ngày.
 
 ### 3.18 Hồ sơ nhu cầu dinh dưỡng và kiểm tra menu ngày — đã chốt ranh giới 12/09/2026
 
