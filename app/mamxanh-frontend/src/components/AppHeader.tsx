@@ -11,7 +11,6 @@ import {
   LayoutDashboard,
   LayoutGrid,
   LogOut,
-  MessageCircle,
   Plus,
   Search,
   ShoppingBasket,
@@ -29,7 +28,6 @@ import { Logo } from "./Logo"
 
 import { useTheme } from "./ThemeContext"
 
-import { useAiChat } from "./AiChatContext"
 
 const navigation = [
   { to: "/trang-chu", label: "Trang chủ", icon: LayoutGrid },
@@ -57,8 +55,6 @@ const exploreLinks = [
 
 export function AppHeader() {
   const { account, isAuthenticated, signOut } = useAuth()
-
-  const { openChat, isOpen } = useAiChat()
 
   const { theme, setTheme } = useTheme()
 
@@ -830,16 +826,6 @@ export function AppHeader() {
           </div>
         </div>
       </dialog>
-      {role !== "ADMIN" && !isOpen && (
-        <button
-          type="button"
-          onClick={() => openChat()}
-          aria-label="Mở khung chat hỗ trợ AI"
-          className="fixed bottom-5 right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-brand-600 text-on-brand shadow-lg shadow-brand-900/25 transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-500 hover:shadow-xl hover:scale-105 active:translate-y-0 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
-        >
-          <MessageCircle className="h-6 w-6" aria-hidden="true" strokeWidth={2.2} />
-        </button>
-      )}
     </>
   )
 }
