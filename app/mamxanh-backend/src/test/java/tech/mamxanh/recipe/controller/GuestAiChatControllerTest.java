@@ -126,6 +126,16 @@ class GuestAiChatControllerTest {
     }
 
     @Test
+    void historyTurnAcceptsUpToFourThousandCharactersAndRejectsLonger() throws Exception {
+        String validLongHistory = BODY.replace("?\"}", "?\",\"history\":[{\"speaker\":\"ASSISTANT\",\"content\":\"" + "a".repeat(2500) + "\"}]}");
+        mvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON).content(validLongHistory))
+                .andExpect(status().isOk());
+        String invalidTooLong = BODY.replace("?\"}", "?\",\"history\":[{\"speaker\":\"ASSISTANT\",\"content\":\"" + "a".repeat(4001) + "\"}]}");
+        mvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON).content(invalidTooLong))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void invalidRequestsAndUnavailableRecipesNeverReachTheProvider() throws Exception {
         for (String invalid : List.of("{}", "{\"contextType\":\"GENERAL\",\"question\":\" \"}",
                 BODY.replace("Cách nấu đậu?", "a".repeat(1001)),

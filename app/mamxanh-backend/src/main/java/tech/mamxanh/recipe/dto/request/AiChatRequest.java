@@ -19,5 +19,5 @@ public record AiChatRequest(
     public enum ContextType { GENERAL, RECIPE }
     public enum Speaker { USER, ASSISTANT }
 
-    public record Turn(@NotNull Speaker speaker, @NotBlank @Size(max = 1000) @Schema(maxLength = 1000) String content) { }
+    public record Turn(@NotNull Speaker speaker, @NotBlank @Size(max = 4000) @Schema(maxLength = 4000) String content) { }
 }

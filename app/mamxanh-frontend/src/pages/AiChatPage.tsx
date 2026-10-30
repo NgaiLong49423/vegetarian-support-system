@@ -223,7 +223,7 @@ export function AiChatPage() {
         question: normalized,
         history: previous
           .slice(-8)
-          .map(({ speaker, content }) => ({ speaker, content })),
+          .map(({ speaker, content }) => ({ speaker, content: content.slice(0, 4000) })),
       })
 
       if (version !== contextVersion.current) return
