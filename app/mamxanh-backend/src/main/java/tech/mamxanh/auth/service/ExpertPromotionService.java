@@ -32,17 +32,6 @@ public class ExpertPromotionService {
         user.promoteToExpert(LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC));
     }
 
-    /** Locks the applicant before the PENDING application row so direct grants and approvals use one lock order. */
-    @Transactional
-    public void requireActiveCustomerForApproval(long userId) {
-        var user = users.findByIdForUpdate(userId)
-                .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "EXPERT_APPLICATION_ACCOUNT_INELIGIBLE", "Tài khoản không còn đủ điều kiện được phê duyệt."));
-        if (user.getAccountStatus() != AccountStatus.ACTIVE || user.getRole() != Role.CUSTOMER) {
-            throw new ApiException(HttpStatus.CONFLICT, "EXPERT_APPLICATION_ACCOUNT_INELIGIBLE",
-                    "Tài khoản phải đang ACTIVE và có vai trò CUSTOMER để được phê duyệt.");
-        }
-    }
-
     @Transactional(readOnly = true)
     public void requireActiveCustomer(long userId) {
         var user = users.findById(userId)

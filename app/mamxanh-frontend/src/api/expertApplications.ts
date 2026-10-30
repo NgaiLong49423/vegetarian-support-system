@@ -1,6 +1,6 @@
 import { apiClient } from '../lib/apiClient';
 
-export type ApplicationStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+export type ApplicationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type ExpertApplication = {
   id: number;
   userId: number;

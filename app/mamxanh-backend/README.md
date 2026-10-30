@@ -1,20 +1,15 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.52.0
+> **Version:** v0.51.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-30
+> **Last Updated:** 2026-10-29
 > **Status:** Active  
 
 # Backend Workspace
 
-Chatbot phân luồng yêu cầu rõ ràng về thực đơn tuần và hỗ trợ soạn Recipe Post trước provider: yêu cầu tuần kiểm tra Plus/Pro; soạn bài kiểm tra Expert và Pro. Guest nhận yêu cầu đăng nhập; Member thiếu gói nhận 403 kèm `requiredTier`/`upgradeUrl`. Tài khoản đủ quyền nhận liên kết workflow, không sinh thực đơn hoặc ghi bài từ chat và không phát usage event Gemini cho việc điều hướng. Hỏi đáp dinh dưỡng tổng quát và bản nháp công thức được yêu cầu rõ vẫn thuộc FR-51.
+Chatbot phân luồng yêu cầu rõ ràng về thực đơn tuần và hỗ trợ soạn Recipe Post trước provider: yêu cầu tuần kiểm tra Pro; soạn bài kiểm tra Expert và Plus/Pro. Guest nhận yêu cầu đăng nhập; Member thiếu gói nhận 403 kèm `requiredTier`/`upgradeUrl`. Tài khoản đủ quyền nhận liên kết workflow, không sinh thực đơn hoặc ghi bài từ chat và không phát usage event Gemini cho việc điều hướng. Hỏi đáp dinh dưỡng tổng quát và bản nháp công thức được yêu cầu rõ vẫn thuộc FR-51.
 
 Tìm món tiếp dùng câu hỏi và ngữ cảnh phiên, có thể lọc thể loại trước phân trang. Chỉ kiểm tra tối đa bốn trang, mỗi trang 50 bài và đưa tối đa 50 ứng viên hợp lệ cho AI. `history[].recommendedRecipeIds` chỉ dùng để tránh lặp khi hỏi món khác; Backend vẫn kiểm tra công khai, điều kiện ăn uống và dữ liệu thẻ hiện tại. Không suy ra toàn bộ database trống từ phạm vi tìm kiếm có giới hạn.
-
-## Admin account management — FR-06
-
-`/api/v1/admin/users` is restricted to the `ADMIN` role and provides bounded, paginated account search, global summary counts, minimal details and combined account history. Status and `CUSTOMER`/`EXPERT` role changes require a 10–500 character reason and write an audit row in the same transaction. Administrator accounts are view-only. Directly granting `EXPERT` cancels a pending expert application and sends an in-app notification. Flyway V30 owns the audit table and `CANCELLED` application status.
-
 ## Tổng hợp nguyên liệu — FR-54 / Issue #54
 
 `shopping/service/ShoppingAggregationService.aggregate(List<ShoppingAggregationLine>)` là biên tính toán nội bộ cho FR-53. Đầu vào gồm `ingredientId` (bắt buộc đối với dòng công thức; `null` chỉ dành cho mặt hàng thủ công), `customName`, `quantity` đã được caller tính theo khẩu phần, và `unitId`. Kết quả `ShoppingAggregationResult` chứa các nhóm danh mục, các dòng tổng hợp và cảnh báo có chỉ số dòng nguồn. Service không ghi Shopping List và không gọi AI/API ngoài.
@@ -180,8 +175,6 @@ Các biến môi trường cho xác thực, email và tích hợp AI (giá trị
 | `GEMINI_API_KEY` | trống | Khóa Gemini dùng lúc chạy Backend cho FR-21. Để trống thì Backend vẫn khởi động nhưng không thể gọi AI. Compose chuyển biến này từ `.env` vào container; không đưa khóa vào Docker image hoặc Git. |
 
 ### Tài khoản demo local
-
-Expert demo Nguyễn Hoàng Phúc có bộ 15 bài tráng miệng, thức uống và bánh chay với mô tả, hướng dẫn theo bước, định lượng gram và ảnh minh họa riêng cho từng bài; seed ưu tiên các nguyên liệu catalog ít xuất hiện.
 
 Danh sách 54 công thức mẫu có seed gia vị/định lượng riêng cho hai phần ăn, tất cả nguyên liệu dùng gram và hướng dẫn được đồng bộ. Seed ảnh ánh xạ 209 nguyên liệu sang WebP do Frontend phục vụ, chỉ điền URL trống để giữ ảnh Admin đã tải lên. Quy tắc định lượng và lệnh kiểm chứng chạy lại seed nằm trong [Database Workspace Guide](../../database/README.md#gia-vị-định-lượng-và-ảnh-minh-họa-demo). Chạy profile `local` hoặc Compose để cập nhật có giữ dữ liệu; không cần bật `local-reset`.
 

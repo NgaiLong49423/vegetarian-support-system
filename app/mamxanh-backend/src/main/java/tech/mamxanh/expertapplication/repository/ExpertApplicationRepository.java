@@ -60,16 +60,7 @@ public class ExpertApplicationRepository {
                 status, note, reviewer, now, now, id);
     }
 
-    public Long cancelPendingForDirectRoleGrant(long userId, long reviewer, String note, LocalDateTime now) {
-        List<Long> ids = jdbc.query("UPDATE [EXPERT_APPLICATION] SET status='CANCELLED',admin_note=?,reviewed_by=?,reviewed_at=?,updated_at=? OUTPUT INSERTED.application_id WHERE user_id=? AND status='PENDING'",
-                (rs, row) -> rs.getLong(1), note, reviewer, now, now, userId);
-        return ids.isEmpty() ? null : ids.get(0);
-    }
-
-    public Long applicantId(long id) {
-        List<Long> ids = jdbc.query("SELECT user_id FROM [EXPERT_APPLICATION] WHERE application_id=?", (rs, row) -> rs.getLong(1), id);
-        return ids.isEmpty() ? null : ids.get(0);
-    }
+    public long applicantId(long id) { return jdbc.queryForObject("SELECT user_id FROM [EXPERT_APPLICATION] WHERE application_id=?", Long.class, id); }
 
     public ExpertApplicationAttachment attachment(long id, String kind) {
         String columns = switch (kind) {

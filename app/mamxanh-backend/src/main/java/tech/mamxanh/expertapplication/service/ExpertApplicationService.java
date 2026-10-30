@@ -127,23 +127,11 @@ public class ExpertApplicationService {
     public ExpertApplicationResponse approve(long id, String note) {
         long reviewer = userId();
         LocalDateTime now = now();
-        Long applicantId = applications.applicantId(id);
-        if (applicantId == null) throw stale();
-        promotion.requireActiveCustomerForApproval(applicantId);
         if (applications.transitionPending(id, "APPROVED", note, reviewer, now) == 0) throw stale();
+        long applicantId = applications.applicantId(id);
         promotion.promoteActiveCustomer(applicantId);
         notifications.expertApplicationDecision(applicantId, id, true, null);
         return applications.findById(id);
-    }
-
-    /** Cancels any waiting application atomically when an Administrator grants the role directly. */
-    @Transactional
-    public Long cancelPendingForDirectRoleGrant(long userId, long administratorId, String reason) {
-        LocalDateTime now = now();
-        String note = "Đơn được hủy do cấp vai trò Chuyên gia trực tiếp. Lý do: " + reason.strip();
-        Long applicationId = applications.cancelPendingForDirectRoleGrant(userId, administratorId, note, now);
-        if (applicationId != null) notifications.expertApplicationCancelled(userId, applicationId);
-        return applicationId;
     }
 
     @Transactional

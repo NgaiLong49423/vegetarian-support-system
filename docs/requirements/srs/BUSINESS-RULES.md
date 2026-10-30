@@ -1,8 +1,8 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v2.15.0
+> **Version:** v2.14.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-30
+> **Last Updated:** 2026-10-29
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -62,7 +62,7 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-07 — Quyền đăng và công khai Recipe Post dành riêng cho Chuyên gia
 
 - **Mã quy tắc:** BR-07
-  - **Nội dung:** Quyền tạo, sửa, xóa và công khai Recipe Post dành riêng cho tài khoản có role `EXPERT`; Administrator có thể cấp role này bằng cách duyệt đơn FR-05 hoặc đổi trực tiếp qua quản lý người dùng FR-06. `Customer`, `Guest` và `Administrator` không có quyền tạo/đăng hoặc sửa nội dung bài công thức. Backend phải từ chối thao tác trái quyền; `Guest` chưa xác thực nhận `401 Unauthorized`, tài khoản đã xác thực nhưng không có quyền nhận `403 Forbidden`. Chuyên gia công khai bài trực tiếp khi đạt validation cấu trúc mà không phải qua duyệt từng bài. Quyền hậu kiểm của Administrator theo FR-06 không phải quyền tác giả.
+- **Nội dung:** Quyền tạo, sửa, xóa và công khai Recipe Post dành riêng cho Chuyên gia (`Role = EXPERT`) đã được Administrator phê duyệt qua đơn đăng ký theo format (`FR-05`); `Customer`, `Guest` và `Administrator` không có quyền tạo/đăng hoặc sửa nội dung bài công thức. Backend phải từ chối thao tác trái quyền; `Guest` chưa xác thực nhận `401 Unauthorized`, tài khoản đã xác thực nhưng không có quyền nhận `403 Forbidden`. Chuyên gia công khai bài trực tiếp khi đạt validation cấu trúc mà không phải qua duyệt từng bài. Quyền hậu kiểm của Administrator theo FR-06 không phải quyền tác giả.
 
 ---
 
@@ -200,10 +200,10 @@ This document contains only requirements included in Requirements / Implementati
 ---
 
 <a id="br-26"></a>
-### BR-26 — Quản lý tài khoản, xử lý báo cáo và áp dụng chế tài
+### BR-26 — Thẩm quyền xử lý báo cáo và áp dụng chế tài
 
 - **Mã quy tắc:** BR-26
-- **Nội dung:** Chỉ Admin được quản lý trạng thái và role tài khoản qua FR-06. Mục tiêu role chỉ gồm `CUSTOMER`/`EXPERT`; tài khoản `ADMIN` chỉ đọc. Mọi đổi role/trạng thái cần lý do 10–500 ký tự và audit bất biến gồm actor, thời điểm, hành động, giá trị trước/sau và lý do; thao tác không làm đổi dữ liệu không ghi audit. Admin cũng quyết định thủ công việc cảnh báo, ẩn/xóa Recipe Post hoặc khóa tài khoản trong quy trình xử lý báo cáo; MVP không dùng ma trận chế tài số tự động và số lượng báo cáo không tự tạo chế tài. Báo cáo đã giải quyết phải giữ kết luận/lý do và audit/history.
+- **Nội dung:** Chỉ Admin quyết định thủ công việc cảnh báo, ẩn/xóa Recipe Post hoặc khóa/mở khóa tài khoản trong quy trình xử lý báo cáo; MVP không dùng ma trận chế tài số tự động và số lượng báo cáo không tự tạo chế tài. Báo cáo đã giải quyết bắt buộc có kết luận/lý do và audit/history phải được giữ.
 
 ---
 
@@ -568,10 +568,8 @@ This document contains only requirements included in Requirements / Implementati
   - Người dùng có vai trò `CUSTOMER` được phép nộp đơn đăng ký Chuyên gia (`EXPERT_APPLICATION`) thông qua biểu mẫu format văn bản có cấu trúc (kinh nghiệm ẩm thực $\ge 20$ ký tự, trường phái chay, tóm tắt công thức sở trường $\ge 30$ ký tự, đúng một link HTTP/HTTPS tham khảo tùy chọn).
   - Đây là quy trình xét duyệt tư cách Chuyên gia và quyền đăng bài, không phải xác minh danh tính/KYC hoặc xác thực tính xác thực ngoài hệ thống. Customer có thể tự nguyện đính kèm một tài liệu chứng chỉ/văn bằng chuyên môn (PDF/JPEG/PNG, tối đa 5 MB) và một ảnh thẻ chân dung khung 3:4 riêng của đơn (JPEG/PNG/WebP, tối đa 2 MB); không nhận giấy tờ tùy thân. Backend xác minh chữ ký nội dung và dung lượng, lưu trong Azure Blob riêng tư; chỉ Administrator truy cập/tải tệp qua Backend để thẩm định. Ảnh không thay đổi avatar hồ sơ công khai.
   - **Quy tắc chặn nộp trùng (Single Open Application Rule):** Mỗi tài khoản Customer chỉ được phép sở hữu tối đa một bản ghi đơn đăng ký ở trạng thái chờ duyệt (`PENDING`). Nếu gửi thêm đơn trong khi đơn cũ chưa được xử lý, Backend từ chối với mã lỗi `HTTP 409 Conflict`.
-  - Customer được xem lịch sử các đơn của chính mình theo thứ tự mới nhất trước nhưng không được tự rút/hủy đơn `PENDING` trong MVP; chỉ Admin cấp Expert trực tiếp theo FR-06 mới kết thúc đơn đó thành `CANCELLED`; Customer không được xem đơn của tài khoản khác.
+  - Customer được xem lịch sử các đơn của chính mình theo thứ tự mới nhất trước nhưng không được rút/hủy đơn `PENDING` trong MVP; không được xem đơn của tài khoản khác.
   - **Quy tắc phê duyệt và chuyển đổi vai trò (Instant Role Promotion):** Chỉ khi đơn vẫn `PENDING` và tài khoản nộp vẫn `ACTIVE` với vai trò `CUSTOMER`, Administrator mới được phê duyệt. Hệ thống cập nhật trạng thái đơn thành `APPROVED`, đồng thời cập nhật vai trò người dùng trong `USER` thành `EXPERT`, làm mới trạng thái phân quyền để mở khóa quyền tạo bài viết tại `FR-04` và gửi thông báo in-app.
-  - Administrator có thể cấp trực tiếp role `EXPERT` cho `CUSTOMER` qua FR-06 mà không cần đơn đăng ký đã được duyệt. Nếu tài khoản có đơn `PENDING`, cùng transaction chuyển đơn sang `CANCELLED`, ghi `reviewed_by`, `reviewed_at`, `admin_note` giải thích việc cấp quyền trực tiếp, ghi audit đổi role và gửi thông báo in-app. Không tạo đơn giả `APPROVED`.
-  - Thao tác cấp quyền trực tiếp và duyệt đơn khóa theo cùng thứ tự tài khoản rồi đơn; chỉ một thao tác cạnh tranh có thể kết thúc đơn `PENDING`. Trường hợp direct grant thắng, request duyệt trả conflict và không tạo notification kết quả duyệt.
   - **Tính nguyên tử quyết định:** Cập nhật trạng thái đơn, chuyển role khi approve và ghi notification kết quả phải thuộc cùng transaction; nếu bất kỳ bước nào thất bại, không lưu một phần quyết định hoặc notification.
   - **Quy tắc từ chối bắt buộc lý do (Mandatory Rejection Note):** Khi Administrator từ chối đơn, bắt buộc phải nhập lý do từ chối cụ thể (`admin_note` từ 10 đến 500 ký tự); trạng thái đơn chuyển thành `REJECTED`, vai trò tài khoản vẫn là `CUSTOMER`, thông báo in-app gửi kèm lý do; Customer được quyền nộp đơn mới sau khi đơn cũ bị từ chối.
   - **Quy tắc xử lý đồng thời:** Chỉ quyết định đầu tiên trên một đơn `PENDING` được ghi nhận. Mọi yêu cầu xử lý từ dữ liệu cũ sau khi trạng thái đã đổi hoặc khi tài khoản không còn `ACTIVE`/`CUSTOMER` phải trả `HTTP 409 Conflict`, không ghi đè kết quả, không cập nhật role và không gửi thông báo lần hai.

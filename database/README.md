@@ -1,15 +1,11 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.33.0<br>
+> **Version:** v0.31.0<br>
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-30<br>
+> **Last Updated:** 2026-10-29<br>
 > **Status:** Active  
 
 # Database Workspace
-
-## Migration V30 — Quản trị tài khoản
-
-`V30__admin_user_management_audit.sql` tạo nhật ký append-only cho thay đổi vai trò/trạng thái và mở rộng trạng thái đơn chuyên gia để hủy đơn đang chờ khi Admin cấp vai trò `EXPERT` trực tiếp. Chưa chạy hoặc xác minh migration trên SQL Server local vì dịch vụ không sẵn sàng.
 
 ## Migration V29 — Lượng Shopping List mất xác định
 
@@ -76,7 +72,6 @@ Repeatable `R__demo_sample_data_67_report_groups.sql` (chỉ profile `local`, AC
 
 - Repeatable `R__demo_sample_data_70_expert_nutrition_profile.sql` (chỉ profile `local`) nạp hồ sơ dinh dưỡng tổng hợp cho `demo-expert@mamxanh.local` để trình diễn form/hồ sơ: 29 tuổi, nữ, 165 cm, 60 kg, vận động vừa, mục tiêu cải thiện sức khỏe. BMI được tính từ chiều cao/cân nặng. Fixture bật consent và xác nhận phạm vi dinh dưỡng bằng giá trị giả lập để luồng hồ sơ demo dùng được; chỉ điền khi hồ sơ tài khoản còn trống hoàn toàn, không ghi đè dữ liệu đã nhập.
 
-- Repeatable `R__demo_sample_data_73_nguyen_hoang_phuc_dessert_collection.sql` (chỉ profile `local`) thêm 15 bài tráng miệng, thức uống, sinh tố, chè, kem và bánh cho `demo-expert-03@mamxanh.local`. Mỗi bài có mô tả, hướng dẫn nhiều bước, thời gian/khẩu phần và nguyên liệu định lượng gram; bộ bài ưu tiên nguyên liệu catalog ít xuất hiện trong demo hiện có. Mỗi bài tham chiếu một ảnh PNG minh họa riêng trong `app/mamxanh-frontend/public/assets/recipe-phuc-01-...png` đến `recipe-phuc-15-...png`. Seed kiểm tra đủ catalog ACTIVE trước khi ghi, chỉ điền bio còn trống, không ghi đè media hiện có và an toàn khi chạy lại.
 - Repeatable `R__demo_sample_data_46_recipe_seasonings.sql` cập nhật đúng 54 món mẫu của `demo-expert@mamxanh.local` theo danh sách tiêu đề: bổ sung gia vị riêng cho từng món, đồng bộ hướng dẫn và định lượng cho hai phần ăn. Tất cả nguyên liệu trong các bài này dùng gram; form tạo/sửa vẫn hỗ trợ các đơn vị đã có.
 - Seed kiểm tra đủ món/nguyên liệu trước khi ghi, cập nhật từng cặp bài–nguyên liệu và không xóa nguyên liệu bổ sung sẵn có. Đơn vị cũ được đổi bằng `UNIT.base_factor` cho khối lượng hoặc `INGREDIENT_UNIT_CONVERSION` riêng theo nguyên liệu; thiếu hệ số thì dừng transaction. Không áp dụng quy tắc 1 ml = 1 g cho mọi chất lỏng.
 - Gạo/hạt/đậu khô được cân trước khi nấu; trứng tính phần bỏ vỏ, rau củ tính phần ăn được. Nước ghi trong công thức là lượng giữ trong món; nước ngâm/rửa, nước hấp và nước luộc bỏ đi không được tính là nguyên liệu tiêu thụ. Định lượng là công thức minh họa, không phải chỉ định dinh dưỡng cá nhân.

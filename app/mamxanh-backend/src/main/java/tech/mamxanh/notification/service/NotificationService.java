@@ -26,12 +26,4 @@ public class NotificationService {
                 userId, type, title, message, "/dang-ky-chuyen-gia?applicationId=" + applicationId,
                 LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC));
     }
-
-    public void expertApplicationCancelled(long userId, long applicationId) {
-        jdbc.update("INSERT INTO [NOTIFICATION](user_id,notification_type,title,message,target_path,created_at) VALUES(?,?,?,?,?,?)",
-                userId, "EXPERT_APPLICATION_CANCELLED", "Đơn đăng ký Chuyên gia đã kết thúc",
-                "Đơn đang chờ của bạn được đóng vì tài khoản đã được cấp vai trò Chuyên gia trực tiếp.",
-                "/dang-ky-chuyen-gia?applicationId=" + applicationId,
-                LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC));
-    }
 }

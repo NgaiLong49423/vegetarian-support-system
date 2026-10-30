@@ -257,18 +257,8 @@ public class User {
         this.updatedAt = now;
     }
 
-    public void unlockByAdministrator(LocalDateTime now) {
-        this.accountStatus = AccountStatus.ACTIVE;
-        this.updatedAt = now;
-    }
-
     public void promoteToExpert(LocalDateTime now) {
         this.role = Role.EXPERT;
-        this.updatedAt = now;
-    }
-
-    public void demoteToCustomer(LocalDateTime now) {
-        this.role = Role.CUSTOMER;
         this.updatedAt = now;
     }
 }

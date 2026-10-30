@@ -8,7 +8,7 @@ export type DietTag = 'Thuần Chay' | 'Lacto' | 'Ovo' | 'Lacto-Ovo';
 
 export type Difficulty = 'Dễ' | 'Trung bình' | 'Khó';
 
-export type ExpertApplicationStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+export type ExpertApplicationStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export type MealSlot = 'Sáng' | 'Trưa' | 'Tối';
 
