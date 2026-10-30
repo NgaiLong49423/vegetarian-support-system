@@ -1,6 +1,6 @@
 > **Document:** Use Case Specifications — M08
 > **File:** `docs/requirements/use-cases/subscription-and-payment.md`
-> **Version:** v2.5.0
+> **Version:** v2.6.0
 > **Created:** 2026-09-26
 > **Last Updated:** 2026-10-31
 > **Status:** Active
@@ -45,7 +45,7 @@ Người dùng mở trang Bảng giá dịch vụ.
 
 #### Main Flow
 1. Hệ thống hiển thị ba gói: Free (0 VNĐ/tháng), Plus (99.000 VNĐ/tháng) và Pro (199.000 VNĐ/tháng), theo giá hiện hành do Admin cấu hình.
-2. Hệ thống trình bày quota token mỗi tháng, các Gemini model được Admin cho phép và giá hiện hành. Free dùng tháng dương lịch; Plus/Pro dùng tháng của chu kỳ gói. Nếu vượt quota tháng, Member có thể dùng AI Credit khi số dư đủ. Các chức năng AI không bị khóa theo tier; quyền role, ownership, eligibility và validation của capability gốc tiếp tục áp dụng.
+2. Hệ thống trình bày quota token mỗi tháng, các Gemini model được Admin cho phép và giá hiện hành. Free dùng tháng dương lịch; Plus/Pro dùng tháng của chu kỳ gói. Khi vượt quota tháng, hệ thống tự động tính overage bằng AI Credit theo BR-77; nếu hết quota và Credit thì dừng trước lần gọi model kế tiếp. Các chức năng AI không bị khóa theo tier; quyền role, ownership, eligibility và validation của capability gốc tiếp tục áp dụng.
 3. Hệ thống không hiển thị gói năm, mã giảm giá, khuyến mãi hoặc gói dùng thử trong bảng giá Phase 1.
 
 #### Postconditions
@@ -144,5 +144,29 @@ Member đã xem được trạng thái gói hiện tại và ngày hết hạn c
 
 #### Acceptance Coverage
 - [AC-13.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13) — Hiển thị trạng thái gói và ngày hết hạn chu kỳ đã thanh toán.
+
+---
+
+<a id="fr-64"></a>
+## FR-64 — Nạp AI Credit và thanh toán overage
+
+Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-64).
+
+### Luồng vòng đời đơn nạp
+
+1. Member nhập số tiền trong giới hạn hiện hành; hệ thống hiển thị số Credit quy đổi theo tỷ lệ được chụp khi tạo đơn.
+2. Khi Member xác nhận tạo đơn, hệ thống tạo đơn chờ thanh toán có hiệu lực 15 phút. Mọi thay đổi tỷ lệ hoặc giới hạn sau đó không sửa snapshot của đơn đang chờ.
+3. Nếu thanh toán được xác minh là xảy ra trước hạn, hệ thống cộng Credit đúng một lần kể cả khi webhook đến sau hạn.
+4. Nếu thanh toán thực sự xảy ra sau hạn, hệ thống chuyển giao dịch sang trạng thái cần đối soát thủ công, chưa cộng Credit và thông báo Member.
+
+### Quy tắc tính overage
+
+- Quota chu kỳ được dùng trước Credit. Credit bị trừ theo token overage thực tế và tỷ lệ hiện hành; 1.000 token = 400 Credit, tức 0,4 Credit/token, cho phép phần thập phân và không làm tròn lên từng lượt.
+- Không giữ trước quota/Credit. Nếu một lượt bắt đầu khi còn quota hoặc Credit dương rồi vượt ngân sách, hệ thống chỉ trừ Credit còn khả dụng, không tạo số dư âm và chịu phần vượt. Khi quota và Credit đều cạn, dừng trước lần gọi model kế tiếp.
+- Lượt lỗi không bị tính phí người dùng. Kết quả Gemini sử dụng được vẫn được tính nếu Backend đã nhận và xác minh, kể cả khi trình duyệt đã ngắt kết nối.
+
+### Acceptance Coverage
+
+- [AC-64.1–AC-64.9](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-64).
 
 ---

@@ -1,8 +1,8 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v2.18.0
+> **Version:** v2.19.0
 > **Created:** 2026-09-11
-> **Last Updated:** 2026-10-30
+> **Last Updated:** 2026-10-31
 > **Status:** Active
 > **Related Docs:** `docs/requirements/PRD.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`, `docs/architecture/ARCHITECTURE.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -597,7 +597,7 @@ Dùng Use Cases và Acceptance Criteria hiện có để lập ERD, API contract
 | Thực đơn tuần theo nguyên liệu và BMI | FR-09, FR-31, FR-33–FR-39 | Hồ sơ rộng hơn BMI, AI chọn công thức có sẵn |
 | Bài liên quan công thức đã tìm | FR-47 | Thông thường hoặc tùy chọn AI |
 | AI Assistant hỏi đáp và điều phối theo ngữ cảnh | FR-51, FR-66 | RAG nội bộ; hỗ trợ điều hướng, điền preview và tool theo quyền; thao tác rủi ro cần xác nhận |
-| Quota, model và gói AI Credit | FR-10, FR-11, FR-13, FR-63–65 | Token quota theo chu kỳ; model Gemini theo gói; 1.000đ=1.000 Credit; overage 1.000 token=400 Credit; giá pilot Plus 99.000đ, Pro 199.000đ |
+| Quota, model và gói AI Credit | FR-10, FR-11, FR-13, FR-63–65 | Token quota theo chu kỳ; model Gemini theo gói; 1.000đ=1.000 Credit; overage 1.000 token=400 Credit (0,4 Credit/token, cho phép Credit thập phân); đơn nạp chờ hết hạn sau 15 phút; giá pilot Plus 99.000đ, Pro 199.000đ |
 | Guest tìm/xem video, Blog và thử AI | FR-01, FR-02, FR-15, FR-20 | Khám phá công thức, YouTube nhúng, AI Chatbot FR-51 có Technical Rate Limiting và quota Guest |
 
 Đây là truy vết yêu cầu, không phải chứng cứ tính năng đã triển khai.

@@ -286,10 +286,6 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           {children}
         </main>
 
-        {/* Admin Footer */}
-        <footer className="border-t border-brand-100 bg-paper/60 px-4 py-4 text-center text-xs text-ink-muted sm:px-6 lg:px-8 lg:text-left">
-          Mầm Xanh · Trung tâm điều phối và quản trị hệ thống chay
-        </footer>
       </div>
     </div>
   );
