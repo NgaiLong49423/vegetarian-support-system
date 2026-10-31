@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.142.0
+> **Version:** v2.142.1
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-11-01
 > **Status:** Active
@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-11-01 — Add Isolated ADK Knowledge and Hybrid Retrieval Pilot
 
-**Status:** Working tree (uncommitted changes).
+**Status:** Committed — `64444508`.
 
 **Scope:** Add the G2 read-only knowledge pilot without connecting public chat or business writes.
 
@@ -32,7 +32,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-11-01 — Add Isolated Google ADK Java G1 Spike
 
-**Status:** Working tree (uncommitted changes).
+**Status:** Committed — `64444508`.
 
 **Scope:** Verify ADK Java integration without switching the existing chat endpoint or connecting prototype accounting to production wallets.
 
@@ -53,7 +53,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-31 — Add AI Assistant Orchestration and Approved Knowledge Retrieval
 
-**Status:** Working tree (uncommitted changes).
+**Status:** Committed — `64444508`.
 
 **Scope:** Implement Issue #214 orchestration with role-scoped tools, consent and confirmation boundaries, bounded temporary sessions, source-attributed retrieval, and a chat interface for execution modes.
 
