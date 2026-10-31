@@ -1559,6 +1559,47 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/ai/chat-settings/model:
+    put:
+      tags:
+      - ai-chat-settings-controller
+      summary: Choose a Gemini model for the current account
+      operationId: select
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiModelPreferenceRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AiChatSettingsResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/admin/units/{unitId}:
     put:
       tags:
@@ -2050,6 +2091,134 @@ paths:
         "403":
           description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
             \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/admin/ai-config:
+    get:
+      tags:
+      - admin-ai-configuration-controller
+      summary: "Read Admin-managed AI plan, Gemini model and Credit configuration"
+      operationId: get_1
+      responses:
+        "401":
+          description: "UNAUTHENTICATED: Administrator session required."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCESS_DENIED or ACCOUNT_LOCKED: active Administrator required."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: "Current configuration, including a pending Free quota change."
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminAiConfigurationResponse"
+      security:
+      - bearerAuth: []
+    put:
+      tags:
+      - admin-ai-configuration-controller
+      summary: Update AI configuration (Administrator only)
+      description: New Gemini IDs are verified against the provider before persistence.
+        Free quota applies next month; paid-plan prices and quotas apply to future
+        activation/purchase. Optional email broadcast is asynchronous.
+      operationId: update_2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminAiConfigurationUpdateRequest"
+        required: true
+      responses:
+        "200":
+          description: Saved configuration.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminAiConfigurationResponse"
+        "400":
+          description: "VALIDATION_FAILED: invalid plan, model access/default, ratio\
+            \ or top-up range."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "422":
+          description: "AI_MODEL_NOT_AVAILABLE: Gemini does not expose the requested\
+            \ model."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "503":
+          description: "AI_MODEL_VALIDATION_UNAVAILABLE: provider validation failed;\
+            \ configuration was not changed."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: Administrator session required."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCESS_DENIED or ACCOUNT_LOCKED: active Administrator required."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/subscriptions/credit-checkout:
+    post:
+      tags:
+      - subscription-controller
+      operationId: createCreditCheckout
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreditCheckoutRequest"
+        required: true
+      responses:
+        "201":
+          description: payOS checkout link and snapshotted AI Credit amount.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditCheckoutResponse"
+        "400":
+          description: "VALIDATION_FAILED: amount is outside the current Admin-configured\
+            \ range."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCESS_DENIED: caller is not an active Customer or Expert."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "503":
+          description: "PAYMENT_UNAVAILABLE: payOS is unavailable or not configured."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
           content:
             application/problem+json:
               schema:
@@ -4565,6 +4734,120 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/admin/ai-accounts/{userId}/package-gifts:
+    post:
+      tags:
+      - admin-ai-entitlement-controller
+      summary: Gift an AI package to a member
+      description: "Applies immediately. Paid tiers start a new 30-day period. Does\
+        \ not create a payment order or refund the previous period. Requires a reason,\
+        \ records the gift in account history, and sends an in-app notice. CUSTOMER\
+        \ and EXPERT accounts can receive gifts; ADMIN accounts cannot."
+      operationId: giftPackage
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GiftAiPackageRequest"
+        required: true
+      responses:
+        "200":
+          description: Package gift applied or requested tier already active.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminAiPackageResponse"
+        "400":
+          description: VALIDATION_FAILED or AI_PACKAGE_GIFT_MEMBER_ONLY
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: USER_NOT_FOUND
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/admin/ai-accounts/{userId}/credit-grants:
+    post:
+      tags:
+      - admin-ai-entitlement-controller
+      summary: Grant AI Credit to an account
+      description: Requires positive Credit and a 10–500 character reason. Updates
+        the wallet and ledger atomically and sends an in-app notice.
+      operationId: grantCredit
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GrantAiCreditRequest"
+        required: true
+      responses:
+        "200":
+          description: Credit grant recorded.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminAiCreditGrantResponse"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: USER_NOT_FOUND
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/shopping-lists/{listId}:
     get:
       tags:
@@ -5462,6 +5745,32 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "403":
           description: The account is locked or is not an active Member.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/subscriptions/my-ai-credit:
+    get:
+      tags:
+      - subscription-controller
+      operationId: getMyAiCredit
+      responses:
+        "200":
+          description: Current AI Credit balance and top-up settings for the caller.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyAiCreditResponse"
+        "403":
+          description: "ACCESS_DENIED: caller is not an active Customer or Expert."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
           content:
             application/problem+json:
               schema:
@@ -6554,6 +6863,32 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/ai/chat-settings:
+    get:
+      tags:
+      - ai-chat-settings-controller
+      summary: Get current AI chat quota and available Gemini models
+      operationId: get_2
+      parameters:
+      - name: anonymousViewerId
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AiChatSettingsResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/v1/admin/users:
     get:
       tags:
@@ -7660,6 +7995,50 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/admin/ai-accounts/{userId}/tier:
+    get:
+      tags:
+      - admin-ai-entitlement-controller
+      summary: Read an account's current AI tier
+      description: Administrator only.
+      operationId: getTier
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        "404":
+          description: USER_NOT_FOUND
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/shopping-lists/{listId}/recipes/{recipeId}:
     delete:
       tags:
@@ -8623,6 +9002,49 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CommentResponse"
+    AiModelPreferenceRequest:
+      type: object
+      properties:
+        modelId:
+          type: string
+          maxLength: 128
+          minLength: 0
+      required:
+      - modelId
+    AiChatSettingsResponse:
+      type: object
+      properties:
+        tier:
+          type: string
+        consumedTokens:
+          type: integer
+          format: int64
+        quotaTokens:
+          type: integer
+          format: int64
+        remainingTokens:
+          type: integer
+          format: int64
+        resetsAt:
+          type: string
+          format: date-time
+        selectedModelId:
+          type: string
+        selectionRequired:
+          type: boolean
+        models:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModelOption"
+    ModelOption:
+      type: object
+      properties:
+        modelId:
+          type: string
+        displayName:
+          type: string
+        isDefault:
+          type: boolean
     UnitSaveRequest:
       type: object
       properties:
@@ -8886,6 +9308,188 @@ components:
         timestamp:
           type: string
           format: date-time
+    AdminAiConfigurationUpdateRequest:
+      type: object
+      properties:
+        plans:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlanUpdate"
+          maxItems: 3
+          minItems: 3
+        models:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModelUpdate"
+          maxItems: 50
+          minItems: 0
+        credit:
+          $ref: "#/components/schemas/CreditUpdate"
+        sendEmailNotification:
+          type: boolean
+      required:
+      - credit
+      - models
+      - plans
+    CreditUpdate:
+      type: object
+      properties:
+        creditsPer1000Vnd:
+          type: number
+          minimum: 0.000001
+        creditsPer1000OverageTokens:
+          type: integer
+          format: int64
+          minimum: 1
+        minimumTopUpVnd:
+          type: integer
+          format: int32
+          minimum: 1
+        maximumTopUpVnd:
+          type: integer
+          format: int32
+          minimum: 1
+      required:
+      - creditsPer1000Vnd
+    ModelUpdate:
+      type: object
+      properties:
+        modelId:
+          type: string
+          minLength: 1
+          pattern: "gemini-[a-z0-9][a-z0-9.-]{0,119}"
+        displayName:
+          type: string
+          maxLength: 120
+          minLength: 0
+        enabled:
+          type: boolean
+        freeAllowed:
+          type: boolean
+        freeDefault:
+          type: boolean
+        plusAllowed:
+          type: boolean
+        plusDefault:
+          type: boolean
+        proAllowed:
+          type: boolean
+        proDefault:
+          type: boolean
+      required:
+      - displayName
+      - modelId
+    PlanUpdate:
+      type: object
+      properties:
+        tier:
+          type: string
+          minLength: 1
+          pattern: FREE|PLUS|PRO
+        priceVnd:
+          type: integer
+          format: int32
+          minimum: 0
+        tokenQuota:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - tier
+    AdminAiConfigurationResponse:
+      type: object
+      properties:
+        plans:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlanSetting"
+        models:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModelSetting"
+        credit:
+          $ref: "#/components/schemas/CreditSetting"
+    CreditSetting:
+      type: object
+      properties:
+        creditsPer1000Vnd:
+          type: number
+        creditsPer1000OverageTokens:
+          type: integer
+          format: int64
+        minimumTopUpVnd:
+          type: integer
+          format: int32
+        maximumTopUpVnd:
+          type: integer
+          format: int32
+    ModelSetting:
+      type: object
+      properties:
+        modelId:
+          type: string
+        displayName:
+          type: string
+        enabled:
+          type: boolean
+        freeAllowed:
+          type: boolean
+        freeDefault:
+          type: boolean
+        plusAllowed:
+          type: boolean
+        plusDefault:
+          type: boolean
+        proAllowed:
+          type: boolean
+        proDefault:
+          type: boolean
+    PlanSetting:
+      type: object
+      properties:
+        tier:
+          type: string
+        priceVnd:
+          type: integer
+          format: int32
+        tokenQuota:
+          type: integer
+          format: int64
+        pendingTokenQuota:
+          type: integer
+          format: int64
+        pendingEffectiveAt:
+          type: string
+          format: date-time
+    CreditCheckoutRequest:
+      type: object
+      properties:
+        amountVnd:
+          type: integer
+          format: int32
+          minimum: 1
+      required:
+      - amountVnd
+    CreditCheckoutResponse:
+      type: object
+      properties:
+        orderCode:
+          type: integer
+          format: int64
+        amountVnd:
+          type: integer
+          format: int32
+        creditAmount:
+          type: number
+        creditsPer1000VndSnapshot:
+          type: number
+        expiresAt:
+          type: string
+          format: date-time
+        checkoutUrl:
+          type: string
+        qrCode:
+          type: string
     CheckoutRequest:
       type: object
       properties:
@@ -9533,16 +10137,19 @@ components:
           additionalProperties: {}
         signature:
           type: string
-        paymentLinkId:
+        amount:
+          type: integer
+          format: int32
+        transactionAtUtc:
           type: string
+          format: date-time
         paymentSuccess:
           type: boolean
         orderCode:
           type: integer
           format: int64
-        amount:
-          type: integer
-          format: int32
+        paymentLinkId:
+          type: string
     ConfirmNutritionEligibilityRequest:
       type: object
       properties:
@@ -10057,6 +10664,70 @@ components:
           type: string
           maxLength: 1000
           minLength: 0
+    GiftAiPackageRequest:
+      type: object
+      properties:
+        tier:
+          type: string
+          minLength: 1
+          pattern: FREE|PLUS|PRO
+        reason:
+          type: string
+          maxLength: 500
+          minLength: 10
+      required:
+      - reason
+      - tier
+    AdminAiPackageResponse:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        oldTier:
+          type: string
+        newTier:
+          type: string
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        tokenQuota:
+          type: integer
+          format: int64
+        changed:
+          type: boolean
+        effectiveAt:
+          type: string
+          format: date-time
+    GrantAiCreditRequest:
+      type: object
+      properties:
+        credits:
+          type: number
+          minimum: 0
+        reason:
+          type: string
+          maxLength: 500
+          minLength: 10
+      required:
+      - credits
+      - reason
+    AdminAiCreditGrantResponse:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        credits:
+          type: number
+        balance:
+          type: number
+        grantedAt:
+          type: string
+          format: date-time
     RenameShoppingListRequest:
       type: object
       properties:
@@ -10203,6 +10874,25 @@ components:
           format: date-time
           description: "UTC expiry of the subscription purchased by this transaction,\
             \ not the current subscription."
+        productType:
+          type: string
+          enum:
+          - SUBSCRIPTION
+          - AI_CREDIT
+        creditAmount:
+          type:
+          - number
+          - "null"
+          description: Credit quantity captured at checkout for AI_CREDIT transactions.
+        expiresAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+        creditsPer1000VndSnapshot:
+          type:
+          - number
+          - "null"
     MySubscriptionResponse:
       type: object
       properties:
@@ -10247,6 +10937,19 @@ components:
           type: boolean
         subscription:
           $ref: "#/components/schemas/MySubscriptionResponse"
+        productType:
+          type: string
+          enum:
+          - SUBSCRIPTION
+          - AI_CREDIT
+        creditAmount:
+          type:
+          - number
+          - "null"
+        creditsPer1000VndSnapshot:
+          type:
+          - number
+          - "null"
     PlanResponse:
       type: object
       properties:
@@ -10285,6 +10988,19 @@ components:
         resetsAt:
           type: string
           format: date-time
+    MyAiCreditResponse:
+      type: object
+      properties:
+        balance:
+          type: number
+        creditsPer1000Vnd:
+          type: number
+        minimumTopUpVnd:
+          type: integer
+          format: int32
+        maximumTopUpVnd:
+          type: integer
+          format: int32
     PageResponseShoppingListSummary:
       type: object
       properties:
@@ -10920,6 +11636,9 @@ components:
         occurredAt:
           type: string
           format: date-time
+        effectiveUntil:
+          type: string
+          format: date-time
     PageResponseAdminUserAuditResponse:
       type: object
       properties:
@@ -11026,6 +11745,18 @@ components:
           type:
           - string
           - "null"
+        productType:
+          type: string
+          enum:
+          - SUBSCRIPTION
+          - AI_CREDIT
+        creditAmount:
+          type: number
+        creditsPer1000VndSnapshot:
+          type: number
+        expiresAt:
+          type: string
+          format: date-time
     AdminTransactionSummary:
       type: object
       properties:
@@ -11042,6 +11773,9 @@ components:
           type: integer
           format: int64
         cancelled:
+          type: integer
+          format: int64
+        needsReconciliation:
           type: integer
           format: int64
         revenueVnd:

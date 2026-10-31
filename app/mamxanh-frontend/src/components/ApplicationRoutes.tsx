@@ -14,6 +14,7 @@ import { Community } from "../pages/Community"
 import { PostDetail } from "../pages/PostDetail"
 import { Profile } from "../pages/Profile"
 import { AiPlans } from "../pages/AiPlans"
+import { AiCreditTopUp } from "../pages/AiCreditTopUp"
 import { TransactionHistory } from "../pages/TransactionHistory"
 import { PaymentResult } from "../pages/PaymentResult"
 import { NutritionProfile } from "../pages/NutritionProfile"
@@ -110,6 +111,7 @@ export default function ApplicationRoutes() {
                 element={<ExpertRecipeProfile />}
               />
               <Route path="/goi-ai" element={<AiPlans />} />
+              <Route path="/nap-ai-credit" element={<AiCreditTopUp />} />
               <Route path="/payment/success" element={<PaymentResult mode="success" />} />
               <Route path="/payment/cancel" element={<PaymentResult mode="cancel" />} />
               <Route path="/giao-dich" element={<TransactionHistory />} />
@@ -130,7 +132,10 @@ export default function ApplicationRoutes() {
               />
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/ai-telemetry" element={<AiTelemetryPage />} />
-              <Route path="/admin/ai-config" element={<AdminAiConfigurationPage />} />
+              <Route path="/admin/ai-config" element={<AdminAiConfigurationPage key="overview" />} />
+              <Route path="/admin/ai-config/packages" element={<AdminAiConfigurationPage key="plans" section="plans" />} />
+              <Route path="/admin/ai-config/models" element={<AdminAiConfigurationPage key="models" section="models" />} />
+              <Route path="/admin/ai-config/credits" element={<AdminAiConfigurationPage key="credits" section="credit" />} />
               <Route path="/admin/tong-quan" element={<AdminDashboard />} />
               <Route
                 path="/admin/bao-cao"

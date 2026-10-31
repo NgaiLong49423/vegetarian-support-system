@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.53.0
+> **Version:** v0.58.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-31
 > **Status:** Active
@@ -12,6 +12,13 @@
 - `GET /api/v1/subscriptions/plans` trả đúng ba tier cùng giá hiện hành từ cấu hình Admin, quota token tháng, Gemini model được bật và mô tả quyền chức năng theo role/capability. Không phân quyền chức năng AI theo Plus/Pro.
 - `POST /api/v1/subscriptions/checkout` dùng giá và quota đã đọc từ cấu hình tại thời điểm tạo đơn. Response `amountVnd` là số tiền payOS phải thu; Backend lưu tier/quota cùng đơn để webhook kích hoạt đúng quyền lợi đã mua.
 - Thay đổi giá/quota sau đó không đổi đơn `PENDING` hoặc chu kỳ đã kích hoạt. Checkout vẫn yêu cầu giao dịch dương và payOS xác minh đúng số tiền đã lưu.
+
+### Admin tặng gói AI và cấp AI Credit cho tài khoản — Issue #212
+
+- `GET /api/v1/admin/ai-accounts/{userId}/tier` xem tier/quota hiện hành, thời điểm bắt đầu và hết hạn; chỉ Administrator.
+- `POST /api/v1/admin/ai-accounts/{userId}/package-gifts` chỉ nhận tài khoản CUSTOMER hoặc EXPERT; ADMIN nhận `400 AI_PACKAGE_GIFT_MEMBER_ONLY`. Request gồm `tier=FREE|PLUS|PRO` và lý do 10–500 ký tự. Gói áp dụng ngay, thay gói hiện tại; Plus/Pro bắt đầu chu kỳ 30 ngày với quota hiện hành, Free kết thúc subscription trả phí. Không tạo payment order hoặc hoàn tiền. Giao dịch ghi vào lịch sử tài khoản kèm Admin, tier cũ/mới, lý do, thời điểm tặng và thời điểm hết hạn; người nhận nhận in-app notification. Nếu tier đó đang hiệu lực thì không tạo giao dịch mới.
+- `POST /api/v1/admin/ai-accounts/{userId}/credit-grants` nhận số Credit dương (tối đa 9 chữ số thập phân) và lý do 10–500 ký tự. Backend cập nhật wallet và append-only `AI_CREDIT_LEDGER` trong một transaction; người nhận được in-app notification. `ADMIN_GRANT` xuất hiện trong lịch sử tài khoản với số Credit, số dư sau giao dịch, Admin, lý do và thời điểm. Grant độc lập với tặng gói và không đổi tier/quota/model access.
+- Cả ba endpoint yêu cầu Bearer JWT của Administrator. Backend là nơi quyết định cuối cùng cho RBAC, validation và cập nhật quyền lợi; AI Assistant không gọi các endpoint này.
 
 ## Cấu hình AI của Administrator — Issue #212
 
@@ -541,19 +548,23 @@ Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dù
 - Nội dung là văn bản thuần: Backend lưu nguyên văn, Frontend hiển thị như text nên mã HTML/JavaScript không được thực thi (AC-46.3).
 
 
-## 19. Kết quả thanh toán đã xác minh — FR-13 / Issue #142
+## 19. Thanh toán gói AI và nạp AI Credit — FR-13 / FR-64
 
 Generated OpenAPI là contract chi tiết; endpoint mới không thay đổi các route thanh toán hiện có.
 
 | Endpoint | Quyền và hành vi |
 | --- | --- |
 | `POST /api/v1/subscriptions/checkout` | Member đang hoạt động; body chỉ có `tier: PLUS` hoặc `PRO`; Backend quyết định giá. HTTP 201 trả `orderCode`, `amountVnd`, `tier`, `checkoutUrl`, `qrCode`. |
+| `GET /api/v1/subscriptions/my-ai-credit` | Member đang hoạt động; trả `balance`, `creditsPer1000Vnd`, `minimumTopUpVnd`, `maximumTopUpVnd` để hiển thị ví và tỷ lệ nạp hiện hành. |
+| `POST /api/v1/subscriptions/credit-checkout` | Member đang hoạt động; body `{ "amountVnd": integer }`; Backend kiểm tra giới hạn Admin, chụp số tiền/Credit/tỷ lệ, tạo đơn payOS có hạn 15 phút và trả `orderCode`, `amountVnd`, `creditAmount`, `expiresAt`, `checkoutUrl`, `qrCode`. |
 | `GET /api/v1/subscriptions/transactions/{orderCode}` | Chỉ chủ đơn; 200 trả trạng thái đã xác minh và subscription, `Cache-Control: no-store`. Mã đơn là chuỗi số dương trong giới hạn integer an toàn của JavaScript. |
 | `POST /api/v1/payments/webhook` | Không yêu cầu Bearer; bắt buộc chữ ký HMAC hợp lệ và dữ liệu tiền tệ/số tiền hợp lệ trước khi xử lý. |
 
-Response kết quả đơn gồm `orderCode` (string), `tier`, `amountVnd`, `status`, `paidAt`, `activated`, `subscription`. `activated` chỉ đúng khi subscription liên kết với chính đơn còn hiệu lực và gói hiện tại tương ứng; `PAID` là lịch sử thanh toán, không đồng nghĩa subscription còn hiệu lực mãi. Subscription gồm `tier`, `status`, `active`, `startsAt`, `endsAt`, `unlockedFeatures`.
+Response kết quả đơn gồm `orderCode` (string), `productType` (`SUBSCRIPTION` hoặc `AI_CREDIT`), `tier`, `creditAmount`, `creditsPer1000VndSnapshot`, `amountVnd`, `status`, `paidAt`, `activated`, `subscription`. `activated` chỉ đúng với đơn gói khi subscription liên kết còn hiệu lực và gói hiện tại tương ứng; với nạp Credit, giá trị này cho biết số Credit đã được cộng. `PAID` là lịch sử thanh toán, không đồng nghĩa subscription còn hiệu lực mãi. Subscription gồm `tier`, `status`, `active`, `startsAt`, `endsAt`, `unlockedFeatures`.
 
 - Đơn còn `PENDING` được Backend đối soát qua API payOS có credential server; kiểm tra chữ ký response, mã đơn, số tiền và số tiền đã trả trước khi kích hoạt. Webhook và đối soát dùng chung transaction/locking, xử lý lặp không cộng thêm kỳ.
+- Đơn nạp đang chờ hết hạn sau 15 phút. Khi payOS xác nhận thanh toán trước hạn, Backend cập nhật `PAYMENT_TRANSACTION`, `AI_CREDIT_WALLET` và `AI_CREDIT_LEDGER` nguyên tử; lặp webhook không cộng trùng. `NEEDS_RECONCILIATION` nghĩa là payOS ghi nhận thanh toán sau hạn hoặc không có bằng chứng thời điểm: Credit chưa được cộng, Member nhận in-app notification và đơn xuất hiện trong lịch sử để đối soát.
+- Lịch sử giao dịch trả thêm `productType`, `creditAmount`, `creditsPer1000VndSnapshot` và `expiresAt`; Admin transaction report/CSV cũng phân biệt đơn nạp, tỷ lệ đã chụp và trạng thái `NEEDS_RECONCILIATION`.
 - `404 PAYMENT_TRANSACTION_NOT_FOUND` dùng chung cho đơn không tồn tại và đơn của người khác; `403` cho role không phù hợp hoặc tài khoản LOCKED. Guest nhận 401.
 - `503 PAYMENT_UNAVAILABLE` khi thiếu cấu hình hoặc provider lỗi; `502 PAYMENT_RESPONSE_INVALID` khi dữ liệu provider không xác minh được; webhook sai chữ ký/số tiền/currency trả 400. Các lỗi không được tạo quyền trả phí.
 - Lịch sử giao dịch giữ các trường cũ và bổ sung `tier` (nullable với giao dịch cũ có số tiền không khớp giá gói). Checkout không nhận return/cancel URL tùy ý từ trình duyệt; các URL thuộc cấu hình Backend.

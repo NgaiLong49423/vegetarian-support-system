@@ -36,20 +36,27 @@ public class PaymentResultService {
     public PaymentResultResponse getResult(Long userId, String orderCode) {
         subscriptionService.getMySubscription(userId); // Enforce active Member before reading any order.
         PaymentTransactionEntity payment = ownPayment(userId, orderCode);
-        if (payment.getStatus() == PaymentStatus.PENDING) {
+        if (payment.getStatus() == PaymentStatus.PENDING || payment.getStatus() == PaymentStatus.NEEDS_RECONCILIATION) {
             PayOsPaymentInfo info = payOs.getPaymentInfo(Long.parseLong(orderCode));
             if (info.orderCode() != Long.parseLong(orderCode) || info.amount() != payment.getAmountVnd()) {
                 throw new AppException(ErrorCode.PAYMENT_RESPONSE_INVALID);
             }
             if ("PAID".equals(info.status())) {
                 if (info.amountPaid() != payment.getAmountVnd()) throw new AppException(ErrorCode.PAYMENT_RESPONSE_INVALID);
-                settlement.settle(orderCode, info.amount(), PaymentStatus.PAID);
-            } else if ("CANCELLED".equals(info.status()) || "EXPIRED".equals(info.status())) {
-                settlement.settle(orderCode, info.amount(), PaymentStatus.CANCELLED);
+                settlement.settle(orderCode, info.amount(), PaymentStatus.PAID, info.transactionAtUtc());
+            } else if (payment.getStatus() == PaymentStatus.PENDING
+                    && ("CANCELLED".equals(info.status()) || "EXPIRED".equals(info.status()))) {
+                settlement.settle(orderCode, info.amount(), PaymentStatus.CANCELLED, null);
             }
             payment = ownPayment(userId, orderCode);
         }
         var currentSubscription = subscriptionService.getMySubscription(userId);
+        if (payment.getProductType() == PaymentTransactionEntity.ProductType.AI_CREDIT) {
+            return new PaymentResultResponse(payment.getOrderCode(), "AI_CREDIT", payment.getAmountVnd(),
+                    payment.getStatus().name(), payment.getPaidAt(), payment.getStatus() == PaymentStatus.PAID,
+                    currentSubscription, PaymentTransactionEntity.ProductType.AI_CREDIT,
+                    payment.getCreditAmountSnapshot(), payment.getCreditsPer1000VndSnapshot());
+        }
         var purchasedTier = payment.getSubscriptionTier() == null
                 ? PaymentSettlementService.tierForAmount(payment.getAmountVnd()) : payment.getSubscriptionTier();
         boolean activated = payment.getStatus() == PaymentStatus.PAID && payment.getSubscriptionId() != null
@@ -59,7 +66,7 @@ public class PaymentResultService {
                 && currentSubscription.active() && purchasedTier.name().equals(currentSubscription.tier());
         return new PaymentResultResponse(payment.getOrderCode(), purchasedTier.name(),
                 payment.getAmountVnd(), payment.getStatus().name(), payment.getPaidAt(), activated,
-                currentSubscription);
+                currentSubscription, PaymentTransactionEntity.ProductType.SUBSCRIPTION, null, null);
     }
 
     private PaymentTransactionEntity ownPayment(Long userId, String orderCode) {

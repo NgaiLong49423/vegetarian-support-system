@@ -40,10 +40,12 @@ public class TransactionAuditService {
     public String export(String query, String tier, String status, LocalDate from, LocalDate to) {
         var rows = repository.page(filter(query, tier, status, from, to), 0, EXPORT_LIMIT + 1);
         if (rows.size() > EXPORT_LIMIT) throw invalid("Tối đa 10.000 giao dịch mỗi lần xuất. Hãy thu hẹp bộ lọc.");
-        StringBuilder csv = new StringBuilder("\uFEFFMã giao dịch,Mã đơn payOS,Khách hàng,Email,Gói,Số tiền VND,Trạng thái,Tạo lúc UTC,Thanh toán lúc UTC,Mã đăng ký,Hết hạn UTC\r\n");
+        StringBuilder csv = new StringBuilder("\uFEFFMã giao dịch,Mã đơn payOS,Khách hàng,Email,Sản phẩm,Credit,Tỷ lệ nạp/Credit,Số tiền VND,Trạng thái,Tạo lúc UTC,Thanh toán lúc UTC,Mã đăng ký,Hết hạn đơn UTC,Hết hạn gói UTC\r\n");
         for (var row : rows) {
-            Object[] values = {"TX-" + row.id(), row.orderCode(), row.customerName(), row.customerEmail(), row.tier(),
-                    row.amountVnd(), row.status(), row.createdAt(), row.paidAt(), row.subscriptionId(), row.subscriptionEndsAt()};
+            Object product = row.productType() == tech.mamxanh.subscription.entity.PaymentTransactionEntity.ProductType.AI_CREDIT
+                    ? "AI_CREDIT" : row.tier();
+            Object[] values = {"TX-" + row.id(), row.orderCode(), row.customerName(), row.customerEmail(), product,
+                    row.creditAmount(), row.creditsPer1000VndSnapshot(), row.amountVnd(), row.status(), row.createdAt(), row.paidAt(), row.subscriptionId(), row.expiresAt(), row.subscriptionEndsAt()};
             for (int i = 0; i < values.length; i++) {
                 if (i > 0) csv.append(',');
                 csv.append(cell(values[i]));
@@ -58,7 +60,7 @@ public class TransactionAuditService {
         if (search != null && (search.length() > 200 || search.codePoints().anyMatch(Character::isISOControl)))
             throw invalid("Từ khóa tối đa 200 ký tự và không chứa ký tự điều khiển.");
         if (plan != null && !Set.of("PLUS", "PRO").contains(plan)
-                || state != null && !Set.of("PENDING", "PAID", "FAILED", "CANCELLED").contains(state))
+                || state != null && !Set.of("PENDING", "PAID", "FAILED", "CANCELLED", "NEEDS_RECONCILIATION").contains(state))
             throw invalid("Gói hoặc trạng thái giao dịch không hợp lệ.");
         LocalDate today = LocalDate.ofInstant(clock.instant(), ZONE);
         if (from != null && (from.getYear() < 1900 || from.isAfter(today))

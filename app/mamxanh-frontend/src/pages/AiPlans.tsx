@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertCircle, Calendar, Check, Loader2, Sparkles } from 'lucide-react';
+import { AlertCircle, Calendar, Check, Loader2, Sparkles, Wallet } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Badge, Button, Card } from '../components/ui';
 import { useAuth } from '../components/AuthContext';
@@ -16,7 +16,8 @@ import { formatSubscriptionDate as formatDate } from '../utils/subscriptionDate'
 
 export function AiPlans() {
   const navigate = useNavigate();
-  const { isAuthenticated: isLoggedIn } = useAuth();
+  const { account, isAuthenticated: isLoggedIn } = useAuth();
+  const canUseAiCredit = isLoggedIn && (account?.role === 'CUSTOMER' || account?.role === 'EXPERT');
 
   const [plans, setPlans] = useState<PlanResponse[]>([]);
   const [plansError, setPlansError] = useState<string | null>(null);
@@ -26,6 +27,9 @@ export function AiPlans() {
   const [loading, setLoading] = useState(true);
   const [subscribingTier, setSubscribingTier] = useState<SubscriptionTier | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [aiCreditBalance, setAiCreditBalance] = useState<number | null>(null);
+  const [aiCreditLoading, setAiCreditLoading] = useState(false);
+  const [aiCreditError, setAiCreditError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -58,6 +62,28 @@ export function AiPlans() {
         }
       }
 
+      if (canUseAiCredit) {
+        if (active) {
+          setAiCreditBalance(null);
+          setAiCreditLoading(true);
+        }
+        try {
+          const wallet = await subscriptionApi.getMyAiCredit();
+          if (active) {
+            setAiCreditBalance(wallet.balance);
+            setAiCreditError(null);
+          }
+        } catch (cause) {
+          if (active) setAiCreditError(cause instanceof Error ? cause.message : 'Chưa tải được số dư AI Credit.');
+        } finally {
+          if (active) setAiCreditLoading(false);
+        }
+      } else if (active) {
+        setAiCreditBalance(null);
+        setAiCreditError(null);
+        setAiCreditLoading(false);
+      }
+
       if (active) {
         setLoading(false);
       }
@@ -68,10 +94,14 @@ export function AiPlans() {
     return () => {
       active = false;
     };
-  }, [isLoggedIn]);
+  }, [canUseAiCredit, isLoggedIn]);
 
   const currentTier: SubscriptionTier =
     isLoggedIn && subscription?.status === 'ACTIVE' ? subscription.tier : 'FREE';
+  const remainingQuotaPercent = usage && usage.quotaTokens > 0
+    ? Math.round(Math.max(0, Math.min(100, usage.remainingTokens / usage.quotaTokens * 100)))
+    : 0;
+  const usedQuotaPercent = 100 - remainingQuotaPercent;
 
   async function handleSubscribe(tier: 'PLUS' | 'PRO') {
     if (!isLoggedIn) {
@@ -146,7 +176,7 @@ export function AiPlans() {
       </div>
 
       {isLoggedIn && (
-        <section aria-labelledby="ai-usage-heading" className="mx-auto mb-8 max-w-3xl">
+        <section aria-labelledby="ai-usage-heading" className="mb-8 w-full">
           <Card className="p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -155,21 +185,21 @@ export function AiPlans() {
                   {usage ? `Gói ${usage.tier} · cấp lại ${formatDate(usage.resetsAt)}` : 'Đang tải hạn mức của kỳ hiện tại.'}
                 </p>
               </div>
-              {usage && <Badge tone={usage.remainingTokens === 0 ? 'neutral' : 'brand'}>
-                Còn {usage.remainingTokens.toLocaleString('vi-VN')} token
+              {usage && <Badge tone={remainingQuotaPercent === 0 ? 'neutral' : 'brand'}>
+                Còn {remainingQuotaPercent}%
               </Badge>}
             </div>
             {usage ? (
               <>
                 <div className="mt-5 flex justify-between gap-3 text-sm">
-                  <span className="font-semibold text-ink">Đã dùng {usage.consumedTokens.toLocaleString('vi-VN')}</span>
-                  <span className="text-ink-muted">Hạn mức {usage.quotaTokens.toLocaleString('vi-VN')}</span>
+                  <span className="font-semibold text-ink">Đã sử dụng {usedQuotaPercent}%</span>
+                  <span className="text-ink-muted">Còn lại {remainingQuotaPercent}%</span>
                 </div>
                 <div className="mt-2 h-3 overflow-hidden rounded-full bg-brand-50" role="progressbar"
-                  aria-label="Mức sử dụng token trong kỳ hiện tại" aria-valuemin={0}
-                  aria-valuemax={usage.quotaTokens} aria-valuenow={usage.consumedTokens}>
+                  aria-label="Phần trăm hạn mức token còn lại trong kỳ hiện tại" aria-valuemin={0}
+                  aria-valuemax={100} aria-valuenow={remainingQuotaPercent}>
                   <div className="h-full rounded-full bg-brand-600 transition-[width]"
-                    style={{ width: `${usage.quotaTokens === 0 ? 0 : Math.min(100, usage.consumedTokens / usage.quotaTokens * 100)}%` }} />
+                    style={{ width: `${remainingQuotaPercent}%` }} />
                 </div>
               </>
             ) : usageError ? (
@@ -185,6 +215,33 @@ export function AiPlans() {
           <span>{errorMsg}</span>
         </div>
       )}
+
+      <section aria-labelledby="ai-credit-top-up-heading" className="mb-8 w-full">
+        <Card className="flex flex-col items-start justify-between gap-5 border-brand-200 p-5 sm:flex-row sm:items-center sm:p-6">
+          <div className="flex items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700"><Wallet className="h-5 w-5" /></span>
+            <div>
+              <h2 id="ai-credit-top-up-heading" className="text-lg font-bold text-ink">Cần thêm AI Credit?</h2>
+              <p className="mt-1 text-sm text-ink-muted">Xem số dư, chọn số tiền và thanh toán an toàn trên trang nạp AI Credit.</p>
+              {canUseAiCredit && (
+                <p className="mt-2 text-sm text-ink-muted" aria-live="polite">
+                  Số dư AI Credit:{' '}
+                  {aiCreditLoading ? <span>Đang tải…</span> : aiCreditError ? (
+                    <span className="text-red-700">{aiCreditError}</span>
+                  ) : (
+                    <strong className="font-bold text-brand-700">
+                      {(aiCreditBalance ?? 0).toLocaleString('vi-VN', { maximumFractionDigits: 9 })} Credit
+                    </strong>
+                  )}
+                </p>
+              )}
+            </div>
+          </div>
+          <Link to={isLoggedIn ? '/nap-ai-credit' : '/dang-nhap'} state={!isLoggedIn ? { returnTo: '/nap-ai-credit' } : undefined}>
+            <Button as="span" className="w-full sm:w-auto"><Wallet className="mr-2 h-4 w-4" />Nạp tiền</Button>
+          </Link>
+        </Card>
+      </section>
 
       {loading ? (
         <div className="flex justify-center py-16">

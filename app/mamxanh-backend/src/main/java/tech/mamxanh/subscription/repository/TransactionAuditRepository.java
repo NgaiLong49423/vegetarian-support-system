@@ -23,12 +23,13 @@ public class TransactionAuditRepository {
             JOIN [USER] u ON u.user_id = p.user_id
             LEFT JOIN SUBSCRIPTION s ON s.subscription_id = p.subscription_id AND s.user_id = p.user_id
             """;
-    private static final String TIER = "COALESCE(s.tier, p.subscription_tier, CASE p.amount_vnd WHEN "
-            + SubscriptionTier.PLUS.priceVnd() + " THEN 'PLUS' WHEN " + SubscriptionTier.PRO.priceVnd() + " THEN 'PRO' END)";
+    private static final String TIER = "CASE WHEN p.product_type = 'SUBSCRIPTION' THEN COALESCE(s.tier, p.subscription_tier, CASE p.amount_vnd WHEN "
+            + SubscriptionTier.PLUS.priceVnd() + " THEN 'PLUS' WHEN " + SubscriptionTier.PRO.priceVnd() + " THEN 'PRO' END) END";
     private static final String SELECT = """
             SELECT p.payment_transaction_id, p.order_code, p.user_id, u.display_name, u.email,
                    %s AS tier, p.amount_vnd, p.status, p.created_at, p.paid_at,
-                   s.subscription_id, s.starts_at, s.ends_at, s.status AS subscription_status
+                   s.subscription_id, s.starts_at, s.ends_at, s.status AS subscription_status,
+                   p.product_type, p.credit_amount_snapshot, p.credits_per_1000_vnd_snapshot, p.expires_at
             """.formatted(TIER);
     private final JdbcTemplate jdbc;
 
@@ -63,9 +64,11 @@ public class TransactionAuditRepository {
                   COALESCE(SUM(CAST(CASE WHEN p.status='PENDING' THEN 1 ELSE 0 END AS BIGINT)),0) AS pending,
                   COALESCE(SUM(CAST(CASE WHEN p.status='FAILED' THEN 1 ELSE 0 END AS BIGINT)),0) AS failed,
                   COALESCE(SUM(CAST(CASE WHEN p.status='CANCELLED' THEN 1 ELSE 0 END AS BIGINT)),0) AS cancelled,
+                  COALESCE(SUM(CAST(CASE WHEN p.status='NEEDS_RECONCILIATION' THEN 1 ELSE 0 END AS BIGINT)),0) AS needs_reconciliation,
                   COALESCE(SUM(CASE WHEN p.status='PAID' THEN CAST(p.amount_vnd AS BIGINT) ELSE 0 END),0) AS revenue
                 """ + FROM + w.sql(), (rs, n) -> new Summary(rs.getLong("total"), rs.getLong("paid"),
-                rs.getLong("pending"), rs.getLong("failed"), rs.getLong("cancelled"), rs.getLong("revenue")), w.args().toArray());
+                rs.getLong("pending"), rs.getLong("failed"), rs.getLong("cancelled"),
+                rs.getLong("needs_reconciliation"), rs.getLong("revenue")), w.args().toArray());
     }
 
     public List<AdminTransactionResponse> page(Filter filter, long offset, int limit) {
@@ -86,7 +89,10 @@ public class TransactionAuditRepository {
                 rs.getLong("user_id"), rs.getString("display_name"), rs.getString("email"), rs.getString("tier"),
                 rs.getInt("amount_vnd"), rs.getString("status"), instant(rs, "created_at"), instant(rs, "paid_at"),
                 rs.getObject("subscription_id", Long.class), instant(rs, "starts_at"), instant(rs, "ends_at"),
-                rs.getString("subscription_status"));
+                rs.getString("subscription_status"),
+                tech.mamxanh.subscription.entity.PaymentTransactionEntity.ProductType.valueOf(rs.getString("product_type")),
+                rs.getBigDecimal("credit_amount_snapshot"), rs.getBigDecimal("credits_per_1000_vnd_snapshot"),
+                instant(rs, "expires_at"));
     }
 
     private Instant instant(ResultSet rs, String column) throws SQLException {

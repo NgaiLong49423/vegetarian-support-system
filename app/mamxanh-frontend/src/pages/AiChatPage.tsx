@@ -388,6 +388,11 @@ export function AiChatPage() {
     void send(normalized, previous, true)
   }
 
+  const remainingQuotaPercent = chatSettings && chatSettings.quotaTokens > 0
+    ? Math.round(Math.max(0, Math.min(100, chatSettings.remainingTokens / chatSettings.quotaTokens * 100)))
+    : 0
+  const usedQuotaPercent = 100 - remainingQuotaPercent
+
   return (
     <div className="pointer-events-none fixed inset-2 z-50 flex items-end justify-end sm:inset-0 sm:p-5">
       <section
@@ -888,12 +893,12 @@ export function AiChatPage() {
                           <div className="flex items-start justify-between gap-3">
                             <div>
                               <p className="text-xs font-semibold text-ink">{chatSettings.tier === "GUEST" ? "Hạn mức dùng thử" : `Gói ${chatSettings.tier}`}</p>
-                              <p className="mt-1 text-[11px] text-ink-muted">Đã dùng {chatSettings.consumedTokens.toLocaleString("vi-VN")} / {chatSettings.quotaTokens.toLocaleString("vi-VN")} token</p>
+                              <p className="mt-1 text-[11px] text-ink-muted">Đã sử dụng {usedQuotaPercent}%</p>
                             </div>
-                            <p className="shrink-0 text-right text-xs font-bold text-brand-700">Còn<br />{chatSettings.remainingTokens.toLocaleString("vi-VN")}</p>
+                            <p className="shrink-0 text-right text-xs font-bold text-brand-700">Còn<br />{remainingQuotaPercent}%</p>
                           </div>
-                          <div className="mt-3 h-2 overflow-hidden rounded-full bg-paper" role="progressbar" aria-label="Mức sử dụng token trong kỳ hiện tại" aria-valuemin={0} aria-valuemax={chatSettings.quotaTokens} aria-valuenow={chatSettings.consumedTokens}>
-                            <div className="h-full rounded-full bg-brand-600 transition-[width]" style={{ width: `${chatSettings.quotaTokens ? Math.min(100, chatSettings.consumedTokens / chatSettings.quotaTokens * 100) : 0}%` }} />
+                          <div className="mt-3 h-2 overflow-hidden rounded-full bg-paper" role="progressbar" aria-label="Phần trăm hạn mức token còn lại trong kỳ hiện tại" aria-valuemin={0} aria-valuemax={100} aria-valuenow={remainingQuotaPercent}>
+                            <div className="h-full rounded-full bg-brand-600 transition-[width]" style={{ width: `${remainingQuotaPercent}%` }} />
                           </div>
                           <div className="mt-2 flex justify-between gap-2 text-[10px] text-ink-muted">
                             <span>{chatSettings.tier === "GUEST" ? "Tính theo phiên khách" : "Hạn mức theo tháng"}</span>

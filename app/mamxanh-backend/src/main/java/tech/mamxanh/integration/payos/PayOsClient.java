@@ -22,6 +22,10 @@ public interface PayOsClient {
      */
     CreatePaymentLinkResponse createPaymentLink(long orderCode, int amount, String description);
 
+    default CreatePaymentLinkResponse createPaymentLink(long orderCode, int amount, String description, int expiredAt) {
+        return createPaymentLink(orderCode, amount, description);
+    }
+
     /**
      * Verifies the authenticity of a payOS webhook notification (AC-13.5).
      *

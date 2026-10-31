@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -23,6 +24,8 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PaymentTransactionEntity {
+
+    public enum ProductType { SUBSCRIPTION, AI_CREDIT }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -47,6 +50,19 @@ public class PaymentTransactionEntity {
 
     @Column(name = "token_quota_snapshot")
     private Long tokenQuotaSnapshot;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "product_type", nullable = false, length = 20)
+    private ProductType productType = ProductType.SUBSCRIPTION;
+
+    @Column(name = "credit_amount_snapshot", precision = 38, scale = 9)
+    private BigDecimal creditAmountSnapshot;
+
+    @Column(name = "credits_per_1000_vnd_snapshot", precision = 19, scale = 6)
+    private BigDecimal creditsPer1000VndSnapshot;
+
+    @Column(name = "expires_at")
+    private LocalDateTime expiresAt;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)

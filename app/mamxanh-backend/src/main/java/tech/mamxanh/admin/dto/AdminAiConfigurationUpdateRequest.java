@@ -23,7 +23,8 @@ public record AdminAiConfigurationUpdateRequest(
             @Min(0) long tokenQuota) { }
 
     public record ModelUpdate(
-            @NotBlank @Pattern(regexp = "gemini-[a-z0-9][a-z0-9-]{0,119}") String modelId,
+            // Gemini versioned model IDs contain dots, for example gemini-3.5-flash-lite.
+            @NotBlank @Pattern(regexp = "gemini-[a-z0-9][a-z0-9.-]{0,119}") String modelId,
             @NotBlank @Size(max = 120) String displayName,
             boolean enabled,
             boolean freeAllowed,
