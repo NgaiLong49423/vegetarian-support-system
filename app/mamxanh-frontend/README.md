@@ -2,10 +2,16 @@
 > **File:** `app/mamxanh-frontend/README.md`  
 > **Version:** v1.62.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-29
+> **Last Updated:** 2026-10-30
 > **Status:** Active  
 
 # Mâm Xanh Frontend
+
+## Guest Chatbot — FR-02
+
+Guest mở nút hỗ trợ AI từ ứng dụng hoặc “Hỏi AI về công thức này” trên bài công khai mà không cần đăng nhập. UI dùng chatbot FR-51 hiện có, giữ UUID trong session cookie `mamxanh.guest-chat` / `mamxanh.recipe-viewer` và gửi `anonymousViewerId` / header `X-Guest-Chat-Id`. Chat chỉ giữ hội thoại trong bộ nhớ giao diện, xóa khi đổi tài khoản/ngữ cảnh và thông báo câu hỏi được chuyển tới Gemini.
+
+Guest bị giới hạn 3 câu hỏi mỗi ngày và được reset lượt mới vào 00:00 ngày mới. Sau câu trả lời hoặc thông báo giới hạn, Guest thấy liên kết đăng ký để lưu công thức/quản lý thực đơn. `429` hiển thị thời điểm mở lại lượt hỏi (ngày giờ 00:00 của ngày mới), khóa gửi/thử lại trong thời gian chờ; lỗi provider kết thúc loading và cho thử lại. Chặn cookie hiển thị hướng dẫn cho phép cookie. Các luồng Member và ranh giới Admin vẫn được giữ. Xem [API Guide, mục 16](../../docs/api/API.md#16-chatbot-hỏi-đáp-theo-ngữ-cảnh--fr-02-và-fr-51).
 
 ### Giám sát giao dịch gói tài khoản
 
