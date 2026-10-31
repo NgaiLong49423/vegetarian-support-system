@@ -26,6 +26,12 @@ public interface AiClient {
     default ChatResult answerChat(String modelId, String systemInstruction, String prompt) {
         return answerChat(systemInstruction, prompt);
     }
+    default ChatResult planAssistantTools(String systemInstruction, String prompt) {
+        return answerChat(systemInstruction, prompt);
+    }
+    default ChatResult planAssistantTools(String modelId, String systemInstruction, String prompt) {
+        return planAssistantTools(systemInstruction, prompt);
+    }
     /** Selects an ordered sequence; IDs may repeat when the caller explicitly permits it. */
     default RecommendationResult recommendRecipeSequence(String prompt, List<Long> allowedRecipeIds, int slots) {
         return recommendRecipes(prompt, allowedRecipeIds, slots);

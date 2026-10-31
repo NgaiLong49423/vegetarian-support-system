@@ -1,8 +1,8 @@
 > **Document:** Non-Functional Requirements Specification
 > **File:** `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.2.0
+> **Version:** v2.5.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-30
+> **Last Updated:** 2026-11-01
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`
 
@@ -268,7 +268,7 @@ This document contains only requirements included in Requirements / Implementati
 - **Mô tả yêu cầu:** Xử lý lỗi linh hoạt khi dịch vụ Google Gemini bên ngoài gặp sự cố mạng, timeout hoặc trả về lỗi HTTP 429/500.
 - **Nghiệp vụ liên quan:** `FR-02`, `FR-10`, `FR-51`, `BR-04`.
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
-  - *Threshold:* Thiết lập timeout tối đa 10 giây; khi vượt ngưỡng hoặc lỗi provider, hệ thống trả về thông báo lỗi thân thiện, cho phép người dùng thử lại và ghi log lỗi kỹ thuật theo quy tắc `BR-04`; không làm gián đoạn các tính năng phi AI của ứng dụng.
+  - *Threshold:* Mỗi lần gọi model hoặc query embedding có deadline tối đa 10 giây, bao gồm retry cùng model nếu có. Query embedding không tự retry; khi lỗi hoặc timeout, retrieval dùng keyword với trạng thái degraded rõ ràng, không tự đổi model/provider. Với AI Assistant nhiều bước, retrieval nằm trong deadline run; mỗi lần thực thi hoặc resume có deadline toàn run tối đa 30 giây; thời gian chờ người dùng xác nhận giữa các lần thực thi không tính vào deadline này. Hết deadline phải dừng các bước kế tiếp; không chạy lại thao tác ghi đã hoàn tất. Khi vượt ngưỡng hoặc lỗi provider, hệ thống trả về thông báo lỗi thân thiện, cho phép người dùng thử lại theo quyền và xác nhận hiện hành, ghi log lỗi kỹ thuật theo `BR-04` và không làm gián đoạn các tính năng phi AI.
 - **Phương pháp kiểm chứng (Verification Method):** Kiểm thử mô phỏng mock lỗi timeout hoặc lỗi 429 từ Gemini API và kiểm tra hệ thống trả về thông báo lỗi chuẩn xác, ghi vết error log và cho phép người dùng thao tác bình thường.
 
 ---
@@ -323,7 +323,7 @@ This document contains only requirements included in Requirements / Implementati
 - **Mô tả yêu cầu:** Bảo vệ sự riêng tư của các cuộc trò chuyện tư vấn dinh dưỡng giữa người dùng và AI.
 - **Nghiệp vụ liên quan:** `FR-02`, `FR-51` (Chatbot AI).
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
-  - *Threshold:* MVP lưu session hội thoại tạm thời để tiếp tục tác vụ trong session; khi consent bị thu hồi, các lần gửi dữ liệu thuộc consent đó phải dừng; session/context được dọn theo chính sách hết hạn. Telemetry không giữ raw prompt content và được xóa sau 90 ngày. Người dùng được thông báo loại dữ liệu, mục đích và bên nhận trước khi đồng ý gửi dữ liệu cá nhân tới Google Gemini API. Usage/credit ledger lưu dữ liệu kế toán tối thiểu riêng với telemetry; không lưu nội dung prompt.
+  - *Threshold:* MVP giữ transcript và session hội thoại tạm thời trong cùng tab để tiếp tục tác vụ qua điều hướng, đóng/mở khung chat và tải lại trang; thời hạn không hoạt động được cấu hình, mặc định 30 phút. Người dùng có thể chủ động xóa transcript cùng consent/action đang chờ bằng cách bắt đầu phiên mới; thao tác này không hoàn tác thay đổi nghiệp vụ đã hoàn tất. Không lưu lịch sử hội thoại dài hạn theo tài khoản hoặc đồng bộ sang thiết bị khác. Khi consent bị thu hồi, các lần gửi dữ liệu thuộc consent đó phải dừng; session/context được dọn theo chính sách hết hạn hoặc khi người dùng xóa. Cache query vector cho knowledge pilot chỉ nằm trong RAM của session tối đa 30 phút; không lưu query thật hoặc lịch sử hội thoại vào index, build/startup không tự gọi embedding API. Telemetry không giữ raw prompt content và được xóa sau 90 ngày. Người dùng được thông báo loại dữ liệu, mục đích và bên nhận trước khi đồng ý gửi dữ liệu cá nhân tới Google Gemini API. Usage/credit ledger lưu dữ liệu kế toán tối thiểu riêng với telemetry; không lưu nội dung prompt.
 - **Phương pháp kiểm chứng (Verification Method):** Kiểm tra schema, log/telemetry configuration và retention job để xác nhận không có raw prompt, session/context tuân thời hạn đã cấu hình; không lưu raw prompt trong telemetry; ledger không chứa nội dung hội thoại; telemetry quá 90 ngày được loại bỏ.
 
 ---

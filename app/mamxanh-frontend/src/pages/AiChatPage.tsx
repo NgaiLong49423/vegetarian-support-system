@@ -8,7 +8,7 @@ import {
   type PointerEvent,
 } from "react"
 
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 
 import {
   Bot,
@@ -17,7 +17,9 @@ import {
   Clock3,
   Gauge,
   LoaderCircle,
+  MessageSquarePlus,
   Send,
+  Settings2,
   ShieldAlert,
   Sparkles,
   UserRound,
@@ -28,24 +30,41 @@ import { useAuth } from "../components/AuthContext"
 
 import { useAiChat } from "../components/AiChatContext"
 
-import { recipesApi, type AiChatTurn } from "../api/recipes"
+import { recipesApi, type AiChatRequest, type AiExecutionMode } from "../api/recipes"
 import { subscriptionApi, type AiChatSettingsResponse } from "../api/subscription"
 
 import { asApiError } from "../lib/apiClient"
 import { anonymousRecipeViewer } from "../lib/recipeViewer"
+import {
+  clearAiChatSession,
+  readAiChatSession,
+  writeAiChatSession,
+  type PersistedAiChatMessage,
+} from "../lib/aiChatSession"
 
-interface ChatMessage extends AiChatTurn {
-  id: number
+type ChatMessage = PersistedAiChatMessage
 
-  recommendations?: Awaited<ReturnType<typeof recipesApi.chat>>["recommendations"]
-  workflowUrl?: string | null
+const AI_WORKFLOW_ROUTES = [
+  "/trang-chu", "/kham-pha", "/ke-hoach", "/ke-hoach?view=for-you", "/di-cho",
+  "/goi-ai", "/nap-ai-credit", "/ho-so", "/ho-so/so-thich-an-uong",
+  "/ho-so/dinh-duong", "/dang-cong-thuc", "/chuyen-gia", "/cong-dong", "/giao-dich",
+] as const
+
+function trustedWorkflowUrl(value: string | null | undefined): string | null {
+  return value && AI_WORKFLOW_ROUTES.includes(value as (typeof AI_WORKFLOW_ROUTES)[number])
+    ? value
+    : null
 }
 
 export function AiChatPage() {
+  const navigate = useNavigate()
   const { account, isAuthenticated } = useAuth()
 
-  const { isOpen, recipeId, recipeTitle, recipeArticle, closeChat } =
+  const { isOpen, recipeId, recipeTitle, recipeArticle, closeChat, startNewChat } =
     useAiChat()
+  const ownerKey = isAuthenticated && account?.id != null
+    ? `member-${account.id}`
+    : `guest-${anonymousRecipeViewer()}`
 
   const hasRecipeContext = recipeId !== null
   const requestVersion = useRef(0)
@@ -53,6 +72,9 @@ export function AiChatPage() {
     recipeTitle?.trim() || (recipeId === null ? "" : `công thức #${recipeId}`)
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [executionMode, setExecutionMode] = useState<AiExecutionMode>("CONFIRM")
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [hydratedOwnerKey, setHydratedOwnerKey] = useState<string | null>(null)
 
   const [question, setQuestion] = useState("")
 
@@ -67,6 +89,7 @@ export function AiChatPage() {
   const [settingsError, setSettingsError] = useState("")
   const [modelSaving, setModelSaving] = useState(false)
   const [modelMenuOpen, setModelMenuOpen] = useState(false)
+  const [modeMenuOpen, setModeMenuOpen] = useState(false)
   const [usageOpen, setUsageOpen] = useState(false)
   const modelMenuRef = useRef<HTMLDivElement>(null)
 
@@ -82,6 +105,38 @@ export function AiChatPage() {
   } | null>(null)
 
   const contextType = hasRecipeContext ? "RECIPE" : "GENERAL"
+
+  useEffect(() => {
+    requestVersion.current += 1
+    setLoading(false)
+    const saved = readAiChatSession(ownerKey)
+    setMessages(saved?.messages ?? [])
+    setExecutionMode(saved?.executionMode ?? "CONFIRM")
+    setSessionId(saved?.sessionId ?? null)
+    setSequence(saved?.sequence ?? saved?.messages.reduce((max, item) => Math.max(max, item.id), 0) ?? 0)
+    setQuestion("")
+    setError("")
+    setErrorAction(null)
+    setRetryQuestion("")
+    setHydratedOwnerKey(ownerKey)
+  }, [ownerKey])
+
+  useEffect(() => {
+    if (hydratedOwnerKey !== ownerKey) return
+    if (messages.length === 0 && !sessionId) {
+      clearAiChatSession(ownerKey)
+      return
+    }
+    writeAiChatSession(ownerKey, { sessionId, messages, executionMode, sequence })
+    const expiryTimer = window.setTimeout(() => {
+      clearAiChatSession(ownerKey)
+      setMessages([])
+      setSessionId(null)
+      setExecutionMode("CONFIRM")
+      setSequence(0)
+    }, 30 * 60 * 1000)
+    return () => window.clearTimeout(expiryTimer)
+  }, [ownerKey, hydratedOwnerKey, messages, sessionId, executionMode, sequence])
 
   const chatWindowStyle = {
     width: `min(${windowSize.width}px, calc(100vw - 1rem))`,
@@ -195,19 +250,33 @@ export function AiChatPage() {
     </button>
   )
 
-  useEffect(() => {
-    requestVersion.current += 1
-    setLoading(false)
-    setMessages([])
-
-    setQuestion("")
-
-    setError("")
-    setErrorAction(null)
-    setRetryQuestion("")
-
-    setSequence(0)
-  }, [recipeId, account?.id, isAuthenticated])
+  async function startFreshConversation() {
+    if (loading) return
+    if (messages.length > 0 && !window.confirm(
+      "Xóa nội dung cuộc trò chuyện hiện tại và bắt đầu phiên mới? Thao tác này không hoàn tác các thay đổi đã hoàn tất trong hệ thống.",
+    )) return
+    try {
+      if (sessionId) {
+        await recipesApi.clearChatSession(
+          sessionId,
+          isAuthenticated ? undefined : anonymousRecipeViewer(),
+        )
+      }
+      requestVersion.current += 1
+      clearAiChatSession(ownerKey)
+      setMessages([])
+      setExecutionMode("CONFIRM")
+      setSessionId(null)
+      setQuestion("")
+      setError("")
+      setErrorAction(null)
+      setRetryQuestion("")
+      setSequence(0)
+      startNewChat()
+    } catch (cause) {
+      setError(`Chưa thể xóa phiên trò chuyện trên máy chủ: ${asApiError(cause).message}`)
+    }
+  }
 
   useEffect(() => {
     if (!isOpen || account?.role === "ADMIN") return
@@ -223,14 +292,18 @@ export function AiChatPage() {
   }, [isOpen, account?.id, account?.role, isAuthenticated])
 
   useEffect(() => {
-    if (!modelMenuOpen) return
+    if (!modelMenuOpen && !modeMenuOpen) return
     const dismiss = (event: Event) => {
       if (event.target instanceof Node && !modelMenuRef.current?.contains(event.target)) {
         setModelMenuOpen(false)
+        setModeMenuOpen(false)
       }
     }
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape") setModelMenuOpen(false)
+      if (event.key === "Escape") {
+        setModelMenuOpen(false)
+        setModeMenuOpen(false)
+      }
     }
     document.addEventListener("pointerdown", dismiss)
     document.addEventListener("keydown", onKeyDown)
@@ -238,7 +311,7 @@ export function AiChatPage() {
       document.removeEventListener("pointerdown", dismiss)
       document.removeEventListener("keydown", onKeyDown)
     }
-  }, [modelMenuOpen])
+  }, [modelMenuOpen, modeMenuOpen])
 
   if (!isOpen) return null
 
@@ -265,6 +338,7 @@ export function AiChatPage() {
     questionText: string,
     previous: ChatMessage[],
     addQuestion: boolean,
+    continuation: Pick<AiChatRequest, "consentDecision" | "confirmationId" | "confirmationDecision"> = {},
   ) {
     const normalized = questionText.trim()
 
@@ -289,6 +363,9 @@ export function AiChatPage() {
     try {
       const response = await recipesApi.chat({
         contextType,
+        executionMode,
+        ...(sessionId ? { sessionId } : {}),
+        ...continuation,
         ...(!isAuthenticated
           ? { anonymousViewerId: anonymousRecipeViewer() }
           : {}),
@@ -311,8 +388,13 @@ export function AiChatPage() {
           })),
       })
       if (version !== requestVersion.current) return
+      if (response.sessionId) setSessionId(response.sessionId)
       setMessages((current) => [
-        ...current,
+        ...current.map((message) => ({
+          ...message,
+          ...(continuation.confirmationDecision ? { pendingConfirmation: null } : {}),
+          ...(continuation.consentDecision ? { consentRequest: null } : {}),
+        })),
         {
           id: currentId + 1,
 
@@ -322,8 +404,18 @@ export function AiChatPage() {
 
           recommendations: response.recommendations ?? [],
           workflowUrl: response.workflowUrl,
+          steps: response.steps ?? [],
+          pendingConfirmation: response.pendingConfirmation,
+          consentRequest: response.consentRequest,
+          requestQuestion: normalized,
         },
       ])
+
+      const workflowUrl = trustedWorkflowUrl(response.workflowUrl)
+      if (workflowUrl) {
+        closeChat()
+        navigate(workflowUrl)
+      }
 
       setSequence(currentId + 1)
 
@@ -358,8 +450,20 @@ export function AiChatPage() {
       }
       if (apiError.status === 401 || apiError.status === 403)
         setRetryQuestion("")
+      const expiredSession = apiError.code === "VALIDATION_FAILED"
+        && apiError.message.toLocaleLowerCase("vi").includes("phiên trợ lý")
+      if (expiredSession) {
+        setSessionId(null)
+        setMessages((current) => current.map((message) => ({
+          ...message,
+          pendingConfirmation: null,
+          consentRequest: null,
+        })))
+      }
       if (apiError.code !== "AI_MODEL_SELECTION_REQUIRED") setError(
-        apiError.code === "AI_SUBSCRIPTION_REQUIRED"
+        expiredSession
+          ? "Phiên AI đã hết hạn; lịch sử trò chuyện vẫn được giữ. Hãy thử lại để tiếp tục trong phiên mới."
+          : apiError.code === "AI_SUBSCRIPTION_REQUIRED"
           ? aiUpgradeMessage(apiError, "PLUS", "Tính năng AI bạn yêu cầu")
           : apiError.code === "AI_TOKEN_QUOTA_EXCEEDED" && !isAuthenticated
           ? "Bạn đã dùng hết 20.000 token dùng thử trong phiên này. Đăng ký tài khoản để tiếp tục sử dụng AI."
@@ -379,7 +483,7 @@ export function AiChatPage() {
 
     const normalized = question.trim()
 
-    if (!normalized) return
+    if (!normalized || hasUnresolvedAssistantAction) return
 
     const previous = messages
 
@@ -392,6 +496,10 @@ export function AiChatPage() {
     ? Math.round(Math.max(0, Math.min(100, chatSettings.remainingTokens / chatSettings.quotaTokens * 100)))
     : 0
   const usedQuotaPercent = 100 - remainingQuotaPercent
+  const hasUnresolvedAssistantAction = messages.some((message) =>
+    message.speaker === "ASSISTANT" && (message.pendingConfirmation || message.consentRequest),
+  )
+  const modeLabel = executionMode === "QA" ? "Hỏi đáp" : executionMode === "AUTO" ? "Tự động" : "Có xác nhận"
 
   return (
     <div className="pointer-events-none fixed inset-2 z-50 flex items-end justify-end sm:inset-0 sm:p-5">
@@ -422,14 +530,26 @@ export function AiChatPage() {
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={closeChat}
-            aria-label="Đóng khung chat"
-            className="rounded-full p-2 text-ink-muted hover:bg-paper hover:text-ink"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => void startFreshConversation()}
+              disabled={loading}
+              aria-label="Bắt đầu cuộc trò chuyện mới"
+              title="Cuộc trò chuyện mới"
+              className="rounded-full p-2 text-ink-muted hover:bg-paper hover:text-ink disabled:opacity-50"
+            >
+              <MessageSquarePlus className="h-4 w-4" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={closeChat}
+              aria-label="Đóng khung chat"
+              className="rounded-full p-2 text-ink-muted hover:bg-paper hover:text-ink"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </header>
 
         {!isAuthenticated && (
@@ -449,8 +569,8 @@ export function AiChatPage() {
             className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-700"
             aria-hidden="true"
           />
-          Câu trả lời do AI tạo và chỉ mang tính tham khảo. Hội thoại chỉ giữ
-          trong phiên này.
+          Câu trả lời do AI tạo và chỉ mang tính tham khảo. Hội thoại được giữ
+          trong tab này tối đa 30 phút không hoạt động; bạn có thể chủ động tạo phiên mới.
         </p>
 
         <div
@@ -655,6 +775,52 @@ export function AiChatPage() {
                   {message.speaker === "USER" ? "Bạn" : "AI"}
                 </p>
                 <p className="whitespace-pre-wrap">{message.content}</p>
+                {message.steps?.length ? (
+                  <div className="mt-3 space-y-2" aria-label="Các bước AI đã xử lý">
+                    {message.steps.map((step) => {
+                      const preview = step.result?.preview
+                      const previewEntries = preview && typeof preview === "object"
+                        ? Object.entries(preview as Record<string, unknown>)
+                        : []
+                      return (
+                        <section key={`${step.sequence}-${step.tool}`} className="rounded-xl border border-brand-100 bg-paper p-3 text-xs text-ink">
+                          <p className="font-semibold">{step.sequence}. {step.tool.replace(/_/g, " ")}</p>
+                          <p className="mt-1 text-ink-muted">{step.summary}</p>
+                          {previewEntries.length > 0 && (
+                            <dl className="mt-2 space-y-1 border-t border-brand-50 pt-2">
+                              {previewEntries.map(([key, value]) => (
+                                <div key={key} className="flex gap-2">
+                                  <dt className="shrink-0 font-medium">{key}:</dt>
+                                  <dd className="min-w-0 break-words text-ink-muted">{typeof value === "string" ? value : JSON.stringify(value)}</dd>
+                                </div>
+                              ))}
+                            </dl>
+                          )}
+                        </section>
+                      )
+                    })}
+                  </div>
+                ) : null}
+                {message.pendingConfirmation && (
+                  <section className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-amber-950">
+                    <p className="text-sm font-bold">Xem lại trước khi thực hiện</p>
+                    <p className="mt-1 text-xs leading-5">{message.pendingConfirmation.summary}. Các thay đổi chưa được áp dụng.</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button type="button" disabled={loading} onClick={() => void send("Tiếp tục với thay đổi đã xem trước", messages.slice(0, messages.indexOf(message)), false, { confirmationId: message.pendingConfirmation!.confirmationId, confirmationDecision: "APPROVE" })} className="rounded-full bg-brand-700 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">Xác nhận thay đổi</button>
+                      <button type="button" disabled={loading} onClick={() => void send("Hủy thay đổi đang chờ", messages.slice(0, messages.indexOf(message)), false, { confirmationId: message.pendingConfirmation!.confirmationId, confirmationDecision: "REJECT" })} className="rounded-full border border-brand-200 bg-paper px-3 py-2 text-xs font-semibold disabled:opacity-50">Hủy</button>
+                    </div>
+                  </section>
+                )}
+                {message.consentRequest && (
+                  <section className="mt-3 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sky-950">
+                    <p className="text-sm font-bold">Cho phép dùng dữ liệu cá nhân?</p>
+                    <p className="mt-1 text-xs leading-5">Chỉ khi đồng ý, nội dung liên quan mới được gửi tới {message.consentRequest.recipient}. Phạm vi: {message.consentRequest.scopes.map((scope) => scope.category === "HEALTH_PROFILE" ? "hồ sơ sức khỏe" : scope.category === "DIETARY_PREFERENCES" ? "tùy chọn ăn uống" : "hồ sơ cơ bản").join(", ")}.</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button type="button" disabled={loading} onClick={() => void send(message.requestQuestion ?? "", messages.slice(0, messages.indexOf(message)), false, { consentDecision: { action: "GRANT", scopes: message.consentRequest!.scopes } })} className="rounded-full bg-sky-800 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">Đồng ý và tiếp tục</button>
+                      <button type="button" disabled={loading} onClick={() => setMessages((current) => current.map((item) => item.id === message.id ? { ...item, consentRequest: null } : item))} className="rounded-full border border-sky-300 bg-white px-3 py-2 text-xs font-semibold disabled:opacity-50">Không đồng ý</button>
+                    </div>
+                  </section>
+                )}
                 {message.speaker === "ASSISTANT" &&
                   Boolean(message.recommendations?.length) && (
                     <div
@@ -714,18 +880,13 @@ export function AiChatPage() {
                       ))}
                     </div>
                   )}
-                {message.workflowUrl &&
-                  ["/ke-hoach?view=for-you", "/dang-cong-thuc"].includes(
-                    message.workflowUrl,
-                  ) && (
+                {trustedWorkflowUrl(message.workflowUrl) && (
                     <Link
-                      to={message.workflowUrl}
+                      to={trustedWorkflowUrl(message.workflowUrl)!}
                       onClick={closeChat}
                       className="mt-3 inline-flex font-semibold text-brand-700 underline"
                     >
-                      {message.workflowUrl === "/dang-cong-thuc"
-                        ? "Mở biểu mẫu soạn công thức"
-                        : "Mở chức năng lập thực đơn"}
+                      Mở trang được đề xuất
                     </Link>
                   )}
               </div>
@@ -794,10 +955,32 @@ export function AiChatPage() {
           onSubmit={submit}
           className="border-t border-brand-100 bg-paper p-3 sm:p-4"
         >
+          {hasUnresolvedAssistantAction && <p className="mb-2 text-xs font-medium text-amber-800">Hãy xử lý yêu cầu xác nhận hoặc đồng ý ở trên trước khi gửi yêu cầu mới.</p>}
           <label htmlFor="ai-chat-question" className="sr-only">
             Câu hỏi của bạn
           </label>
           <div ref={modelMenuRef} className="relative rounded-2xl border border-brand-200 bg-paper shadow-sm transition focus-within:border-brand-300 focus-within:ring-2 focus-within:ring-brand-100">
+            {modeMenuOpen && (
+              <section id="ai-execution-mode-menu" role="dialog" aria-label="Chọn chế độ AI" className="absolute bottom-[calc(100%+0.65rem)] left-2 z-30 w-[min(20rem,calc(100vw-3rem))] overflow-hidden rounded-2xl border border-brand-100 bg-paper p-2 text-ink shadow-xl">
+                <p className="px-3 py-2 text-xs font-bold uppercase tracking-wide text-ink-muted">Chế độ thực hiện</p>
+                <div role="radiogroup" aria-label="Chế độ thực hiện">
+                {([
+                  { value: "QA", label: "Hỏi đáp", description: "Trả lời và tra cứu, không thay đổi dữ liệu." },
+                  { value: "CONFIRM", label: "Có xác nhận", description: "Xem trước và duyệt trước khi AI thay đổi dữ liệu." },
+                  { value: "AUTO", label: "Tự động", description: "Tự chạy yêu cầu rõ ràng; đăng bài và xóa vẫn hỏi lại." },
+                ] as const).map((mode) => {
+                  const selected = executionMode === mode.value
+                  return (
+                    <button key={mode.value} type="button" role="radio" aria-checked={selected} disabled={loading || hasUnresolvedAssistantAction} onClick={() => { setExecutionMode(mode.value); setModeMenuOpen(false) }} className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-cream-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600 disabled:opacity-60">
+                      <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${selected ? "border-brand-700" : "border-stone-300"}`}>{selected && <span className="h-2 w-2 rounded-full bg-brand-700" />}</span>
+                      <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{mode.label}</span><span className="mt-0.5 block text-xs leading-4 text-ink-muted">{mode.description}</span></span>
+                      {selected && <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-700" aria-hidden="true" />}
+                    </button>
+                  )
+                })}
+                </div>
+              </section>
+            )}
             {modelMenuOpen && (
               <section
                 id="chat-model-popover"
@@ -925,16 +1108,21 @@ export function AiChatPage() {
               rows={2}
               placeholder="Nhập câu hỏi của bạn…"
               className="block max-h-36 min-h-20 w-full resize-y bg-transparent px-4 py-3 text-sm text-ink outline-none placeholder:text-ink-muted"
-              disabled={loading}
+              disabled={loading || hasUnresolvedAssistantAction}
             />
             <div className="flex items-center justify-between gap-2 border-t border-brand-50 px-2 py-2">
               <div className="flex min-w-0 items-center gap-2">
+                <button type="button" aria-label={`Chế độ AI: ${modeLabel}`} aria-haspopup="dialog" aria-expanded={modeMenuOpen} aria-controls="ai-execution-mode-menu" onClick={() => { setModeMenuOpen((open) => !open); setModelMenuOpen(false) }} disabled={loading || hasUnresolvedAssistantAction} title={`Chế độ AI: ${modeLabel}`} className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-2 text-xs text-ink-muted transition hover:bg-cream-soft hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600 disabled:opacity-50">
+                  <Settings2 className="h-4 w-4" aria-hidden="true" />
+                  <span className="hidden sm:inline">{modeLabel}</span>
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${modeMenuOpen ? "rotate-180" : ""}`} aria-hidden="true" />
+                </button>
                 <button
                   type="button"
                   aria-haspopup="dialog"
                   aria-expanded={modelMenuOpen}
                   aria-controls="chat-model-menu"
-                  onClick={() => setModelMenuOpen((open) => !open)}
+                  onClick={() => { setModelMenuOpen((open) => !open); setModeMenuOpen(false) }}
                   disabled={settingsLoading}
                   className="flex min-w-0 items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs text-ink-muted transition hover:bg-cream-soft hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600 disabled:opacity-60"
                 >
@@ -948,7 +1136,7 @@ export function AiChatPage() {
               <button
                 type="submit"
                 aria-label="Gửi câu hỏi"
-                disabled={loading || !question.trim()}
+                disabled={loading || hasUnresolvedAssistantAction || !question.trim()}
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-on-brand enabled:hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
               >
                 {loading ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Send className="h-4 w-4" aria-hidden="true" />}

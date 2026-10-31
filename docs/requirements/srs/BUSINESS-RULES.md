@@ -1,8 +1,8 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v2.23.0
+> **Version:** v2.24.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-31
+> **Last Updated:** 2026-11-01
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -30,7 +30,7 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-03 — Xác thực quyền, model và ngân sách trước khi gọi dịch vụ AI
 
 - **Mã quy tắc:** BR-03
-- **Nội dung:** Backend xác thực người dùng, quyền truy cập dữ liệu/chức năng gốc, model preference của tài khoản với tier/subscription hiện tại và catalog đang bật, consent dữ liệu cá nhân và khả năng sử dụng ngân sách trước mỗi lần gọi Gemini. Không giữ trước (reserve) quota hoặc Credit. Khi hết quota tháng, hệ thống tính phí vượt mức bằng AI Credit theo BR-77; nếu Credit không đủ, vẫn cho phép một lần gọi khi tài khoản còn quota hoặc Credit dương, chỉ trừ tối đa Credit hiện có và hệ thống chịu phần chi phí vượt; số dư không được âm. Khi cả quota và Credit đều cạn, dừng trước lần gọi model tiếp theo. Chu kỳ quota được xác định tại thời điểm bắt đầu lần gọi. Model thay thế chỉ được dùng sau xác nhận rõ ràng và tối đa một lần retry; không sửa preference đã lưu. Admin endpoints không được gọi qua AI Assistant.
+- **Nội dung:** Backend xác thực người dùng, quyền truy cập dữ liệu/chức năng gốc, model preference của tài khoản với tier/subscription hiện tại và catalog đang bật, consent dữ liệu cá nhân và khả năng sử dụng ngân sách trước mỗi lần gọi Gemini. Không giữ trước (reserve) quota hoặc Credit. Khi hết quota tháng, hệ thống tính phí vượt mức bằng AI Credit theo BR-77; nếu Credit không đủ, vẫn cho phép một lần gọi khi tài khoản còn quota hoặc Credit dương, chỉ trừ tối đa Credit hiện có và hệ thống chịu phần chi phí vượt; số dư không được âm. Khi cả quota và Credit đều cạn, dừng trước lần gọi model tiếp theo. Chu kỳ quota được xác định tại thời điểm bắt đầu lần gọi. Model thay thế chỉ được dùng sau xác nhận rõ ràng và tối đa một lần retry; không sửa preference đã lưu. Admin endpoints không được gọi qua AI Assistant. Indexing và query embedding phục vụ truy xuất knowledge là chi phí vận hành hệ thống, không thuộc quota/Credit người dùng và không phụ thuộc model preference cá nhân; chỉ dùng corpus pilot và câu hỏi tổng hợp trong G2. Theo dõi operational usage riêng, không ghi raw query vào index hoặc telemetry.
 
 ---
 
@@ -38,7 +38,7 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-04 — Xử lý lỗi provider, timeout AI và lưu trữ telemetry
 
 - **Mã quy tắc:** BR-04
-- **Nội dung:** Lượt gọi chỉ được tính quota/Credit khi Backend nhận và xác minh được response Gemini sử dụng được; việc trình duyệt đã đóng, tải lại hoặc mất kết nối không miễn trừ khoản tính nếu Backend vẫn nhận được kết quả hợp lệ. Lỗi provider/timeout, response rỗng, sai cấu trúc hoặc bị bộ lọc an toàn chặn khiến Backend không thể sử dụng response đều là lượt lỗi: không trừ quota/Credit người dùng, kể cả khi provider báo có chi phí; chi phí lỗi do hệ thống chịu. Từ chối hợp lệ về nội dung ngoài phạm vi là một kết quả sử dụng được, không phải lỗi kỹ thuật. Nếu metadata token thiếu hoặc không hợp lệ, Backend vẫn trả response sử dụng được nhưng đánh dấu usage chưa ghi nhận, không ước lượng token và không trừ quota/Credit. Với lượt thành công có metadata hợp lệ, cộng tổng token provider ghi nhận (input, output và reasoning nếu có) đúng một lần cho mọi lần gọi model. Lượt gọi gắn với chu kỳ quota được xác định lúc bắt đầu; hoàn tất sau reset/nâng gói vẫn ghi vào chu kỳ đã chụp lúc bắt đầu. Chi tiết usage từng lần gọi được giữ 90 ngày sau khi chu kỳ tương ứng kết thúc. Telemetry vận hành lưu tối đa 90 ngày, không lưu raw prompt; lịch sử giao dịch AI Credit được giữ trong thời gian tài khoản tồn tại.
+- **Nội dung:** Lượt gọi chỉ được tính quota/Credit khi Backend nhận và xác minh được response Gemini sử dụng được; việc trình duyệt đã đóng, tải lại hoặc mất kết nối không miễn trừ khoản tính nếu Backend vẫn nhận được kết quả hợp lệ. Lỗi provider/timeout, response rỗng, sai cấu trúc hoặc bị bộ lọc an toàn chặn khiến Backend không thể sử dụng response đều là lượt lỗi: không trừ quota/Credit người dùng, kể cả khi provider báo có chi phí; chi phí lỗi do hệ thống chịu. Từ chối hợp lệ về nội dung ngoài phạm vi là một kết quả sử dụng được, không phải lỗi kỹ thuật. Nếu metadata token thiếu hoặc không hợp lệ, Backend vẫn trả response sử dụng được nhưng đánh dấu usage chưa ghi nhận, không ước lượng token và không trừ quota/Credit. Với lượt thành công có metadata hợp lệ, cộng tổng token provider ghi nhận (input, output và reasoning nếu có) đúng một lần cho mọi lần gọi model. Lượt gọi gắn với chu kỳ quota được xác định lúc bắt đầu; hoàn tất sau reset/nâng gói vẫn ghi vào chu kỳ đã chụp lúc bắt đầu. Chi tiết usage từng lần gọi được giữ 90 ngày sau khi chu kỳ tương ứng kết thúc. Embedding indexing/query không trừ quota hoặc Credit dù thành công hay lỗi; metadata provider nếu có và chi phí dự toán phải được phân biệt, metadata thiếu ghi thiếu. Embedding lỗi/timeout chuyển keyword retrieval có trạng thái degraded, không tự đổi model/provider hoặc retry query embedding. Telemetry vận hành lưu tối đa 90 ngày, không lưu raw prompt; lịch sử giao dịch AI Credit được giữ trong thời gian tài khoản tồn tại.
 
 ---
 

@@ -70,7 +70,7 @@ class AiChatServiceTest {
     }
 
     @Test
-    void generalChatUsesMemberDietaryConstraintsAndPublishesTokenCountsOnly() {
+    void legacyChatDoesNotSendDietaryProfileWithoutPurposeBoundConsent() {
         when(ai.answerChat(anyString(), anyString())).thenReturn(new AiClient.ChatResult("Dùng sữa đậu nành.", 12, 8, 20));
 
         var response = service.answer(new AiChatRequest(AiChatRequest.ContextType.GENERAL, null,
@@ -81,7 +81,8 @@ class AiChatServiceTest {
         ArgumentCaptor<String> prompt = ArgumentCaptor.forClass(String.class);
         verify(ai).answerChat(instruction.capture(), prompt.capture());
         assertThat(instruction.getValue()).contains("Never diagnose", "untrusted data", "Do not invent recipe facts");
-        assertThat(prompt.getValue()).contains("VEGAN", "Sữa", "Thay sữa bò bằng gì?");
+        assertThat(prompt.getValue()).contains("Thay sữa bò bằng gì?").doesNotContain("VEGAN", "Sữa");
+        verifyNoInteractions(preferences);
         ArgumentCaptor<AiUsageEvent> usage = ArgumentCaptor.forClass(AiUsageEvent.class);
         verify(events, times(2)).publishEvent(usage.capture());
         assertThat(usage.getAllValues()).allSatisfy(event -> assertThat(event.feature()).isEqualTo("FR-51"));
@@ -211,8 +212,9 @@ class AiChatServiceTest {
         assertThat(response.answer()).isEqualTo("Mình tìm được một số bài công thức phù hợp:");
         ArgumentCaptor<String> prompt = ArgumentCaptor.forClass(String.class);
         verify(ai).answerChat(anyString(), prompt.capture());
-        assertThat(prompt.getValue()).contains("Allowed public RecipePost IDs: [1, 2]")
-                .doesNotContain("Avoided by ID", "Avoided by name", "Avoided by custom name", "Has dairy type", "Draft");
+        assertThat(prompt.getValue()).contains("Allowed public RecipePost IDs: [1, 4, 5, 6, 7, 2]")
+                .doesNotContain("Draft");
+        verifyNoInteractions(preferences);
     }
 
     @Test
@@ -223,7 +225,7 @@ class AiChatServiceTest {
                 "{\"action\":\"FIND_RECIPES\",\"answer\":\"Có món phù hợp\",\"recommendations\":["
                         + "{\"recipeId\":12,\"reason\":\"Thuần chay\"}]}"));
         when(recipePosts.getPublishedCards(List.of(12L))).thenReturn(List.of(
-                post(12, "LACTO", "PUBLISHED", List.of(), List.of(), "Đổi loại ăn chay sau khi tìm")));
+                post(12, "VEGAN", "DRAFT", List.of(), List.of(), "Không còn công khai sau khi tìm")));
 
         var response = service.answer(chat("Tìm công thức chay"));
 

@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.57.0
+> **Version:** v2.59.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-31
+> **Last Updated:** 2026-11-01
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -3987,11 +3987,11 @@ Trang này là cách duyệt trực tiếp từ điển nguyên liệu hiện c�
 - **Mã yêu cầu:** FR-63
 - **Module:** M06
 - **Actor:** Guest, Member.
-- **Mô tả:** Backend ghi nhận token provider báo cáo cho mọi response Gemini sử dụng được (input, output, reasoning nếu có), một lần mỗi event; duy trì hạn mức Guest theo phiên và Member theo chu kỳ; dùng quota tháng trước AI Credit, không cộng dồn quota tháng; Guest hết hạn mức được mời đăng ký. Member xem gói, quota, đã dùng/còn lại, thời điểm reset và Credit đã tiêu thụ/số dư. Không giữ trước quota/Credit; chỉ bắt đầu model call khi còn quota hoặc Credit dương. Nếu lượt đã bắt đầu vượt số dư, chỉ trừ tối đa Credit hiện có, hệ thống chịu phần vượt và số dư không âm. Chu kỳ quota được chụp lúc bắt đầu call. Lượt lỗi không trừ quota/Credit; chi tiết usage được lưu 90 ngày sau khi chu kỳ tương ứng kết thúc, còn lịch sử Credit tồn tại trong vòng đời tài khoản.
+- **Mô tả:** Embedding phục vụ indexing/query knowledge là chi phí hệ thống theo BR-03/04, không trừ quota/Credit người dùng. Đối với model call phục vụ người dùng, Backend ghi nhận token provider báo cáo cho mọi response Gemini sử dụng được (input, output, reasoning nếu có), một lần mỗi event; duy trì hạn mức Guest theo phiên và Member theo chu kỳ; dùng quota tháng trước AI Credit, không cộng dồn quota tháng; Guest hết hạn mức được mời đăng ký. Member xem gói, quota, đã dùng/còn lại, thời điểm reset và Credit đã tiêu thụ/số dư. Không giữ trước quota/Credit; chỉ bắt đầu model call khi còn quota hoặc Credit dương. Nếu lượt đã bắt đầu vượt số dư, chỉ trừ tối đa Credit hiện có, hệ thống chịu phần vượt và số dư không âm. Chu kỳ quota được chụp lúc bắt đầu call. Lượt lỗi không trừ quota/Credit; chi tiết usage được lưu 90 ngày sau khi chu kỳ tương ứng kết thúc, còn lịch sử Credit tồn tại trong vòng đời tài khoản.
 - **Acceptance Criteria:**
   - AC-63.1: Guest được tối đa 20.000 token mỗi phiên, đồng thời giữ rate limit hiện hành; hết quota bị chặn và được mời đăng ký.
   - AC-63.2: Quota khởi đầu Free 50.000/tháng, Plus 300.000/tháng, Pro 600.000/tháng; paid cycle bắt đầu lúc kích hoạt/gia hạn, Free có chu kỳ tháng riêng; quota tháng không cộng dồn.
-  - AC-63.3: Token từ mọi lần gọi thành công được cộng đúng một lần; lỗi provider không trừ ngân sách người dùng.
+  - AC-63.3: Token từ mọi lần gọi model phục vụ người dùng thành công được cộng đúng một lần; lỗi provider không trừ ngân sách người dùng. Indexing và query embedding cho knowledge retrieval là chi phí vận hành hệ thống, không cộng vào usage/quota/Credit người dùng; operational usage được theo dõi riêng theo BR-03/04.
   - AC-63.4: Hết quota và không đủ Credit thì dừng trước lần gọi model kế tiếp, báo trạng thái từng bước và yêu cầu bổ sung ngân sách để tiếp tục.
   - AC-63.5: Member có trang xem chính xác gói, token đã dùng/còn lại, ngày reset, Credit balance và mức Credit đã dùng; không lộ dữ liệu tài khoản khác.
   - AC-63.6: Response rỗng, sai cấu trúc hoặc bị chặn khiến Backend không thể sử dụng được là lượt lỗi và không trừ quota/Credit; từ chối hợp lệ về nội dung là kết quả sử dụng được. Backend vẫn tính lượt thành công đã xác minh dù client đã ngắt kết nối. Nếu metadata token thiếu/không hợp lệ, vẫn trả response nhưng đánh dấu usage chưa ghi nhận, không ước lượng hoặc trừ ngân sách.
@@ -4058,3 +4058,4 @@ Trang này là cách duyệt trực tiếp từ điển nguyên liệu hiện c�
   - AC-66.7: Tác vụ nhiều bước lỗi hoặc hết ngân sách thì dừng, giữ bước thành công, báo từng bước và hỏi trước khi tiếp tục.
   - AC-66.8: Model thay thế sau lỗi chỉ được dùng sau khi người dùng đồng ý; model phải được phép theo gói.
   - AC-66.9: Không cung cấp công cụ Admin cho AI Assistant; mọi thao tác thực tế tuân theo RBAC, ownership, validation và backend result.
+  - AC-66.10: Trong một phiên ngắn hạn, transcript và ngữ cảnh hội thoại được giữ khi đóng/mở khung chat, điều hướng trang và tải lại cùng tab; phiên hết hạn sau thời gian không hoạt động cấu hình (mặc định 30 phút). Người dùng có thể chọn “Cuộc trò chuyện mới” để xóa transcript cùng consent/action đang chờ của phiên và bắt đầu với ngữ cảnh rỗng. Việc này không hoàn tác thao tác nghiệp vụ đã hoàn tất; lịch sử không đồng bộ thành kho hội thoại dài hạn theo tài khoản.

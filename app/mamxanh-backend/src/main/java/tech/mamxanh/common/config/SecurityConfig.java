@@ -71,6 +71,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.POST, PUBLIC_POST_ENDPOINTS).permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/recipes/ai/chat/sessions/*").permitAll()
                         .requestMatchers(HttpMethod.POST, PUBLIC_PAYMENT_POST_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/recipes/*/views").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/recipes/mine").authenticated()

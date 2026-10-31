@@ -108,7 +108,7 @@ test('Guest sees a login action for advanced workflows on a narrow screen', asyn
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
-test('a Pro workflow handoff offers a safe local link without rendering an arbitrary URL', async ({ page }) => {
+test('a Pro workflow handoff navigates only to a trusted internal route', async ({ page }) => {
   await signInAsMember(page);
   let calls = 0;
   await page.route('**/api/v1/recipes/ai/chat', route => route.fulfill({ json: {
@@ -119,14 +119,16 @@ test('a Pro workflow handoff offers a safe local link without rendering an arbit
   await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
   await page.getByLabel('Câu hỏi của bạn').fill('Lập thực đơn tuần');
   await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
-  await expect(page.getByRole('link', { name: 'Mở chức năng lập thực đơn' })).toHaveAttribute('href', '/ke-hoach?view=for-you');
+  await expect(page).toHaveURL(/\/ke-hoach\?.*view=for-you/);
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
   await page.getByLabel('Câu hỏi của bạn').fill('Đậu hũ nấu sao?');
   await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
   await expect(page.getByText('Câu trả lời khác', { exact: true })).toBeVisible();
   await expect(page.locator('a[href="https://example.invalid/"]')).toHaveCount(0);
+  await expect(page).toHaveURL(/\/ke-hoach\?.*view=for-you/);
 });
 
-test('authoring handoff for an Expert links to the editable recipe form', async ({ page }) => {
+test('authoring handoff for an Expert navigates to the editable recipe form', async ({ page }) => {
   await signInAsMember(page, 'EXPERT');
   await page.route('**/api/v1/recipes/ai/chat', route => route.fulfill({ json: {
     contextType: 'GENERAL', recipeId: null, answer: 'Mở biểu mẫu để chọn nguyên liệu và dùng Trợ lý AI.',
@@ -136,7 +138,7 @@ test('authoring handoff for an Expert links to the editable recipe form', async 
   await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
   await page.getByLabel('Câu hỏi của bạn').fill('Viết mô tả cho bài đăng công thức');
   await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
-  await expect(page.getByRole('link', { name: 'Mở biểu mẫu soạn công thức' })).toHaveAttribute('href', '/dang-cong-thuc');
+  await expect(page).toHaveURL(/\/dang-cong-thuc$/);
 });
 
 test('provider throttling shows the server guidance without suggesting Guest registration', async ({ page }) => {
@@ -177,6 +179,85 @@ test('general chat keeps session history in the page and labels the answer as AI
     { speaker: 'ASSISTANT', content: 'Có thể dùng sữa đậu nành.' },
   ]);
   expect(requests[0]).toMatchObject({ contextType: 'GENERAL', question: 'Có thể thay sữa bò bằng gì?' });
+});
+
+test('chat transcript survives workflow navigation, close/reopen, reload, and can be cleared into a new session', async ({ page }) => {
+  await signInAsMember(page);
+  let chatCalls = 0;
+  const deletedSessions: string[] = [];
+  await page.route('**/api/v1/recipes/ai/chat', async (route) => {
+    chatCalls += 1;
+    await route.fulfill({ json: {
+      contextType: 'GENERAL', recipeId: null, answer: 'Đã mở lịch ăn cho bạn.',
+      workflowUrl: '/ke-hoach', sessionId: '11111111-1111-4111-8111-111111111111',
+      recommendations: [],
+    } });
+  });
+  await page.route('**/api/v1/recipes/ai/chat/sessions/*', async (route) => {
+    deletedSessions.push(route.request().url());
+    await route.fulfill({ status: 204, body: '' });
+  });
+
+  await page.goto('/trang-chu');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Mở lịch ăn của tôi');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await expect(page).toHaveURL(/\/ke-hoach(?:\?.*)?$/);
+  await expect(page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await expect(page.getByText('Mở lịch ăn của tôi')).toBeVisible();
+  await expect(page.getByText('Đã mở lịch ăn cho bạn.')).toBeVisible();
+  await page.reload();
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await expect(page.getByText('Mở lịch ăn của tôi')).toBeVisible();
+  await expect(page.getByText('Đã mở lịch ăn cho bạn.')).toBeVisible();
+
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: 'Bắt đầu cuộc trò chuyện mới' }).click();
+  await expect(page.getByText('Mở lịch ăn của tôi')).toHaveCount(0);
+  await expect.poll(() => deletedSessions.length).toBe(1);
+  expect(chatCalls).toBe(1);
+});
+
+test('expired Backend session keeps transcript and retry continues without the stale session ID', async ({ page }) => {
+  await signInAsMember(page);
+  const requests: Array<Record<string, unknown>> = [];
+  await page.route('**/api/v1/recipes/ai/chat', async (route) => {
+    const body = route.request().postDataJSON() as Record<string, unknown>;
+    requests.push(body);
+    if (requests.length === 2) {
+      await route.fulfill({ status: 400, json: {
+        status: 400, code: 'VALIDATION_FAILED', detail: 'Phiên trợ lý không hợp lệ hoặc đã hết hạn.',
+      } });
+      return;
+    }
+    await route.fulfill({ json: {
+      contextType: 'GENERAL', recipeId: null,
+      answer: requests.length === 1 ? 'Mình vẫn nhớ nội dung trước.' : 'Đã tiếp tục trong phiên mới.',
+      sessionId: requests.length === 1
+        ? '22222222-2222-4222-8222-222222222222'
+        : '33333333-3333-4333-8333-333333333333',
+      recommendations: [],
+    } });
+  });
+
+  await page.goto('/trang-chu');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Lần trước tôi hỏi về món đậu hũ');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await expect(page.getByText('Mình vẫn nhớ nội dung trước.')).toBeVisible();
+  await page.getByLabel('Câu hỏi của bạn').fill('Tiếp tục nhé');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await expect(page.getByRole('alert').filter({ hasText: 'Phiên AI đã hết hạn' }))
+    .toContainText('lịch sử trò chuyện vẫn được giữ');
+  await expect(page.getByText('Lần trước tôi hỏi về món đậu hũ')).toBeVisible();
+  await page.getByRole('alert').filter({ hasText: 'Phiên AI đã hết hạn' })
+    .getByRole('button', { name: 'Thử lại' }).click();
+  await expect(page.getByText('Đã tiếp tục trong phiên mới.')).toBeVisible();
+  expect(requests[1].sessionId).toBe('22222222-2222-4222-8222-222222222222');
+  expect(requests[2].sessionId).toBeUndefined();
+  expect(requests[2].history).toContainEqual({ speaker: 'USER', content: 'Lần trước tôi hỏi về món đậu hũ' });
 });
 
 test('Enter sends a question once while Shift+Enter inserts a newline and empty input stays idle', async ({ page }) => {

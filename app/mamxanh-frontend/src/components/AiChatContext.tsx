@@ -24,6 +24,7 @@ export type AiChatContextValue = {
   recipeArticle: RecipeArticleContext | null;
   openChat: (recipe?: RecipeArticleContext) => void;
   closeChat: () => void;
+  startNewChat: () => void;
 };
 
 export const AiChatContext = createContext<AiChatContextValue | null>(null);

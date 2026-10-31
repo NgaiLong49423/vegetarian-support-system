@@ -371,7 +371,8 @@ class GeminiAiClientTest {
 
     @Test
     void lateUnavailableResponseDoesNotStartARetryWithoutEnoughBudget() throws IOException {
-        startSequenceServer(503, 6_500, false);
+        // Keep the retry budget exhausted while leaving enough margin for a loaded test JVM.
+        startSequenceServer(503, 4_000, false);
         try (var client = longTransportTimeoutClient()) {
             assertThatThrownBy(() -> client.answerChat("system", "question"))
                     .isInstanceOfSatisfying(GeminiAiClient.AiProviderException.class,

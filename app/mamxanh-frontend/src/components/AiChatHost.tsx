@@ -24,18 +24,29 @@ export function AiChatHost({ children }: { children: ReactNode }) {
   const { account } = useAuth()
   const { pathname } = useLocation()
   const [chatOpen, setChatOpen] = useState(false)
+  const [chatInitialized, setChatInitialized] = useState(false)
   const [chatRecipeId, setChatRecipeId] = useState<number | null>(null)
   const [chatRecipeTitle, setChatRecipeTitle] = useState<string | null>(null)
   const [chatRecipeArticle, setChatRecipeArticle] =
     useState<RecipeArticleContext | null>(null)
 
   const openChat = useCallback((recipe?: RecipeArticleContext) => {
-    setChatRecipeId(recipe?.recipeId ?? null)
-    setChatRecipeTitle(recipe?.title.trim() || null)
-    setChatRecipeArticle(recipe ?? null)
+    if (recipe) {
+      setChatRecipeId(recipe.recipeId)
+      setChatRecipeTitle(recipe.title.trim() || null)
+      setChatRecipeArticle(recipe)
+    }
+    setChatInitialized(true)
     setChatOpen(true)
   }, [])
   const closeChat = useCallback(() => setChatOpen(false), [])
+  const startNewChat = useCallback(() => {
+    setChatRecipeId(null)
+    setChatRecipeTitle(null)
+    setChatRecipeArticle(null)
+    setChatInitialized(true)
+    setChatOpen(true)
+  }, [])
   const isAdminArea =
     pathname.startsWith("/admin") || pathname.startsWith("/quan-tri")
   const isAuthPage = [
@@ -60,6 +71,7 @@ export function AiChatHost({ children }: { children: ReactNode }) {
       recipeArticle: chatRecipeArticle,
       openChat,
       closeChat,
+      startNewChat,
     }),
     [
       chatOpen,
@@ -68,6 +80,7 @@ export function AiChatHost({ children }: { children: ReactNode }) {
       chatRecipeArticle,
       openChat,
       closeChat,
+      startNewChat,
     ],
   )
 
@@ -88,7 +101,7 @@ export function AiChatHost({ children }: { children: ReactNode }) {
           />
         </button>
       )}
-      {canUseAssistant && chatOpen && (
+      {canUseAssistant && chatInitialized && (
         <Suspense fallback={null}>
           <AiChatPage />
         </Suspense>

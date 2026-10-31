@@ -2,30 +2,18 @@ package tech.mamxanh.integration.ai;
 
 import com.google.genai.Client;
 import com.google.genai.errors.ApiException;
-import com.google.genai.types.HttpRetryOptions;
-import com.google.genai.types.GenerateContentConfig;
-import com.google.genai.types.HttpOptions;
-import com.google.genai.types.Content;
-import com.google.genai.types.Part;
-import com.google.genai.types.Schema;
-import com.google.genai.types.Type;
-import com.google.genai.types.ThinkingConfig;
-import com.google.genai.types.ThinkingLevel;
-import java.util.List;
-import java.util.Map;
-import java.io.InterruptedIOException;
-import java.util.function.Supplier;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.ThreadLocalRandom;
+import com.google.genai.types.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import java.io.InterruptedIOException;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.*;
+import java.util.function.Supplier;
 
 @Component
 public class GeminiAiClient implements AiClient, AutoCloseable {
@@ -187,6 +175,46 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
             String text = response.text();
             if (!"STOP".equals(finishReason) || text == null || text.isBlank()) {
                 throw AiProviderException.invalidResponse("Gemini returned an incomplete chat response");
+            }
+            var usage = tokenUsage(response, modelId);
+            return new ChatResult(null, text.strip(), usage.promptTokens(), usage.responseTokens(), usage.totalTokens(), usage);
+        });
+    }
+
+    @Override
+    public ChatResult planAssistantTools(String systemInstruction, String prompt) {
+        return planAssistantTools(MODEL, systemInstruction, prompt);
+    }
+
+    @Override
+    public ChatResult planAssistantTools(String modelId, String systemInstruction, String prompt) {
+        Schema toolCallSchema = Schema.builder().type(Type.Known.OBJECT)
+                .properties(Map.of("name", Schema.builder().type(Type.Known.STRING).build(),
+                        "arguments", Schema.builder().type(Type.Known.OBJECT)
+                                .properties(Map.of("page", Schema.builder().type(Type.Known.STRING)
+                                        .enum_("HOME", "EXPLORE", "MEAL_PLAN", "SHOPPING_LIST", "AI_PLANS",
+                                                "AI_CREDIT_TOP_UP", "PROFILE", "DIETARY_PREFERENCES", "HEALTH_PROFILE",
+                                                "RECIPE_CREATE", "EXPERT_DIRECTORY", "COMMUNITY", "TRANSACTION_HISTORY")
+                                        .build()))
+                                .build()))
+                .required(List.of("name", "arguments")).build();
+        Schema schema = Schema.builder().type(Type.Known.OBJECT)
+                .properties(Map.of("answer", Schema.builder().type(Type.Known.STRING)
+                                .maxLength((long) AiClient.MAX_CHAT_ANSWER_LENGTH).build(),
+                        "toolCalls", Schema.builder().type(Type.Known.ARRAY).maxItems(5L).items(toolCallSchema).build()))
+                .required(List.of("answer", "toolCalls")).build();
+        GenerateContentConfig config = GenerateContentConfig.builder()
+                .systemInstruction(Content.fromParts(Part.fromText(systemInstruction)))
+                .responseMimeType("application/json").responseSchema(schema).candidateCount(1)
+                .maxOutputTokens(2048)
+                .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build()).build();
+        return request("CHAT", "Gemini tool planning request failed", CHAT_ANSWER_TIMEOUT_MS, () -> {
+            var response = client.models.generateContent(modelId, prompt, config);
+            String finishReason = response.candidates().orElse(List.of()).stream().findFirst()
+                    .flatMap(candidate -> candidate.finishReason()).map(Object::toString).orElse("STOP");
+            String text = response.text();
+            if (!"STOP".equals(finishReason) || text == null || text.isBlank()) {
+                throw AiProviderException.invalidResponse("Gemini returned an incomplete tool plan");
             }
             var usage = tokenUsage(response, modelId);
             return new ChatResult(null, text.strip(), usage.promptTokens(), usage.responseTokens(), usage.totalTokens(), usage);

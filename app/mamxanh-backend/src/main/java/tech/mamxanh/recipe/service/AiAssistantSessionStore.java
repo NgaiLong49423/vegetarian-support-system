@@ -1,0 +1,144 @@
+package tech.mamxanh.recipe.service;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import tech.mamxanh.common.exception.AppException;
+import tech.mamxanh.common.exception.ErrorCode;
+import tech.mamxanh.recipe.dto.request.AiChatRequest.ConsentScope;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
+
+/** Bounded, process-local state for consent and pending AI actions; no prompts are retained. */
+@Component
+public class AiAssistantSessionStore {
+    private static final int MAX_SESSIONS = 2_000;
+    private final Map<UUID, Session> sessions = new HashMap<>();
+    private final Clock clock;
+    private final Duration sessionTtl;
+    private final Duration confirmationTtl = Duration.ofMinutes(5);
+
+    public AiAssistantSessionStore(Clock clock,
+            @Value("${mamxanh.ai-chat.session-ttl:PT30M}") Duration sessionTtl) {
+        this.clock = clock;
+        this.sessionTtl = sessionTtl.isNegative() || sessionTtl.isZero() ? Duration.ofMinutes(30) : sessionTtl;
+    }
+
+    public synchronized SessionHandle open(UUID requestedId, String owner) {
+        Instant now = clock.instant();
+        removeExpired(now);
+        UUID id = requestedId == null ? UUID.randomUUID() : requestedId;
+        Session session = sessions.get(id);
+        if (session != null && !session.owner.equals(owner)) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "Phiên trợ lý không hợp lệ hoặc đã hết hạn.");
+        }
+        if (session == null) {
+            if (sessions.size() >= MAX_SESSIONS) {
+                sessions.values().stream().min(java.util.Comparator.comparing(item -> item.lastAccess))
+                        .map(item -> item.id).ifPresent(sessions::remove);
+            }
+            session = new Session(id, owner, now);
+            sessions.put(id, session);
+        }
+        session.lastAccess = now;
+        session.expiresAt = now.plus(sessionTtl);
+        return new SessionHandle(id, Set.copyOf(session.consents), session.pending, session.expiresAt);
+    }
+
+    public synchronized SessionHandle applyConsent(UUID sessionId, String owner,
+            boolean grant, Set<ConsentScope> scopes) {
+        Session session = require(sessionId, owner);
+        if (grant) session.consents.addAll(scopes);
+        else if (scopes.isEmpty()) session.consents.clear();
+        else session.consents.removeAll(scopes);
+        Instant now = clock.instant();
+        session.lastAccess = now;
+        session.expiresAt = now.plus(sessionTtl);
+        return new SessionHandle(session.id, Set.copyOf(session.consents), session.pending, session.expiresAt);
+    }
+
+    public synchronized PendingPlan createPending(UUID sessionId, String owner,
+            List<PendingAction> actions, boolean explicitConfirmation) {
+        Session session = require(sessionId, owner);
+        PendingPlan pending = new PendingPlan(UUID.randomUUID(), List.copyOf(actions),
+                explicitConfirmation, clock.instant().plus(confirmationTtl));
+        session.pending = pending;
+        session.lastAccess = clock.instant();
+        session.expiresAt = session.lastAccess.plus(sessionTtl);
+        return pending;
+    }
+
+    public synchronized PendingPlan takePending(UUID sessionId, String owner, UUID confirmationId) {
+        Session session = require(sessionId, owner);
+        PendingPlan pending = session.pending;
+        if (pending == null || !pending.id().equals(confirmationId) || !pending.expiresAt().isAfter(clock.instant())) {
+            session.pending = null;
+            return null;
+        }
+        session.pending = null;
+        session.lastAccess = clock.instant();
+        session.expiresAt = session.lastAccess.plus(sessionTtl);
+        return pending;
+    }
+
+    public synchronized void discardPending(UUID sessionId, String owner) {
+        Session session = require(sessionId, owner);
+        session.pending = null;
+    }
+
+    public synchronized void delete(UUID sessionId, String owner) {
+        Session session = sessions.get(sessionId);
+        if (session == null) return;
+        if (!session.owner.equals(owner)) throw new AppException(ErrorCode.VALIDATION_FAILED,
+                "Phiên trợ lý không hợp lệ hoặc đã hết hạn.");
+        sessions.remove(sessionId);
+    }
+
+    private Session require(UUID id, String owner) {
+        Session session = sessions.get(id);
+        Instant now = clock.instant();
+        if (session == null || !session.expiresAt.isAfter(now)) {
+            sessions.remove(id);
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "Phiên trợ lý không hợp lệ hoặc đã hết hạn.");
+        }
+        if (!session.owner.equals(owner)) throw new AppException(ErrorCode.VALIDATION_FAILED,
+                "Phiên trợ lý không hợp lệ hoặc đã hết hạn.");
+        session.lastAccess = now;
+        session.expiresAt = now.plus(sessionTtl);
+        return session;
+    }
+
+    private void removeExpired(Instant now) {
+        sessions.values().removeIf(session -> !session.expiresAt.isAfter(now));
+    }
+
+    public record SessionHandle(UUID id, Set<ConsentScope> consentScopes,
+            PendingPlan pending, Instant expiresAt) { }
+
+    public record PendingAction(String tool, Map<String, Object> arguments, boolean requiresExplicitConfirmation) {
+        public PendingAction {
+            arguments = Collections.unmodifiableMap(new HashMap<>(arguments));
+        }
+    }
+
+    public record PendingPlan(UUID id, List<PendingAction> actions,
+            boolean requiresExplicitConfirmation, Instant expiresAt) { }
+
+    private static final class Session {
+        private final UUID id;
+        private final String owner;
+        private final Set<ConsentScope> consents = new HashSet<>();
+        private Instant lastAccess;
+        private Instant expiresAt;
+        private PendingPlan pending;
+
+        private Session(UUID id, String owner, Instant createdAt) {
+            this.id = id;
+            this.owner = owner;
+            this.lastAccess = createdAt;
+            this.expiresAt = createdAt.plus(Duration.ofMinutes(30));
+        }
+    }
+}

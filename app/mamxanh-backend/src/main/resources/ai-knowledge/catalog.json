@@ -1,0 +1,10 @@
+{
+  "revision": "g2-pilot-1",
+  "documents": [
+    {"id":"assistant-scope","title":"Phạm vi Assistant và hỏi làm rõ","file":"assistant-scope.md","version":"1.0.0","status":"PILOT","enabledForPilot":true,"sources":["docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-51","docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-66","docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-25"],"tools":[]},
+    {"id":"execution-confirmation","title":"Execution Mode và xác nhận","file":"execution-confirmation.md","version":"1.0.0","status":"PILOT","enabledForPilot":true,"sources":["docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-66"],"tools":[]},
+    {"id":"session-consent-budget","title":"Consent, session, model và ngân sách","file":"session-consent-budget.md","version":"1.0.0","status":"PILOT","enabledForPilot":true,"sources":["docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-66","docs/requirements/srs/BUSINESS-RULES.md#br-03","docs/requirements/srs/BUSINESS-RULES.md#br-04","docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-18","docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-22"],"tools":[]},
+    {"id":"shopping-create","title":"Tạo danh sách mua sắm rỗng FR-53.9","file":"shopping-create.md","version":"1.0.0","status":"PILOT","enabledForPilot":true,"sources":["docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-53","app/mamxanh-backend/src/main/java/tech/mamxanh/shopping/service/ShoppingListService.java#createEmpty"],"tools":["create_shopping_list"]},
+    {"id":"shopping-read","title":"Đọc danh sách mua sắm và ownership","file":"shopping-read.md","version":"1.0.0","status":"PILOT","enabledForPilot":true,"sources":["docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-53","docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-66","app/mamxanh-backend/src/main/java/tech/mamxanh/shopping/service/ShoppingListService.java#get"],"tools":["get_shopping_list"]}
+  ]
+}

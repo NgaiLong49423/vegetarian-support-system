@@ -1,17 +1,10 @@
 package tech.mamxanh.recipe.service;
 
-import java.time.Clock;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
 import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
@@ -24,11 +17,19 @@ import tech.mamxanh.recipe.dto.response.AiChatResponse;
 import tech.mamxanh.recipe.dto.response.AiChatResponse.RecipeRecommendation;
 import tech.mamxanh.recipe.dto.response.RecipeDetailResponse;
 import tech.mamxanh.recipe.dto.response.RecipePostResponse;
-import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
-import tech.mamxanh.subscription.service.AiTokenQuotaService;
 import tech.mamxanh.subscription.service.AiChatSettingsService;
+import tech.mamxanh.subscription.service.AiTokenQuotaService;
+import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
-/** FR-51 chat orchestration; conversation and prompt content remain request-scoped only. */
+import java.time.Clock;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
+
+/** FR-51 legacy chat plus the consent-aware, bounded orchestration contract. */
 @Service
 public class AiChatService {
     private static final Logger LOG = LoggerFactory.getLogger(AiChatService.class);
@@ -74,7 +75,6 @@ public class AiChatService {
     private final CurrentUserService users;
     private final RecipeService recipes;
     private final RecipePostService recipePosts;
-    private final DietaryPreferenceService preferences;
     private final AiClient ai;
     private final ObjectMapper mapper;
     private final ApplicationEventPublisher events;
@@ -82,8 +82,8 @@ public class AiChatService {
     private final SubscriptionEntitlementService entitlements;
     private final AiTokenQuotaService aiQuota;
     private final AiChatSettingsService chatSettings;
+    private final AiAssistantExecutionService assistantExecution;
 
-    @Autowired
     public AiChatService(CurrentUserService users, RecipeService recipes,
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
             ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
@@ -91,7 +91,6 @@ public class AiChatService {
         this.users = users;
         this.recipes = recipes;
         this.recipePosts = recipePosts;
-        this.preferences = preferences;
         this.ai = ai;
         this.mapper = mapper;
         this.events = events;
@@ -99,6 +98,25 @@ public class AiChatService {
         this.entitlements = entitlements;
         this.aiQuota = aiQuota;
         this.chatSettings = chatSettings;
+        this.assistantExecution = null;
+    }
+
+    @Autowired
+    public AiChatService(CurrentUserService users, RecipeService recipes,
+            RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
+            ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
+            AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings, AiAssistantExecutionService assistantExecution) {
+        this.users = users;
+        this.recipes = recipes;
+        this.recipePosts = recipePosts;
+        this.ai = ai;
+        this.mapper = mapper;
+        this.events = events;
+        this.clock = clock;
+        this.entitlements = entitlements;
+        this.aiQuota = aiQuota;
+        this.chatSettings = chatSettings;
+        this.assistantExecution = assistantExecution;
     }
 
     /** Compatibility constructor used by focused orchestration tests. */
@@ -110,6 +128,23 @@ public class AiChatService {
     }
 
     public AiChatResponse answer(AiChatRequest request) {
+        if (assistantExecution != null && (request.sessionId() != null || request.executionMode() != null
+                || request.consentDecision() != null || request.confirmationId() != null
+                || request.confirmationDecision() != null)) {
+            return assistantExecution.execute(request);
+        }
+        String inputText = request.question() + " " + (request.history() == null ? "" : request.history().stream()
+                .filter(turn -> turn.speaker() == AiChatRequest.Speaker.USER).map(AiChatRequest.Turn::content)
+                .collect(java.util.stream.Collectors.joining(" ")));
+        AiChatRequest.ConsentCategory detectedCategory = AiAssistantExecutionService.personalCategory(inputText);
+        if (detectedCategory != null) {
+            return new AiChatResponse(request.contextType(), request.recipeId(),
+                    "Mình chưa gửi nội dung này tới Google Gemini vì yêu cầu chưa có xác nhận đồng ý dữ liệu theo phạm vi.",
+                    List.of(), null, null, AiChatRequest.ExecutionMode.CONFIRM, null, List.of(),
+                    new AiChatResponse.ConsentRequest(List.of(new AiChatRequest.ConsentScope(
+                            detectedCategory, AiChatRequest.ConsentPurpose.AI_CHAT)), "Google Gemini"),
+                    null, List.of());
+        }
         Long userId = users.findAuthenticatedUserId().isPresent() ? users.requireActiveMember().id() : null;
         validateContext(request);
         AiChatIntent.Workflow workflow = AiChatIntent.workflow(request);
@@ -127,9 +162,8 @@ public class AiChatService {
             throw exception;
         }
         if (decision.scope() != Scope.IN_SCOPE) return scopeResponse(request, decision);
-        var dietary = userId == null
-                ? new DietaryPreferenceService.MenuDietaryConstraints(null, List.of(), List.of())
-                : preferences.menuConstraints(userId);
+        // Legacy callers do not carry purpose-bound consent; never read profile data for a Gemini prompt here.
+        var dietary = new DietaryPreferenceService.MenuDietaryConstraints(null, List.of(), List.of());
         RecipeDetailResponse recipe = request.contextType() == AiChatRequest.ContextType.RECIPE
                 ? recipes.getPublishedRecipe(request.recipeId()) : null;
         boolean currentRecipeQuestion = request.contextType() == AiChatRequest.ContextType.RECIPE
@@ -167,6 +201,10 @@ public class AiChatService {
             throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
         }
         return new AiChatResponse(request.contextType(), request.recipeId(), answer, recommendations);
+    }
+
+    public void deleteSession(java.util.UUID sessionId, String anonymousViewerId) {
+        if (assistantExecution != null) assistantExecution.deleteSession(sessionId, anonymousViewerId);
     }
 
     private ScopeDecision classifyScope(AiChatRequest request, Long userId, String modelId) {

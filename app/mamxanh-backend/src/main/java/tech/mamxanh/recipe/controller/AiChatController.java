@@ -1,18 +1,16 @@
 package tech.mamxanh.recipe.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.security.core.Authentication;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 import tech.mamxanh.common.config.OpenApiConfig;
 import tech.mamxanh.recipe.dto.request.AiChatRequest;
 import tech.mamxanh.recipe.dto.response.AiChatResponse;
@@ -37,7 +35,7 @@ public class AiChatController {
                     + "Guest is limited to 20,000 provider-reported tokens per anonymous session and a rolling limit of 10 requests per minute independently for cookie and peer IP. "
                     + "General context or the latest public RecipePost is loaded server-side. "
                     + "Recipe discovery selects only current public RecipePosts from the Backend catalog; explicitly requested recipe drafts remain chat text only. "
-                    + "Conversation history is request-scoped and is not persisted. Guest has no account dietary context. "
+                    + "Legacy conversation history is request-scoped. Orchestration clients may use a bounded Backend session with consent and confirmation; prompts are not persisted. Guest has no account dietary context. "
                     + "Explicit weekly-menu and recipe-authoring requests are checked for entitlement and routed to their dedicated workflow without calling Gemini. "
                     + "Follow-up recipe searches use current public data; assistant recipe IDs are untrusted exclusion hints only.")
     @ApiResponse(responseCode = "200", description = "AI answer and, when relevant, selected public recipe cards generated.")
@@ -56,5 +54,25 @@ public class AiChatController {
             guestRateLimiter.check(request.anonymousViewerId(), httpRequest.getRemoteAddr());
         }
         return service.answer(request);
+    }
+
+    @DeleteMapping("/sessions/{sessionId}")
+    @Operation(summary = "Delete the current temporary AI conversation session",
+            security = {@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH), @SecurityRequirement(name = "")},
+            description = "Deletes ephemeral consent and pending-action state for the session owned by this member or anonymous viewer. It does not undo completed business actions.")
+    @ApiResponse(responseCode = "204", description = "Session deleted or already expired.")
+    @ApiResponse(responseCode = "400", description = "Invalid session identifier or viewer identifier.")
+    public ResponseEntity<Void> deleteSession(@PathVariable java.util.UUID sessionId,
+            @RequestParam(required = false) String anonymousViewerId, Authentication authentication) {
+        if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
+            if (anonymousViewerId == null || !anonymousViewerId.matches(
+                    "(?i)[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}")) {
+                throw new tech.mamxanh.common.exception.AppException(
+                        tech.mamxanh.common.exception.ErrorCode.VALIDATION_FAILED,
+                        "Phiên trợ lý không hợp lệ hoặc đã hết hạn.");
+            }
+        }
+        service.deleteSession(sessionId, anonymousViewerId);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -1,13 +1,79 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.140.1
+> **Version:** v2.142.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-31
+> **Last Updated:** 2026-11-01
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-11-01 — Add Isolated ADK Knowledge and Hybrid Retrieval Pilot
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Add the G2 read-only knowledge pilot without connecting public chat or business writes.
+
+### Added
+
+- Add five derived Vietnamese playbooks, an allowlisted catalog, heading-aware chunks, validated versioned JSON vectors, atomic publication, BM25/cosine retrieval, equal-weight RRF, and two bounded native ADK knowledge tools.
+- Add explicit four-configuration embedding evaluation, stratified development/holdout datasets, persistent operational budget guards, synthetic agent/safety evaluation, and an offline packaged-resource smoke entry point.
+
+### Changed
+
+- Clarify that indexing and query embeddings are system operating costs excluded from user quota and Credit; distinguish missing provider usage from cost estimates.
+- Select `gemini-embedding-2` at 768 dimensions from development results; preserve explicit degraded keyword retrieval, the selected provider, and shared Customer/Expert capabilities.
+- Allow a trusted isolated pilot to use a 1,024-token output cap after live diagnostics confirmed truncation at the G1 default; preserve the existing G1 default and deadlines.
+
+### Fixed
+
+- Normalize Markdown line endings before hashing so Windows CRLF checkouts preserve packaged index compatibility.
+
+## 2026-11-01 — Add Isolated Google ADK Java G1 Spike
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Verify ADK Java integration without switching the existing chat endpoint or connecting prototype accounting to production wallets.
+
+### Added
+
+- Add ADK 1.13.0, a bounded model gateway, native session/tool confirmation verification, and opt-in Gemini live tests using synthetic read-only fixtures.
+- Add shared Customer/Expert capability checks, scoped worker authentication, stop-on-error/cancellation guards, call-start accounting context, and explicit missing/invalid usage statuses.
+
+### Changed
+
+- Clarify NFR-18 as a ten-second deadline per model call including retries and a thirty-second deadline per Assistant execution or resume.
+- Document the spike boundary, execution commands, privacy requirements, and outstanding production accounting dependency.
+
+### Fixed
+
+- Exclude the older duplicate Swagger annotations introduced transitively by ADK to preserve Springdoc's Jakarta annotations.
+- Disable ADK message-content tracing in tests and reject runner construction when content tracing has not been disabled.
+
+## 2026-10-31 — Add AI Assistant Orchestration and Approved Knowledge Retrieval
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Implement Issue #214 orchestration with role-scoped tools, consent and confirmation boundaries, bounded temporary sessions, source-attributed retrieval, and a chat interface for execution modes.
+
+### Added
+
+- Add the AI tool registry and sequential execution flow for profile, interaction, Expert recipe, meal plan, Shopping List, public recipe search, and approved internal knowledge workflows.
+- Add session-scoped consent and single-use pending confirmations, with local personal-data gating before Gemini and no raw prompt persistence.
+- Add a bounded approved-document retriever and return tool steps and source references to API clients.
+- Add an allowlisted page-navigation tool; the chat opens a trusted internal route returned by the Backend.
+- Add a chat mode selector for QA, confirmation, and automatic execution, with pending-action previews and consent/confirmation controls.
+- Keep the short-lived transcript through chat close/reopen, internal workflow navigation, and same-tab reload; allow users to clear the current transcript and pending session state when starting a new conversation.
+
+### Changed
+
+- Keep legacy chat requests from automatically reading Member dietary preferences into Gemini prompts.
+- Add a dedicated Gemini structured-output schema for ordered tool plans.
+
+### Fixed
+
+- None.
 
 ## 2026-10-31 — Fix Demo Expert Pro Token Quota
 
