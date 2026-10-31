@@ -3178,8 +3178,8 @@ paths:
       - ai-chat-controller
       summary: Ask the vegetarian cooking assistant
       description: Guest and active Member use the same chatbot. Guest must supply
-        a session-cookie UUID in anonymousViewerId or X-Guest-Chat-Id header; a daily limit of 3 requests
-        per calendar day applies independently to cookie and 60 per peer IP, resetting at 00:00 midnight Vietnam time. General
+        a session-cookie UUID in anonymousViewerId; a rolling limit of 10 requests
+        per minute applies independently to cookie and peer IP. No daily quota. General
         context or the latest public RecipePost is loaded server-side. Recipe discovery
         selects only current public RecipePosts from the Backend catalog; explicitly
         requested recipe drafts remain chat text only. Conversation history is request-scoped
@@ -3224,7 +3224,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "429":
-          description: AI_GUEST_RATE_LIMITED; Guest exceeded the 3 daily requests limit or peer-IP limit; Retry-After gives the wait in seconds until 00:00.
+          description: Guest exceeded the cookie or peer-IP limit; Retry-After gives
+            the wait in seconds.
           headers:
             Retry-After:
               description: Seconds until Guest can try again.

@@ -1,7 +1,6 @@
 package tech.mamxanh.recipe.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -14,7 +13,6 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tech.mamxanh.common.config.OpenApiConfig;
@@ -37,8 +35,8 @@ public class AiChatController {
     @PostMapping
     @Operation(summary = "Ask the vegetarian cooking assistant",
             security = {@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH), @SecurityRequirement(name = "")},
-            description = "Guest and active Member use the same chatbot. Guest must supply a session-cookie UUID in anonymousViewerId or X-Guest-Chat-Id header; "
-                    + "a daily limit of 3 requests applies per identity and 60 per peer IP, resetting at 00:00 midnight Vietnam time. "
+            description = "Guest and active Member use the same chatbot. Guest must supply a session-cookie UUID in anonymousViewerId; "
+                    + "a rolling limit of 10 requests per minute applies independently to cookie and peer IP. No daily quota. "
                     + "General context or the latest public RecipePost is loaded server-side. "
                     + "Recipe discovery selects only current public RecipePosts from the Backend catalog; explicitly requested recipe drafts remain chat text only. "
                     + "Conversation history is request-scoped and is not persisted. Guest has no account dietary context. "
@@ -50,27 +48,22 @@ public class AiChatController {
     @ApiResponse(responseCode = "403", description = "Account/role denied, or workflow requires a higher subscription. AI_SUBSCRIPTION_REQUIRED includes requiredTier and upgradeUrl; no provider call.")
     @ApiResponse(responseCode = "429", description = "Guest exceeded the cookie or peer-IP limit; Retry-After gives the wait in seconds.",
             headers = @Header(name = "Retry-After", description = "Seconds until Guest can try again.",
-                    schema = @Schema(type = "integer", minimum = "1")))
+                    schema = @Schema(types = {"integer"}, minimum = "1")))
     @ApiResponse(responseCode = "404", description = "The recipe does not exist or is not public.")
     @ApiResponse(responseCode = "502", description = "Gemini returned an incomplete or invalid answer.")
     @ApiResponse(responseCode = "503", description = "Gemini is unavailable or timed out.")
     public ResponseEntity<AiChatResponse> answer(
             @Valid @RequestBody AiChatRequest request,
-            @Parameter(description = "Optional Guest UUID from the first-party anonymous cookie. Not an authentication credential.")
-            @RequestHeader(value = GuestChatRateLimiter.ID_HEADER, required = false) String guestHeader,
             Authentication authentication,
             HttpServletRequest httpRequest) {
         if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
-            if (guestHeader != null && !guestHeader.isBlank()) {
-                guestRateLimiter.check(guestHeader, httpRequest.getRemoteAddr());
-            }
-            if (request.anonymousViewerId() != null && !request.anonymousViewerId().isBlank()) {
-                guestRateLimiter.check(request.anonymousViewerId(), httpRequest.getRemoteAddr());
-            }
-            if ((request.anonymousViewerId() == null || request.anonymousViewerId().isBlank())
-                    && (guestHeader == null || guestHeader.isBlank())) {
-                guestRateLimiter.check(null, httpRequest.getRemoteAddr());
-            }
+            String guestHeader = httpRequest.getHeader(GuestChatRateLimiter.ID_HEADER);
+            String guestId = (guestHeader != null && !guestHeader.isBlank())
+                    ? guestHeader.strip()
+                    : (request.anonymousViewerId() != null && !request.anonymousViewerId().isBlank()
+                            ? request.anonymousViewerId().strip()
+                            : null);
+            guestRateLimiter.check(guestId, httpRequest.getRemoteAddr());
         }
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(service.answer(request));
     }
