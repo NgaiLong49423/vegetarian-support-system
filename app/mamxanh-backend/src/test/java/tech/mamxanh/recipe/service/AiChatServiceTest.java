@@ -40,6 +40,8 @@ class AiChatServiceTest {
         recipePosts = mock(RecipePostService.class);
         preferences = mock(DietaryPreferenceService.class);
         ai = mock(AiClient.class);
+        when(ai.classifyChatScope(anyString(), anyString())).thenReturn(
+                new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 1, 1, 2));
         events = mock(ApplicationEventPublisher.class);
         entitlements = mock(tech.mamxanh.subscription.service.SubscriptionEntitlementService.class);
         service = new AiChatService(users, recipes, recipePosts, preferences, ai, new JsonMapper(), events, Clock.systemUTC(), entitlements);
@@ -60,7 +62,7 @@ class AiChatServiceTest {
         verifyNoInteractions(preferences);
         verify(users, never()).requireActiveMember();
         ArgumentCaptor<AiUsageEvent> usage = ArgumentCaptor.forClass(AiUsageEvent.class);
-        verify(events).publishEvent(usage.capture());
+        verify(events, times(2)).publishEvent(usage.capture());
         assertThat(usage.getValue().userId()).isNull();
     }
 
@@ -78,9 +80,9 @@ class AiChatServiceTest {
         assertThat(instruction.getValue()).contains("Never diagnose", "untrusted data", "Do not invent recipe facts");
         assertThat(prompt.getValue()).contains("VEGAN", "Sữa", "Thay sữa bò bằng gì?");
         ArgumentCaptor<AiUsageEvent> usage = ArgumentCaptor.forClass(AiUsageEvent.class);
-        verify(events).publishEvent(usage.capture());
-        assertThat(usage.getValue().feature()).isEqualTo("FR-51");
-        assertThat(usage.getValue().totalTokens()).isEqualTo(20);
+        verify(events, times(2)).publishEvent(usage.capture());
+        assertThat(usage.getAllValues()).allSatisfy(event -> assertThat(event.feature()).isEqualTo("FR-51"));
+        assertThat(usage.getAllValues()).anySatisfy(event -> assertThat(event.totalTokens()).isEqualTo(20));
     }
 
     @Test
@@ -102,7 +104,7 @@ class AiChatServiceTest {
         assertThatThrownBy(() -> service.answer(new AiChatRequest(AiChatRequest.ContextType.GENERAL,
                 null, "Hello", List.of()))).isInstanceOfSatisfying(AppException.class,
                 failure -> assertThat(failure.errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_INVALID));
-        verifyNoInteractions(events);
+        verify(events).publishEvent(any(AiUsageEvent.class));
     }
 
     @Test
@@ -173,7 +175,7 @@ class AiChatServiceTest {
                 "Gợi ý món chay", List.of())))
                 .isInstanceOf(AppException.class)
                 .extracting("errorCode").isEqualTo(ErrorCode.AI_PROVIDER_UNAVAILABLE);
-        verify(events, never()).publishEvent(any(AiUsageEvent.class));
+        verify(events).publishEvent(any(AiUsageEvent.class));
     }
 
     @Test

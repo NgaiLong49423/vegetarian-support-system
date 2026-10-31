@@ -323,7 +323,7 @@ export const recipeReactionApi = {
 export const recipesApi = {
   chat: (payload: AiChatRequest) => request(
     () => apiClient.post<AiChatResponse>('/recipes/ai/chat', payload, {
-      timeout: 12_000,
+      timeout: 15_000,
       headers: hasAccessToken() ? {} : { 'X-Guest-Chat-Id': guestChatIdentity() },
     }),
   ),
