@@ -23,7 +23,10 @@ import tech.mamxanh.common.config.OpenApiConfig;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.subscription.dto.request.CheckoutRequest;
+import tech.mamxanh.subscription.dto.request.CreditCheckoutRequest;
 import tech.mamxanh.subscription.dto.response.CheckoutResponse;
+import tech.mamxanh.subscription.dto.response.CreditCheckoutResponse;
+import tech.mamxanh.subscription.dto.response.MyAiCreditResponse;
 import tech.mamxanh.subscription.dto.response.MySubscriptionResponse;
 import tech.mamxanh.subscription.dto.response.MyAiUsageResponse;
 import tech.mamxanh.subscription.dto.response.PlanResponse;
@@ -75,6 +78,30 @@ public class SubscriptionController {
         Long userId = extractUserId(authentication);
         CheckoutResponse response = subscriptionService.createCheckout(userId, request.tier());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "payOS checkout link and snapshotted AI Credit amount."),
+            @ApiResponse(responseCode = "400", description = "VALIDATION_FAILED: amount is outside the current Admin-configured range."),
+            @ApiResponse(responseCode = "403", description = "ACCESS_DENIED: caller is not an active Customer or Expert."),
+            @ApiResponse(responseCode = "503", description = "PAYMENT_UNAVAILABLE: payOS is unavailable or not configured.")
+    })
+    @PostMapping("/credit-checkout")
+    public ResponseEntity<CreditCheckoutResponse> createCreditCheckout(Authentication authentication,
+            @Valid @RequestBody CreditCheckoutRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(subscriptionService.createCreditCheckout(
+                extractUserId(authentication), request.amountVnd()));
+    }
+
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Current AI Credit balance and top-up settings for the caller."),
+            @ApiResponse(responseCode = "403", description = "ACCESS_DENIED: caller is not an active Customer or Expert.")
+    })
+    @GetMapping("/my-ai-credit")
+    public ResponseEntity<MyAiCreditResponse> getMyAiCredit(Authentication authentication) {
+        return ResponseEntity.ok(subscriptionService.getMyAiCredit(extractUserId(authentication)));
     }
 
     /**

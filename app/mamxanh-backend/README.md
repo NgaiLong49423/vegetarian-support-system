@@ -1,6 +1,6 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.55.0
+> **Version:** v0.60.0
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-10-31
 > **Status:** Active  
@@ -12,7 +12,8 @@
 - `GET`/`PUT /api/v1/admin/ai-config` chỉ dành cho Administrator. Cấu hình và dữ liệu pilot được lưu qua migration V33; API không trả thông tin xác thực Gemini.
 - `AI_PLAN_CONFIGURATION` là nguồn giá/quota cho bảng gói và checkout. Thay đổi quota Free được áp dụng đầu tháng kế tiếp theo `Asia/Ho_Chi_Minh`; chu kỳ Plus/Pro đã kích hoạt tiếp tục giữ `SUBSCRIPTION.token_quota` snapshot. Migration V34 lưu tier/quota khi tạo đơn để đơn chờ giữ nguyên điều kiện lúc mua.
 - `AI_GEMINI_MODEL_CONFIGURATION` lưu catalog Gemini, tier access và model mặc định. Model ID mới được kiểm tra với Gemini trước khi lưu; quyền lựa chọn tại mọi luồng AI thuộc #210.
-- `AI_CREDIT_CONFIGURATION` lưu tỷ lệ quy đổi và giới hạn nạp cho #211/#213. Cấp Credit qua ledger và tạo đơn nạp thuộc các lát tiếp theo.
+- `AI_CREDIT_CONFIGURATION` lưu tỷ lệ quy đổi và giới hạn nạp cho #211/#213. Trong quản lý người dùng, Admin có thể tặng gói cho CUSTOMER và EXPERT, nhưng không cho ADMIN; gói áp dụng ngay, Plus/Pro bắt đầu chu kỳ 30 ngày mới, không tạo đơn thanh toán hoặc hoàn phần cũ. Mỗi lần tặng ghi lịch sử theo tài khoản và gửi thông báo in-app. Credit grant độc lập với tặng gói, cập nhật wallet và ghi `AI_CREDIT_LEDGER` trong cùng transaction; lịch sử tài khoản hiển thị số lượng, số dư sau giao dịch, lý do, người cấp và thời điểm. Người nhận nhận in-app notification.
+- Member tạo đơn nạp tại `POST /api/v1/subscriptions/credit-checkout`; số tiền, Credit quy đổi, tỷ lệ và hạn 15 phút được lưu snapshot trước khi gọi payOS. `PAYMENT_TRANSACTION.product_type` phân biệt đơn gói và đơn AI Credit; webhook xác minh mới cộng vào `AI_CREDIT_WALLET` và ghi `TOP_UP` vào `AI_CREDIT_LEDGER` idempotently trong transaction. Đơn thanh toán sau hạn hoặc thiếu mốc thời gian vào `NEEDS_RECONCILIATION`, giữ nguyên tiền đã nhận nhưng chưa tự cộng Credit và gửi thông báo Member. `GET /api/v1/subscriptions/my-ai-credit` trả số dư cùng tỷ lệ/giới hạn nạp hiện hành.
 - Các thay đổi đã lưu tạo thông báo in-app cho Customer/Expert đang hoạt động; Admin có thể chọn email bất đồng bộ tới email đã xác minh.
 
 ### Giám sát giao dịch gói tài khoản

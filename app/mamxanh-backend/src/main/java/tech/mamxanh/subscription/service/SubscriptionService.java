@@ -2,6 +2,9 @@ package tech.mamxanh.subscription.service;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.security.SecureRandom;
@@ -20,6 +23,8 @@ import tech.mamxanh.integration.payos.PayOsClient;
 import tech.mamxanh.integration.payos.dto.CreatePaymentLinkResponse;
 import tech.mamxanh.integration.payos.dto.PayOsWebhookPayload;
 import tech.mamxanh.subscription.dto.response.CheckoutResponse;
+import tech.mamxanh.subscription.dto.response.CreditCheckoutResponse;
+import tech.mamxanh.subscription.dto.response.MyAiCreditResponse;
 import tech.mamxanh.subscription.dto.response.MySubscriptionResponse;
 import tech.mamxanh.subscription.dto.response.PlanResponse;
 import tech.mamxanh.subscription.dto.response.TransactionHistoryResponse;
@@ -31,6 +36,7 @@ import tech.mamxanh.subscription.entity.SubscriptionTier;
 import tech.mamxanh.subscription.repository.PaymentTransactionRepository;
 import tech.mamxanh.subscription.repository.SubscriptionRepository;
 import tech.mamxanh.subscription.repository.AiConfigurationRepository;
+import tech.mamxanh.subscription.repository.AiCreditAdministrationRepository;
 
 @Service
 public class SubscriptionService {
@@ -46,6 +52,7 @@ public class SubscriptionService {
     private final PaymentSettlementService settlement;
     private final PaymentOrderService orders;
     private final AiConfigurationRepository aiConfiguration;
+    private final AiCreditAdministrationRepository aiCredit;
 
     @Autowired
     public SubscriptionService(
@@ -54,7 +61,7 @@ public class SubscriptionService {
             UserRepository userRepository,
             PayOsClient payOsClient,
             Clock clock, PaymentSettlementService settlement, PaymentOrderService orders,
-            AiConfigurationRepository aiConfiguration) {
+            AiConfigurationRepository aiConfiguration, AiCreditAdministrationRepository aiCredit) {
         this.subscriptionRepository = subscriptionRepository;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.userRepository = userRepository;
@@ -63,6 +70,15 @@ public class SubscriptionService {
         this.settlement = settlement;
         this.orders = orders;
         this.aiConfiguration = aiConfiguration;
+        this.aiCredit = aiCredit;
+    }
+
+    public SubscriptionService(SubscriptionRepository subscriptionRepository,
+            PaymentTransactionRepository paymentTransactionRepository, UserRepository userRepository,
+            PayOsClient payOsClient, Clock clock, PaymentSettlementService settlement,
+            PaymentOrderService orders, AiConfigurationRepository aiConfiguration) {
+        this(subscriptionRepository, paymentTransactionRepository, userRepository, payOsClient, clock,
+                settlement, orders, aiConfiguration, null);
     }
 
     /**
@@ -158,6 +174,46 @@ public class SubscriptionService {
         );
     }
 
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
+    public CreditCheckoutResponse createCreditCheckout(Long userId, int amountVnd) {
+        User user = validateActiveMember(userId);
+        var rate = aiConfiguration.findConfiguration().credit();
+        if (amountVnd < rate.minimumTopUpVnd() || amountVnd > rate.maximumTopUpVnd()) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED,
+                    "Số tiền nạp phải từ " + rate.minimumTopUpVnd() + " đến " + rate.maximumTopUpVnd() + " VND.");
+        }
+        payOsClient.validateCheckoutConfiguration();
+        BigDecimal credits = rate.creditsPer1000Vnd().multiply(BigDecimal.valueOf(amountVnd))
+                .divide(BigDecimal.valueOf(1000), 9, RoundingMode.HALF_UP).stripTrailingZeros();
+        long orderCode = generateOrderCode();
+        LocalDateTime now = LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC);
+        LocalDateTime expiresAt = now.plusMinutes(15);
+        PaymentTransactionEntity payment = new PaymentTransactionEntity(user.getId(), String.valueOf(orderCode), amountVnd);
+        payment.setCreatedAt(now);
+        payment.setProductType(PaymentTransactionEntity.ProductType.AI_CREDIT);
+        payment.setCreditAmountSnapshot(credits);
+        payment.setCreditsPer1000VndSnapshot(rate.creditsPer1000Vnd());
+        payment.setExpiresAt(expiresAt);
+        orders.create(payment);
+
+        CreatePaymentLinkResponse link = payOsClient.createPaymentLink(orderCode, amountVnd, "Nap AI Credit",
+                Math.toIntExact(expiresAt.toEpochSecond(ZoneOffset.UTC)));
+        if (link == null || !link.isSuccess() || link.data() == null) {
+            orders.markFailed(payment.getOrderCode());
+            throw new AppException(ErrorCode.INTERNAL_ERROR, "Không thể khởi tạo liên kết nạp AI Credit. Vui lòng thử lại sau.");
+        }
+        return new CreditCheckoutResponse(orderCode, amountVnd, credits, rate.creditsPer1000Vnd(), expiresAt,
+                link.data().checkoutUrl(), link.data().qrCode());
+    }
+
+    @Transactional(readOnly = true)
+    public MyAiCreditResponse getMyAiCredit(Long userId) {
+        validateActiveMember(userId);
+        var credit = aiConfiguration.findConfiguration().credit();
+        return new MyAiCreditResponse(aiCredit.balance(userId), credit.creditsPer1000Vnd(),
+                credit.minimumTopUpVnd(), credit.maximumTopUpVnd());
+    }
+
     /**
      * Handles payOS webhook IPN callback.
      * Enforces AC-13.2, AC-13.3 (idempotency), AC-13.5 (signature & amount validation), AC-13.6 (cancelled/failed).
@@ -172,7 +228,8 @@ public class SubscriptionService {
         if (!"VND".equals(payload.data().get("currency"))
                 || !(payload.data().get("code") instanceof String signedCode) || signedCode.isBlank()) throw new AppException(ErrorCode.PAYMENT_SIGNATURE_INVALID);
         settlement.settle(String.valueOf(orderCode), amount,
-                payload.isPaymentSuccess() ? PaymentStatus.PAID : PaymentStatus.CANCELLED);
+                payload.isPaymentSuccess() ? PaymentStatus.PAID : PaymentStatus.CANCELLED,
+                payload.getTransactionAtUtc());
     }
 
     /**
@@ -246,12 +303,15 @@ public class SubscriptionService {
                         tx.getStatus().name(),
                         tx.getCreatedAt(),
                         tx.getPaidAt(),
-                        tx.getSubscriptionTier() != null ? tx.getSubscriptionTier().name()
+                        tx.getProductType() == PaymentTransactionEntity.ProductType.AI_CREDIT ? null
+                                : tx.getSubscriptionTier() != null ? tx.getSubscriptionTier().name()
                                 : tx.getAmountVnd() == 99_000 ? "PRO"
                                 : tx.getAmountVnd() == 49_000 ? "PLUS" : null,
                         tx.getStatus() == PaymentStatus.PAID && tx.getSubscriptionId() != null
                                 && purchasedSubscriptions.containsKey(tx.getSubscriptionId())
-                                ? purchasedSubscriptions.get(tx.getSubscriptionId()).getEndsAt() : null
+                                ? purchasedSubscriptions.get(tx.getSubscriptionId()).getEndsAt() : null,
+                        tx.getProductType(), tx.getCreditAmountSnapshot(), tx.getExpiresAt(),
+                        tx.getCreditsPer1000VndSnapshot()
                 ))
                 .toList();
     }

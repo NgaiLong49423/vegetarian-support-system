@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.134.0
+> **Version:** v2.140.1
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-31
 > **Status:** Active
@@ -8,6 +8,68 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-31 — Fix Demo Expert Pro Token Quota
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Ensure the local demo Expert's annual Pro subscription receives the currently configured Pro quota.
+
+### Added
+
+- None.
+
+### Changed
+
+- None.
+
+### Fixed
+
+- Repair the local demo Pro quota snapshot when it is zero, without changing monthly subscriptions or existing nonzero snapshots.
+
+## 2026-10-31 — Add AI Credit Top-Up Checkout
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Implement the member purchase flow already specified by FR-64, using the existing payOS checkout and AI Credit wallet ledger.
+
+### Added
+
+- Add a dedicated `/nap-ai-credit` page for wallet balance, live conversion, Admin-configured limits, and payOS checkout, with a **Nạp tiền** entry button from the AI plans overview; show the current AI Credit balance on the overview for Customer/Expert accounts.
+- Add snapshotted top-up order data, idempotent wallet/ledger settlement, and a reconciliation state with an in-app notice for late or unverified payment times.
+- Show AI Credit top-ups and reconciliation status in member and Admin transaction history.
+
+### Changed
+
+- Distinguish subscription purchases from AI Credit purchases in payment transaction records and generated API responses.
+
+### Fixed
+
+- None.
+
+## 2026-10-31 — Extend Admin AI Account Management
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Extend Issue #212 with customer and expert package gifts, per-account gift history, in-app recipient notices, and AI Credit grants under the user-confirmed FR-65/BR-78 behavior.
+
+### Added
+
+- Add Administrator-only endpoints to gift AI packages to eligible members and grant AI Credit, with account history, wallet ledger updates, and in-app recipient notifications.
+- Add separate package-gift and AI Credit grant screens from an account-level action selector.
+- Add Flyway V37 audit fields for gifted AI tiers and package expiry.
+
+### Changed
+
+- Show the AI configuration page as a read-only overview, with one editable section at a time and an explicit change summary before saving.
+- Replace direct AI tier changes with package gifts for CUSTOMER and EXPERT accounts, including EXPERT eligibility; ADMIN accounts remain ineligible.
+- Update FR-65 and BR-78 to define package gifts for CUSTOMER and EXPERT accounts, immediate replacement, new 30-day Plus/Pro periods, no payment order or refund, and required transaction history.
+- Show AI Credit grant ledger entries in the recipient's account history with amount, resulting balance, administrator, reason, and time.
+- Synchronize the database snapshot and Admin API/database guidance with the new operations.
+
+### Fixed
+
+- Separate new audit-column creation from constraint replacement with a SQL Server batch boundary so Flyway can resolve the added columns.
 
 ## 2026-10-31 — Implement Admin AI Configuration Foundation
 

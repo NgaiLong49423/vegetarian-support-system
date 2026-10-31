@@ -1,11 +1,19 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.35.0<br>
+> **Version:** v0.39.0<br>
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-10-31<br>
 > **Status:** Active  
 
 # Database Workspace
+
+## Migration V37 — Lịch sử tặng gói AI cho khách hàng (Issue #212)
+
+`V37__admin_ai_entitlement_audit.sql` bổ sung `old_tier`/`new_tier`/`new_tier_ends_at` vào `USER_ACCOUNT_AUDIT` và cho phép action `AI_PACKAGE_GIFTED`. Không tạo bảng hoặc quan hệ mới. `database/schema.sql` chứa cùng cột và CHECK constraints. Mỗi lần tặng gói thành công được ghi cùng Admin, tài khoản CUSTOMER nhận, lý do, thời điểm tặng và thời điểm kết thúc quyền lợi.
+
+## Migration V38 — Đơn mua AI Credit qua payOS (FR-64 / Issue #212)
+
+`V38__ai_credit_top_up_orders.sql` mở rộng `PAYMENT_TRANSACTION` hiện có bằng `product_type`, `credit_amount_snapshot`, `credits_per_1000_vnd_snapshot` và `expires_at`; bổ sung trạng thái `NEEDS_RECONCILIATION`. Không tạo bảng hoặc quan hệ mới. Đơn `AI_CREDIT` giữ nguyên số tiền, lượng Credit, tỷ lệ quy đổi và hạn 15 phút. Thanh toán trước hạn cộng ví và `AI_CREDIT_LEDGER` trong cùng transaction; thanh toán sau hạn hoặc thiếu mốc thanh toán giữ trạng thái cần đối soát, không cộng tự động. Snapshot `database/schema.sql` phản ánh migration này.
 
 ## Migration V34 — Snapshot gói trong đơn thanh toán
 
@@ -82,10 +90,11 @@ Repeatable `R__demo_sample_data_67_report_groups.sql` (chỉ profile `local`, AC
 
 ## Quyền sở hữu dữ liệu
 
-- Flyway migration trong backend (`app/mamxanh-backend/src/main/resources/db/migration/`) là lịch sử schema có thẩm quyền và append-only sau khi chia sẻ. Working baseline hiện gồm V1–V29; V13 mở rộng `nutrition_goal`, V14 tạo `NUTRITION_DAILY_VALUE`, V16 cho phép hỗ trợ từng phần, V17 chấp nhận nguồn AI trong tính toán một phần, V18 thêm đơn vị `cuộn`, V19 lưu loại danh sách và đóng góp Recipe Post, V20 thêm URL ảnh minh họa tùy chọn cho nguyên liệu, V21 cho phép loại danh sách `MANUAL`, V22 thêm người xử lý báo cáo, V23 tạo `REPORT_SUPPLEMENT`, V24 thêm tham chiếu attachment riêng tư vào đơn đăng ký Chuyên gia, V25 lưu BMI, V26 chuẩn hóa đơn vị công thức, V27 lưu nguồn/khẩu phần Recipe Post, V28 lưu nguồn manual cùng số nguyên liệu bắt buộc, V29 phân loại lượng mất xác định. `database/schema.sql` phản ánh trạng thái sau toàn bộ migration; Physical ERD do người phụ trách sơ đồ cập nhật riêng. V26–V29 chưa được xác minh trên SQL Server trong lượt này.
+- Flyway migration trong backend (`app/mamxanh-backend/src/main/resources/db/migration/`) là lịch sử schema có thẩm quyền và append-only sau khi chia sẻ. Working baseline hiện gồm V1–V38. Các migration mới hơn gồm V30 audit quản lý tài khoản, V31 telemetry AI, V32 quota/usage ledger, V33 cấu hình AI Admin, V34 snapshot gói checkout, V35 preference model AI, V36 wallet/ledger AI Credit, V37 lịch sử tặng gói AI và V38 đơn nạp AI Credit. `database/schema.sql` phản ánh trạng thái sau toàn bộ migration; Physical ERD do người phụ trách sơ đồ cập nhật riêng. Ngày 31/10/2026, Flyway xác thực 60 migration trên SQL Server local hiện có (schema V38) và áp dụng seed demo mới; chưa xác minh cài mới bằng cách chạy lại V26–V38 trên database sạch.
 - `database/schema.sql` là snapshot/manual bootstrap độc lập, được đồng bộ có chủ đích với trạng thái sau khi chạy toàn bộ Flyway migration; dùng cho khởi tạo nhanh trên SSMS, Azure Data Studio hoặc `sqlcmd`.
 - Flyway repeatable migrations trong `app/mamxanh-backend/src/main/resources/db/demo/` nạp fixture demo khi profile `local` chạy (IntelliJ hoặc Docker Compose), gồm tài khoản, lịch ăn, công thức, nguyên liệu, tương tác cộng đồng và danh sách mua sắm. `MAMXANH_DEMO_PASSWORD` được lấy từ `.env` local và BCrypt hóa lúc Backend khởi động; không lưu password/hash trong SQL migration hoặc Git.
 - Profile `local` dùng thêm location `classpath:db/demo`; `test` và production chỉ chạy migration schema. Repeatable demo chạy theo thứ tự catalog, ước tính AI, recipe và hoạt động mẫu. Fixture AI estimate điền đủ chín chỉ tiêu trên 100 g bằng giá trị minh họa chưa xác minh để công thức demo không còn thiếu chỉ tiêu; số 0 cũng là ước tính (ví dụ B12 trong thực phẩm thực vật), không phải xác nhận xét nghiệm. Dữ liệu nhập khác vẫn có thể thiếu trường; khi đó giá trị `NULL` được bỏ khỏi phép tính và giao diện cảnh báo kết quả chưa đầy đủ. Seed kiểm tra tồn tại trước khi thêm nên chạy lại không nhân bản fixture.
+- Repeatable `R__demo_sample_data_86_expert_ai_quota.sql` (chỉ profile `local`) sửa snapshot quota bằng 0 của subscription Pro demo một năm theo quota Pro hiện tại trong `AI_PLAN_CONFIGURATION`. Seed chỉ đụng bản ghi Pro demo còn quota 0 và thời hạn ít nhất 11 tháng; không thay đổi subscription có snapshot quota dương hoặc gói tháng.
 - `database/queries.sql` chứa kịch bản kiểm tra đối tượng, bộ test tự động xác minh các ràng buộc nghiệp vụ (positive/negative) có cơ chế rollback, và các truy vấn mẫu cho tầng ứng dụng; không thay thế automated integration tests.
 
 ## Gia vị, định lượng và ảnh minh họa demo
@@ -144,7 +153,7 @@ Chính sách quản trị schema tuân thủ trực tiếp [Engineering Autonomy
    - **Ranh giới Diagram Artifact Protection:** Thư mục `docs/diagrams/ERD/` (Physical ERD, Logical ERD) là presentation workspace do con người duy trì và được bảo vệ theo `AGENTS.md`. Việc thay đổi schema hoặc migration **tuyệt đối không tự động cấp quyền sửa hoặc regenerate ERD diagrams** cho coding agent trừ khi có task riêng được ủy quyền tường minh.
 3. **Quy trình thực hiện migration:**
    - Truy vết thay đổi đến SRS/Issue và xác nhận không mở rộng scope ngoài quyết định đã duyệt.
-   - Thêm Flyway migration mới ở phiên bản tiếp theo khả dụng (hiện là `V29__...`); không sửa migration đã được chia sẻ.
+   - Thêm Flyway migration mới ở phiên bản tiếp theo khả dụng (hiện là `V38__...`); không sửa migration đã được chia sẻ.
    - Cập nhật entity/DTO/repository và test liên quan.
    - Cập nhật snapshot `database/schema.sql`.
    - Kiểm tra migration trên database sạch và kiểm thử nâng cấp.
@@ -156,7 +165,7 @@ Chính sách quản trị schema tuân thủ trực tiếp [Engineering Autonomy
 - **Logical ERD:** [logical-erd-v1.0.0.drawio](../docs/diagrams/ERD/logical-erd-v1.0.0.drawio) (22 bảng, 37 connector thể hiện 36 quan hệ; cập nhật lần cuối ở commit `827353e`).
 - **Physical ERD:** [physical-erd-v1.0.0.drawio](../docs/diagrams/ERD/physical-erd-v1.0.0.drawio) & [physical-erd-v1.0.0.drawio.png](../docs/diagrams/ERD/physical-erd-v1.0.0.drawio.png) (22 bảng, 37 connector, 196 physical columns với đầy đủ kiểu dữ liệu, nullability, constraints, indexes).
 - **Data Dictionary:** [data-dictionary.md](../docs/diagrams/ERD/data-dictionary.md) v0.7.2 (22 bảng, 196 cột physical, hoàn thành triển khai toàn bộ 33 mục đánh dấu sau review PR #66). Theo quyết định của Tech Lead ngày 01/10/2026, các tài liệu trong `docs/diagrams/` (ERD, Data Dictionary) là baseline tham khảo và chỉ được đồng bộ ở giai đoạn viết tài liệu nộp; trạng thái schema hiện hành lấy theo Flyway migration và `database/schema.sql`.
-- **Schema & Migration:** Working baseline gồm V1–V29; các thay đổi mới nhất là V26 chuẩn hóa đơn vị công thức, V27 lưu nguồn/khẩu phần món trong Shopping List, V28 phân biệt phần công thức/thêm thủ công và V29 phân loại lượng mất xác định. `database/schema.sql` là snapshot thủ công sau toàn bộ migration. V26–V29 chưa được xác minh trên SQL Server trong lượt triển khai này.
+- **Schema & Migration:** Working baseline gồm V1–V38; các migration AI mới nhất là V33 cấu hình, V34 snapshot checkout, V35 model preference, V36 AI Credit wallet/ledger, V37 lịch sử tặng gói và V38 đơn mua AI Credit. `database/schema.sql` là snapshot thủ công sau toàn bộ migration. Ngày 31/10/2026, Flyway xác thực 60 migration trên SQL Server local hiện có (schema V38) và áp dụng seed demo mới; chưa xác minh cài mới bằng cách chạy lại V26–V38 trên database sạch.
 - **Migration V7 (Issue #36, FR-31):** [V7__user_onboarding_invitation.sql](../app/mamxanh-backend/src/main/resources/db/migration/V7__user_onboarding_invitation.sql) thêm cột `USER.onboarding_invited_at DATETIME2(7) NULL`: thời điểm lời mời Onboarding đã hiển thị, `NULL` là chưa mời. Backend chỉ mời khi `onboarding_status = NOT_STARTED` và cột còn `NULL`, nên Member bỏ dở questionnaire không bị mời lại (AC-31.10). Tài khoản tồn tại trước migration được ghi thời điểm chạy migration nên không bị hỏi tự động; `onboarding_status` giữ nguyên, nên `SKIPPED` vẫn chỉ có nghĩa là Member đã bấm "Bỏ qua".
 - **Migration V8 (Issue #68, FR-05):** [V8__expert_application_notifications.sql](../app/mamxanh-backend/src/main/resources/db/migration/V8__expert_application_notifications.sql) thêm `NOTIFICATION.target_path` và hai index phục vụ truy vấn lịch sử/xét duyệt đơn Chuyên gia. Cần xác minh migration này cùng snapshot trên database sạch trước khi dùng kết quả kiểm tra V1–V7 làm bằng chứng cho baseline đã đồng bộ.
 - **Migration V11 (Issue #9, FR-03-E):** [V11__user_password_reset.sql](../app/mamxanh-backend/src/main/resources/db/migration/V11__user_password_reset.sql) thêm năm cột trên `USER`: `password_reset_token`, `reset_token_expires_at`, `password_reset_sent_at`, `password_reset_window_started_at`, `password_reset_window_count`; hai CHECK (`CK_USER_password_reset_token_pair` giữ token và hạn cùng có hoặc cùng `NULL`, `CK_USER_password_reset_window_count_non_negative`), một DEFAULT và filtered unique index `UQ_USER_password_reset_token`. Token mới ghi đè token cũ; đặt lại thành công xóa token nhưng giữ khung rate limit.
@@ -170,7 +179,7 @@ Kiểm tra toàn bộ schema và chạy 41 test cases (TC01–TC41) bằng `sqlc
 # 1. Khởi tạo database kiểm thử sạch
 sqlcmd -S .\SQLEXPRESS -E -Q "DROP DATABASE IF EXISTS MamXanhDB_Test; CREATE DATABASE MamXanhDB_Test;"
 
-# 2. Thực thi schema DDL (hoặc chạy lần lượt V1–V25 trong db/migration với cờ -I,
+# 2. Thực thi schema DDL (hoặc chạy lần lượt V1–V38 trong db/migration với cờ -I,
 #    vì filtered index cần QUOTED_IDENTIFIER ON)
 sqlcmd -S .\SQLEXPRESS -E -d MamXanhDB_Test -i database/schema.sql
 

@@ -31,6 +31,15 @@ public class DefaultPayOsClient implements PayOsClient {
 
     @Override
     public CreatePaymentLinkResponse createPaymentLink(long orderCode, int amount, String description) {
+        return createPaymentLink(orderCode, amount, description, null);
+    }
+
+    @Override
+    public CreatePaymentLinkResponse createPaymentLink(long orderCode, int amount, String description, int expiredAt) {
+        return createPaymentLink(orderCode, amount, description, Integer.valueOf(expiredAt));
+    }
+
+    private CreatePaymentLinkResponse createPaymentLink(long orderCode, int amount, String description, Integer expiredAt) {
         requireConfigured();
         String desc = description == null || description.isBlank() ? "Thanh toan goi AI" : description;
         desc = desc.substring(0, Math.min(desc.length(), 25));
@@ -40,7 +49,7 @@ public class DefaultPayOsClient implements PayOsClient {
             PayOsWebhookPayload response = restClient.post().uri(properties.endpoint() + "/v2/payment-requests")
                     .header("x-client-id", properties.clientId()).header("x-api-key", properties.apiKey())
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(new CreatePaymentLinkRequest(orderCode, amount, desc, properties.cancelUrl(), properties.returnUrl(), signature))
+                    .body(new CreatePaymentLinkRequest(orderCode, amount, desc, properties.cancelUrl(), properties.returnUrl(), expiredAt, signature))
                     .retrieve().body(PayOsWebhookPayload.class);
             Map<String, Object> data = verifiedData(response);
             PayOsPaymentData link = MAPPER.convertValue(data, PayOsPaymentData.class);
@@ -76,7 +85,25 @@ public class DefaultPayOsClient implements PayOsClient {
                     || !java.util.Set.of("PENDING", "PROCESSING", "PAID", "CANCELLED", "EXPIRED").contains(status)) {
                 throw new AppException(ErrorCode.PAYMENT_RESPONSE_INVALID);
             }
-            return new PayOsPaymentInfo(returnedOrder, amount, amountPaid, status);
+            Object rawTransactions = data.get("transactions");
+            java.time.LocalDateTime transactionAt = null;
+            if (rawTransactions instanceof Map<?, ?> transactionMap) {
+                for (Object transaction : transactionMap.values()) {
+                    if (transaction instanceof Map<?, ?> fields) {
+                        var candidate = PayOsPaymentInfo.parseTransactionDateTime(fields.get("transactionDateTime"));
+                        if (candidate != null && (transactionAt == null || candidate.isAfter(transactionAt))) transactionAt = candidate;
+                    }
+                }
+            } else if (rawTransactions instanceof Iterable<?> transactionList) {
+                for (Object transaction : transactionList) {
+                    if (transaction instanceof Map<?, ?> fields) {
+                        var candidate = PayOsPaymentInfo.parseTransactionDateTime(fields.get("transactionDateTime"));
+                        if (candidate != null && (transactionAt == null || candidate.isAfter(transactionAt))) transactionAt = candidate;
+                    }
+                }
+            }
+            if (transactionAt == null) transactionAt = PayOsPaymentInfo.parseTransactionDateTime(data.get("transactionDateTime"));
+            return new PayOsPaymentInfo(returnedOrder, amount, amountPaid, status, transactionAt);
         } catch (RestClientException ex) {
             throw new AppException(ErrorCode.PAYMENT_UNAVAILABLE);
         } catch (IllegalArgumentException | ArithmeticException ex) {

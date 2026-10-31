@@ -59,6 +59,9 @@ function renderStatusBadge(status: PaymentStatus) {
         </Badge>
       )
 
+    case "NEEDS_RECONCILIATION":
+      return <Badge tone="brand"><AlertCircle className="mr-1 h-3 w-3" /> Cần đối soát</Badge>
+
     default:
       return <Badge tone="neutral">{status}</Badge>
   }
@@ -118,8 +121,7 @@ export function TransactionHistory() {
             Lịch sử giao dịch
           </h1>
           <p className="mt-1 text-sm text-ink-muted">
-            Theo dõi tất cả giao dịch thanh toán gói AI qua cổng payOS của tài
-            khoản.
+            Theo dõi các giao dịch mua gói AI và nạp Credit qua cổng payOS.
           </p>
         </div>
         <div className="flex gap-2">
@@ -150,8 +152,7 @@ export function TransactionHistory() {
             Chưa có dữ liệu giao dịch
           </h2>
           <p className="mx-auto mt-2 max-w-lg text-sm text-ink-muted">
-            Lịch sử sẽ hiển thị mã giao dịch, gói, số tiền, thời gian và trạng
-            thái khi bạn thực hiện đăng ký gói.
+            Lịch sử sẽ hiển thị mã giao dịch, sản phẩm, số tiền, thời gian và trạng thái khi bạn mua gói hoặc nạp Credit.
           </p>
           <Link
             to="/goi-ai"
@@ -203,8 +204,7 @@ export function TransactionHistory() {
             Chưa có dữ liệu giao dịch
           </h2>
           <p className="mx-auto mt-2 max-w-lg text-sm text-ink-muted">
-            Bạn chưa thực hiện giao dịch mua gói AI nào. Khi bạn thanh toán gói
-            PLUS hoặc PRO, thông tin đơn hàng sẽ được lưu tại đây.
+            Bạn chưa có giao dịch mua gói hoặc nạp AI Credit. Giao dịch mới sẽ được lưu tại đây.
           </p>
           <Link
             to="/goi-ai"
@@ -227,7 +227,7 @@ export function TransactionHistory() {
                       Mã đơn hàng
                     </th>
                     <th scope="col" className="px-6 py-4">
-                      Gói dịch vụ
+                      Sản phẩm
                     </th>
                     <th scope="col" className="px-6 py-4">
                       Số tiền
@@ -256,7 +256,9 @@ export function TransactionHistory() {
                         #{tx.orderCode}
                       </td>
                       <td className="px-6 py-4 font-bold text-ink">
-                        {tx.tier ? `Gói ${tx.tier}` : "Không xác định"}
+                        {tx.productType === "AI_CREDIT"
+                          ? <><span>Nạp AI Credit · +{(tx.creditAmount ?? 0).toLocaleString("vi-VN", { maximumFractionDigits: 9 })} Credit</span>{tx.creditsPer1000VndSnapshot !== null && <span className="mt-1 block text-xs font-normal text-ink-muted">Tỷ lệ: {tx.creditsPer1000VndSnapshot.toLocaleString("vi-VN")} Credit / 1.000đ</span>}</>
+                          : tx.tier ? `Gói ${tx.tier}` : "Không xác định"}
                       </td>
                       <td className="px-6 py-4 font-semibold text-ink">
                         {formatVnd(tx.amountVnd)} đ
@@ -271,9 +273,9 @@ export function TransactionHistory() {
                         {tx.paidAt ? formatDateTime(tx.paidAt) : "—"}
                       </td>
                       <td className="px-6 py-4 text-xs text-ink-muted">
-                        {tx.status === "PAID" && tx.endsAt
-                          ? formatDateTime(tx.endsAt)
-                          : "—"}
+                        {tx.productType === "AI_CREDIT" && tx.expiresAt && tx.status === "PENDING"
+                          ? `Đơn hết hạn ${formatDateTime(tx.expiresAt)}`
+                          : tx.status === "PAID" && tx.endsAt ? formatDateTime(tx.endsAt) : "—"}
                       </td>
                     </tr>
                   ))}

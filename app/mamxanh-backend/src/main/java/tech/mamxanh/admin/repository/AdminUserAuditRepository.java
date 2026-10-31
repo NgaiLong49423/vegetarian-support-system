@@ -20,4 +20,10 @@ public class AdminUserAuditRepository {
         jdbc.update("INSERT INTO [USER_ACCOUNT_AUDIT](target_user_id,administrator_id,action,old_role,new_role,reason,expert_application_id,created_at) VALUES(?,?,'ROLE_CHANGED',?,?,?,?,?)",
                 targetId, administratorId, oldRole, newRole, reason.strip(), cancelledApplicationId, now);
     }
+
+    public void recordAiPackageGift(long targetId, long administratorId, String oldTier, String newTier,
+            LocalDateTime endsAt, String reason, LocalDateTime now) {
+        jdbc.update("INSERT INTO [USER_ACCOUNT_AUDIT](target_user_id,administrator_id,action,old_tier,new_tier,new_tier_ends_at,reason,created_at) VALUES(?,?,'AI_PACKAGE_GIFTED',?,?,?,?,?)",
+                targetId, administratorId, oldTier, newTier, endsAt, reason.strip(), now);
+    }
 }

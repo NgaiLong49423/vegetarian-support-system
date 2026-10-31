@@ -4,7 +4,7 @@
 -- Project         : Mâm Xanh — Vegetarian Support System (SWP391)
 -- Issue           : Refs #63 — Pha 2 Physical ERD & Schema
 -- Author          : Trương Văn Khải
--- Date            : 2026-10-30
+-- Date            : 2026-10-31
 -- Source          : Logical ERD v1.0.0 + Data Dictionary v0.7.5
 --                   (Nguyễn Hải Dương — Pha 1, commit 827353e)
 -- Synchronized with: V1__baseline_schema.sql + V2__unit_code_unicode.sql
@@ -37,6 +37,12 @@
 --                   + V29__shopping_unknown_contributions.sql
 --                   + V30__admin_user_management_audit.sql
 --                   + V31__ai_usage_telemetry.sql
+--                   + V32__ai_token_quota_usage_ledger.sql
+--                   + V33__admin_ai_configuration.sql
+--                   + V34__subscription_order_plan_snapshot.sql
+--                   + V35__add_user_preferred_ai_model.sql
+--                   + V36__ai_credit_wallet_ledger.sql
+--                   + V37__admin_ai_entitlement_audit.sql — AI package gift history
 --                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
@@ -676,7 +682,7 @@ CREATE TABLE [REPORT] (
 );
 GO
 
--- 6.1b USER_ACCOUNT_AUDIT — Administrator account status and role changes
+-- 6.1b USER_ACCOUNT_AUDIT — Administrator account status, role and AI package gifts
 CREATE TABLE [USER_ACCOUNT_AUDIT] (
     user_account_audit_id BIGINT IDENTITY(1,1) NOT NULL,
     target_user_id BIGINT NOT NULL,
@@ -686,6 +692,9 @@ CREATE TABLE [USER_ACCOUNT_AUDIT] (
     new_role VARCHAR(20) NULL,
     old_account_status VARCHAR(20) NULL,
     new_account_status VARCHAR(20) NULL,
+    old_tier VARCHAR(10) NULL,
+    new_tier VARCHAR(10) NULL,
+    new_tier_ends_at DATETIME2(7) NULL,
     reason NVARCHAR(500) NOT NULL,
     expert_application_id BIGINT NULL,
     created_at DATETIME2(7) NOT NULL,
@@ -693,17 +702,26 @@ CREATE TABLE [USER_ACCOUNT_AUDIT] (
     CONSTRAINT FK_USER_ACCOUNT_AUDIT_TARGET FOREIGN KEY (target_user_id) REFERENCES [USER](user_id),
     CONSTRAINT FK_USER_ACCOUNT_AUDIT_ADMIN FOREIGN KEY (administrator_id) REFERENCES [USER](user_id),
     CONSTRAINT FK_USER_ACCOUNT_AUDIT_APPLICATION FOREIGN KEY (expert_application_id) REFERENCES [EXPERT_APPLICATION](application_id),
-    CONSTRAINT CK_USER_ACCOUNT_AUDIT_ACTION CHECK (action IN ('STATUS_CHANGED','ROLE_CHANGED')),
+    CONSTRAINT CK_USER_ACCOUNT_AUDIT_ACTION CHECK (action IN ('STATUS_CHANGED','ROLE_CHANGED','AI_PACKAGE_GIFTED')),
     CONSTRAINT CK_USER_ACCOUNT_AUDIT_REASON CHECK (LEN(LTRIM(RTRIM(reason))) BETWEEN 10 AND 500),
     CONSTRAINT CK_USER_ACCOUNT_AUDIT_VALUES CHECK (
         (action='STATUS_CHANGED' AND old_account_status IS NOT NULL
             AND old_account_status IN ('ACTIVE','LOCKED') AND new_account_status IS NOT NULL
             AND new_account_status IN ('ACTIVE','LOCKED')
-            AND old_role IS NULL AND new_role IS NULL AND expert_application_id IS NULL)
+            AND old_role IS NULL AND new_role IS NULL AND old_tier IS NULL AND new_tier IS NULL
+            AND expert_application_id IS NULL)
         OR
         (action='ROLE_CHANGED' AND old_role IS NOT NULL AND old_role IN ('CUSTOMER','EXPERT')
             AND new_role IS NOT NULL AND new_role IN ('CUSTOMER','EXPERT')
-            AND old_account_status IS NULL AND new_account_status IS NULL)
+            AND old_account_status IS NULL AND new_account_status IS NULL
+            AND old_tier IS NULL AND new_tier IS NULL)
+        OR
+        (action='AI_PACKAGE_GIFTED' AND old_tier IS NOT NULL AND old_tier IN ('FREE','PLUS','PRO')
+            AND new_tier IS NOT NULL AND new_tier IN ('FREE','PLUS','PRO')
+            AND ((new_tier='FREE' AND new_tier_ends_at IS NULL) OR (new_tier IN ('PLUS','PRO') AND new_tier_ends_at IS NOT NULL))
+            AND old_role IS NULL AND new_role IS NULL
+            AND old_account_status IS NULL AND new_account_status IS NULL
+            AND expert_application_id IS NULL)
     )
 );
 CREATE INDEX IX_USER_ACCOUNT_AUDIT_TARGET_CREATED
@@ -923,8 +941,8 @@ CREATE TABLE [SUBSCRIPTION] (
 );
 GO
 
--- 9.2 PAYMENT_TRANSACTION — payOS payment to activate subscription
--- Source: Data Dictionary 4.22, FR-13, BR-03
+-- 9.2 PAYMENT_TRANSACTION — payOS subscription and AI Credit top-up orders
+-- Source: Data Dictionary 4.22, FR-13, FR-64, BR-03, BR-77
 -- order_code UNIQUE: idempotency mechanism for payOS webhook (constraint #12)
 CREATE TABLE [PAYMENT_TRANSACTION] (
     payment_transaction_id  BIGINT        IDENTITY(1,1)  NOT NULL,
@@ -934,6 +952,11 @@ CREATE TABLE [PAYMENT_TRANSACTION] (
     amount_vnd              INT           NOT NULL,
     subscription_tier       VARCHAR(10)   NULL,
     token_quota_snapshot    BIGINT        NULL,
+    product_type            VARCHAR(20)   NOT NULL
+        CONSTRAINT DF_PAYMENT_product_type DEFAULT 'SUBSCRIPTION',
+    credit_amount_snapshot  DECIMAL(38,9) NULL,
+    credits_per_1000_vnd_snapshot DECIMAL(19,6) NULL,
+    expires_at              DATETIME2(7)  NULL,
     status                  VARCHAR(20)   NOT NULL
         CONSTRAINT DF_PAYMENT_status DEFAULT 'PENDING',
     created_at              DATETIME2(7)  NOT NULL
@@ -947,13 +970,21 @@ CREATE TABLE [PAYMENT_TRANSACTION] (
         REFERENCES [SUBSCRIPTION](subscription_id) ON DELETE NO ACTION,
     CONSTRAINT UQ_PAYMENT_order_code UNIQUE (order_code),
     CONSTRAINT CK_PAYMENT_status CHECK (
-        status IN ('PENDING', 'PAID', 'FAILED', 'CANCELLED')
+        status IN ('PENDING', 'PAID', 'FAILED', 'CANCELLED', 'NEEDS_RECONCILIATION')
     ),
     CONSTRAINT CK_PAYMENT_amount CHECK (amount_vnd > 0),
     CONSTRAINT CK_PAYMENT_token_quota_snapshot CHECK (
         token_quota_snapshot IS NULL OR token_quota_snapshot >= 0),
     CONSTRAINT CK_PAYMENT_subscription_tier_snapshot CHECK (
-        subscription_tier IS NULL OR subscription_tier IN ('PLUS', 'PRO'))
+        subscription_tier IS NULL OR subscription_tier IN ('PLUS', 'PRO')),
+    CONSTRAINT CK_PAYMENT_product_type CHECK (
+        product_type IN ('SUBSCRIPTION', 'AI_CREDIT')),
+    CONSTRAINT CK_PAYMENT_credit_snapshot CHECK (
+        (product_type = 'SUBSCRIPTION' AND credit_amount_snapshot IS NULL
+            AND credits_per_1000_vnd_snapshot IS NULL)
+        OR (product_type = 'AI_CREDIT' AND subscription_tier IS NULL
+            AND token_quota_snapshot IS NULL AND credit_amount_snapshot > 0
+            AND credits_per_1000_vnd_snapshot > 0 AND expires_at IS NOT NULL))
 );
 GO
 

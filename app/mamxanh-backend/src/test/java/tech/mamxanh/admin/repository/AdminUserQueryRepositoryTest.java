@@ -88,7 +88,7 @@ class AdminUserQueryRepositoryTest {
         when(jdbc.queryForObject(anyString(), eq(Long.class), any(Object[].class))).thenReturn(4L);
 
         assertThat(repository.history(42L, 1, 20)).containsExactly(new AdminUserAuditResponse("A-2", "ROLE_CHANGED",
-                "CUSTOMER", "EXPERT", "Đủ điều kiện chia sẻ công thức", 7L, "Admin", CREATED));
+                "CUSTOMER", "EXPERT", "Đủ điều kiện chia sẻ công thức", 7L, "Admin", CREATED, null));
         assertThat(repository.historyCount(42L)).isEqualTo(4L);
     }
 
