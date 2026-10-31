@@ -9,6 +9,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
@@ -224,6 +225,65 @@ class SubscriptionServiceTest {
     }
 
     @Test
+    @DisplayName("AC-64.10: Credit checkout snapshots the conversion and 15-minute expiry")
+    void creditCheckoutCreatesPayOsOrderWithCurrentSnapshot() {
+        mockActiveUser(1L);
+        when(payOsClient.createPaymentLink(anyLong(), anyInt(), anyString(), anyInt()))
+                .thenReturn(new CreatePaymentLinkResponse("00", "success",
+                        new PayOsPaymentData(123456L, 10_000, "Nap AI Credit",
+                                "https://pay.payos.vn/123", "qr_123", "plink_1", "PENDING"), "sig_123"));
+
+        var response = subscriptionService.createCreditCheckout(1L, 10_000);
+
+        var now = LocalDateTime.ofInstant(FIXED_INSTANT, ZoneOffset.UTC);
+        assertThat(response.amountVnd()).isEqualTo(10_000);
+        assertThat(response.creditAmount()).isEqualByComparingTo("10000");
+        assertThat(response.creditsPer1000VndSnapshot()).isEqualByComparingTo("1000");
+        assertThat(response.expiresAt()).isEqualTo(now.plusMinutes(15));
+        assertThat(response.checkoutUrl()).isEqualTo("https://pay.payos.vn/123");
+
+        var captured = ArgumentCaptor.forClass(PaymentTransactionEntity.class);
+        verify(orders).create(captured.capture());
+        var order = captured.getValue();
+        assertThat(order.getProductType()).isEqualTo(PaymentTransactionEntity.ProductType.AI_CREDIT);
+        assertThat(order.getAmountVnd()).isEqualTo(10_000);
+        assertThat(order.getCreditAmountSnapshot()).isEqualByComparingTo("10000");
+        assertThat(order.getCreditsPer1000VndSnapshot()).isEqualByComparingTo("1000");
+        assertThat(order.getExpiresAt()).isEqualTo(now.plusMinutes(15));
+        verify(payOsClient).createPaymentLink(anyLong(), org.mockito.ArgumentMatchers.eq(10_000),
+                org.mockito.ArgumentMatchers.eq("Nap AI Credit"), anyInt());
+    }
+
+    @Test
+    @DisplayName("AC-64.1: Credit checkout rejects amounts outside the configured range")
+    void creditCheckoutRejectsAmountsBelowMinimumAndAboveMaximum() {
+        mockActiveUser(1L);
+
+        assertThatThrownBy(() -> subscriptionService.createCreditCheckout(1L, 9_999))
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.VALIDATION_FAILED);
+        assertThatThrownBy(() -> subscriptionService.createCreditCheckout(1L, 500_001))
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.VALIDATION_FAILED);
+
+        verifyNoInteractions(payOsClient, orders);
+    }
+
+    @Test
+    @DisplayName("AC-64.6: Failed payOS link creation marks the snapshotted top-up order failed")
+    void creditCheckoutMarksOrderFailedWhenPayOsRejectsLinkCreation() {
+        mockActiveUser(1L);
+        when(payOsClient.createPaymentLink(anyLong(), anyInt(), anyString(), anyInt())).thenReturn(null);
+
+        assertThatThrownBy(() -> subscriptionService.createCreditCheckout(1L, 10_000))
+                .isInstanceOf(AppException.class).hasMessageContaining("liên kết nạp AI Credit");
+
+        var captured = ArgumentCaptor.forClass(PaymentTransactionEntity.class);
+        verify(orders).create(captured.capture());
+        verify(orders).markFailed(captured.getValue().getOrderCode());
+        assertThat(captured.getValue().getStatus()).isEqualTo(PaymentStatus.PENDING);
+        assertThat(captured.getValue().getCreditAmountSnapshot()).isEqualByComparingTo("10000");
+    }
+
+    @Test
     @DisplayName("Should throw exception when creating checkout with null tier")
     void shouldThrowExceptionWhenCreatingCheckoutWithNullTier() {
         Long userId = 1L;
@@ -339,7 +399,7 @@ class SubscriptionServiceTest {
                 Map.of("orderCode", 123, "amount", 99000, "currency", "VND", "code", "00"), "signed");
         when(payOsClient.verifyWebhook(payload)).thenReturn(true);
         subscriptionService.handlePayOsWebhook(payload);
-        verify(settlement).settle("123", 99000, PaymentStatus.PAID);
+        verify(settlement).settle("123", 99000, PaymentStatus.PAID, null);
     }
 
     @Test
