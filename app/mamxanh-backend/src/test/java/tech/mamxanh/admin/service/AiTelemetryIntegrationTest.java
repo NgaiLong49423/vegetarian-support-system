@@ -45,6 +45,8 @@ class AiTelemetryIntegrationTest extends AbstractIntegrationTest {
     private String guest;
 
     @BeforeEach void fixture() {
+        when(ai.classifyChatScope(anyString(), anyString())).thenReturn(
+                new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 1, 1, 2));
         clock.advance(Duration.between(clock.instant(), Instant.parse("2026-10-23T03:00:00Z")));
         guest = UUID.randomUUID().toString();
         String email = "fr11-" + guest + "@example.invalid";

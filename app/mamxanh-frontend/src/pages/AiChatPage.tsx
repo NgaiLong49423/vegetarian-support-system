@@ -293,7 +293,7 @@ export function AiChatPage() {
         apiError.code === "AI_SUBSCRIPTION_REQUIRED"
           ? aiUpgradeMessage(apiError, "PLUS", "Tính năng AI bạn yêu cầu")
           : apiError.status === 429
-          ? "Bạn đã gửi nhiều câu hỏi trong thời gian ngắn. Hãy thử lại sau; bạn cũng có thể đăng ký tài khoản để tiếp tục."
+          ? "Bạn đã gửi nhiều câu hỏi trong thời gian ngắn. Thử lại sau; bạn cũng có thể đăng ký tài khoản để tiếp tục."
           : apiError.status === 0 ||
               ((apiError.code === "AI_PROVIDER_UNAVAILABLE" || apiError.code === "AI_RESPONSE_INVALID") &&
                 apiError.message === "Yêu cầu không thành công. Vui lòng thử lại.")

@@ -70,6 +70,8 @@ class GuestAiChatControllerTest {
     void setup() {
         limiter.reset();
         ((MutableClock) clock).advance(Duration.ofDays(1));
+        when(ai.classifyChatScope(anyString(), anyString())).thenReturn(
+                new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 1, 1, 2));
         when(ai.answerChat(anyString(), anyString())).thenReturn(new AiClient.ChatResult("Nấu nhỏ lửa.", 1, 2, 3));
     }
 

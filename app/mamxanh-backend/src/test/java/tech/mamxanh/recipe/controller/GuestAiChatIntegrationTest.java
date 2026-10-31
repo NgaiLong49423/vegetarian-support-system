@@ -34,6 +34,8 @@ class GuestAiChatIntegrationTest extends AbstractIntegrationTest {
                 """, author);
         Long recipeId = jdbc.queryForObject("SELECT recipe_id FROM [RECIPE_POST] WHERE author_id=?", Long.class, author);
         Long usersBefore = jdbc.queryForObject("SELECT COUNT_BIG(*) FROM [USER]", Long.class);
+        when(ai.classifyChatScope(anyString(), anyString())).thenReturn(
+                new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 1, 1, 2));
         when(ai.answerChat(anyString(), anyString())).thenReturn(new AiClient.ChatResult("Công thức ghi 10 phút.", 1, 2, 3));
         String body = "{\"contextType\":\"RECIPE\",\"recipeId\":" + recipeId + ",\"question\":\"Nấu bao lâu?\"}";
         String id = UUID.randomUUID().toString();

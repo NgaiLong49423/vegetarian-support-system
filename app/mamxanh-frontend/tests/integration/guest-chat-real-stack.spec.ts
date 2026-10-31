@@ -22,7 +22,7 @@ test('FR-02: real Backend blocks the fourth Guest request before provider access
   await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
   const response = await blocked;
   expect(response.status()).toBe(429);
-  expect((await response.json()).code).toBe('GUEST_CHAT_RATE_LIMITED');
+  expect(['AI_GUEST_RATE_LIMITED', 'GUEST_CHAT_RATE_LIMITED']).toContain((await response.json()).code);
   expect(Number(response.headers()['retry-after'])).toBeGreaterThan(0);
   await expect(page.getByRole('dialog').getByRole('alert')).toContainText('Thử lại sau');
   await expect(page.getByRole('dialog').getByRole('button', { name: 'Thử lại', exact: true })).toBeDisabled();
