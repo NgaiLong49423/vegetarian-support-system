@@ -1458,6 +1458,150 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/me/notifications/{notificationId}/read:
+    put:
+      tags:
+      - notification-controller
+      summary: Mark one own notification as read
+      description: Idempotent.
+      operationId: markNotificationRead
+      parameters:
+      - name: notificationId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        "200":
+          description: "The notification, now read."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationResponse"
+        "401":
+          description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "NOTIFICATION_NOT_FOUND: no notification of the caller has\
+            \ this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/me/notifications/read-all:
+    put:
+      tags:
+      - notification-controller
+      summary: Mark all own notifications as read
+      operationId: markAllNotificationsRead
+      responses:
+        "204":
+          description: Every notification of the caller is read.
+        "401":
+          description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/me/notification-preferences:
+    get:
+      tags:
+      - notification-controller
+      summary: Read own email notification preference
+      operationId: notificationPreferences
+      responses:
+        "200":
+          description: Email preference.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPreferencesResponse"
+        "401":
+          description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+    put:
+      tags:
+      - notification-controller
+      summary: Turn reply emails on or off
+      description: In-app notifications are always created; only the email channel
+        follows this preference.
+      operationId: updateNotificationPreferences
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationPreferencesRequest"
+        required: true
+      responses:
+        "200":
+          description: The saved email preference.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPreferencesResponse"
+        "400":
+          description: "VALIDATION_FAILED: replyEmailEnabled is required."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/comments/{commentId}:
     put:
       tags:
@@ -6294,6 +6438,97 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/me/notifications:
+    get:
+      tags:
+      - notification-controller
+      summary: List own notifications
+      description: Newest first. Listing does not mark notifications as read.
+      operationId: listNotifications
+      parameters:
+      - name: page
+        in: query
+        description: Zero-based page index.
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: "Page size, from 1 through 50."
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+          maximum: 50
+          minimum: 1
+      - name: unreadOnly
+        in: query
+        description: Only unread notifications.
+        required: false
+        schema:
+          type: boolean
+          default: false
+      responses:
+        "200":
+          description: A page of the caller's notifications.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageResponseNotificationResponse"
+        "400":
+          description: Page or size is outside its supported range.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/me/notifications/unread-count:
+    get:
+      tags:
+      - notification-controller
+      summary: Count own unread notifications
+      description: The number shown on the notification bell.
+      operationId: unreadNotificationCount
+      responses:
+        "200":
+          description: Unread notification count.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnreadNotificationCountResponse"
+        "401":
+          description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/ingredients:
     get:
       tags:
@@ -8541,6 +8776,40 @@ components:
           type: string
           description: "Tháng tham gia theo giờ Việt Nam, dạng yyyy-MM."
           example: 2026-09
+    NotificationResponse:
+      type: object
+      properties:
+        notificationId:
+          type: integer
+          format: int64
+        type:
+          type: string
+        title:
+          type: string
+        message:
+          type: string
+        targetPath:
+          type: string
+        read:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        readAt:
+          type: string
+          format: date-time
+    NotificationPreferencesRequest:
+      type: object
+      properties:
+        replyEmailEnabled:
+          type: boolean
+      required:
+      - replyEmailEnabled
+    NotificationPreferencesResponse:
+      type: object
+      properties:
+        replyEmailEnabled:
+          type: boolean
     CommentUpdateRequest:
       type: object
       properties:
@@ -10696,6 +10965,31 @@ components:
         supplementLimit:
           type: integer
           format: int32
+    PageResponseNotificationResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/NotificationResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    UnreadNotificationCountResponse:
+      type: object
+      properties:
+        unreadCount:
+          type: integer
+          format: int64
     PageResponsePublicIngredientResponse:
       type: object
       properties:

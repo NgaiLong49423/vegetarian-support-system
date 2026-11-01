@@ -231,7 +231,7 @@ Quy ước status chính:
 | `429 Too Many Requests` | Chỉ áp dụng khi contract của endpoint quy định `429` (ví dụ login, resend verification hoặc AI rate limiting); client đọc `Retry-After` khi có. Password-reset request không trả `429`. |
 | `503 Service Unavailable` | Dịch vụ phụ thuộc tạm thời không dùng được, ví dụ không tải được chứng chỉ Google (`GOOGLE_LOGIN_UNAVAILABLE`). |
 
-Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36).
+Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36, #51).
 
 | `code` | Status | Khi nào |
 |---|---|---|
@@ -250,6 +250,7 @@ Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36).
 | `GOOGLE_LOGIN_UNAVAILABLE` | 503 | `POST /auth/google` khi Backend không tải được chứng chỉ ký của Google. |
 | `MEMBER_ACCESS_REQUIRED` | 403 | Tài khoản Administrator gọi endpoint hồ sơ sở thích ăn uống (FR-31) hoặc hồ sơ cá nhân `/me/profile` (FR-23); chỉ Member (`CUSTOMER`, `EXPERT`) có các hồ sơ này. |
 | `MEMBER_PROFILE_NOT_FOUND` | 404 | `GET /members/{userId}` hoặc `/members/{userId}/recipes` với ID không tồn tại hoặc thuộc tài khoản Administrator (FR-23, Q55). |
+| `NOTIFICATION_NOT_FOUND` | 404 | `PUT /me/notifications/{notificationId}/read` với ID không tồn tại hoặc thuộc tài khoản khác (FR-49, NFR-09); không đổi trạng thái thông báo nào. |
 | `FILE_TOO_LARGE` | 413 | Ảnh đại diện vượt 2 MB, hoặc tệp tải lên vượt giới hạn 5 MB của máy chủ. |
 | `UNSUPPORTED_IMAGE_TYPE` | 400 | Tệp ảnh không phải JPEG, PNG hoặc WebP; với ảnh đại diện, nội dung tệp (chữ ký đầu tệp) phải khớp `Content-Type`. |
 | `INGREDIENT_PREFERENCE_CONFLICT` | 400 | `PUT /nutrition/dietary-preferences` có cùng một tên (không phân biệt hoa/thường) ở cả danh sách cần tránh và danh sách không thích. |
@@ -609,3 +610,20 @@ Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dù
 - `GET /api/v1/me/reports/{reportId}` (cần Bearer token) trả `MyReportResponse` cho chính người gửi: `reportId`, `status`, `reasonCode`, `description`, `createdAt`, `recipe` (`id`, `title`), `supplements` (cũ trước) và `supplementLimit` (5). Không có danh tính người gửi hay ghi chú xử lý. Tài khoản khác nhận `403 ACCESS_DENIED` (NFR-09), ID không phải báo cáo Recipe Post nhận `404 REPORT_NOT_FOUND`. Frontend gọi endpoint này với `reportId` trong body `409 REPORT_ALREADY_OPEN` để mở báo cáo hiện có (AC-30.2).
 - `POST /api/v1/me/reports/{reportId}/supplements` body `{ "content" }` trả `201` `ReportSupplementResponse` (`supplementId`, `content`, `createdAt`) (AC-30.1). `content` bỏ khoảng trắng đầu cuối, 10–500 ký tự, sai thì `400 VALIDATION_FAILED` với `errors[].field = content`. Chỉ người gửi (`403 ACCESS_DENIED` với tài khoản khác), chỉ khi báo cáo còn `OPEN`/`IN_REVIEW` (`409 REPORT_NOT_OPEN`), tối đa 5 lần mỗi báo cáo (`409 REPORT_SUPPLEMENT_LIMIT`). Request đồng thời được tuần tự hóa bằng khóa dòng `REPORT` nên không vượt giới hạn. Phần bổ sung lưu trong `REPORT_SUPPLEMENT` (V22), chỉ thêm, không sửa hay xóa, `REPORT.description` giữ nguyên.
 - Administrator xem báo cáo gom theo bài qua `GET /api/v1/admin/reports/groups` và từng phản ánh của một bài qua `GET /api/v1/admin/reports?recipeId=` (AC-30.4); `AdminReportResponse.supplements` cho Administrator thấy các lần bổ sung. Xem mục 21.
+
+## 23. Thông báo trong ứng dụng và email reply — FR-49
+
+Generated OpenAPI là contract chi tiết; mục này ghi quy ước dùng chung. Mọi endpoint dưới đây cần Bearer token và chỉ đọc/ghi dữ liệu của chính tài khoản trong phiên (NFR-09); thông báo của người khác xử lý như không tồn tại.
+
+| Endpoint | Hành vi |
+| --- | --- |
+| `GET /api/v1/me/notifications?page&size&unreadOnly` | `PageResponse<NotificationResponse>`, mới nhất trước; `size` 1–50 (mặc định 20); `unreadOnly=true` chỉ lấy thông báo chưa đọc. Xem danh sách không tự đánh dấu đã đọc. |
+| `GET /api/v1/me/notifications/unread-count` | `{ "unreadCount" }` cho số trên biểu tượng chuông. |
+| `PUT /api/v1/me/notifications/{notificationId}/read` | Trả `NotificationResponse` đã đọc; gọi lại vẫn `200` và giữ `readAt` lần đầu; ID không thuộc tài khoản → `404 NOTIFICATION_NOT_FOUND`. |
+| `PUT /api/v1/me/notifications/read-all` | `204`; chỉ đánh dấu thông báo của tài khoản trong phiên. |
+| `GET`/`PUT /api/v1/me/notification-preferences` | `{ "replyEmailEnabled" }` (lưu ở `USER.reply_email_enabled`, mặc định `true`); thiếu giá trị → `400 VALIDATION_FAILED`. Chỉ kênh email theo tùy chọn này; thông báo trong ứng dụng luôn được tạo. |
+
+- `NotificationResponse`: `notificationId`, `type`, `title`, `message`, `targetPath` (đường dẫn Frontend, có thể `null`), `read`, `createdAt`, `readAt` (UTC, không kèm offset như các thời điểm khác của API).
+- Reply mới (AC-49.1): khi Member B trả lời bình luận còn hiển thị của Member A (A ≠ B), Backend tạo thông báo `COMMENT_REPLY` cho A trong cùng transaction với reply, `targetPath = /cong-thuc/id/{recipeId}#comment-{replyId}`. Reply vào bình luận cấp 5 được gắn vào cha cấp 4 (BR-66) nhưng vẫn báo cho tác giả bình luận cấp 5. Bình luận gốc và reply vào bình luận của chính mình không tạo thông báo.
+- Email reply (AC-49.2, AC-49.3): nếu A bật `replyEmailEnabled`, tài khoản `ACTIVE` và email đã xác minh, Backend gửi email sau khi reply commit, trên luồng bất đồng bộ; lỗi gửi chỉ ghi log cảnh báo (không ghi địa chỉ), không rollback reply hay thông báo.
+- Thông báo kết quả xử lý báo cáo (AC-49.4) do luồng xử lý báo cáo của Administrator (Issue #33) tạo khi giải quyết báo cáo, xem mục 21.

@@ -27,6 +27,7 @@ import { ApiRecipeDetail } from "../pages/ApiRecipeDetail"
 import { ExpertRecipeProfile } from "../pages/ExpertRecipeProfile"
 import { MemberProfilePage } from "../pages/MemberProfilePage"
 import { ProfileSettingsPage } from "../pages/ProfileSettingsPage"
+import { NotificationsPage } from "../pages/NotificationsPage"
 import { AiChatPage } from "../pages/AiChatPage"
 import { AdminDashboard } from "../pages/AdminDashboard"
 import { AiTelemetryPage } from "../pages/AiTelemetryPage"
@@ -94,6 +95,7 @@ export default function ApplicationRoutes() {
               <Route path="/bai-viet/:slug" element={<PostDetail />} />
               <Route path="/ho-so" element={<Profile />} />
               <Route path="/ho-so/cai-dat" element={<ProfileSettingsPage />} />
+              <Route path="/thong-bao" element={<NotificationsPage />} />
               <Route path="/thanh-vien/:userId" element={<MemberProfilePage />} />
               <Route
                 path="/ho-so/chuyen-gia"
