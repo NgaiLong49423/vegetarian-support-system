@@ -1,273 +1,273 @@
 {
-    "version": "1.0.0",
-    "basePath": "knowledge-base",
-    "totalDocuments": 38,
-    "documents": [
-        {
-            "id": "expert-registration",
-            "title": "Quy trình đăng ký trở thành Chuyên gia ẩm thực chay",
-            "category": "accounts",
-            "resourcePath": "knowledge-base/accounts/expert-registration.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "following-members",
-            "title": "Theo dõi Chuyên gia và thành viên khác",
-            "category": "accounts",
-            "resourcePath": "knowledge-base/accounts/following-members.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "password-recovery",
-            "title": "Quên mật khẩu và khôi phục tài khoản",
-            "category": "accounts",
-            "resourcePath": "knowledge-base/accounts/password-recovery.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "profile-management",
-            "title": "Quản lý thông tin hồ sơ và cài đặt tài khoản",
-            "category": "accounts",
-            "resourcePath": "knowledge-base/accounts/profile-management.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "registration-and-login",
-            "title": "Đăng ký, đăng nhập và bảo mật tài khoản",
-            "category": "accounts",
-            "resourcePath": "knowledge-base/accounts/registration-and-login.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "ai-assistant-overview",
-            "title": "Tổng quan về Trợ lý AI Mâm Xanh",
-            "category": "ai-features",
-            "resourcePath": "knowledge-base/ai-features/ai-assistant-overview.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "ai-chat-cooking-guidance",
-            "title": "Hỏi đáp ẩm thực chay và tư vấn nấu nướng cùng AI",
-            "category": "ai-features",
-            "resourcePath": "knowledge-base/ai-features/ai-chat-cooking-guidance.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "ai-execution-modes",
-            "title": "Ba chế độ thực thi của AI và bảo vệ quyền riêng tư",
-            "category": "ai-features",
-            "resourcePath": "knowledge-base/ai-features/ai-execution-modes.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "ai-meal-recommendations",
-            "title": "AI gợi ý món ăn và tạo thực đơn tuần tự động",
-            "category": "ai-features",
-            "resourcePath": "knowledge-base/ai-features/ai-meal-recommendations.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "ai-recipe-drafting-assistance",
-            "title": "Dành cho Chuyên gia: AI hỗ trợ soạn bản nháp công thức",
-            "category": "ai-features",
-            "resourcePath": "knowledge-base/ai-features/ai-recipe-drafting-assistance.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "introduction",
-            "title": "Giới thiệu nền tảng ẩm thực chay Mâm Xanh",
-            "category": "getting-started",
-            "resourcePath": "knowledge-base/getting-started/introduction.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "onboarding-guide",
-            "title": "Khởi tạo sở thích ăn uống ban đầu (Onboarding)",
-            "category": "getting-started",
-            "resourcePath": "knowledge-base/getting-started/onboarding-guide.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "user-roles-and-permissions",
-            "title": "Các vai trò người dùng và phân quyền trên Mâm Xanh",
-            "category": "getting-started",
-            "resourcePath": "knowledge-base/getting-started/user-roles-and-permissions.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "exporting-meal-plan-and-nutrition",
-            "title": "Xuất công thức và báo cáo dinh dưỡng ra file TXT / PDF",
-            "category": "meal-planning",
-            "resourcePath": "knowledge-base/meal-planning/exporting-meal-plan-and-nutrition.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "nutrition-tracking",
-            "title": "Theo dõi và phân tích dinh dưỡng thực đơn",
-            "category": "meal-planning",
-            "resourcePath": "knowledge-base/meal-planning/nutrition-tracking.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "weekly-meal-planner",
-            "title": "Lập kế hoạch thực đơn tuần 3 bữa",
-            "category": "meal-planning",
-            "resourcePath": "knowledge-base/meal-planning/weekly-meal-planner.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "content-and-community-guidelines",
-            "title": "Quy chuẩn nội dung và tiêu chuẩn cộng đồng",
-            "category": "policies",
-            "resourcePath": "knowledge-base/policies/content-and-community-guidelines.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "health-and-medical-disclaimer",
-            "title": "Tuyên bố miễn trừ trách nhiệm y tế và dinh dưỡng",
-            "category": "policies",
-            "resourcePath": "knowledge-base/policies/health-and-medical-disclaimer.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "privacy-and-data-protection",
-            "title": "Chính sách bảo vệ dữ liệu và quyền riêng tư",
-            "category": "policies",
-            "resourcePath": "knowledge-base/policies/privacy-and-data-protection.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "reporting-and-moderation",
-            "title": "Báo cáo vi phạm và quy trình xử lý của Quản trị viên",
-            "category": "policies",
-            "resourcePath": "knowledge-base/policies/reporting-and-moderation.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "expert-recipe-creation",
-            "title": "Dành cho Chuyên gia: Hướng dẫn đăng và chỉnh sửa công thức",
-            "category": "recipes",
-            "resourcePath": "knowledge-base/recipes/expert-recipe-creation.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "ingredient-directory",
-            "title": "Tra cứu danh mục nguyên liệu và thông tin dinh dưỡng",
-            "category": "recipes",
-            "resourcePath": "knowledge-base/recipes/ingredient-directory.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "recipe-comments",
-            "title": "Thảo luận, bình luận và phản hồi nhiều cấp",
-            "category": "recipes",
-            "resourcePath": "knowledge-base/recipes/recipe-comments.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "recipe-comparison",
-            "title": "So sánh hai công thức món chay",
-            "category": "recipes",
-            "resourcePath": "knowledge-base/recipes/recipe-comparison.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "recipe-details-and-ratings",
-            "title": "Xem chi tiết công thức và đánh giá Like / Dislike",
-            "category": "recipes",
-            "resourcePath": "knowledge-base/recipes/recipe-details-and-ratings.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "saved-recipes",
-            "title": "Lưu và quản lý danh sách công thức yêu thích",
-            "category": "recipes",
-            "resourcePath": "knowledge-base/recipes/saved-recipes.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "search-and-filter",
-            "title": "Tìm kiếm và lọc công thức món chay",
-            "category": "recipes",
-            "resourcePath": "knowledge-base/recipes/search-and-filter.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "sorting-modes",
-            "title": "6 chế độ sắp xếp công thức trên Mâm Xanh",
-            "category": "recipes",
-            "resourcePath": "knowledge-base/recipes/sorting-modes.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "shopping-list-actions",
-            "title": "Thao tác khi đi chợ và xuất danh sách mua sắm",
-            "category": "shopping-list",
-            "resourcePath": "knowledge-base/shopping-list/shopping-list-actions.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "shopping-list-overview",
-            "title": "Tạo và quản lý danh sách đi chợ",
-            "category": "shopping-list",
-            "resourcePath": "knowledge-base/shopping-list/shopping-list-overview.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "smart-ingredient-aggregation",
-            "title": "Cơ chế tự động tổng hợp nguyên liệu an toàn",
-            "category": "shopping-list",
-            "resourcePath": "knowledge-base/shopping-list/smart-ingredient-aggregation.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "ai-credit-and-top-up",
-            "title": "AI Credit và hướng dẫn nạp thêm ngân sách",
-            "category": "subscriptions",
-            "resourcePath": "knowledge-base/subscriptions/ai-credit-and-top-up.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "managing-subscription",
-            "title": "Quản lý gói đăng ký và lịch sử giao dịch",
-            "category": "subscriptions",
-            "resourcePath": "knowledge-base/subscriptions/managing-subscription.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "plans-overview",
-            "title": "So sánh các gói dịch vụ AI: Free, Plus và Pro",
-            "category": "subscriptions",
-            "resourcePath": "knowledge-base/subscriptions/plans-overview.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "account-and-login-issues",
-            "title": "Khắc phục sự cố đăng ký, đăng nhập và tài khoản",
-            "category": "troubleshooting",
-            "resourcePath": "knowledge-base/troubleshooting/account-and-login-issues.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "ai-limits-and-errors",
-            "title": "Xử lý sự cố và các trường hợp AI từ chối trả lời",
-            "category": "troubleshooting",
-            "resourcePath": "knowledge-base/troubleshooting/ai-limits-and-errors.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "recipe-creation-errors",
-            "title": "Khắc phục lỗi khi đăng hoặc chỉnh sửa công thức",
-            "category": "troubleshooting",
-            "resourcePath": "knowledge-base/troubleshooting/recipe-creation-errors.md",
-            "implementationStatus": "verified"
-        },
-        {
-            "id": "subscription-and-payment-issues",
-            "title": "Xử lý sự cố thanh toán gói dịch vụ và nạp AI Credit",
-            "category": "troubleshooting",
-            "resourcePath": "knowledge-base/troubleshooting/subscription-and-payment-issues.md",
-            "implementationStatus": "verified"
-        }
-    ]
+  "version": "1.0.0",
+  "basePath": "knowledge-base",
+  "totalDocuments": 38,
+  "documents": [
+    {
+      "id": "expert-registration",
+      "title": "Quy trình đăng ký trở thành Chuyên gia ẩm thực chay",
+      "category": "accounts",
+      "resourcePath": "knowledge-base/accounts/expert-registration.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "following-members",
+      "title": "Theo dõi Chuyên gia và thành viên khác",
+      "category": "accounts",
+      "resourcePath": "knowledge-base/accounts/following-members.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "password-recovery",
+      "title": "Quên mật khẩu và khôi phục tài khoản",
+      "category": "accounts",
+      "resourcePath": "knowledge-base/accounts/password-recovery.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "profile-management",
+      "title": "Quản lý thông tin hồ sơ và cài đặt tài khoản",
+      "category": "accounts",
+      "resourcePath": "knowledge-base/accounts/profile-management.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "registration-and-login",
+      "title": "Đăng ký, đăng nhập và bảo mật tài khoản",
+      "category": "accounts",
+      "resourcePath": "knowledge-base/accounts/registration-and-login.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "ai-assistant-overview",
+      "title": "Tổng quan về Trợ lý AI Mâm Xanh",
+      "category": "ai-features",
+      "resourcePath": "knowledge-base/ai-features/ai-assistant-overview.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "ai-chat-cooking-guidance",
+      "title": "Hỏi đáp ẩm thực chay và tư vấn nấu nướng cùng AI",
+      "category": "ai-features",
+      "resourcePath": "knowledge-base/ai-features/ai-chat-cooking-guidance.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "ai-execution-modes",
+      "title": "Ba chế độ thực thi của AI và bảo vệ quyền riêng tư",
+      "category": "ai-features",
+      "resourcePath": "knowledge-base/ai-features/ai-execution-modes.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "ai-meal-recommendations",
+      "title": "AI gợi ý món ăn và tạo thực đơn tuần tự động",
+      "category": "ai-features",
+      "resourcePath": "knowledge-base/ai-features/ai-meal-recommendations.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "ai-recipe-drafting-assistance",
+      "title": "Dành cho Chuyên gia: AI hỗ trợ soạn bản nháp công thức",
+      "category": "ai-features",
+      "resourcePath": "knowledge-base/ai-features/ai-recipe-drafting-assistance.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "introduction",
+      "title": "Giới thiệu nền tảng ẩm thực chay Mâm Xanh",
+      "category": "getting-started",
+      "resourcePath": "knowledge-base/getting-started/introduction.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "onboarding-guide",
+      "title": "Khởi tạo sở thích ăn uống ban đầu (Onboarding)",
+      "category": "getting-started",
+      "resourcePath": "knowledge-base/getting-started/onboarding-guide.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "user-roles-and-permissions",
+      "title": "Các vai trò người dùng và phân quyền trên Mâm Xanh",
+      "category": "getting-started",
+      "resourcePath": "knowledge-base/getting-started/user-roles-and-permissions.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "exporting-meal-plan-and-nutrition",
+      "title": "Xuất công thức và báo cáo dinh dưỡng ra file TXT / PDF",
+      "category": "meal-planning",
+      "resourcePath": "knowledge-base/meal-planning/exporting-meal-plan-and-nutrition.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "nutrition-tracking",
+      "title": "Theo dõi và phân tích dinh dưỡng thực đơn",
+      "category": "meal-planning",
+      "resourcePath": "knowledge-base/meal-planning/nutrition-tracking.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "weekly-meal-planner",
+      "title": "Lập kế hoạch thực đơn tuần 3 bữa",
+      "category": "meal-planning",
+      "resourcePath": "knowledge-base/meal-planning/weekly-meal-planner.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "content-and-community-guidelines",
+      "title": "Quy chuẩn nội dung và tiêu chuẩn cộng đồng",
+      "category": "policies",
+      "resourcePath": "knowledge-base/policies/content-and-community-guidelines.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "health-and-medical-disclaimer",
+      "title": "Tuyên bố miễn trừ trách nhiệm y tế và dinh dưỡng",
+      "category": "policies",
+      "resourcePath": "knowledge-base/policies/health-and-medical-disclaimer.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "privacy-and-data-protection",
+      "title": "Chính sách bảo vệ dữ liệu và quyền riêng tư",
+      "category": "policies",
+      "resourcePath": "knowledge-base/policies/privacy-and-data-protection.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "reporting-and-moderation",
+      "title": "Báo cáo vi phạm và quy trình xử lý của Quản trị viên",
+      "category": "policies",
+      "resourcePath": "knowledge-base/policies/reporting-and-moderation.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "expert-recipe-creation",
+      "title": "Dành cho Chuyên gia: Hướng dẫn đăng và chỉnh sửa công thức",
+      "category": "recipes",
+      "resourcePath": "knowledge-base/recipes/expert-recipe-creation.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "ingredient-directory",
+      "title": "Tra cứu danh mục nguyên liệu và thông tin dinh dưỡng",
+      "category": "recipes",
+      "resourcePath": "knowledge-base/recipes/ingredient-directory.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "recipe-comments",
+      "title": "Thảo luận, bình luận và phản hồi nhiều cấp",
+      "category": "recipes",
+      "resourcePath": "knowledge-base/recipes/recipe-comments.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "recipe-comparison",
+      "title": "So sánh hai công thức món chay",
+      "category": "recipes",
+      "resourcePath": "knowledge-base/recipes/recipe-comparison.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "recipe-details-and-ratings",
+      "title": "Xem chi tiết công thức và đánh giá Like / Dislike",
+      "category": "recipes",
+      "resourcePath": "knowledge-base/recipes/recipe-details-and-ratings.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "saved-recipes",
+      "title": "Lưu và quản lý danh sách công thức yêu thích",
+      "category": "recipes",
+      "resourcePath": "knowledge-base/recipes/saved-recipes.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "search-and-filter",
+      "title": "Tìm kiếm và lọc công thức món chay",
+      "category": "recipes",
+      "resourcePath": "knowledge-base/recipes/search-and-filter.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "sorting-modes",
+      "title": "6 chế độ sắp xếp công thức trên Mâm Xanh",
+      "category": "recipes",
+      "resourcePath": "knowledge-base/recipes/sorting-modes.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "shopping-list-actions",
+      "title": "Thao tác khi đi chợ và xuất danh sách mua sắm",
+      "category": "shopping-list",
+      "resourcePath": "knowledge-base/shopping-list/shopping-list-actions.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "shopping-list-overview",
+      "title": "Tạo và quản lý danh sách đi chợ",
+      "category": "shopping-list",
+      "resourcePath": "knowledge-base/shopping-list/shopping-list-overview.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "smart-ingredient-aggregation",
+      "title": "Cơ chế tự động tổng hợp nguyên liệu an toàn",
+      "category": "shopping-list",
+      "resourcePath": "knowledge-base/shopping-list/smart-ingredient-aggregation.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "ai-credit-and-top-up",
+      "title": "AI Credit và hướng dẫn nạp thêm ngân sách",
+      "category": "subscriptions",
+      "resourcePath": "knowledge-base/subscriptions/ai-credit-and-top-up.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "managing-subscription",
+      "title": "Quản lý gói đăng ký và lịch sử giao dịch",
+      "category": "subscriptions",
+      "resourcePath": "knowledge-base/subscriptions/managing-subscription.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "plans-overview",
+      "title": "So sánh các gói dịch vụ AI: Free, Plus và Pro",
+      "category": "subscriptions",
+      "resourcePath": "knowledge-base/subscriptions/plans-overview.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "account-and-login-issues",
+      "title": "Khắc phục sự cố đăng ký, đăng nhập và tài khoản",
+      "category": "troubleshooting",
+      "resourcePath": "knowledge-base/troubleshooting/account-and-login-issues.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "ai-limits-and-errors",
+      "title": "Xử lý sự cố và các trường hợp AI từ chối trả lời",
+      "category": "troubleshooting",
+      "resourcePath": "knowledge-base/troubleshooting/ai-limits-and-errors.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "recipe-creation-errors",
+      "title": "Khắc phục lỗi khi đăng hoặc chỉnh sửa công thức",
+      "category": "troubleshooting",
+      "resourcePath": "knowledge-base/troubleshooting/recipe-creation-errors.md",
+      "implementationStatus": "verified"
+    },
+    {
+      "id": "subscription-and-payment-issues",
+      "title": "Xử lý sự cố thanh toán gói dịch vụ và nạp AI Credit",
+      "category": "troubleshooting",
+      "resourcePath": "knowledge-base/troubleshooting/subscription-and-payment-issues.md",
+      "implementationStatus": "verified"
+    }
+  ]
 }

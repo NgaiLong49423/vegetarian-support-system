@@ -91,45 +91,31 @@ public class AiChatService {
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
             ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
             AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings) {
-        this.users = users;
-        this.recipes = recipes;
-        this.recipePosts = recipePosts;
-        this.ai = ai;
-        this.mapper = mapper;
-        this.events = events;
-        this.clock = clock;
-        this.entitlements = entitlements;
-        this.aiQuota = aiQuota;
-        this.chatSettings = chatSettings;
-        this.assistantExecution = null;
-        this.adkShoppingPilot = null;
-        this.promptLoader = new AiPromptLoader();
+        this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, chatSettings, null, null, null);
     }
 
     public AiChatService(CurrentUserService users, RecipeService recipes,
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
             ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
             AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings, AiAssistantExecutionService assistantExecution) {
-        this.users = users;
-        this.recipes = recipes;
-        this.recipePosts = recipePosts;
-        this.ai = ai;
-        this.mapper = mapper;
-        this.events = events;
-        this.clock = clock;
-        this.entitlements = entitlements;
-        this.aiQuota = aiQuota;
-        this.chatSettings = chatSettings;
-        this.assistantExecution = assistantExecution;
-        this.adkShoppingPilot = null;
-        this.promptLoader = new AiPromptLoader();
+        this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, chatSettings, assistantExecution, null, null);
     }
 
     public AiChatService(CurrentUserService users, RecipeService recipes,
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
             ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
             AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings,
-            AiAssistantExecutionService assistantExecution, AdkShoppingPilotService adkShoppingPilot) {
+            AiAssistantExecutionService assistantExecution,
+            AiPromptLoader promptLoader) {
+        this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, chatSettings, assistantExecution, null, promptLoader);
+    }
+
+    public AiChatService(CurrentUserService users, RecipeService recipes,
+            RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
+            ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
+            AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings,
+            AiAssistantExecutionService assistantExecution,
+            AdkShoppingPilotService adkShoppingPilot) {
         this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, chatSettings, assistantExecution, adkShoppingPilot, null);
     }
 
@@ -138,7 +124,8 @@ public class AiChatService {
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
             ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
             AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings,
-            AiAssistantExecutionService assistantExecution, AdkShoppingPilotService adkShoppingPilot,
+            @Autowired(required = false) AiAssistantExecutionService assistantExecution,
+            @Autowired(required = false) AdkShoppingPilotService adkShoppingPilot,
             @Autowired(required = false) AiPromptLoader promptLoader) {
         this.users = users;
         this.recipes = recipes;

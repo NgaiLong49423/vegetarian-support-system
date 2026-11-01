@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.143.1
+> **Version:** v2.143.2
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-11-01
 > **Status:** Active
@@ -34,7 +34,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-11-01 — Implement AI Agent Knowledge Base and Behavioral Policies
 
-**Status:** Working tree.
+**Status:** Committed — 900d000f.
 
 **Scope:** Packaged business knowledge base, core behavioral policies, and dynamic classpath prompt loader for Mâm Xanh AI Agent.
 
