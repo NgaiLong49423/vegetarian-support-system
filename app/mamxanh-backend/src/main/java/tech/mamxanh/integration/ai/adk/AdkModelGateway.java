@@ -56,6 +56,10 @@ public final class AdkModelGateway extends BaseLlm {
         return new AdkModelGateway(delegate, policy, clock, timeout, owner, allowed);
     }
 
+    AdkModelGateway withPolicy(Policy replacement) {
+        return new AdkModelGateway(delegate, replacement, clock, timeout);
+    }
+
     @Override
     public Flowable<LlmResponse> generateContent(LlmRequest request, boolean stream) {
         if (stream) return Flowable.error(new UnsupportedOperationException("G1 uses non-streaming calls"));

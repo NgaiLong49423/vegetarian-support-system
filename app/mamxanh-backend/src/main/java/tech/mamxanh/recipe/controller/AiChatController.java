@@ -22,9 +22,9 @@ import tech.mamxanh.recipe.service.GuestChatRateLimiter;
 public class AiChatController {
     private final AiChatService service;
     private final GuestChatRateLimiter guestRateLimiter;
-    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
     private tech.mamxanh.recipe.service.AiShoppingExecutionJournal journal;
-    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
     private tech.mamxanh.auth.service.CurrentUserService users;
 
     @GetMapping("/executions/{clientRequestId}")

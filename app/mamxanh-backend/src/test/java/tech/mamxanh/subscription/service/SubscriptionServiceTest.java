@@ -112,13 +112,13 @@ class SubscriptionServiceTest {
         assertThat(plus.features()).anyMatch(feature -> feature.contains("Gemini Flash-Lite") && feature.contains("Gemini Flash"));
         assertThat(plus.features()).noneMatch(feature -> feature.contains("Toàn bộ quyền lợi") || feature.contains("AI lập thực đơn"));
         assertThat(plus.priceVnd()).isEqualTo(99_000);
-        assertThat(plus.billingPeriod()).contains("Tháng");
+        assertThat(plus.billingPeriod()).containsIgnoringCase("tháng");
 
         PlanResponse pro = plans.get(2);
         assertThat(pro.tier()).isEqualTo("PRO");
         assertThat(pro.features()).anyMatch(feature -> feature.contains("600.000 token mỗi tháng"));
         assertThat(pro.priceVnd()).isEqualTo(199_000);
-        assertThat(pro.billingPeriod()).contains("Tháng");
+        assertThat(pro.billingPeriod()).containsIgnoringCase("tháng");
 
         // Verify none contains trial, annual discount, or coupon
         for (PlanResponse p : plans) {

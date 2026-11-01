@@ -3,7 +3,6 @@ package tech.mamxanh.recipe.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -21,6 +20,7 @@ import tech.mamxanh.auth.entity.Role;
 import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.auth.service.CurrentUserService.CurrentUser;
 import tech.mamxanh.common.exception.AppException;
+import tech.mamxanh.common.exception.ApiException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.integration.ai.AiClient;
 import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
@@ -28,7 +28,6 @@ import tech.mamxanh.nutrition.dto.response.IngredientResponse;
 import tech.mamxanh.nutrition.service.IngredientCatalogLookupService;
 import tech.mamxanh.recipe.dto.request.RecipeAiAssistanceRequest;
 import tech.mamxanh.recipe.dto.request.RecipeAiAssistanceRequest.ContentType;
-import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 import tools.jackson.databind.json.JsonMapper;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,7 +36,6 @@ class RecipeAiAssistanceServiceTest {
     private static final IngredientResponse TOMATO = ingredient(2L, "Cà chua");
 
     @Mock private CurrentUserService currentUserService;
-    @Mock private SubscriptionEntitlementService entitlementService;
     @Mock private IngredientCatalogLookupService ingredientCatalog;
     @Mock private AiClient aiClient;
     @Mock private org.springframework.context.ApplicationEventPublisher events;
@@ -47,7 +45,7 @@ class RecipeAiAssistanceServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new RecipeAiAssistanceService(currentUserService, entitlementService, ingredientCatalog,
+        service = new RecipeAiAssistanceService(currentUserService, ingredientCatalog,
                 aiClient, new JsonMapper(), events, java.time.Clock.systemUTC(), aiQuota);
         when(currentUserService.requireActiveExpert()).thenReturn(new CurrentUser(7L, Role.EXPERT));
         lenient().when(ingredientCatalog.findActiveIngredientsByIds(List.of(1L, 2L))).thenReturn(List.of(TOFU, TOMATO));
@@ -62,7 +60,6 @@ class RecipeAiAssistanceServiceTest {
 
         assertThat(result.content()).startsWith("1. Đun nóng chảo rồi đảo đều đến khi mềm. (Đậu phụ, Cà chua)\n");
         assertThat(result.content().lines()).hasSize(6);
-        verify(entitlementService).requirePlusOrPro(7L);
         org.mockito.ArgumentCaptor<tech.mamxanh.integration.ai.AiUsageEvent> telemetry =
                 org.mockito.ArgumentCaptor.forClass(tech.mamxanh.integration.ai.AiUsageEvent.class);
         verify(events).publishEvent(telemetry.capture());
@@ -113,13 +110,24 @@ class RecipeAiAssistanceServiceTest {
     }
 
     @Test
-    void blocksProviderWhenEntitlementIsDenied() {
-        org.mockito.Mockito.doThrow(new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED))
-                .when(entitlementService).requirePlusOrPro(anyLong());
+    void blocksProviderWhenTokenBudgetIsExhausted() {
+        org.mockito.Mockito.doThrow(new AppException(ErrorCode.AI_TOKEN_QUOTA_EXCEEDED))
+                .when(aiQuota).requireAvailable(7L, null);
 
         assertThatThrownBy(() -> service.generate(request(ContentType.INSTRUCTIONS)))
                 .isInstanceOf(AppException.class);
         verify(aiClient, never()).generateRecipeContent(anyString(), anyList());
+    }
+
+    @Test
+    void preservesModelSelectionErrorInsteadOfReportingProviderOutage() {
+        var selectionError = new ApiException(org.springframework.http.HttpStatus.CONFLICT,
+                "AI_MODEL_SELECTION_REQUIRED", "Chọn model khả dụng");
+        when(aiClient.generateRecipeContent(anyString(), anyList())).thenThrow(selectionError);
+
+        assertThatThrownBy(() -> service.generate(request(ContentType.DESCRIPTION)))
+                .isSameAs(selectionError);
+        verify(aiQuota, never()).record(org.mockito.ArgumentMatchers.any());
     }
 
     @Test

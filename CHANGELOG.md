@@ -1,13 +1,55 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.145.1
+> **Version:** v2.147.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-11-01
+> **Last Updated:** 2026-11-02
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-11-02 — Correct G5 Token Accounting and FR-21 Access ([PR #226](https://github.com/NgaiLong49423/vegetarian-support-system/pull/226))
+
+**Status:** Committed — `49a2bfb0`.
+
+**Scope:** Keep one accounting owner for ADK single-step business calls and preserve role-based recipe assistance across AI tiers.
+
+### Added
+
+- Add focused regression coverage for pre-call budget checks, single-owner usage settlement, and model selection for Expert recipe assistance.
+
+### Changed
+
+- Resolve the account's allowed Gemini model and preference for non-chat ADK tasks.
+- Allow eligible Experts to use FR-21 regardless of paid tier when token budget and model access permit.
+
+### Fixed
+
+- Prevent duplicate token ledger and telemetry writes for ADK single-step business calls.
+
+## 2026-11-02 — Migrate Business AI Flows to Google ADK (Gate G5)
+
+**Status:** Committed — `3f52906b`.
+
+**Scope:** Unify all business generation and classification AI capabilities under the Google ADK Java Runtime without adding a secondary orchestration engine or microservice.
+
+### Added
+
+- Add `AdkSingleStepTaskRunner` wrapping `com.google.adk.agents.LlmAgent` and `InMemoryRunner` with structured schema enforcement, run timeout, byte budget cap (64KB), and usage metadata extraction.
+- Add `AdkAiClient` (`@Component`, `@Primary`) routing 100% of business call-sites (`CS-01` through `CS-09`) to Google ADK.
+- Add `AdkConfiguration` providing Spring Boot beans for `AdkModelGateway` and task runners with dynamic model selection.
+- Add `mamxanh.ai.migration.mode` (`ADK_PRIMARY` / `LEGACY_FALLBACK`) feature flag supporting seamless rollback.
+
+### Changed
+
+- Deprecate direct legacy invocation methods in `AiClient` and the legacy `GeminiAiClient` implementation.
+- Align `RecipeAiAssistanceService` entitlement requirement to PRO tier matching current product baseline.
+
+### Fixed
+
+- Stabilize integration test fixtures by clearing `AI_TOKEN_USAGE_LEDGER` and `AI_CREDIT_WALLET` foreign keys before deleting users.
+- Provide token quota snapshots in test fixtures to prevent false-positive 429 quota exhaustion errors.
 
 ## 2026-11-01 — Redesign Assistant Human Input
 

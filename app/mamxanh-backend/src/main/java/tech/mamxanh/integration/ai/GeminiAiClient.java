@@ -16,6 +16,12 @@ import java.util.concurrent.*;
 import java.util.function.Supplier;
 
 @Component
+/**
+ * Legacy direct Gemini SDK client.
+ * @deprecated As of G5, all generation and classification workflows use {@link AdkAiClient} backed by Google ADK.
+ *             Retained only for fallback mode and Admin model checks (CS-11).
+ */
+@Deprecated(since = "G5", forRemoval = false)
 public class GeminiAiClient implements AiClient, AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(GeminiAiClient.class);
     // Reserve application overhead within the NFR-18 ten-second provider budget.

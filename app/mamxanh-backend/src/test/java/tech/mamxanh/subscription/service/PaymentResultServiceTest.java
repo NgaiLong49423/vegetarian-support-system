@@ -41,7 +41,7 @@ class PaymentResultServiceTest {
         ownOrder();
         when(payOs.getPaymentInfo(123)).thenReturn(new PayOsPaymentInfo(123, 99000, 99000, "PAID"));
         doAnswer(call -> { payment.setStatus(PaymentStatus.PAID); payment.setSubscriptionId(7L); return null; })
-                .when(settlement).settle("123", 99000, PaymentStatus.PAID);
+                .when(settlement).settle(eq("123"), eq(99000), eq(PaymentStatus.PAID), any());
         var now = LocalDateTime.now(clock);
         when(subscriptions.findById(7L)).thenReturn(Optional.of(new SubscriptionEntity(1L, SubscriptionTier.PRO, now, now.plusDays(30))));
         when(subscriptionService.getMySubscription(1L)).thenReturn(new MySubscriptionResponse("PRO", "ACTIVE", true, now, now.plusDays(30), java.util.List.of()));
@@ -79,6 +79,6 @@ class PaymentResultServiceTest {
     }
     @Test void providerCancellationIsRecordedWithoutGrantingPlan() {
         ownOrder(); when(payOs.getPaymentInfo(123)).thenReturn(new PayOsPaymentInfo(123, 99000, 0, "CANCELLED"));
-        service.getResult(1L, "123"); verify(settlement).settle("123", 99000, PaymentStatus.CANCELLED);
+        service.getResult(1L, "123"); verify(settlement).settle("123", 99000, PaymentStatus.CANCELLED, null);
     }
 }

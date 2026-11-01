@@ -214,4 +214,25 @@ class AiTokenQuotaServiceTest {
                 .isInstanceOf(AppException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_TELEMETRY_UNAVAILABLE);
     }
+
+    @Test
+    void singleStepPolicyChecksBudgetButLeavesUsageToBusinessService() {
+        when(users.findAuthenticatedUserId()).thenReturn(Optional.of(7L));
+        var events = mock(org.springframework.context.ApplicationEventPublisher.class);
+        var quota = mock(AiTokenQuotaService.class);
+        var snapshot = mock(AiTokenQuotaService.CallStartSnapshot.class);
+        var policy = new tech.mamxanh.integration.ai.adk.MemberAccountingPolicy(users, quota, events).preflightOnly();
+        var call = new AdkModelGateway.Call(UUID.randomUUID(), "gemini-3.8-flash", NOW);
+        when(quota.beginCall(7L, null, "FR-51", call.model(), NOW)).thenReturn(snapshot);
+
+        Object context = policy.beforeCall(call);
+        policy.onUsableResponse(call, context, new AdkModelGateway.Usage(
+                new AiTokenUsage(call.model(), "STANDARD", 10, 20, 30, 0, 0, 0),
+                AdkModelGateway.UsageStatus.RECORDED));
+
+        assertThat(context).isSameAs(snapshot);
+        verify(quota).beginCall(7L, null, "FR-51", call.model(), NOW);
+        verify(quota, never()).completeCall(any(), any(), any());
+        verifyNoInteractions(events);
+    }
 }

@@ -6,6 +6,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.exception.AppException;
+import tech.mamxanh.common.exception.ApiException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.integration.ai.AiClient;
 import tech.mamxanh.integration.ai.AiUsageEvent;
@@ -16,7 +17,6 @@ import tech.mamxanh.recipe.dto.request.RecipeAiAssistanceRequest;
 import tech.mamxanh.recipe.dto.request.RecipeAiAssistanceRequest.ContentType;
 import tech.mamxanh.recipe.dto.response.RecipeAiAssistanceResponse;
 import tech.mamxanh.subscription.service.AiTokenQuotaService;
-import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
@@ -29,7 +29,6 @@ public class RecipeAiAssistanceService {
     private static final Logger log = LoggerFactory.getLogger(RecipeAiAssistanceService.class);
 
     private final CurrentUserService currentUserService;
-    private final SubscriptionEntitlementService entitlementService;
     private final IngredientCatalogLookupService ingredientCatalog;
     private final AiClient aiClient;
     private final ObjectMapper objectMapper;
@@ -38,11 +37,10 @@ public class RecipeAiAssistanceService {
     private final AiTokenQuotaService aiQuota;
 
     public RecipeAiAssistanceService(CurrentUserService currentUserService,
-            SubscriptionEntitlementService entitlementService, IngredientCatalogLookupService ingredientCatalog,
+            IngredientCatalogLookupService ingredientCatalog,
             AiClient aiClient, ObjectMapper objectMapper, ApplicationEventPublisher events, Clock clock,
             AiTokenQuotaService aiQuota) {
         this.currentUserService = currentUserService;
-        this.entitlementService = entitlementService;
         this.ingredientCatalog = ingredientCatalog;
         this.aiClient = aiClient;
         this.objectMapper = objectMapper;
@@ -53,7 +51,6 @@ public class RecipeAiAssistanceService {
 
     public RecipeAiAssistanceResponse generate(RecipeAiAssistanceRequest request) {
         var expert = currentUserService.requireActiveExpert();
-        entitlementService.requirePlusOrPro(expert.id());
 
         List<Long> ingredientIds = request.ingredients().stream().map(RecipeAiAssistanceRequest.Ingredient::ingredientId).toList();
         if (new HashSet<>(ingredientIds).size() != ingredientIds.size()) {
@@ -77,6 +74,8 @@ public class RecipeAiAssistanceService {
                 throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
             }
             throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE);
+        } catch (ApiException exception) {
+            throw exception;
         } catch (RuntimeException exception) {
             log.warn("Recipe AI provider failed: {}", exception.getClass().getSimpleName());
             throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE);
