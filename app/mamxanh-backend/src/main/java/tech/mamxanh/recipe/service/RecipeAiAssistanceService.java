@@ -1,14 +1,9 @@
 package tech.mamxanh.recipe.service;
 
-import java.time.Clock;
-import java.util.HashSet;
-import java.util.List;
-import org.springframework.stereotype.Service;
-import org.springframework.context.ApplicationEventPublisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
 import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
@@ -20,8 +15,14 @@ import tech.mamxanh.nutrition.service.IngredientCatalogLookupService;
 import tech.mamxanh.recipe.dto.request.RecipeAiAssistanceRequest;
 import tech.mamxanh.recipe.dto.request.RecipeAiAssistanceRequest.ContentType;
 import tech.mamxanh.recipe.dto.response.RecipeAiAssistanceResponse;
-import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 import tech.mamxanh.subscription.service.AiTokenQuotaService;
+import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+
+import java.time.Clock;
+import java.util.HashSet;
+import java.util.List;
 
 @Service
 public class RecipeAiAssistanceService {

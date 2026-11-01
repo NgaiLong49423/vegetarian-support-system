@@ -1,12 +1,12 @@
 package tech.mamxanh.subscription.repository;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import tech.mamxanh.subscription.entity.AiTokenUsageLedgerEntity;
+
+import java.time.LocalDateTime;
 
 public interface AiTokenUsageLedgerRepository extends JpaRepository<AiTokenUsageLedgerEntity, String> {
     @Query("select coalesce(sum(row.tokenCount), 0) from AiTokenUsageLedgerEntity row "

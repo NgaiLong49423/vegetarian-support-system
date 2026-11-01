@@ -1,6 +1,5 @@
 package tech.mamxanh.mealplan.controller;
 
-import java.time.LocalDate;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -15,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 import tech.mamxanh.common.config.OpenApiConfig;
 import tech.mamxanh.mealplan.dto.response.MealPlanWeekResponse;
 import tech.mamxanh.mealplan.service.MealPlanReadService;
+
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/v1/meal-plans")

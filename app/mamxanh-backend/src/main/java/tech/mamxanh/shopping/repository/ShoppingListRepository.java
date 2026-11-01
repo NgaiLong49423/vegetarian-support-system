@@ -1,6 +1,5 @@
 package tech.mamxanh.shopping.repository;
 
-import java.util.Optional;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -9,6 +8,8 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import tech.mamxanh.shopping.entity.ShoppingListEntity;
+
+import java.util.Optional;
 
 public interface ShoppingListRepository extends JpaRepository<ShoppingListEntity, Long> {
     Page<ShoppingListEntity> findByUserId(Long userId, Pageable pageable);

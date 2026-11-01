@@ -84,8 +84,8 @@ public class AiChatService {
     private final AiTokenQuotaService aiQuota;
     private final AiChatSettingsService chatSettings;
     private final AiAssistantExecutionService assistantExecution;
-    private final AiPromptLoader promptLoader;
     private final AdkShoppingPilotService adkShoppingPilot;
+    private final AiPromptLoader promptLoader;
 
     public AiChatService(CurrentUserService users, RecipeService recipes,
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
@@ -105,18 +105,18 @@ public class AiChatService {
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
             ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
             AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings,
-            @Autowired(required = false) AiAssistantExecutionService assistantExecution,
+            AiAssistantExecutionService assistantExecution,
             AiPromptLoader promptLoader) {
-        this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, chatSettings, assistantExecution, promptLoader, null);
+        this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, chatSettings, assistantExecution, null, promptLoader);
     }
 
     public AiChatService(CurrentUserService users, RecipeService recipes,
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
             ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
             AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings,
-            @Autowired(required = false) AiAssistantExecutionService assistantExecution,
+            AiAssistantExecutionService assistantExecution,
             AdkShoppingPilotService adkShoppingPilot) {
-        this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, chatSettings, assistantExecution, null, adkShoppingPilot);
+        this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, chatSettings, assistantExecution, adkShoppingPilot, null);
     }
 
     @Autowired
@@ -125,8 +125,8 @@ public class AiChatService {
             ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
             AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings,
             @Autowired(required = false) AiAssistantExecutionService assistantExecution,
-            @Autowired(required = false) AiPromptLoader promptLoader,
-            @Autowired(required = false) AdkShoppingPilotService adkShoppingPilot) {
+            @Autowired(required = false) AdkShoppingPilotService adkShoppingPilot,
+            @Autowired(required = false) AiPromptLoader promptLoader) {
         this.users = users;
         this.recipes = recipes;
         this.recipePosts = recipePosts;
@@ -138,8 +138,8 @@ public class AiChatService {
         this.aiQuota = aiQuota;
         this.chatSettings = chatSettings;
         this.assistantExecution = assistantExecution;
-        this.promptLoader = promptLoader != null ? promptLoader : new AiPromptLoader();
         this.adkShoppingPilot = adkShoppingPilot;
+        this.promptLoader = promptLoader != null ? promptLoader : new AiPromptLoader();
     }
 
     /** Compatibility constructor used by focused orchestration tests. */

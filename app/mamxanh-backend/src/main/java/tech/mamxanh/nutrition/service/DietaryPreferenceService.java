@@ -1,23 +1,10 @@
 package tech.mamxanh.nutrition.service;
 
-import java.text.Normalizer;
-import java.time.Clock;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.nutrition.dto.request.IngredientPreferenceListRequest;
@@ -34,6 +21,13 @@ import tech.mamxanh.nutrition.entity.PreferenceType;
 import tech.mamxanh.nutrition.entity.UserIngredientPreferenceEntity;
 import tech.mamxanh.nutrition.repository.DietaryPreferenceRepository;
 import tech.mamxanh.nutrition.repository.UserIngredientPreferenceRepository;
+
+import java.text.Normalizer;
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * FR-31: Onboarding questionnaire (UC-31.1), Skip (UC-31.2), viewing and updating the dietary

@@ -1,16 +1,17 @@
 package tech.mamxanh.recipe.controller;
 
-import java.net.URI;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import tech.mamxanh.recipe.service.RecipeValidationException;
+
+import java.net.URI;
 
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)

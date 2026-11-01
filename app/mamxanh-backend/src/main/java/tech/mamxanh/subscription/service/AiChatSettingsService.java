@@ -1,7 +1,5 @@
 package tech.mamxanh.subscription.service;
 
-import java.util.List;
-import java.util.Locale;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -14,6 +12,9 @@ import tech.mamxanh.subscription.dto.response.AiChatSettingsResponse.ModelOption
 import tech.mamxanh.subscription.dto.response.MyAiUsageResponse;
 import tech.mamxanh.subscription.entity.AiConfigurationSnapshot.Model;
 import tech.mamxanh.subscription.repository.AiConfigurationRepository;
+
+import java.util.List;
+import java.util.Locale;
 
 @Service
 public class AiChatSettingsService {

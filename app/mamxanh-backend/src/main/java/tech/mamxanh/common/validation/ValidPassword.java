@@ -1,13 +1,9 @@
 package tech.mamxanh.common.validation;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
+
+import java.lang.annotation.*;
 
 /**
  * FR-03 password policy: 8–64 characters, at most 72 UTF-8 bytes (BCrypt limit), at least one
