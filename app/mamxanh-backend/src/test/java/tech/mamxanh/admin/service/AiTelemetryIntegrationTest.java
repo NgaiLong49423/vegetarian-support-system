@@ -143,7 +143,7 @@ class AiTelemetryIntegrationTest extends AbstractIntegrationTest {
         when(ai.answerChat(anyString(),anyString())).thenThrow(new GeminiAiClient.AiProviderException("private provider failure"));
         mockMvc.perform(post("/api/v1/recipes/ai/chat").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isServiceUnavailable());
-        assertThat(count()).isEqualTo(2);
+        awaitCount(3);
         assertThat(output.getAll()).doesNotContain("FR11 private question marker", "Chao ban", "private provider failure");
     }
 
