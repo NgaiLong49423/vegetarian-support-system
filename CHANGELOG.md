@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.145.0
+> **Version:** v2.145.1
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-11-01
 > **Status:** Active
@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-11-01 — Redesign Assistant Human Input
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `81ead809`.
 
 **Scope:** Present pending confirmations and personal-data consent in a dedicated, Codex-inspired question panel using the existing Mâm Xanh visual style.
 
@@ -31,7 +31,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-11-01 — Add G4 Session and Shopping Write Recovery
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `81ead809`.
 
 **Scope:** Stabilize the opt-in ADK Shopping List pilot across reload, cancellation and response loss without adding a workflow engine.
 
