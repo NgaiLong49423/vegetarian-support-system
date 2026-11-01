@@ -233,7 +233,7 @@ public class AiRecipeRecommendationService {
 
     private void publishUsage(long userId, AiClient.RecommendationResult result) {
         events.publishEvent(new AiUsageEvent(userId, "FR-34", clock.instant(),
-                result.promptTokens(), result.responseTokens(), result.totalTokens()));
+                result.usage()));
     }
 
     private static AppException invalid(String reason) {

@@ -46,7 +46,7 @@ class RecipeAiAssistanceIntegrationTest extends AbstractIntegrationTest {
         unitId = jdbcTemplate.queryForObject("SELECT unit_id FROM [UNIT] WHERE code = N'g'", Integer.class);
         jdbcTemplate.update("INSERT INTO [SUBSCRIPTION] (user_id, tier, status, starts_at, ends_at) VALUES (?, 'PRO', 'ACTIVE', ?, ?)",
                 proExpertId, LocalDateTime.of(2026, 1, 1, 0, 0), LocalDateTime.of(2027, 1, 1, 0, 0));
-        when(aiClient.generateRecipeText(anyString(), anyList())).thenReturn("""
+        when(aiClient.generateRecipeContent(anyString(), anyList())).thenReturn(new AiClient.RecommendationResult("""
                 {"description":"Mô tả công thức thử nghiệm.","steps":[
                   {"text":"Chuẩn bị dụng cụ và nguyên liệu.","ingredientIds":[%1$d]},
                   {"text":"Rửa sạch rồi cắt thành miếng vừa ăn.","ingredientIds":[%1$d]},
@@ -54,7 +54,7 @@ class RecipeAiAssistanceIntegrationTest extends AbstractIntegrationTest {
                   {"text":"Cho vào chảo và đảo nhẹ tay.","ingredientIds":[%1$d]},
                   {"text":"Nấu đến khi chín đều.","ingredientIds":[%1$d]},
                   {"text":"Tắt bếp rồi bày ra đĩa.","ingredientIds":[%1$d]}]}
-                """.formatted(ingredientId));
+                """.formatted(ingredientId), 150, 300, 450));
     }
 
     @Test
@@ -65,7 +65,7 @@ class RecipeAiAssistanceIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON).content(request()))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("AI_SUBSCRIPTION_REQUIRED"));
-        verify(aiClient, never()).generateRecipeText(anyString(), anyList());
+        verify(aiClient, never()).generateRecipeContent(anyString(), anyList());
     }
 
     @Test
@@ -99,7 +99,7 @@ class RecipeAiAssistanceIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/recipes/ai-assistance").with(principal(proExpertId))
                         .contentType(MediaType.APPLICATION_JSON).content(request()))
                 .andExpect(status().isForbidden());
-        verify(aiClient, never()).generateRecipeText(anyString(), anyList());
+        verify(aiClient, never()).generateRecipeContent(anyString(), anyList());
     }
 
     @Test
@@ -112,7 +112,7 @@ class RecipeAiAssistanceIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void incompleteProviderOutputIs502AndDoesNotSaveARecipe() throws Exception {
-        when(aiClient.generateRecipeText(anyString(), anyList())).thenThrow(
+        when(aiClient.generateRecipeContent(anyString(), anyList())).thenThrow(
                 tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException.invalidResponse("private incomplete output"));
         mockMvc.perform(post("/api/v1/recipes/ai-assistance").with(principal(proExpertId))
                         .contentType(MediaType.APPLICATION_JSON).content(request()))

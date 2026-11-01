@@ -2,7 +2,7 @@
 > **File:** `docs/requirements/use-cases/recipe-contribution-and-community.md`
 > **Version:** v2.6.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-29
+> **Last Updated:** 2026-10-30
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -89,7 +89,7 @@ Detailed interaction flows for current-baseline requirements. Stable UC IDs are 
 - **Goal / Primary Actor:** Expert gói Pro nhận draft text cho description; Gemini là supporting system.
 - **Trigger / Preconditions:** Actor chủ động bấm gợi ý và có input tên/nguyên liệu phù hợp.
 - **Main Flow:** Backend kiểm tra entitlement, gọi AI và đưa text vào form để actor chỉnh sửa.
-- **Alternative / Security:** Free/AI lỗi không chặn soạn bài; không lưu server draft và không tự thêm ingredient.
+- **Alternative / Security:** Free/AI lỗi không chặn soạn bài; không lưu server draft. AI được nhắc ưu tiên ingredient đã nhập nhưng có thể gợi ý thêm để Expert rà soát trước khi đăng.
 - **Postconditions:** Text chỉ tồn tại trong form tới khi actor gửi bài.
 - **Traceability / Acceptance Coverage:** FR-21; BR-03, BR-04; [AC-21.1–AC-21.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-21).
 
@@ -283,16 +283,14 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-21).
   - Bước 1: Tác giả nhấn nút "Nhờ AI gợi ý hướng dẫn chế biến" (hoặc "gợi ý giới thiệu").
   - Bước 2: Hệ thống kiểm tra quyền tính năng (Feature Entitlement) của tài khoản (FR-10, BR-02, BR-03).
   - Bước 3: Hệ thống trích xuất thông tin tác giả đã nhập: Tên món ăn, Loại ăn chay, Thể loại món `dish_category`, Khẩu phần, và Danh sách tên các nguyên liệu kèm định lượng số dương (FR-19).
-  - Bước 4: Hệ thống gửi prompt tới Google Gemini qua API bảo mật phía server (BR-06, đáp ứng NFR-03). Prompt bắt buộc yêu cầu:
-    - Chỉ được sử dụng các nguyên liệu tác giả đã cung cấp.
-    - Tuyệt đối không tự ý thêm nguyên liệu mới ngoài danh sách.
-    - Định dạng kết quả trả về: hướng dẫn chế biến là 6–10 bước tuần tự (10–5.000 ký tự) từ chuẩn bị dụng cụ/nguyên liệu, sơ chế, làm nóng nồi/chảo, thứ tự cho nguyên liệu vào, nấu và dấu hiệu chín, nêm nếm đến hoàn thiện thành phẩm; mô tả dùng nguyên liệu qua ingredientIds. Mô tả giới thiệu vẫn súc tích (tối đa 2.000 ký tự).
+  - Bước 4: Hệ thống gửi prompt tới Google Gemini qua API bảo mật phía server (BR-06, đáp ứng NFR-03). Prompt hướng AI ưu tiên nguyên liệu và định lượng tác giả đã nhập; nếu phù hợp, AI có thể gợi ý thêm nguyên liệu phụ và nêu rõ để tác giả rà soát, chỉnh sửa trước khi đăng. Backend không từ chối nội dung AI chỉ vì nhắc đến nguyên liệu ngoài danh sách đã nhập.
+    - Định dạng kết quả trả về: hướng dẫn chế biến là 6–10 bước tuần tự (10–5.000 ký tự) từ chuẩn bị dụng cụ/nguyên liệu, sơ chế, làm nóng nồi/chảo, thứ tự cho nguyên liệu vào, nấu và dấu hiệu chín, nêm nếm đến hoàn thiện thành phẩm; ingredientIds tham chiếu nguyên liệu đã nhập, còn nguyên liệu gợi ý thêm được nêu trong phần text. Mô tả giới thiệu vẫn súc tích (tối đa 2.000 ký tự).
     - Không bịa định lượng; nếu dữ liệu không có thời gian hoặc nhiệt độ, AI phải nói rõ đó là thông tin thiếu từ nguồn và gắn nhãn `Ước tính AI` cho số liệu ước tính.
   - Bước 5: Google Gemini phản hồi nội dung đề xuất thành công trong thời gian quy định tại NFR-03.
   - Bước 6: Hệ thống ghi nhận dữ liệu đo lường kỹ thuật (telemetry nếu có theo BR-04) và không áp dụng quota tính theo lượt.
   - Bước 7: Hệ thống đưa nội dung AI sinh trực tiếp vào ô nhập liệu tương ứng trên trình soạn thảo giao diện phía client (điền vào ô `instructions` hoặc ô `description`) dưới dạng có thể chỉnh sửa hoàn toàn.
   - Bước 8: Tác giả tự do đọc lại, chỉnh sửa câu từ, bổ sung kinh nghiệm cá nhân cho phù hợp với thực tế chế biến của mình. AI tuyệt đối không tự động công khai bài viết.
-  - Bước 9: Khi tác giả chủ động nhấn "Đăng công thức", bài viết được kiểm tra validation (bao gồm bắt buộc có hướng dẫn chế biến từ 10–5.000 ký tự theo BR-19) và xuất bản trực tiếp (BR-07, BR-19, BR-25).
+  - Bước 9: Khi tác giả chủ động nhấn "Đăng công thức", bài viết được kiểm tra validation cấu trúc (bao gồm bắt buộc có hướng dẫn chế biến từ 10–5.000 ký tự theo BR-19) và xuất bản trực tiếp (BR-07, BR-19, BR-25); sau khi đăng, bài tiếp tục theo cơ chế hậu kiểm hiện hành (FR-06).
   - Bước 10: Hệ thống không cung cấp persistent server-side Recipe Post draft trong baseline hiện tại.
 - **Luồng thay thế (Alternative Flows):**
   - *AF-21.1 (Tác giả không hài lòng với nội dung AI gợi ý):* Tác giả có thể nhấn nút "Xóa gợi ý" để quay về trạng thái trống hoặc tự gõ lại bằng tay.
@@ -311,7 +309,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-21).
 - **AC-21.6 (Hướng dẫn AI có các bước chế biến tuần tự và đầy đủ):**
   - *Given* tác giả đã nhập tên món, khẩu phần, trường phái ăn chay và danh sách nguyên liệu có định lượng,
   - *When* tác giả yêu cầu AI viết hướng dẫn chế biến,
-  - *Then* kết quả có 6–10 bước tuần tự, từ chuẩn bị/sơ chế đến nấu và thành phẩm; chỉ tham chiếu nguyên liệu đã nhập; mọi thời gian/nhiệt độ ước tính được ghi rõ `Ước tính AI`; nội dung vẫn chỉnh sửa được và chưa được công khai.
+  - *Then* kết quả có 6–10 bước tuần tự, từ chuẩn bị/sơ chế đến nấu và thành phẩm; prompt hướng AI ưu tiên nguyên liệu đã nhập nhưng có thể gợi ý thêm nguyên liệu và Backend không từ chối chỉ vì nội dung nhắc thêm; mọi thời gian/nhiệt độ ước tính được ghi rõ `Ước tính AI`; nội dung vẫn chỉnh sửa được để tác giả rà soát trước khi đăng và chưa được công khai.
 
 <a id="fr-27"></a>
 ## FR-27 — Biểu mẫu báo cáo bài công thức theo 6 nhóm lý do

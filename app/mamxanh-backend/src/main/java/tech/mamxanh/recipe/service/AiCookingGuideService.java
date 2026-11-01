@@ -64,9 +64,9 @@ public class AiCookingGuideService {
 
         List<Long> allowedIds = recipe.ingredients().stream().map(RecipeDetailResponse.Ingredient::ingredientId)
                 .filter(java.util.Objects::nonNull).distinct().toList();
-        String raw;
+        AiClient.RecommendationResult result;
         try {
-            raw = ai.generateRecipeText(prompt(recipe), allowedIds);
+            result = ai.generateRecipeContent(prompt(recipe), allowedIds);
         } catch (AiProviderException exception) {
             LOG.warn("Cooking guide provider is unavailable: {}", exception.getClass().getSimpleName());
             throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE);
@@ -75,10 +75,11 @@ public class AiCookingGuideService {
             throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE);
         }
 
-        GeneratedContent generated = parse(raw);
+        if (result == null) throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+        GeneratedContent generated = parse(result.json());
         List<String> steps = validateSteps(generated.steps(), recipe, allowedIds);
         rejectUnlistedCatalogIngredients(steps, recipe);
-        events.publishEvent(new AiUsageEvent(member.id(), "FR-34", clock.instant(), null, null, null));
+        events.publishEvent(new AiUsageEvent(member.id(), "FR-34", clock.instant(), result.usage()));
         return new AiCookingGuideResponse(recipe.recipeId(), recipe.title(), steps, AI_NOTICE);
     }
 

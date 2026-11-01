@@ -463,7 +463,10 @@ test("#154: switching sources ignores late results and supports retry, empty res
   await page.keyboard.press("Escape")
   await expect(dialog).not.toBeVisible()
   await expect(lunch(page)).toBeFocused()
+
 })
+
+
 
 test("weekly AI preview supports multiple recipes per meal and applies selected recipes only after confirmation", async ({ page }) => {
   const existing = entry(7, 11)

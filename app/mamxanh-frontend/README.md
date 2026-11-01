@@ -7,6 +7,23 @@
 
 # Mâm Xanh Frontend
 
+### Giám sát giao dịch gói tài khoản
+
+- `/admin/giao-dich` đọc giao dịch thật từ Backend cho Admin, thay phần minh họa cũ. Tìm theo mã `TX-<id>`, mã đơn payOS, tên/email; kết hợp gói, trạng thái và ngày tạo; hỗ trợ phân trang, làm mới, trạng thái tải/lỗi/thử lại/rỗng và chi tiết bằng hộp thoại hỗ trợ bàn phím.
+- Các thẻ thống kê tính trên toàn bộ kết quả theo bộ lọc đã áp dụng, không chỉ trang đang xem. Chỉ PAID được tính doanh thu; giữ riêng PENDING, FAILED và CANCELLED. Thời gian hiển thị theo Việt Nam. Không hiển thị trạng thái cổng payOS hoặc tỷ lệ thành công cố định.
+- Xuất CSV lấy cùng bộ lọc đã áp dụng, tối đa 10.000 dòng; bộ lọc đang nhập chưa áp dụng không ảnh hưởng file. Đây là dữ liệu local phục vụ đối soát, không phải hóa đơn hoặc xác nhận từ payOS. Chi tiết hiển thị chu kỳ của lần mua, không suy ra quyền hiện tại; gói lịch sử không xác định được hiện rõ thay vì gán Plus.
+- Test UI có mock trong `admin-transactions.spec.ts`; test stack thật trong `admin-transactions-real-stack.spec.ts`. Phần quản lý người dùng tại `/admin/nguoi-dung` vẫn là bản minh họa riêng.
+
+### Mức sử dụng AI — FR-11 / Issue #17
+
+- Admin mở menu **Mức sử dụng AI** hoặc `/admin/ai-telemetry`, chọn ngày, chu kỳ ngày/tuần/tháng và tính năng để xem token và chi phí quy đổi Standard trả phí (USD). Dữ liệu lấy từ Backend; không có dữ liệu thống kê giả trong trang sản phẩm.
+- Có trạng thái tải, lỗi/thử lại, dữ liệu rỗng và cảnh báo metadata/chi phí chưa đầy đủ. Báo cáo chỉ dùng dữ liệu giữ tối đa 90 ngày, không hiển thị prompt/answer hoặc thông tin tài khoản; tuần bắt đầu Thứ Hai theo múi giờ Việt Nam.
+- Guest/Member bị chặn tại giao diện và Backend. Kiểm thử Frontend: `ai-telemetry.spec.ts`; kiểm thử browser–HTTP–SQL thật: `ai-telemetry-real-stack.spec.ts` qua root Compose. Ca mặc định dùng metadata tổng hợp; ca opt-in `MAMXANH_E2E_LIVE_GEMINI=1` gọi Gemini thật và cố ý dừng SQL/kill Backend để kiểm tra recovery, chỉ chạy trên stack local và tắt trace JWT.
+- Bảng telemetry mới đang là thay đổi thử nghiệm chờ biểu quyết nhóm; chưa xác nhận FR-11 đã nghiệm thu trên main.
+
+
+### Chatbot và phân quyền AI — FR-10 / FR-51
+
 Chatbot gửi thêm ID của tối đa bốn thẻ công thức trong mỗi lượt ASSISTANT thuộc tám lượt lịch sử gần nhất để Backend xử lý “món khác”; dữ liệu chỉ ở phiên giao diện, không lưu lịch sử tài khoản. Khi Backend từ chối chức năng nâng cao, chat hiển thị đường dẫn đăng nhập hoặc xem gói và không mời retry nguyên yêu cầu thiếu quyền. Khi đủ quyền, liên kết workflow chỉ được hiển thị cho hai đường dẫn nội bộ đã biết: `/ke-hoach?view=for-you` và `/dang-cong-thuc`.
 
 Chatbot hiện dùng chung cho Guest và Member theo FR-10: Guest gửi định danh session cookie hiện có qua body, có hướng dẫn đăng ký và xử lý lỗi 429; không đọc hồ sơ tài khoản. Đổi tài khoản hoặc ngữ cảnh xóa hội thoại trên giao diện và bỏ qua phản hồi cũ đang chờ. Các luồng AI thiếu quyền dẫn tới `/goi-ai`, hướng dẫn Plus hoặc Pro theo tính năng; việc kiểm tra quyền và thời hạn gói thuộc Backend. Chi tiết giao tiếp và giới hạn bộ đếm Guest nằm trong [API Guide](../../docs/api/API.md#16-chatbot-hỏi-đáp-theo-ngữ-cảnh--fr-51). Đây là mô tả source, không phải xác nhận nghiệm thu Issue trên main.

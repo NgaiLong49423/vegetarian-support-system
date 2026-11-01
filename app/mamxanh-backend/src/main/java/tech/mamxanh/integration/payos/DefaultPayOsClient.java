@@ -27,6 +27,9 @@ public class DefaultPayOsClient implements PayOsClient {
     }
 
     @Override
+    public void validateCheckoutConfiguration() { requireConfigured(); }
+
+    @Override
     public CreatePaymentLinkResponse createPaymentLink(long orderCode, int amount, String description) {
         requireConfigured();
         String desc = description == null || description.isBlank() ? "Thanh toan goi AI" : description;

@@ -321,7 +321,7 @@ export const recipeReactionApi = {
 
 export const recipesApi = {
   chat: (payload: AiChatRequest) => request(
-    () => apiClient.post<AiChatResponse>('/recipes/ai/chat', payload, { timeout: 12_000 }),
+    () => apiClient.post<AiChatResponse>('/recipes/ai/chat', payload, { timeout: 15_000 }),
   ),
   recommendByIngredients: (ingredientIds: number[]) => request(
     () => apiClient.post<AiRecipeSuggestion>('/recipes/ai/recommendations', { ingredientIds }, { timeout: 60_000 }),

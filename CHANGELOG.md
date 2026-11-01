@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.127.0
+> **Version:** v2.129.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-30
 > **Status:** Active
@@ -25,24 +25,156 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Fetch current subscription in `CreateRecipe` to propagate `isPro` status into the modal while preserving develop's original trigger button design.
 - Align portion quantity input layout by fixing the unit code abbreviation container width so all input boxes line up cleanly.
 
-## 2026-10-29 — Restore Meal Planner Focus After React Commits
+## 2026-10-30 — Restore Meal Plan Focus After Moving an Entry
 
-**Status:** Committed — `ce2ab6b6f4baca2fc5803aaaefaa98dbbb65588b`.
+**Status:** Committed — `4b143d74`.
 
-**Scope:** Correct the intermittent meal-move focus failure observed in Frontend job `123463299035` of CI run `40878464669`, matching existing BUG-066.
+**Scope:** Keep keyboard focus in a usable location when a meal-plan dialog closes after its trigger becomes hidden.
 
 ### Added
 
-- Check that cancelling the move dialog returns keyboard focus to its opener at mobile, tablet and desktop widths.
+- None.
 
 ### Changed
 
-- Restore focus in a layout effect after dialogs close and mutation controls become enabled. Use the surviving opener when focusable, otherwise fall back to the page heading.
-- Verify TypeScript, the production build, 36 related Chromium cases and 20 repeated runs of the previously failing move-focus case. Browser checks use controlled API responses; the full CI suite is not rerun locally.
+- None.
 
 ### Fixed
 
-- Remove the animation-frame race that could focus a disabled or soon-to-be-removed meal control and leave focus on the document body. Preserve the existing focus assertion, meal mutations, AI entitlements and strict coverage thresholds.
+- Return focus to the meal-plan heading when the dialog's original trigger is still in the DOM but no longer visible.
+
+## 2026-10-30 — Align CI Checks for Admin Account Management
+
+**Status:** Committed — `3ec1ed3c`.
+
+**Scope:** Keep the generated API contract and Frontend coverage test aligned with the Admin account-management page.
+
+### Added
+
+- None.
+
+### Changed
+
+- Refresh the OpenAPI snapshot from the runtime contract generated for the pull request commit.
+- Update the Admin page coverage assertion to match the current heading.
+
+### Fixed
+
+- None.
+
+## 2026-10-30 — Implement Backend-Backed Admin Account Management
+
+**Status:** Committed — `8632da92`.
+
+**Scope:** Replace the account-management preview with protected SQL Server-backed account lookup and administration.
+
+### Added
+
+- Add paginated account search, global counts, minimal account details, and an append-only account audit history for Administrators.
+- Add reason-required account status and CUSTOMER/EXPERT role changes. Direct Expert grants close any pending application and notify its applicant in the same transaction.
+- Add Frontend coverage for API-backed account search, role/status changes, and read-only Administrator rows.
+
+### Changed
+
+- Remove sample accounts, account export, and the preview banner from the account-management page; retain the separate transaction preview.
+- Clarify FR-05/FR-06 and related business rules for direct Expert grants and cancellation of pending applications.
+
+### Fixed
+
+- None.
+
+## 2026-10-29 — Let Recipe AI Suggest Additional Ingredients
+
+**Status:** Committed — `540998c5d2ca8c8b7765d1efc328ed629ae81dcd`.
+
+**Scope:** Align FR-21, the API guide and recipe drafting with author-reviewed AI suggestions instead of rejecting generated text that mentions an ingredient outside the form's selected list.
+
+### Added
+
+- None.
+
+### Changed
+
+- Ask recipe drafting AI to prioritize entered ingredients while allowing suitable additional suggestions for the author to review and edit before posting.
+- Remove Backend rejection based only on generated ingredient mentions; keep existing response-format, entitlement, and publication checks. Published recipes remain subject to current post-moderation.
+
+### Fixed
+
+- None.
+
+## 2026-10-29 — Add Nguyen Hoang Phuc Dessert Demo Collection
+
+**Status:** Committed — `a430530b0a8e91ca40e3cdd525fea1734f3221f6`.
+
+**Scope:** Expand the local Expert demo with a detailed vegetarian collection of desserts, drinks and baked sweets.
+
+### Added
+
+- Add a local-only repeatable seed for 15 recipe posts with professional descriptions, step-by-step instructions, gram quantities and catalog ingredients prioritized for lower usage in existing demo fixtures.
+- Generate and attach one distinct food illustration per post, served from Frontend public assets.
+
+### Changed
+
+- Document the new Expert demo collection and local seed behavior.
+
+### Fixed
+
+- None.
+
+## 2026-10-29 — Separate Transaction Status Cards and Refine Telemetry Demo Data
+
+**Status:** Committed — `e57d462112d3fe370b5ee6f5a33c1f4e15ba4c81`.
+
+**Scope:** Refactor admin transaction status metrics into distinct cancelled and failed buckets with 5-column layout, record verified demo transactions matching tier subscriptions, populate 38 database-persisted AI telemetry calls across all 6 features, and polish the telemetry privacy disclaimer.
+
+### Added
+
+- Add `R__demo_sample_data_80_payment_transactions.sql` providing 8 sample payment transactions (3 PAID, 1 PENDING, 2 CANCELLED, 2 FAILED) aligned with PLUS and PRO subscription entitlements.
+- Add `R__demo_sample_data_85_ai_telemetry.sql` recording 38 valid AI telemetry calls (54,115 total tokens, $0.104515 USD estimated cost) across FR-21, FR-34, FR-36, FR-37, FR-47, and FR-51 directly into `AI_USAGE_TELEMETRY`.
+
+### Changed
+
+- Split cancelled and failed payment transactions into two dedicated cards on `AdminTransactionsPage.tsx` using a balanced 5-column grid (`sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5`).
+- Update transaction filter pagination counter label to `2 giao dịch · Trang 1/1` and synchronize `admin-transactions-real-stack.spec.ts`.
+- Replace technical disclaimer on `AiTelemetryPage.tsx` with a concise privacy-focused notice.
+## 2026-10-28 — Remove Semicolons from the Recipe Comparison Text ([PR #195](https://github.com/NgaiLong49423/vegetarian-support-system/pull/195))
+
+**Status:** Committed — `f7abbe11`.
+
+**Scope:** Apply the lecturer's feedback that text shown on the website does not use semicolons to the FR-60 recipe comparison page.
+
+### Added
+
+- Add a Playwright check that the text on the comparison page contains no semicolon.
+
+### Changed
+
+- Split the three comparison notes joined by a semicolon (ingredient alignment, nutrition difference and estimate disclaimer) into separate sentences without changing their meaning.
+
+### Fixed
+
+- None.
+
+## 2026-10-29 — Synchronize FR-11 with Develop and Latest FR-10 Entitlements
+
+**Status:** Committed — `ed354ce7a2e43b296f0e5afa067865c128c2b1be`.
+
+**Scope:** Synchronize the FR-11 branch against the develop baseline (58 commits ahead) and incorporate latest FR-10 tier rebalancing and restored assistant modal.
+
+### Added
+
+- Renumber unmerged telemetry migration from V26 to V30 (`V30__ai_usage_telemetry.sql`) to avoid collision with develop standard recipe units (`V26__standard_recipe_units.sql`).
+
+### Changed
+
+- Align latest FR-10 permissions: PRO required for recipe authoring assistance and related recipe AI recommendations; PLUS or PRO required for weekly meal planning and AI nutrition menus.
+- Restore the original develop recipe assistant modal (`AiRecipeAssistantModal.tsx`) with verified minimum upgrade plan guidance (`aiUpgrade.ts`).
+- Resolve all integration conflicts across database schema, OpenAPI specification, bug registry, and backend test fixtures.
+
+### Fixed
+
+- Prevent migration version collision with develop V26–V29.
+- Pass all unit and integration tests across both backend and frontend builds.
 
 ## 2026-10-29 — Align AI Integration Fixtures with Pro Entitlements
 
@@ -83,6 +215,28 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Replace ambiguous “Plus or Pro” feature errors and generic upgrade actions with the minimum plan name (BUG-085).
+
+## 2026-10-29 — Monitor Subscription Payments with Real Accounting Data
+
+**Status:** Committed — 7d300dd0ef08555ceed6418a4c1b78ee5aadefd1.
+
+**Scope:** Implement the directly assigned Administrator transaction screen on the current FR-11 branch using existing FR-13 payment data; no separate Issue or publishing action is implied.
+
+### Added
+
+- Add Administrator-only filtered payment lists, cross-page totals, purchase-period details and bounded UTF-8 CSV exports with safe spreadsheet cells.
+- Add SQL/JWT and browser coverage for payment visibility, access control, search, pagination, date boundaries, exports and checkout/callback races.
+
+### Changed
+
+- Replace transaction preview rows, fixed revenue/success-rate/provider-health indicators and simulated invoices with real local accounting data and read-only purchase details; preserve the separate user-management preview.
+- Keep payment initiation outside the transaction that commits the local order, allowing verified early callbacks to find it.
+- Reject missing merchant configuration before creating an order, while preserving pending orders after ambiguous provider outcomes.
+- Align the AI usage and payment monitoring pages with shared headings, controls and responsive spacing, and replace semicolons in their explanatory copy with clear sentences.
+
+### Fixed
+
+- Preserve local orders after ambiguous provider errors and persist explicit create failures without overwriting an early paid callback (BUG-080).
 
 ## 2026-10-29 — Synchronize FR-10 with the Current Develop Baseline
 
@@ -159,6 +313,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Replace the develop modal's local recipe/nutrition simulation with structured Gemini generation. Retain author editing, catalog-based calorie recalculation and manual publication. Match the latest develop dialog frame, advisory copy and light/dark styling.
 - Reconcile live Issue tracking only after separate authorization; the new FR-21 workflow needs follow-up tracking without rewriting completed Issue history.
+
 ## 2026-10-29 — Restore the Recipe Assistant Form Layout
 
 **Status:** Committed — `b60e177e9afc738a74569b37ed441dacbb3ab367`.
@@ -195,6 +350,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Preserve the original benefit wording when moving it between Plus and Pro. Do not add an Expert qualifier or an extra FR-37 benefit row to the plan cards.
 - Align server guards, chatbot workflow routing, current-subscription features, plan descriptions, upgrade messages and maintained requirements/use cases. Apply the current matrix to existing active subscriptions without changing their stored tier or paid expiry.
 - Keep live Issue reconciliation pending separate authorization. Issue #16 still describes the previous matrix at the time of this local change.
+
 ## 2026-10-28 — Track Recipe Sources and Item Provenance in Shopping Lists
 
 **Status:** Committed — `2d04630c3cef07fb79e1a5fda3d2c0575c60a8f1`.
@@ -235,6 +391,43 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - None.
 
+## 2026-10-28 — Seed the Demo Expert Nutrition Profile
+
+**Status:** Committed — `2d04630c3cef07fb79e1a5fda3d2c0575c60a8f1`.
+
+**Scope:** Populate profile fields for `demo-expert@mamxanh.local` in the local demonstration database.
+
+### Added
+
+- Add an idempotent local demo-profile fixture that fills the demo Expert's missing nutrition-profile fields without overwriting an already completed profile; the fixture does not describe a real person.
+
+### Fixed
+
+- None.
+
+## 2026-10-28 — Integrate FR-11 and Recover Pending AI Accounting
+
+**Status:** Committed — 7d300dd0ef08555ceed6418a4c1b78ee5aadefd1.
+
+**Scope:** Complete local FR-11 integration against develop `b294a28e` and the confirmed FR-10 dependency `a9d68e4a`; publishing, structural approval and main acceptance remain deferred.
+
+### Added
+
+- Force metadata-only pending files to persistent storage before acknowledging an AI answer; replay after restart or database/queue failures and remove a file only after the idempotent SQL commit.
+- Add restart, saturation, disk failure, retention and real SQL recovery checks; expose 503 `AI_TELEMETRY_UNAVAILABLE` when durable accounting storage cannot be written.
+
+### Changed
+
+- Move the unmerged telemetry migration to V30 after synchronizing develop V26–V29, preserving develop baseline and the newer recipe, reporting and menu behavior.
+- Retain current FR-10 guards and token accounting together; connect the newer FR-34 cooking guide to provider token metadata.
+- Keep a dedicated Compose volume for pending telemetry and apply the same 90-day retention to SQL and pending files.
+- Recheck the confirmed Gemini 3.8 Standard pricing against Google's published pricing without changing the historical rate versions.
+
+### Fixed
+
+- Prevent volatile queue rejection or SQL write failures from silently discarding acknowledged accounting events (BUG-078).
+- Preserve token metadata from the newer cooking-guide flow instead of emitting null token counters (BUG-079).
+
 ## 2026-10-28 — Make FR-10 Integration Tests Independent of Local Setup ([PR #194](https://github.com/NgaiLong49423/vegetarian-support-system/pull/194))
 
 **Status:** Committed — `8bd1cd33`.
@@ -256,73 +449,6 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Allow the real-stack AI entitlement test to use CI-provided environment variables when the ignored Backend `.env` file is absent, matching the existing Compose integration convention.
 - Run scoped cleanup both before and after recipe creation, media authorization, management, viewing, discovery and saved-recipe integration tests so their final fixtures cannot break later Auth tests through foreign keys.
 
-## 2026-10-28 — Seed the Demo Expert Nutrition Profile
-
-**Status:** Committed — `2d04630c3cef07fb79e1a5fda3d2c0575c60a8f1`.
-
-**Scope:** Populate profile fields for `demo-expert@mamxanh.local` in the local demonstration database.
-
-### Added
-
-- Add an idempotent local demo-profile fixture that fills the demo Expert's missing nutrition-profile fields without overwriting an already completed profile; the fixture does not describe a real person.
-
-### Fixed
-
-- None.
-
-## 2026-10-27 — Integrate FR-10 with the Current Develop Baseline ([PR #194](https://github.com/NgaiLong49423/vegetarian-support-system/pull/194))
-
-**Status:** Committed — `33a05672`.
-
-**Scope:** Integrate develop `b294a28e` into FR-10 while retaining the confirmed Gemini model, paid workflow guards and the newer recipe, shopping and reporting features.
-
-### Added
-
-- Preserve both bug-record histories using the existing sequential IDs; FR-10 records previously numbered BUG-054–060 and BUG-066 now use BUG-070–077, with original IDs and source commits recorded in each file. Develop's existing IDs remain unchanged.
-
-### Changed
-
-- Combine current-recipe question handling from develop with FR-10 follow-up discovery, role/subscription checks and request-scoped chat context.
-- Preserve the larger recipe-output budget and shared ingredient validation from develop while keeping the total provider deadline within NFR-18.
-- Regenerate OpenAPI from the merged Backend. Post-sync verification: 113 Backend tests pass; 57/59 Frontend tests pass initially, then both affected chat cases pass after correcting the ambiguous heading selector and rerunning the teardown timeout; the real JWT/SQL Compose entitlement test passes. Frontend type checking and production build pass. Full-suite CI and live Gemini verification remain separate gates.
-
-### Fixed
-
-- Resolve overlapping AI implementation, UI, regression-test and documentation changes without restoring client-generated recipe content that bypasses the guarded API.
-
-## 2026-10-27 — Restore the Confirmed Gemini Model for AI Handoff ([PR #194](https://github.com/NgaiLong49423/vegetarian-support-system/pull/194))
-
-**Status:** Committed — `0b9a552b`.
-
-**Scope:** End the temporary Flash-Lite trial at the user's request and restore `gemini-3.8-flash` for the team lead's AI testing.
-
-### Added
-
-- None.
-
-### Changed
-
-- Restore the shared adapter model and provider-path/logging regression assertions to `gemini-3.8-flash`; preserve entitlement checks, structured output validation and the bounded retry deadline.
-- Update current integration guidance to distinguish controlled adapter tests from live generation with a valid provider key.
-## 2026-10-27 — Chat Workflow Entitlements and Grounded Follow-up Discovery ([PR #194](https://github.com/NgaiLong49423/vegetarian-support-system/pull/194))
-
-**Status:** Committed — `0b9a552b`.
-
-**Scope:** Correct the FR-10/FR-51 boundaries for explicit advanced workflow requests and conversational recipe discovery; the model restoration is recorded separately above.
-
-### Added
-
-- Add optional assistant recipe-card IDs to request history and a local workflow link to chat responses; preserve existing request fields and keep conversation context in the current session.
-- Add regression coverage for entitlement checks before provider calls, safe workflow links, bounded card metadata and follow-up recipe searches.
-
-### Changed
-
-- Route explicit weekly-menu and Recipe Post authoring requests through the existing subscription and role checks, then direct eligible accounts to the dedicated workflow without generating content or emitting successful AI usage.
-
-### Fixed
-
-- Prevent explicit paid workflow requests from reaching the general chatbot provider without entitlement checks (BUG-069).
-- Retrieve current public recipe candidates for follow-up requests, preserve dish categories, exclude previously shown card IDs when asking for alternatives, and keep absence claims limited to the catalog actually checked (BUG-068).
 ## 2026-10-27 — Add Ingredient Unit Conversion to Public Detail
 
 **Status:** Committed — `c4794dba98b0a3d9e0a150ee08e8c7611ece3a67`.
@@ -415,6 +541,62 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - None.
+
+## 2026-10-27 — Integrate FR-10 with the Current Develop Baseline ([PR #194](https://github.com/NgaiLong49423/vegetarian-support-system/pull/194))
+
+**Status:** Committed — `33a05672`.
+
+**Scope:** Integrate develop `b294a28e` into FR-10 while retaining the confirmed Gemini model, paid workflow guards and the newer recipe, shopping and reporting features.
+
+### Added
+
+- Preserve both bug-record histories using the existing sequential IDs; FR-10 records previously numbered BUG-054–060 and BUG-066 now use BUG-070–077, with original IDs and source commits recorded in each file. Develop's existing IDs remain unchanged.
+
+### Changed
+
+- Combine current-recipe question handling from develop with FR-10 follow-up discovery, role/subscription checks and request-scoped chat context.
+- Preserve the larger recipe-output budget and shared ingredient validation from develop while keeping the total provider deadline within NFR-18.
+- Regenerate OpenAPI from the merged Backend. Post-sync verification: 113 Backend tests pass; 57/59 Frontend tests pass initially, then both affected chat cases pass after correcting the ambiguous heading selector and rerunning the teardown timeout; the real JWT/SQL Compose entitlement test passes. Frontend type checking and production build pass. Full-suite CI and live Gemini verification remain separate gates.
+
+### Fixed
+
+- Resolve overlapping AI implementation, UI, regression-test and documentation changes without restoring client-generated recipe content that bypasses the guarded API.
+
+## 2026-10-27 — Restore the Confirmed Gemini Model for AI Handoff ([PR #194](https://github.com/NgaiLong49423/vegetarian-support-system/pull/194))
+
+**Status:** Committed — `0b9a552b`.
+
+**Scope:** End the temporary Flash-Lite trial at the user's request and restore `gemini-3.8-flash` for the team lead's AI testing.
+
+### Added
+
+- None.
+
+### Changed
+
+- Restore the shared adapter model and provider-path/logging regression assertions to `gemini-3.8-flash`; preserve entitlement checks, structured output validation and the bounded retry deadline.
+- Update current integration guidance to distinguish controlled adapter tests from live generation with a valid provider key.
+
+## 2026-10-27 — Chat Workflow Entitlements and Grounded Follow-up Discovery ([PR #194](https://github.com/NgaiLong49423/vegetarian-support-system/pull/194))
+
+**Status:** Committed — `0b9a552b`.
+
+**Scope:** Correct the FR-10/FR-51 boundaries for explicit advanced workflow requests and conversational recipe discovery; the model restoration is recorded separately above.
+
+### Added
+
+- Add optional assistant recipe-card IDs to request history and a local workflow link to chat responses; preserve existing request fields and keep conversation context in the current session.
+- Add regression coverage for entitlement checks before provider calls, safe workflow links, bounded card metadata and follow-up recipe searches.
+
+### Changed
+
+- Route explicit weekly-menu and Recipe Post authoring requests through the existing subscription and role checks, then direct eligible accounts to the dedicated workflow without generating content or emitting successful AI usage.
+
+### Fixed
+
+- Prevent explicit paid workflow requests from reaching the general chatbot provider without entitlement checks (BUG-069).
+- Retrieve current public recipe candidates for follow-up requests, preserve dish categories, exclude previously shown card IDs when asking for alternatives, and keep absence claims limited to the catalog actually checked (BUG-068).
+
 ## 2026-10-26 — Accept Today's Vietnam Date as an Ingredient Reference Date (Issue #159)
 
 **Status:** Committed — `ed9cd29`.
@@ -432,6 +614,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Accept today's Vietnam date as the ingredient `referenceDate` at any hour, default the add form to the Vietnam date in every browser time zone, and explain a future date in Vietnamese.
+
 ## 2026-10-26 — Rank and Search Reported Posts on the Moderation Page (Issue #12)
 
 **Status:** Committed — `c24ae67`, `f15680e`.
@@ -447,6 +630,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Changed
 
 - Rename the page and its admin menu entry to "Hậu kiểm nội dung", and document the new parameters in `docs/api/API.md` section 21 and the Backend and Frontend READMEs.
+
 ## 2026-10-26 — Persist Nutrition Profile BMI
 
 **Status:** Committed — `d28503ca`.
@@ -488,46 +672,6 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Point the FR-30 line of the Backend README to `docs/api/API.md` section 22, which the develop sync in `d34c59b` left at section 21.
-
-## 2026-10-25 — Temporary Gemini Flash-Lite Trial for FR-10
-
-**Status:** Committed — `b941ed5`.
-
-**Scope:** Use the user-authorized `gemini-3.1-flash-lite` trial on the isolated FR-10 branch after direct generation probes timed out with the confirmed model. The confirmed `gemini-3.8-flash` baseline and integration acceptance remain unchanged.
-
-### Added
-
-- Verify the selected trial model's provider request path in the adapter regression suite.
-
-### Changed
-
-- Select `gemini-3.1-flash-lite` for the shared AI adapter while preserving entitlement checks, structured output validation, safe logging and the nine-second deadline.
-- Retry early HTTP 502/503/504 failures at most once after bounded backoff within the same overall deadline; keep SDK retries disabled and leave quota, validation and timeout failures without retries.
-
-### Fixed
-
-- None.
-
-## 2026-10-25 — Guarded Recipe Assistance and Private AI Diagnostics
-
-**Status:** Committed — `a10d9fe`.
-
-**Scope:** Correct the remaining FR-10 audit findings on its feature branch; preserve the approved FR-21 authoring scope and existing API contract. Integration and main acceptance remain pending.
-
-### Added
-
-- Add regression checks for modal entitlement failures, provider retries, unchanged ingredient quantities, manual publication, incomplete recipe output and private chat diagnostics.
-
-### Changed
-
-- Route the recipe assistant modal through the existing Backend-protected description and instruction actions using the author's selected form ingredients.
-- Remove client-generated whole recipes, automatic ingredient additions and hard-coded calorie estimates from the AI authoring modal.
-
-### Fixed
-
-- Prevent the assistant modal from presenting locally generated content as paid AI assistance without a Backend entitlement check (BUG-077).
-- Reject unfinished recipe provider responses and preserve the documented 502 invalid-response mapping (BUG-067).
-- Redact chat request, history-turn and response diagnostic representations while preserving their JSON payloads; port the privacy correction recorded as BUG-076 on the FR-11 branch.
 
 ## 2026-10-25 — Let Reporters Add Information to an Open Recipe Report (Issue #35)
 
@@ -577,6 +721,46 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - None.
+
+## 2026-10-25 — Temporary Gemini Flash-Lite Trial for FR-10
+
+**Status:** Committed — `b941ed5`.
+
+**Scope:** Use the user-authorized `gemini-3.1-flash-lite` trial on the isolated FR-10 branch after direct generation probes timed out with the confirmed model. The confirmed `gemini-3.8-flash` baseline and integration acceptance remain unchanged.
+
+### Added
+
+- Verify the selected trial model's provider request path in the adapter regression suite.
+
+### Changed
+
+- Select `gemini-3.1-flash-lite` for the shared AI adapter while preserving entitlement checks, structured output validation, safe logging and the nine-second deadline.
+- Retry early HTTP 502/503/504 failures at most once after bounded backoff within the same overall deadline; keep SDK retries disabled and leave quota, validation and timeout failures without retries.
+
+### Fixed
+
+- None.
+
+## 2026-10-25 — Guarded Recipe Assistance and Private AI Diagnostics
+
+**Status:** Committed — `a10d9fe`.
+
+**Scope:** Correct the remaining FR-10 audit findings on its feature branch; preserve the approved FR-21 authoring scope and existing API contract. Integration and main acceptance remain pending.
+
+### Added
+
+- Add regression checks for modal entitlement failures, provider retries, unchanged ingredient quantities, manual publication, incomplete recipe output and private chat diagnostics.
+
+### Changed
+
+- Route the recipe assistant modal through the existing Backend-protected description and instruction actions using the author's selected form ingredients.
+- Remove client-generated whole recipes, automatic ingredient additions and hard-coded calorie estimates from the AI authoring modal.
+
+### Fixed
+
+- Prevent the assistant modal from presenting locally generated content as paid AI assistance without a Backend entitlement check (BUG-077).
+- Reject unfinished recipe provider responses and preserve the documented 502 invalid-response mapping (BUG-067).
+- Redact chat request, history-turn and response diagnostic representations while preserving their JSON payloads; port the privacy correction recorded as BUG-076 on the FR-11 branch.
 
 ## 2026-10-24 — Refine Shopping List Workflow ([PR #185](https://github.com/NgaiLong49423/vegetarian-support-system/pull/185))
 
@@ -915,48 +1099,6 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Allow weekly-menu preview requests with no selected ingredients while keeping ingredient selection required for single-recipe recommendations.
 - Wait for the weekly-menu API request in the E2E scenario before asserting its preview.
 
-## 2026-10-22 — AI Chat Reliability and Subscription Validity Corrections
-
-**Status:** Committed — `0ba4b21`.
-
-**Scope:** Address BUG-071 through BUG-075 in the FR-10 checkpoint without changing the confirmed model, paid feature matrix or role and nutrition prerequisites; provider performance and main acceptance require separate evidence.
-
-### Added
-
-- Add regression checks for safe provider diagnostics, timeout/retry behavior, long conversation turns, error classification and subscription start/end boundaries.
-
-### Changed
-
-- Limit Gemini calls to one attempt with a nine-second deadline covering SDK preparation, HTTP and response processing, reserving application overhead within the existing timeout budget.
-- Keep technical failure metadata in logs without SDK messages, stack traces, raw prompts or credentials.
-
-### Fixed
-
-- Accept complete assistant history up to 8,000 characters while retaining the 1,000-character user limit and bounding successful answers consistently.
-- Distinguish incomplete chatbot responses from provider outages using the documented 502 and 503 error codes.
-- Preserve provider-throttling guidance without confusing Google project quotas with Guest rate limits or application plan entitlements.
-- Keep future subscription periods locked until their start time and display current Free entitlement consistently with Backend guards.
-
-## 2026-10-22 — AI Feature Entitlement and Guest Chat Access
-
-**Status:** Committed — `0908c73`.
-
-**Scope:** Save the FR-10 implementation checkpoint for Issue #16 while preserving existing role, subscription, recipe and nutrition boundaries. Chatbot timeout, history-length and diagnostic logging defects remain recorded as BUG-071 through BUG-073; no complete FR-10 acceptance, main acceptance or deployment is claimed.
-
-### Added
-
-- Enable Guest access to the existing chatbot with bounded rolling cookie/IP rate limits, registration guidance and token-only usage events without an account identity.
-- Add entitlement, validity-boundary, HTTP authorization, concurrent rate-limit and browser checks.
-
-### Changed
-
-- Extend AI subscription errors with the minimum paid tier and a relative upgrade link; retain the existing error code and successful response contracts.
-- Document the Guest prerequisite shared with FR-02 and clear chat state when account or recipe context changes.
-
-### Fixed
-
-- Explain Pro requirements accurately and provide upgrade navigation from AI recipe assistance and meal-plan screens without blocking manual recipe editing or ordinary nutrition calculations.
-
 ## 2026-10-22 — Define Ingredient Deactivation Guard (Issue #176) ([PR #177](https://github.com/NgaiLong49423/vegetarian-support-system/pull/177))
 
 **Status:** Committed — `acafeacf`.
@@ -1029,7 +1171,6 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - None.
 
-
 ## 2026-10-22 — Enrich Demo Recipe Ingredients and Illustrations ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
 
 **Status:** Committed — `47dc13a`.
@@ -1091,6 +1232,47 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Remove the requirement to leave the planner and save a recipe before selecting it for a meal; meal-plan operations do not modify the saved collection.
 
+## 2026-10-22 — AI Chat Reliability and Subscription Validity Corrections
+
+**Status:** Committed — `0ba4b21`.
+
+**Scope:** Address BUG-071 through BUG-075 in the FR-10 checkpoint without changing the confirmed model, paid feature matrix or role and nutrition prerequisites; provider performance and main acceptance require separate evidence.
+
+### Added
+
+- Add regression checks for safe provider diagnostics, timeout/retry behavior, long conversation turns, error classification and subscription start/end boundaries.
+
+### Changed
+
+- Limit Gemini calls to one attempt with a nine-second deadline covering SDK preparation, HTTP and response processing, reserving application overhead within the existing timeout budget.
+- Keep technical failure metadata in logs without SDK messages, stack traces, raw prompts or credentials.
+
+### Fixed
+
+- Accept complete assistant history up to 8,000 characters while retaining the 1,000-character user limit and bounding successful answers consistently.
+- Distinguish incomplete chatbot responses from provider outages using the documented 502 and 503 error codes.
+- Preserve provider-throttling guidance without confusing Google project quotas with Guest rate limits or application plan entitlements.
+- Keep future subscription periods locked until their start time and display current Free entitlement consistently with Backend guards.
+
+## 2026-10-22 — AI Feature Entitlement and Guest Chat Access
+
+**Status:** Committed — `0908c73`.
+
+**Scope:** Save the FR-10 implementation checkpoint for Issue #16 while preserving existing role, subscription, recipe and nutrition boundaries. Chatbot timeout, history-length and diagnostic logging defects remain recorded as BUG-071 through BUG-073; no complete FR-10 acceptance, main acceptance or deployment is claimed.
+
+### Added
+
+- Enable Guest access to the existing chatbot with bounded rolling cookie/IP rate limits, registration guidance and token-only usage events without an account identity.
+- Add entitlement, validity-boundary, HTTP authorization, concurrent rate-limit and browser checks.
+
+### Changed
+
+- Extend AI subscription errors with the minimum paid tier and a relative upgrade link; retain the existing error code and successful response contracts.
+- Document the Guest prerequisite shared with FR-02 and clear chat state when account or recipe context changes.
+
+### Fixed
+
+- Explain Pro requirements accurately and provide upgrade navigation from AI recipe assistance and meal-plan screens without blocking manual recipe editing or ordinary nutrition calculations.
 
 ## 2026-10-21 — Add Public Ingredient Details ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
 
@@ -1154,6 +1336,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Remove the unresolved dependency on the separately committed FR-55 export component so FR-53 can build independently.
 - Use explicit calendar-value comparisons and manage shopping-dialog focus through refs while preserving keyboard access to add, edit and cancel actions.
+
 ## 2026-10-21 — Restore CI Compatibility with Public Discovery ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
 
 **Status:** Committed — `51b706b`.
@@ -1392,6 +1575,7 @@ None.
 
 - Disambiguate default-artwork accessible-name checks and click visible meal-slot labels in Playwright.
 - Expect two successful meal additions when the first of three selected slots returns a simulated conflict.
+
 ## 2026-10-18 — Send Chatbot Questions with Enter
 
 **Status:** Committed — `aad73a1`.
@@ -1469,6 +1653,7 @@ None.
 ### Fixed
 
 - None.
+
 ## 2026-10-17 — Verify Paid Subscription Activation ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
 
 **Status:** Committed — `39ccd9d`.
@@ -2261,6 +2446,7 @@ None.
 
 - Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Expand the Frontend recipe detail API type to match the Backend response.
+
 ## 2026-10-11 — Verify Recipe Reactions on Docker Compose (Issue #56)
 
 **Status:** Committed — `b9d8455`.
@@ -2414,6 +2600,7 @@ None.
 ### Fixed
 
 - None.
+
 ## 2026-10-10 — Add Google Login and Account Linking (Issue #8) ([PR #111](https://github.com/NgaiLong49423/vegetarian-support-system/pull/111))
 
 **Status:** Committed — `519ecbb`.
@@ -4141,6 +4328,7 @@ None.
 - Removed conflicting summary references to pre-publication permission approval and persistent drafts in the directly affected requirement documents.
 
 **Related PR:** None.
+
 ## 2026-09-13 — Changelog Format and Contribution Authority
 
 **Status:** Working tree — not committed.

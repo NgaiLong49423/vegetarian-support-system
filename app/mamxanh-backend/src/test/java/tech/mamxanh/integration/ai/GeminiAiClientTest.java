@@ -134,6 +134,30 @@ class GeminiAiClientTest {
     }
 
     @Test
+    void recipeAssistancePreservesThinkingAndCachedMetadata() throws IOException {
+        startServer(200, """
+                {"candidates":[{"content":{"parts":[{"text":"{}"}],"role":"model"},"finishReason":"STOP"}],
+                 "usageMetadata":{"promptTokenCount":150,"candidatesTokenCount":300,"totalTokenCount":500,
+                   "thoughtsTokenCount":50,"cachedContentTokenCount":20}}
+                """);
+        try (var client = configuredClient()) {
+            var result = client.generateRecipeContent("Recipe assistance", List.of(1L));
+            assertThat(result.usage()).isEqualTo(new AiTokenUsage(AiTokenUsage.MODEL,"STANDARD",150,300,500,50,20,0));
+        }
+    }
+
+    @Test
+    void incompleteRecipeResponseIsNotSuccessfulEvenWhenJsonParses() throws IOException {
+        startServer(200, """
+                {"candidates":[{"content":{"parts":[{"text":"{}"}],"role":"model"},"finishReason":"MAX_TOKENS"}]}
+                """);
+        try (var client = configuredClient()) {
+            assertThatThrownBy(() -> client.generateRecipeContent("Recipe assistance", List.of(1L)))
+                    .isInstanceOf(GeminiAiClient.AiProviderException.class);
+        }
+    }
+
+    @Test
     void recommendationSchemaReturnsProviderTokenMetadata() throws IOException {
         startServer(200, """
                 {"candidates":[{"content":{"parts":[{"text":"{\\"recipeIds\\":[2]}"}],"role":"model"}}],

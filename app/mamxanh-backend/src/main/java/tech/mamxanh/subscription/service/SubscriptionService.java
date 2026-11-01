@@ -43,6 +43,7 @@ public class SubscriptionService {
     private final PayOsClient payOsClient;
     private final Clock clock;
     private final PaymentSettlementService settlement;
+    private final PaymentOrderService orders;
 
     @Autowired
     public SubscriptionService(
@@ -50,13 +51,14 @@ public class SubscriptionService {
             PaymentTransactionRepository paymentTransactionRepository,
             UserRepository userRepository,
             PayOsClient payOsClient,
-            Clock clock, PaymentSettlementService settlement) {
+            Clock clock, PaymentSettlementService settlement, PaymentOrderService orders) {
         this.subscriptionRepository = subscriptionRepository;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.userRepository = userRepository;
         this.payOsClient = payOsClient;
         this.clock = clock;
         this.settlement = settlement;
+        this.orders = orders;
     }
 
     /**
@@ -106,13 +108,14 @@ public class SubscriptionService {
     /**
      * Initializes payment request and redirects to payOS VietQR.
      */
-    @Transactional
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
     public CheckoutResponse createCheckout(Long userId, SubscriptionTier tier) {
         if (tier == null) {
             throw new AppException(ErrorCode.VALIDATION_FAILED, "Vui lòng chọn gói đăng ký hợp lệ (PLUS hoặc PRO).");
         }
 
         User user = validateActiveMember(userId);
+        payOsClient.validateCheckoutConfiguration();
 
         long orderCode = generateOrderCode();
         int amount = tier.priceVnd();
@@ -120,12 +123,13 @@ public class SubscriptionService {
 
         PaymentTransactionEntity transaction = new PaymentTransactionEntity(user.getId(), String.valueOf(orderCode), amount);
         transaction.setCreatedAt(LocalDateTime.now(clock));
-        paymentTransactionRepository.save(transaction);
+        orders.create(transaction);
 
+        // No SQL transaction spans provider I/O. On an ambiguous provider error keep PENDING:
+        // the remote order may exist and a later verified webhook must still find it.
         CreatePaymentLinkResponse payOsResponse = payOsClient.createPaymentLink(orderCode, amount, description);
         if (payOsResponse == null || !payOsResponse.isSuccess() || payOsResponse.data() == null) {
-            transaction.setStatus(PaymentStatus.FAILED);
-            paymentTransactionRepository.save(transaction);
+            orders.markFailed(transaction.getOrderCode());
             throw new AppException(ErrorCode.INTERNAL_ERROR, "Không thể khởi tạo liên kết thanh toán payOS. Vui lòng thử lại sau.");
         }
 

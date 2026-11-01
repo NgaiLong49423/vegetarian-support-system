@@ -13,6 +13,7 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 # Đồng bộ PR #194: mã gốc FR-10 → mã sau tích hợp: BUG-054 → BUG-070, BUG-055 → BUG-071, BUG-056 → BUG-072, BUG-057 → BUG-073, BUG-058 → BUG-074, BUG-059 → BUG-075, BUG-060 → BUG-076, BUG-066 → BUG-077.
+# Bản ghi BUG-060 của FR-11 tại 79394340 trùng lỗi privacy đã hợp nhất dưới BUG-076; giữ BUG-060 của develop.
 bugs:
   - id: BUG-085
     title: Thông báo nâng gói AI chưa chỉ rõ gói tối thiểu
@@ -33,7 +34,8 @@ bugs:
     updated: 2026-10-27
     related_issue: 16
   - id: BUG-083
-    title: Chatbot bỏ sót yêu cầu tìm món ở câu hỏi tiếp và suy diễn sai khi thiếu danh mục
+    title: Chatbot bỏ sót yêu cầu tìm món ở câu hỏi tiếp và suy diễn sai khi thiếu danh
+      mục
     status: RESOLVED
     severity: Medium
     area: Backend/Recipe/AI chat và ngữ cảnh hội thoại
@@ -59,8 +61,37 @@ bugs:
     created: 2026-10-29
     updated: 2026-10-29
     related_issue: Unknown
+  - id: BUG-080
+    title: Tạo đơn payOS chưa commit khiến mất dấu giao dịch khi lỗi hoặc webhook đến
+      sớm
+    status: RESOLVED
+    severity: High
+    area: Backend/Subscription/payOS
+    file: .agents/outputs/bugs/BUG-080.md
+    created: 2026-10-29
+    updated: 2026-10-29
+    related_issue: Unknown
+  - id: BUG-079
+    title: Hướng dẫn nấu AI phát sự kiện thiếu token metadata
+    status: RESOLVED
+    severity: High
+    area: Backend/FR-34 và FR-11
+    file: .agents/outputs/bugs/BUG-079.md
+    created: 2026-10-28
+    updated: 2026-10-28
+    related_issue: 17
+  - id: BUG-078
+    title: Hàng đợi RAM làm mất telemetry khi ghi SQL lỗi hoặc queue đầy
+    status: RESOLVED
+    severity: High
+    area: Backend/AI telemetry
+    file: .agents/outputs/bugs/BUG-078.md
+    created: 2026-10-28
+    updated: 2026-10-28
+    related_issue: 17
   - id: BUG-077
-    title: Modal soạn công thức gắn nhãn AI sinh nội dung tại trình duyệt mà không kiểm tra gói
+    title: Modal soạn công thức gắn nhãn AI sinh nội dung tại trình duyệt mà không kiểm
+      tra gói
     status: RECORDED
     severity: High
     area: Frontend/Recipe/AI entitlement
@@ -222,7 +253,8 @@ bugs:
     updated: 2026-10-23
     related_issue: Unknown
   - id: BUG-059
-    title: Thêm nguyên liệu từ 0 giờ đến 7 giờ sáng (giờ Việt Nam) bị từ chối vì ngày tham khảo mặc định "ở tương lai"
+    title: Thêm nguyên liệu từ 0 giờ đến 7 giờ sáng (giờ Việt Nam) bị từ chối vì ngày
+      tham khảo mặc định "ở tương lai"
     status: RESOLVED
     severity: Medium
     area: Frontend/Backend Quản trị danh mục nguyên liệu
@@ -375,7 +407,8 @@ bugs:
     updated: 2026-10-18
     related_issue: Unknown
   - id: BUG-036
-    title: Giao diện quản trị dùng dữ liệu mẫu nhưng hiển thị như chức năng đã hoạt động
+    title: Giao diện quản trị dùng dữ liệu mẫu nhưng hiển thị như chức năng đã hoạt
+      động
     status: RESOLVED
     severity: Unknown
     area: Frontend/Admin prototype
@@ -393,7 +426,8 @@ bugs:
     updated: 2026-10-16
     related_issue: 57
   - id: BUG-034
-    title: Ghi nhận lượt xem trả 503 vì lấy khóa trước khi transaction SQL được kích hoạt
+    title: Ghi nhận lượt xem trả 503 vì lấy khóa trước khi transaction SQL được kích
+      hoạt
     status: RESOLVED
     severity: High
     area: Backend/Ghi nhận lượt xem
@@ -411,7 +445,8 @@ bugs:
     updated: 2026-10-16
     related_issue: 57
   - id: BUG-032
-    title: Administrator dùng chức năng chỉ dành cho Member nhận mã lỗi chỉnh sửa công thức
+    title: Administrator dùng chức năng chỉ dành cho Member nhận mã lỗi chỉnh sửa công
+      thức
     status: RECORDED
     severity: Low
     area: Backend/Auth
@@ -438,7 +473,8 @@ bugs:
     updated: 2026-10-15
     related_issue: 56
   - id: BUG-029
-    title: Schema bình chọn không chấp nhận currentReaction null dù API trả giá trị này
+    title: Schema bình chọn không chấp nhận currentReaction null dù API trả giá trị
+      này
     status: RECORDED
     severity: Medium
     area: Backend/Recipe Reaction/OpenAPI
@@ -465,7 +501,8 @@ bugs:
     updated: 2026-10-14
     related_issue: Unknown
   - id: BUG-026
-    title: Schema OpenAPI của nguyên liệu và media trong công thức bị trùng tên, mô tả sai response thật
+    title: Schema OpenAPI của nguyên liệu và media trong công thức bị trùng tên, mô
+      tả sai response thật
     status: RECORDED
     severity: Medium
     area: Backend/Recipe/API
@@ -510,7 +547,8 @@ bugs:
     updated: 2026-10-17
     related_issue: 19
   - id: BUG-021
-    title: Expert khác hoặc Administrator thay, xóa được ảnh của Recipe Post không thuộc mình
+    title: Expert khác hoặc Administrator thay, xóa được ảnh của Recipe Post không thuộc
+      mình
     status: RESOLVED
     severity: High
     area: Backend/Recipe Media

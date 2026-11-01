@@ -4889,6 +4889,112 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/admin/users/{userId}/status:
+    patch:
+      tags:
+      - admin-user-controller
+      operationId: changeStatus
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeAdminUserStatusRequest"
+        required: true
+      responses:
+        "200":
+          description: Updated account status.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminUserResponse"
+        "400":
+          description: Reason must contain 10 to 500 characters.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: Administrator accounts are read-only here.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/admin/users/{userId}/role:
+    patch:
+      tags:
+      - admin-user-controller
+      operationId: changeRole
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeAdminUserRoleRequest"
+        required: true
+      responses:
+        "200":
+          description: Updated account role.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminUserResponse"
+        "400":
+          description: Reason must contain 10 to 500 characters.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: Only CUSTOMER/EXPERT targets are supported; ADMIN is read-only.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/admin/units/{unitId}/status:
     patch:
       tags:
@@ -6420,6 +6526,411 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/admin/users:
+    get:
+      tags:
+      - admin-user-controller
+      operationId: list_2
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 200
+          minLength: 0
+      - name: role
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: CUSTOMER|EXPERT|ADMIN
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ACTIVE|LOCKED
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          maximum: 1000000
+          minimum: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+          maximum: 100
+          minimum: 1
+      responses:
+        "200":
+          description: A bounded page of minimal account details.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageResponseAdminUserResponse"
+        "400":
+          description: Invalid filters or pagination values.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/admin/users/{userId}:
+    get:
+      tags:
+      - admin-user-controller
+      operationId: detail
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        "200":
+          description: Minimal account detail.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminUserResponse"
+        "404":
+          description: USER_NOT_FOUND
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/admin/users/{userId}/history:
+    get:
+      tags:
+      - admin-user-controller
+      operationId: history_1
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          maximum: 1000000
+          minimum: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+          maximum: 100
+          minimum: 1
+      responses:
+        "200":
+          description: Account role/status changes and historical report-based account
+            locks.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageResponseAdminUserAuditResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/admin/users/summary:
+    get:
+      tags:
+      - admin-user-controller
+      operationId: summary
+      responses:
+        "200":
+          description: "Global account counts, independent of list filters."
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminUserSummaryResponse"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/admin/transactions:
+    get:
+      tags:
+      - admin-transaction-controller
+      summary: Read payment transactions and filtered totals (Administrator only)
+      description: "Read-only local SQL state; does not contact payOS or settle orders.\
+        \ Literal query (max 200) searches order code, TX-ID, name or email. tier\
+        \ PLUS/PRO; status PENDING/PAID/FAILED/CANCELLED. Optional dates filter creation\
+        \ time, inclusive in Asia/Ho_Chi_Minh. UTC timestamps; unknown historical\
+        \ tier is null. Newest first, ID tie-breaker. page >=0, size 1..100. Revenue\
+        \ counts PAID only across all filtered pages."
+      operationId: list_3
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: tier
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        "400":
+          description: "VALIDATION_FAILED: invalid filters, paging, date or export\
+            \ exceeds 10,000 rows."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: Administrator session required."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCESS_DENIED or ACCOUNT_LOCKED: current account is not an\
+            \ active Administrator."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: Filtered transactions and cross-page totals.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTransactionReport"
+      security:
+      - bearerAuth: []
+  /api/v1/admin/transactions/{id}:
+    get:
+      tags:
+      - admin-transaction-controller
+      summary: Read a payment and its linked purchased period (not an invoice)
+      operationId: detail_1
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Local payment and linked purchased period.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTransactionResponse"
+        "404":
+          description: "PAYMENT_TRANSACTION_NOT_FOUND: no such local order."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: invalid filters, paging, date or export\
+            \ exceeds 10,000 rows."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: Administrator session required."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCESS_DENIED or ACCOUNT_LOCKED: current account is not an\
+            \ active Administrator."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/admin/transactions/export:
+    get:
+      tags:
+      - admin-transaction-controller
+      summary: "Export all filtered payment transactions as UTF-8 CSV (up to 10,000)"
+      description: "Same filters as list; ignores pagination. More than 10,000 returns\
+        \ 400, never silently truncates. Formula-safe cells, UTC timestamps and BOM\
+        \ for spreadsheets. Local accounting export, not an invoice or provider reconciliation."
+      operationId: export
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: tier
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      responses:
+        "400":
+          description: "VALIDATION_FAILED: invalid filters, paging, date or export\
+            \ exceeds 10,000 rows."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: Administrator session required."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCESS_DENIED or ACCOUNT_LOCKED: current account is not an\
+            \ active Administrator."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: UTF-8 CSV accounting export with BOM.
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+      security:
+      - bearerAuth: []
   /api/v1/admin/reports:
     get:
       tags:
@@ -6902,7 +7413,7 @@ paths:
     get:
       tags:
       - expert-application-controller
-      operationId: list_2
+      operationId: list_4
       parameters:
       - name: status
         in: query
@@ -6960,7 +7471,7 @@ paths:
     get:
       tags:
       - expert-application-controller
-      operationId: detail
+      operationId: detail_2
       parameters:
       - name: id
         in: path
@@ -7049,6 +7560,72 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
           description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/admin/ai-telemetry:
+    get:
+      tags:
+      - ai-telemetry-controller
+      summary: Aggregate retained AI token usage and estimated Standard paid-equivalent
+        USD cost
+      description: "Administrator only. Dates are inclusive in Asia/Ho_Chi_Minh; weeks\
+        \ start Monday. At most the latest 90 days are available; retainedFrom exposes\
+        \ partial first-day coverage. Granularity DAY/WEEK/MONTH. No raw prompts,\
+        \ responses or actor identifiers are returned. estimatedCostUsd is null when\
+        \ any call is unpriced; knownEstimatedCostUsd is the priced subtotal, not\
+        \ an invoice."
+      operationId: report
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: granularity
+        in: query
+        required: false
+        schema:
+          type: string
+          default: DAY
+      - name: feature
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AiTelemetryReport"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
           content:
             application/problem+json:
               schema:
@@ -8930,14 +9507,14 @@ components:
           type: string
         paymentLinkId:
           type: string
+        paymentSuccess:
+          type: boolean
         orderCode:
           type: integer
           format: int64
         amount:
           type: integer
           format: int32
-        paymentSuccess:
-          type: boolean
     ConfirmNutritionEligibilityRequest:
       type: object
       properties:
@@ -9506,6 +10083,54 @@ components:
       required:
       - mealDate
       - mealType
+    ChangeAdminUserStatusRequest:
+      type: object
+      properties:
+        accountStatus:
+          type: string
+          minLength: 1
+          pattern: ACTIVE|LOCKED
+        reason:
+          type: string
+          maxLength: 500
+          minLength: 10
+      required:
+      - accountStatus
+      - reason
+    AdminUserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        displayName:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        accountStatus:
+          type: string
+        joinedAt:
+          type: string
+          format: date-time
+        publishedRecipeCount:
+          type: integer
+          format: int64
+    ChangeAdminUserRoleRequest:
+      type: object
+      properties:
+        role:
+          type: string
+          minLength: 1
+          pattern: CUSTOMER|EXPERT
+        reason:
+          type: string
+          maxLength: 500
+          minLength: 10
+      required:
+      - reason
+      - role
     CatalogStatusUpdateRequest:
       type: object
       properties:
@@ -10207,6 +10832,80 @@ components:
         totalPages:
           type: integer
           format: int32
+    PageResponseAdminUserResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminUserResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    AdminUserAuditResponse:
+      type: object
+      properties:
+        eventId:
+          type: string
+        action:
+          type: string
+        oldValue:
+          type: string
+        newValue:
+          type: string
+        reason:
+          type: string
+        administratorId:
+          type: integer
+          format: int64
+        administratorName:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+    PageResponseAdminUserAuditResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminUserAuditResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    AdminUserSummaryResponse:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+          format: int64
+        activeUsers:
+          type: integer
+          format: int64
+        expertUsers:
+          type: integer
+          format: int64
+        lockedUsers:
+          type: integer
+          format: int64
     ApiResponseListUnitResponse:
       type: object
       properties:
@@ -10221,6 +10920,104 @@ components:
         timestamp:
           type: string
           format: date-time
+    AdminTransactionReport:
+      type: object
+      properties:
+        transactions:
+          $ref: "#/components/schemas/PageResponseAdminTransactionResponse"
+        summary:
+          $ref: "#/components/schemas/AdminTransactionSummary"
+    AdminTransactionResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        orderCode:
+          type: string
+        userId:
+          type: integer
+          format: int64
+        customerName:
+          type: string
+        customerEmail:
+          type: string
+        tier:
+          type:
+          - string
+          - "null"
+        amountVnd:
+          type: integer
+          format: int32
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        paidAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+        subscriptionId:
+          type:
+          - integer
+          - "null"
+          format: int64
+        subscriptionStartsAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+        subscriptionEndsAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+        subscriptionStatus:
+          type:
+          - string
+          - "null"
+    AdminTransactionSummary:
+      type: object
+      properties:
+        total:
+          type: integer
+          format: int64
+        paid:
+          type: integer
+          format: int64
+        pending:
+          type: integer
+          format: int64
+        failed:
+          type: integer
+          format: int64
+        cancelled:
+          type: integer
+          format: int64
+        revenueVnd:
+          type: integer
+          format: int64
+    PageResponseAdminTransactionResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminTransactionResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
     PageResponseAdminReportResponse:
       type: object
       properties:
@@ -10457,6 +11254,77 @@ components:
           type: array
           items:
             type: string
+    AiTelemetryReport:
+      type: object
+      properties:
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        granularity:
+          type: string
+        timezone:
+          type: string
+        retainedFrom:
+          type: string
+          format: date-time
+        currency:
+          type: string
+        costBasis:
+          type: string
+        totals:
+          $ref: "#/components/schemas/Totals"
+        buckets:
+          type: array
+          items:
+            $ref: "#/components/schemas/Bucket"
+    Bucket:
+      type: object
+      properties:
+        periodStart:
+          type: string
+          format: date
+        feature:
+          type: string
+        totals:
+          $ref: "#/components/schemas/Totals"
+    Totals:
+      type: object
+      properties:
+        calls:
+          type: integer
+          format: int64
+        promptTokens:
+          type: integer
+          format: int64
+        responseTokens:
+          type: integer
+          format: int64
+        totalTokens:
+          type: integer
+          format: int64
+        thinkingTokens:
+          type: integer
+          format: int64
+        cachedTokens:
+          type: integer
+          format: int64
+        incompleteUsageCalls:
+          type: integer
+          format: int64
+        unpricedCalls:
+          type: integer
+          format: int64
+        knownEstimatedCostUsd:
+          type: number
+        estimatedCostUsd:
+          type:
+          - number
+          - "null"
+          description: Unknown when at least one call is unpriced; knownEstimatedCostUsd
+            remains the priced subtotal.
     ApiResponseVoid:
       type: object
       properties:

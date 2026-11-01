@@ -72,6 +72,19 @@ class OpenApiContractIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void transactionAuditDocumentsSuccessfulJsonAndCsvAlongsideItsErrors() {
+        for (String path : List.of("/api/v1/admin/transactions", "/api/v1/admin/transactions/{id}",
+                "/api/v1/admin/transactions/export")) {
+            assertResponses("get", path, "200", "400", "401", "403");
+        }
+        assertThat(paths.path("/api/v1/admin/transactions").path("get").path("responses").path("200")
+                .path("content").path("application/json").path("schema").path("$ref").asString())
+                .endsWith("/AdminTransactionReport");
+        assertThat(paths.path("/api/v1/admin/transactions/export").path("get").path("responses").path("200")
+                .path("content").path("text/csv").path("schema").path("format").asString()).isEqualTo("binary");
+    }
+
+    @Test
     void everyProtectedOperationDeclaresUnauthenticatedAndForbiddenAsProblemDetails() {
         List<String> missing = new ArrayList<>();
         forEachOperation((label, operation) -> {

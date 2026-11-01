@@ -58,6 +58,7 @@ public enum ErrorCode {
     AI_GUEST_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "Guest chat rate limited", "Bạn đã gửi nhiều câu hỏi trong thời gian ngắn. Hãy thử lại sau hoặc đăng ký tài khoản."),
     AI_PROVIDER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "AI provider unavailable", "Dịch vụ AI hiện không khả dụng. Bạn có thể tiếp tục tự soạn nội dung."),
     AI_RESPONSE_INVALID(HttpStatus.BAD_GATEWAY, "AI response invalid", "AI trả về nội dung không hợp lệ. Vui lòng thử lại hoặc tự soạn nội dung."),
+    AI_TELEMETRY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "AI accounting unavailable", "Không thể lưu dữ liệu sử dụng AI lúc này. Vui lòng thử lại sau."),
     AI_MENU_UNAVAILABLE(HttpStatus.CONFLICT, "AI menu unavailable", "Chưa có đủ công thức phù hợp để tạo thực đơn tuần. Hãy thử lại sau."),
     REPORT_ALREADY_OPEN(HttpStatus.CONFLICT, "Report already open",
             "Bạn đã gửi báo cáo cho công thức này. Hãy bổ sung thông tin vào báo cáo hiện có."),
