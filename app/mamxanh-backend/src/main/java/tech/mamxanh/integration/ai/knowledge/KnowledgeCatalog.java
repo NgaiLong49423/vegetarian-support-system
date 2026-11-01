@@ -25,8 +25,17 @@ public record KnowledgeCatalog(String revision, List<Document> documents, List<C
     public record Chunk(String id, String documentId, String version, String hash, String text) { }
 
     public static KnowledgeCatalog packaged() {
+        return packaged("/ai-knowledge/");
+    }
+
+    public static KnowledgeCatalog packagedG3() {
+        return packaged("/ai-knowledge/g3/");
+    }
+
+    public static KnowledgeCatalog packaged(String resourcePrefix) {
+        String normalizedPrefix = resourcePrefix.endsWith("/") ? resourcePrefix : resourcePrefix + "/";
         return load(path -> {
-            try (var in = KnowledgeCatalog.class.getResourceAsStream("/ai-knowledge/" + path)) {
+            try (var in = KnowledgeCatalog.class.getResourceAsStream(normalizedPrefix + path)) {
                 if (in == null) throw new IllegalArgumentException("Missing catalog resource");
                 return new String(in.readNBytes(100_001), StandardCharsets.UTF_8);
             } catch (IOException e) { throw new IllegalArgumentException("Cannot read catalog", e); }

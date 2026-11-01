@@ -83,6 +83,7 @@ public class AiChatService {
     private final AiTokenQuotaService aiQuota;
     private final AiChatSettingsService chatSettings;
     private final AiAssistantExecutionService assistantExecution;
+    private final AdkShoppingPilotService adkShoppingPilot;
 
     public AiChatService(CurrentUserService users, RecipeService recipes,
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
@@ -99,9 +100,9 @@ public class AiChatService {
         this.aiQuota = aiQuota;
         this.chatSettings = chatSettings;
         this.assistantExecution = null;
+        this.adkShoppingPilot = null;
     }
 
-    @Autowired
     public AiChatService(CurrentUserService users, RecipeService recipes,
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
             ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
@@ -117,6 +118,27 @@ public class AiChatService {
         this.aiQuota = aiQuota;
         this.chatSettings = chatSettings;
         this.assistantExecution = assistantExecution;
+        this.adkShoppingPilot = null;
+    }
+
+    @Autowired
+    public AiChatService(CurrentUserService users, RecipeService recipes,
+            RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
+            ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
+            AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings,
+            AiAssistantExecutionService assistantExecution, AdkShoppingPilotService adkShoppingPilot) {
+        this.users = users;
+        this.recipes = recipes;
+        this.recipePosts = recipePosts;
+        this.ai = ai;
+        this.mapper = mapper;
+        this.events = events;
+        this.clock = clock;
+        this.entitlements = entitlements;
+        this.aiQuota = aiQuota;
+        this.chatSettings = chatSettings;
+        this.assistantExecution = assistantExecution;
+        this.adkShoppingPilot = adkShoppingPilot;
     }
 
     /** Compatibility constructor used by focused orchestration tests. */
@@ -128,6 +150,9 @@ public class AiChatService {
     }
 
     public AiChatResponse answer(AiChatRequest request) {
+        if (shouldRouteToG3Pilot(request)) {
+            return adkShoppingPilot.execute(request);
+        }
         if (assistantExecution != null && (request.sessionId() != null || request.executionMode() != null
                 || request.consentDecision() != null || request.confirmationId() != null
                 || request.confirmationDecision() != null)) {
@@ -204,7 +229,29 @@ public class AiChatService {
     }
 
     public void deleteSession(java.util.UUID sessionId, String anonymousViewerId) {
-        if (assistantExecution != null) assistantExecution.deleteSession(sessionId, anonymousViewerId);
+        if (adkShoppingPilot != null) {
+            adkShoppingPilot.deleteSession(sessionId, anonymousViewerId);
+        } else if (assistantExecution != null) {
+            assistantExecution.deleteSession(sessionId, anonymousViewerId);
+        }
+    }
+
+    private boolean shouldRouteToG3Pilot(AiChatRequest request) {
+        if (adkShoppingPilot == null) return false;
+        Long userId = users.findAuthenticatedUserId().map(id -> users.requireActiveMember().id()).orElse(null);
+        String owner = userId == null ? "guest:" + request.anonymousViewerId() : "user:" + userId;
+        if (request.sessionId() != null) {
+            return adkShoppingPilot.ownsSession(request.sessionId(), owner);
+        }
+        if (!adkShoppingPilot.isPilotEnabled()
+                || request.contextType() != AiChatRequest.ContextType.GENERAL
+                || request.recipeId() != null
+                || userId == null) {
+            return false;
+        }
+        var member = users.requireActiveMember();
+        return member.role() == tech.mamxanh.auth.entity.Role.CUSTOMER
+                || member.role() == tech.mamxanh.auth.entity.Role.EXPERT;
     }
 
     private ScopeDecision classifyScope(AiChatRequest request, Long userId, String modelId) {

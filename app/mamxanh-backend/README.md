@@ -1,6 +1,6 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.62.0
+> **Version:** v0.63.0
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-11-01
 > **Status:** Active  
@@ -9,11 +9,11 @@
 
 ## ADK G1 — spike độc lập, chưa chuyển đường chat mặc định
 
-`integration.ai.adk.AdkModelGateway` triển khai ADK `BaseLlm` boundary và giữ nguyên structured tool/history data. `AdkSpikeSession` dựng một native runner với session RAM, tối đa 6 lượt model logic/run (mỗi lượt có tối đa hai provider attempts khi đủ điều kiện retry), tools tuần tự, 512 output tokens/call, 10 giây/model call (gồm retry) và 30 giây/run hoặc resume. Chờ người dùng giữa hai lần thực thi không tính vào run deadline. Các class này không có Spring component annotation hoặc public endpoint; Controller/chat hiện tại chưa dùng spike.
+`integration.ai.adk.AdkModelGateway` triển khai ADK `BaseLlm` boundary và giữ nguyên structured tool/history data. `AdkSpikeSession` dựng một native runner với session RAM, tối đa 6 lượt model logic/run (mỗi lượt có tối đa hai provider attempts khi đủ điều kiện retry), tools tuần tự, 512 output tokens/call, 10 giây/model call (gồm retry) và 30 giây/run hoặc resume. Chờ người dùng giữa hai lần thực thi không tính vào run deadline. Các class này không có Spring component annotation hoặc public endpoint; G1 tự nó không chuyển routing; pilot opt-in G3 bên dưới tái dùng runner này.
 
 CUSTOMER/EXPERT dùng cùng agent và tools chung; identity do caller Backend cấp, được đặt/khôi phục riêng trên worker cho tool và policy hooks. Guest/Admin không được dùng session Member của spike. Guard được kiểm tra cả khi resume; native confirmation có owner binding, thời hạn 5 phút và ngăn write lặp trong session RAM. Không xem cơ chế này là durable idempotency qua restart hoặc API retry mới.
 
-Gateway chỉ retry tối đa một lần cho provider 502/503/504, cùng model và trong call deadline; không retry lỗi policy/accounting hoặc tự đổi model/provider. Response phải dùng được trước khi gọi accounting hook. Call ID và thời điểm bắt đầu được chuyển cùng accounting context; usage thiếu/sai mang trạng thái MISSING/INVALID, không ước lượng token. Policy contract đang được kiểm chứng bằng fixture, **chưa nối vào quota/Credit production**; không dùng wrapper này để tuyên bố đã hoàn tất FR-63/64.
+Gateway chỉ retry tối đa một lần cho provider 502/503/504, cùng model và trong call deadline; không retry lỗi policy/accounting hoặc tự đổi model/provider. Response phải dùng được trước khi gọi accounting hook. Call ID và thời điểm bắt đầu được chuyển cùng accounting context; usage thiếu/sai mang trạng thái MISSING/INVALID, không ước lượng token. G1 kiểm chứng policy bằng fixture; G3 nối MemberAccountingPolicy qua Spring proxy vào quota/Credit thật cho nhánh pilot. Các nhánh ngoài pilot giữ accounting hiện hành.
 
 ADK 1.13.0 mặc định capture nội dung trong spans. Runner fail-closed nếu process không đặt `ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS=false`; Maven Surefire luôn đặt giá trị này cho tests. Không bật lại hoặc export raw prompt/tool payload qua tracing. Credentials tiếp tục theo cơ chế Backend hiện có, không có dotenv loader mới.
 
@@ -22,6 +22,22 @@ Chạy fake verification từ component: `./mvnw.cmd -Dtest=AdkSpikeTest test`. 
 Live test mặc định skip. Trong shell đã được cấp `GEMINI_API_KEY` hợp lệ theo cơ chế local hiện có, đặt `MAMXANH_G1_LIVE=true` rồi chạy `./mvnw.cmd -Dtest=AdkLiveTest test`. Test chỉ dùng model ID baseline `gemini-3.8-flash`, fixture list ID 42, một read tool và một lượt hỏi tiếp; không đọc dữ liệu user thật, không debit wallet và không ghi SQL. Không tự đổi model khi lỗi. Sau kiểm tra, bỏ flag live khỏi process. Xem Surefire reports để phân biệt kết quả live và mock; không in credential hoặc toàn bộ `.env`.
 
 Rollback spike bằng cách ngừng tạo `AdkSpikeSession`; chưa có routing production để chuyển ngược, không replay pending writes sang executor cũ.
+
+## Chat local G3 — Shopping List bằng ADK (opt-in)
+
+Đặt `MAMXANH_AI_CHAT_G3_PILOT_ENABLED=true` để session GENERAL mới của CUSTOMER/EXPERT dùng cùng agent Shopping List; mặc định `false`. Guest, Admin và RECIPE giữ routing hiện hành. Client không chọn executor; session đã mở giữ engine.
+
+Luồng: consent Shopping List → hỏi tên nếu thiếu → QA preview / CONFIRM duyệt trước ghi / AUTO khi yêu cầu rõ → `ShoppingListService.createEmpty` → ADK dùng ID thật gọi `get` → Backend xác lập kết quả. Chỉ có hai knowledge tools và hai business tools; không có Internet, thêm nguyên liệu hoặc xóa. Corpus/index riêng `ai-knowledge/g3/` dùng embedding-2/768 và hybrid G2; không sửa corpus G2.
+
+Nhánh G3 cần `clientRequestId` UUID gắn payload, chống gửi trùng trong session RAM; legacy vẫn tương thích. Session idle 30 phút, confirmation 5 phút, một run/session, tối đa 6 model calls/run, 10 giây/call gồm retry và 30 giây/run. Output cap G3 1.024 tokens. Approval gắn owner/session/native call/tên/mode. Đổi tên/mode, revoke hoặc hết ngân sách vô hiệu approval cũ. Unknown/expired session bị từ chối sau restart; không tự khôi phục/replay. HTTP client timeout 35 giây, không tự gửi lại write khi mất kết nối.
+
+`MemberAccountingPolicy` gọi Spring proxy để completion transaction ghi usage và debit Credit nguyên tử, dedupe call ID. Chụp quota period/model/tỷ lệ ở call start, quota trước rồi Credit decimal, không reserve trong lúc gọi Gemini, không âm balance. V39 giữ chính xác phần Credit hệ thống chịu. Metadata thiếu/sai hoặc model lỗi không debit; accounting persistence lỗi chặn bước kế tiếp. Kiểm tra ngân sách ngay trước create; create đã commit nhưng read/model lỗi giữ ID và trả partial failure.
+
+Live dùng root Compose project `mamxanh-g3`, ports 15173/18080/11434, SQL/fixtures tổng hợp riêng. Không bật trên stack dữ liệu đang dùng. `MAMXANH_AI_CHAT_G3_LIVE_BUDGET_FILE` là guard đánh giá tùy chọn, khác quota/Credit tài khoản; phải trỏ ledger đã tồn tại và bind mount bền vững. Đợt 01/11/2026 được người dùng xác nhận loại phần G3 có sẵn khỏi ngân sách 5 USD mới. Ledger ignored `.g3-evaluation/budget.json` không reset khi clean/build. Mọi failed attempt vẫn reserve conservative upper bound; metadata provider lưu riêng, không coi estimate là hóa đơn. Kiểm tra lại giá khi sang ngày khác. Batch hiện tại tối đa 140 generation/150 embedding attempts, 48.000 UTF-8 bytes/generation request và 1.024 output tokens; từng call vẫn kiểm tra trần 5 USD.
+
+Offline: `./mvnw.cmd -Dtest=AdkShoppingPilotServiceTest,AiTokenQuotaServiceTest,KnowledgeTest test`. SQL accounting/ownership: `AiTokenQuotaIntegrationTest` với SQL Server Testcontainers. Real-stack acceptance ở Frontend `tests/integration/g3-shopping-live-evaluation.spec.ts` (HTTP/SQL, 20 conversations hoặc subset qua `G3_SCENARIOS`) và `g3-shopping-pilot-real-stack.spec.ts` (browser). Mock provider không phải Gemini live. Packaged smoke dùng entry point G2 bên dưới với đối số cuối `g3`; không cần mạng/SQL.
+
+Rollback: tắt pilot cho session mới, vô hiệu pending G3 và đóng context/cache; session cũ không chuyển executor. Dữ liệu đã commit và usage đã ghi được giữ nguyên. Journal bền vững qua restart, đổi model tạm thời và production cutover thuộc gate sau.
 
 ## Knowledge pilot G2 — độc lập với chat
 

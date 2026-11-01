@@ -288,6 +288,7 @@ public class AiAssistantExecutionService {
             case BASIC_PROFILE -> ConsentPurpose.PROFILE_READ;
             case DIETARY_PREFERENCES -> ConsentPurpose.DIETARY_READ;
             case HEALTH_PROFILE -> ConsentPurpose.HEALTH_PROFILE_READ;
+            case SHOPPING_LIST -> ConsentPurpose.SHOPPING_LIST_READ;
         };
     }
 
@@ -296,6 +297,7 @@ public class AiAssistantExecutionService {
             case BASIC_PROFILE -> ConsentPurpose.PROFILE_UPDATE;
             case DIETARY_PREFERENCES -> ConsentPurpose.DIETARY_UPDATE;
             case HEALTH_PROFILE -> ConsentPurpose.HEALTH_PROFILE_UPDATE;
+            case SHOPPING_LIST -> ConsentPurpose.SHOPPING_LIST_WRITE;
         };
     }
 

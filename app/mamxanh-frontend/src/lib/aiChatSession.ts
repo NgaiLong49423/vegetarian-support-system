@@ -10,6 +10,10 @@ export interface PersistedAiChatMessage extends AiChatTurn {
   steps?: AiChatResponse["steps"]
   pendingConfirmation?: AiChatResponse["pendingConfirmation"]
   consentRequest?: AiChatResponse["consentRequest"]
+  sources?: AiChatResponse["sources"]
+  engine?: string | null
+  runStatus?: string | null
+  knowledgeRevision?: string | null
   requestQuestion?: string
 }
 

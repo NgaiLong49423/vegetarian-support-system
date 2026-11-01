@@ -28,11 +28,28 @@ class OpenApiContractIntegrationTest extends AbstractIntegrationTest {
     private static final List<String> METHODS = List.of("get", "post", "put", "patch", "delete");
 
     private JsonNode paths;
+    private JsonNode schemas;
 
     @BeforeAll
     void loadContract() throws Exception {
         String json = mockMvc.perform(get("/v3/api-docs")).andReturn().getResponse().getContentAsString();
-        paths = new ObjectMapper().readTree(json).path("paths");
+        JsonNode contract = new ObjectMapper().readTree(json);
+        paths = contract.path("paths");
+        schemas = contract.path("components").path("schemas");
+    }
+
+    @Test
+    void shoppingPilotPreservesLegacyRequestsAndExposesBackendOwnedConfirmationAndSourceMetadata() {
+        JsonNode input = schemas.path("AiChatRequest");
+        assertThat(input.path("properties").path("clientRequestId").path("format").asString()).isEqualTo("uuid");
+        assertThat(input.path("required").toString()).doesNotContain("clientRequestId");
+        assertThat(input.path("properties").has("engine")).isFalse();
+        JsonNode output = schemas.path("AiChatResponse").path("properties");
+        for (String field : List.of("engine", "runStatus", "sessionExpiresAt", "knowledgeRevision")) {
+            assertThat(output.has(field)).as(field).isTrue();
+        }
+        assertThat(schemas.path("PendingConfirmation").path("properties").has("proposedListName")).isTrue();
+        assertThat(schemas.path("Source").path("properties").has("version")).isTrue();
     }
 
     /** An operation the security filter rejects without a token must say so, and a public one must not. */

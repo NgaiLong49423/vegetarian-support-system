@@ -1,11 +1,17 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.39.0<br>
+> **Version:** v0.40.0<br>
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-31<br>
+> **Last Updated:** 2026-11-01<br>
 > **Status:** Active  
 
 # Database Workspace
+
+## Migration V39 — Phần Credit vượt mức hệ thống chịu trong sổ AI Credit (G3 / Issue #214)
+
+`V39__ai_credit_ledger_absorbed_credits.sql` bổ sung cột `system_absorbed_credits DECIMAL(38,9) NULL` và ràng buộc `CK_AI_CREDIT_LEDGER_absorbed_credits` vào bảng `AI_CREDIT_LEDGER` hiện có. Không tạo bảng hoặc quan hệ mới. Khi lượt gọi AI vượt quota tháng và chi phí Credit thập phân (`1000 token = 400 Credit`) lớn hơn số dư ví hiện tại, hệ thống chỉ trừ tối đa số dư hiện có (không để ví âm) và ghi phần chênh lệch hệ thống chịu vào `system_absorbed_credits`. `database/schema.sql` được đồng bộ tương ứng; không chỉnh sửa ERD trong `docs/diagrams/`.
+
+Khi Credit còn lại chỉ thanh toán được một phần thập phân của token, không làm tròn thành số token hệ thống chịu: `system_absorbed_tokens` để `NULL`, còn `system_absorbed_credits` giữ chênh lệch chính xác. Usage và debit dùng cùng completion transaction; call ID chống trừ trùng.
 
 ## Migration V37 — Lịch sử tặng gói AI cho khách hàng (Issue #212)
 
@@ -90,7 +96,7 @@ Repeatable `R__demo_sample_data_67_report_groups.sql` (chỉ profile `local`, AC
 
 ## Quyền sở hữu dữ liệu
 
-- Flyway migration trong backend (`app/mamxanh-backend/src/main/resources/db/migration/`) là lịch sử schema có thẩm quyền và append-only sau khi chia sẻ. Working baseline hiện gồm V1–V38. Các migration mới hơn gồm V30 audit quản lý tài khoản, V31 telemetry AI, V32 quota/usage ledger, V33 cấu hình AI Admin, V34 snapshot gói checkout, V35 preference model AI, V36 wallet/ledger AI Credit, V37 lịch sử tặng gói AI và V38 đơn nạp AI Credit. `database/schema.sql` phản ánh trạng thái sau toàn bộ migration; Physical ERD do người phụ trách sơ đồ cập nhật riêng. Ngày 31/10/2026, Flyway xác thực 60 migration trên SQL Server local hiện có (schema V38) và áp dụng seed demo mới; chưa xác minh cài mới bằng cách chạy lại V26–V38 trên database sạch.
+- Flyway migration trong backend (`app/mamxanh-backend/src/main/resources/db/migration/`) là lịch sử schema có thẩm quyền và append-only sau khi chia sẻ. Working baseline hiện gồm V1–V39. Các migration mới hơn gồm V30 audit quản lý tài khoản, V31 telemetry AI, V32 quota/usage ledger, V33 cấu hình AI Admin, V34 snapshot gói checkout, V35 preference model AI, V36 wallet/ledger AI Credit, V37 lịch sử tặng gói AI, V38 đơn nạp AI Credit và V39 phần Credit vượt mức hệ thống chịu trong `AI_CREDIT_LEDGER`. `database/schema.sql` phản ánh trạng thái sau toàn bộ migration; Physical ERD do người phụ trách sơ đồ cập nhật riêng. Ngày 31/10/2026, Flyway xác thực 60 migration trên SQL Server local hiện có (schema V38) và áp dụng seed demo mới; chưa xác minh cài mới bằng cách chạy lại V26–V38 trên database sạch.
 - `database/schema.sql` là snapshot/manual bootstrap độc lập, được đồng bộ có chủ đích với trạng thái sau khi chạy toàn bộ Flyway migration; dùng cho khởi tạo nhanh trên SSMS, Azure Data Studio hoặc `sqlcmd`.
 - Flyway repeatable migrations trong `app/mamxanh-backend/src/main/resources/db/demo/` nạp fixture demo khi profile `local` chạy (IntelliJ hoặc Docker Compose), gồm tài khoản, lịch ăn, công thức, nguyên liệu, tương tác cộng đồng và danh sách mua sắm. `MAMXANH_DEMO_PASSWORD` được lấy từ `.env` local và BCrypt hóa lúc Backend khởi động; không lưu password/hash trong SQL migration hoặc Git.
 - Profile `local` dùng thêm location `classpath:db/demo`; `test` và production chỉ chạy migration schema. Repeatable demo chạy theo thứ tự catalog, ước tính AI, recipe và hoạt động mẫu. Fixture AI estimate điền đủ chín chỉ tiêu trên 100 g bằng giá trị minh họa chưa xác minh để công thức demo không còn thiếu chỉ tiêu; số 0 cũng là ước tính (ví dụ B12 trong thực phẩm thực vật), không phải xác nhận xét nghiệm. Dữ liệu nhập khác vẫn có thể thiếu trường; khi đó giá trị `NULL` được bỏ khỏi phép tính và giao diện cảnh báo kết quả chưa đầy đủ. Seed kiểm tra tồn tại trước khi thêm nên chạy lại không nhân bản fixture.

@@ -1,11 +1,12 @@
 package tech.mamxanh.subscription.entity;
 
 import jakarta.persistence.*;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "AI_CREDIT_LEDGER")
@@ -22,6 +23,7 @@ public class AiCreditLedgerEntity {
     @Column(name = "overage_tokens") private Long overageTokens;
     @Column(name = "credits_per_1000_tokens") private Long rate;
     @Column(name = "system_absorbed_tokens") private Long absorbedTokens;
+    @Column(name = "system_absorbed_credits", precision = 38, scale = 9) private BigDecimal absorbedCredits;
     @Column(name = "granted_by_user_id") private Long grantedBy;
     @Column(name = "reason", length = 500) private String reason;
     @Column(name = "created_at", nullable = false) private LocalDateTime createdAt;

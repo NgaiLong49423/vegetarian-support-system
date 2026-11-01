@@ -129,6 +129,22 @@ class KnowledgeTest {
         assertThatThrownBy(() -> retriever.search("FR-53.9")).isInstanceOf(IllegalStateException.class);
         retriever.close(); assertThatThrownBy(() -> retriever.get("shopping-create")).isInstanceOf(IllegalStateException.class);
     }
+    @Test void activeBackendSessionCanRenewKnowledgeIdleExpiryWithoutRevivingAnExpiredSession() {
+        var now = new java.util.concurrent.atomic.AtomicReference<>(Instant.now());
+        var clock = new Clock() {
+            public ZoneId getZone() { return ZoneOffset.UTC; }
+            public Clock withZone(ZoneId zone) { return this; }
+            public Instant instant() { return now.get(); }
+        };
+        try (var retriever = new HybridKnowledgeRetriever(catalog, null, null, clock)) {
+            now.set(now.get().plusSeconds(1200));
+            retriever.touch();
+            now.set(now.get().plusSeconds(1200));
+            assertThat(retriever.get("shopping-create")).isNotNull();
+            now.set(now.get().plusSeconds(601));
+            assertThatThrownBy(retriever::touch).isInstanceOf(IllegalStateException.class);
+        }
+    }
     @Test void cumulativeRunBudgetRejectsOverflowAndResetsOnNextRun() {
         var tools = new KnowledgeTools(new HybridKnowledgeRetriever(catalog, null, null, Clock.systemUTC()));
         tools.charge("one", 24000);
