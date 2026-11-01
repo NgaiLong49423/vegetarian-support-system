@@ -1,11 +1,19 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.58.0
+> **Version:** v0.59.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-31
+> **Last Updated:** 2026-11-01
 > **Status:** Active
 
 # API Integration Guide
+
+## Chat Shopping List G3 local (opt-in)
+
+Tái dùng POST `/api/v1/recipes/ai/chat` và DELETE session hiện có. Backend chọn routing, client không cấp quyền chọn engine. Nhánh pilot cần `clientRequestId` UUID gắn payload; trùng đã hoàn tất trả kết quả cũ, đang chạy hoặc cùng ID khác payload bị từ chối. Legacy không bắt buộc trường mới. Không tự retry request ghi sau lỗi kết nối.
+
+Response bổ sung `engine`, `runStatus`, `sessionExpiresAt`, `knowledgeRevision`, source `version` và `pendingConfirmation.proposedListName`. UI xác định create/read bằng steps/service results; lời model không xác lập thành công. Consent category `SHOPPING_LIST` với `AI_CHAT`, `SHOPPING_LIST_READ`, `SHOPPING_LIST_WRITE` bao gồm câu hỏi, tên, ID và kết quả gửi Google Gemini; tách khỏi confirmation. QA chỉ preview; CONFIRM mặc định; AUTO chỉ ghi khi yêu cầu rõ và có tên người dùng cung cấp. UI hỗ trợ approve/reject và revoke.
+
+Session idle 30 phút, confirmation 5 phút; restart/expiry từ chối session/action cũ. Run deadline 30 giây, client timeout 35 giây. Create đã commit mà bước sau lỗi trả partial failure cùng ID thật, không replay create. Chi tiết schema/status/security trong OpenAPI sinh từ runtime.
 
 ## Bảng gói AI và checkout theo cấu hình Admin
 
@@ -472,9 +480,9 @@ Generated `/v3/api-docs` là hợp đồng runtime chi tiết cho hai endpoint d
 - Mục tiêu chỉ điều hướng lựa chọn món, không làm thay đổi mục tiêu số FR-35, không tự suy ra thâm hụt/thặng dư năng lượng và không đảm bảo kết quả sức khỏe. Dữ liệu câu trả lời tuần không được lưu/tái sử dụng. Không gửi số đo nhân trắc học hoặc mục tiêu cá nhân chi tiết vào telemetry; không ghi prompt hay câu trả lời cá nhân vào log.
 - Nếu chưa xác nhận trạng thái dinh dưỡng, API trả `403 NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED`; nếu người dùng đã xác nhận không đủ điều kiện, trả `403 NUTRITION_ELIGIBILITY_INELIGIBLE`. Hồ sơ nhân trắc học chưa lưu trả `409 NUTRITION_PROFILE_REQUIRED`.
 
-## 16. Chatbot hỏi đáp theo ngữ cảnh — FR-51
+## 16. AI Agent hỏi đáp và điều phối theo ngữ cảnh — FR-51 / FR-66
 
-`POST /api/v1/recipes/ai/chat` phục vụ cả Guest và Member đang hoạt động trên cùng một chatbot. Member gửi Bearer token; Guest gửi thêm `anonymousViewerId` dạng UUID lấy từ session cookie cùng origin Frontend (`mamxanh.recipe-viewer`, dùng chung định danh ẩn danh hiện có của FR-58). Không dùng cookie xác thực hoặc bật credentials xuyên origin. Endpoint nhận `contextType` (`GENERAL` hoặc `RECIPE`), `question` (tối đa 1.000 ký tự), tối đa 8 lượt `history` gần nhất (`speaker`: `USER` tối đa 1.000 ký tự, `ASSISTANT` tối đa 8.000 ký tự), và `recipeId` khi dùng ngữ cảnh `RECIPE`. Câu trả lời được Backend kiểm tra tối đa 8.000 ký tự trước khi trả thành công, để Frontend gửi lại đầy đủ ở lượt tiếp theo mà không cắt mất nội dung. Giới hạn này do Backend thực thi, không phụ thuộc provider có tuân thủ length constraint của schema hay không. `GENERAL` không nhận `recipeId`; `RECIPE` bắt buộc có ID dương.
+`POST /api/v1/recipes/ai/chat` phục vụ cả Guest và Member đang hoạt động trên cùng một hệ thống AI Agent điều phối thông minh, kết hợp kho tri thức nghiệp vụ nội bộ (Knowledge Base) và các chính sách hành vi (Behavioral Policies) đóng gói trong Spring resources. Member gửi Bearer token; Guest gửi thêm `anonymousViewerId` dạng UUID lấy từ session cookie cùng origin Frontend (`mamxanh.recipe-viewer`, dùng chung định danh ẩn danh hiện có của FR-58). Không dùng cookie xác thực hoặc bật credentials xuyên origin. Endpoint nhận `contextType` (`GENERAL` hoặc `RECIPE`), `question` (tối đa 1.000 ký tự), tối đa 8 lượt `history` gần nhất (`speaker`: `USER` tối đa 1.000 ký tự, `ASSISTANT` tối đa 8.000 ký tự), và `recipeId` khi dùng ngữ cảnh `RECIPE`. Câu trả lời được Backend kiểm tra tối đa 8.000 ký tự trước khi trả thành công, để Frontend gửi lại đầy đủ ở lượt tiếp theo mà không cắt mất nội dung. Giới hạn này do Backend thực thi, không phụ thuộc provider có tuân thủ length constraint của schema hay không. `GENERAL` không nhận `recipeId`; `RECIPE` bắt buộc có ID dương.
 
 Ví dụ body cho ngữ cảnh công thức:
 

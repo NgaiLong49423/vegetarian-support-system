@@ -2,12 +2,14 @@ package tech.mamxanh.recipe.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.integration.ai.AiClient;
+import tech.mamxanh.integration.ai.AiPromptLoader;
 import tech.mamxanh.integration.ai.AiUsageEvent;
 import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
 import tech.mamxanh.recipe.dto.request.AiChatRequest;
@@ -48,12 +50,22 @@ public class AiAssistantExecutionService {
     private final ObjectMapper mapper;
     private final ApplicationEventPublisher events;
     private final Clock clock;
+    private final AiPromptLoader promptLoader;
 
     public AiAssistantExecutionService(CurrentUserService users, AiClient ai, AiChatSettingsService settings,
             AiTokenQuotaService quota, AiAssistantSessionStore sessions, AiAssistantToolRegistry tools,
             ApprovedAiKnowledgeRetriever knowledge, ObjectMapper mapper, ApplicationEventPublisher events, Clock clock) {
+        this(users, ai, settings, quota, sessions, tools, knowledge, mapper, events, clock, null);
+    }
+
+    @Autowired
+    public AiAssistantExecutionService(CurrentUserService users, AiClient ai, AiChatSettingsService settings,
+            AiTokenQuotaService quota, AiAssistantSessionStore sessions, AiAssistantToolRegistry tools,
+            ApprovedAiKnowledgeRetriever knowledge, ObjectMapper mapper, ApplicationEventPublisher events, Clock clock,
+            @Autowired(required = false) AiPromptLoader promptLoader) {
         this.users = users; this.ai = ai; this.settings = settings; this.quota = quota; this.sessions = sessions;
         this.tools = tools; this.knowledge = knowledge; this.mapper = mapper; this.events = events; this.clock = clock;
+        this.promptLoader = promptLoader != null ? promptLoader : new AiPromptLoader();
     }
 
     public AiChatResponse execute(AiChatRequest request) {
@@ -203,7 +215,8 @@ public class AiAssistantExecutionService {
         quota.requireAvailable(userId, userId == null ? request.anonymousViewerId() : null);
         try {
             String model = settings.resolve(userId, userId == null ? request.anonymousViewerId() : null);
-            AiClient.ChatResult result = model == null ? ai.planAssistantTools(SYSTEM, prompt) : ai.planAssistantTools(model, SYSTEM, prompt);
+            String systemInstruction = SYSTEM + "\n\n" + (promptLoader != null ? promptLoader.loadSystemPrompt() : "");
+            AiClient.ChatResult result = model == null ? ai.planAssistantTools(systemInstruction, prompt) : ai.planAssistantTools(model, systemInstruction, prompt);
             if (result == null || result.structuredJson() == null) throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
             var usage = new AiUsageEvent(userId, userId == null ? request.anonymousViewerId() : null,
                     "FR-51", clock.instant(), result.usage());
@@ -288,6 +301,7 @@ public class AiAssistantExecutionService {
             case BASIC_PROFILE -> ConsentPurpose.PROFILE_READ;
             case DIETARY_PREFERENCES -> ConsentPurpose.DIETARY_READ;
             case HEALTH_PROFILE -> ConsentPurpose.HEALTH_PROFILE_READ;
+            case SHOPPING_LIST -> ConsentPurpose.SHOPPING_LIST_READ;
         };
     }
 
@@ -296,6 +310,7 @@ public class AiAssistantExecutionService {
             case BASIC_PROFILE -> ConsentPurpose.PROFILE_UPDATE;
             case DIETARY_PREFERENCES -> ConsentPurpose.DIETARY_UPDATE;
             case HEALTH_PROFILE -> ConsentPurpose.HEALTH_PROFILE_UPDATE;
+            case SHOPPING_LIST -> ConsentPurpose.SHOPPING_LIST_WRITE;
         };
     }
 
