@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.146.0
+> **Version:** v2.147.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-11-02
 > **Status:** Active
@@ -8,6 +8,25 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-11-02 — Correct G5 Token Accounting and FR-21 Access ([PR #226](https://github.com/NgaiLong49423/vegetarian-support-system/pull/226))
+
+**Status:** Committed — `49a2bfb0`.
+
+**Scope:** Keep one accounting owner for ADK single-step business calls and preserve role-based recipe assistance across AI tiers.
+
+### Added
+
+- Add focused regression coverage for pre-call budget checks, single-owner usage settlement, and model selection for Expert recipe assistance.
+
+### Changed
+
+- Resolve the account's allowed Gemini model and preference for non-chat ADK tasks.
+- Allow eligible Experts to use FR-21 regardless of paid tier when token budget and model access permit.
+
+### Fixed
+
+- Prevent duplicate token ledger and telemetry writes for ADK single-step business calls.
 
 ## 2026-11-02 — Migrate Business AI Flows to Google ADK (Gate G5)
 
