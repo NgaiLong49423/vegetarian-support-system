@@ -1,11 +1,36 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.65.0
+> **Version:** v0.66.0
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-11-01
 > **Status:** Active  
 
 # Backend Workspace
+
+## G4 — Session và phục hồi kết quả tối thiểu
+
+G4 giữ ADK Java 1.13.0 làm bộ điều phối duy nhất; không có workflow engine hoặc durable conversation mới. `AiAssistantSessionStore` giữ owner/consent/pending ngắn hạn; ADK giữ native events. Transcript trong `sessionStorage` chỉ được bảo đảm qua reload/navigation cùng tab. Sau Backend restart, transcript cũ chỉ để hiển thị; context, consent và pending cần thiết lập mới.
+
+`AiShoppingExecutionJournal` chỉ bao quanh tool tạo Shopping List: reservation commit riêng, sau đó conditional UPDATE `RESERVED → WRITING`, lời gọi public `ShoppingListService.createEmpty()` và `SUCCEEDED`/ID kết quả cùng transaction SQL. `saveAndFlush()` không phải commit. Unique `(owner_id, client_request_id)` chống duplicate; mỗi request pilot tối đa một write, action ID chính là request ID. Journal giữ 7 ngày, không giữ tên danh sách, transcript hoặc raw tool payload. `RESERVED` không tự đồng nghĩa thất bại: runtime không replay; startup chỉ đánh dấu reservation có trước thời điểm process mới được tạo bằng clock SQL. Chỉ hỗ trợ một Backend instance.
+
+Cancel đi qua control action trên POST chat, trước busy guard, không gọi model. Cancel trước claim ngăn create; sau claim không bảo đảm rollback, journal success luôn được giữ. New chat vô hiệu phiên và dọn runner sau lượt đang chạy. Không dùng RxJava dispose làm bằng chứng SQL rollback. Recovery GET trả `UNKNOWN` khi không tìm thấy record còn hạn; trạng thái này không chứng minh chưa có write và không cho phép tự gửi lại.
+
+History tách recent messages (20 cặp), confirmed task parameters và pending. Do native `getSession` trả bản sao và compactor yêu cầu summarizer, wrapper dùng native create/append APIs để thay RAM session bằng các lượt hoàn chỉnh giữa các invocations; không compact khi resume function response. Events RAM được giới hạn riêng với model request; không bỏ rời cặp call/result. Byte caps bảo vệ dung lượng, không được coi là token count chính xác. Không AI summarization. Model replacement theo tác vụ được deferred: guard hiện gắn model với preference tài khoản; chưa bổ sung replay/context migration để tránh mở rộng G4.
+
+Kiểm chứng: `./mvnw.cmd -Dtest=AdkSpikeTest,AdkShoppingPilotServiceTest,AiShoppingExecutionJournalIntegrationTest test`. SQL tests dùng SQL Server Testcontainers thật. React–Backend–SQL tests ở `tests/integration/g4-session-recovery.spec.ts`, opt-in `MAMXANH_G4_FIXTURE=true`, root Compose project `mamxanh-g4`. Test-only `g4fixture.G4FixtureApplication` được đóng gói riêng, dùng native ADK và service/accounting thật với model deterministic; không phải Gemini live. Khi bind mount JAR vào container, dừng Backend trước khi đóng gói lại và chỉ khởi động sau khi package hoàn tất.
+
+
+### Chạy lại G4 fixture stack
+
+Từ Backend chạy `./mvnw.cmd clean package -DskipTests`, rồi `jar --create --file target/g4-fixture.jar -C target/test-classes g4fixture`. Chỉ test JAR chứa entry point fixture; production JAR không chứa model giả.
+
+Từ repository root, đặt các process variables `MAMXANH_SQL_PORT=12434`, `MAMXANH_BACKEND_PORT=18084`, `MAMXANH_FRONTEND_PORT=15174`, rồi chạy:
+
+```powershell
+docker compose --env-file app/mamxanh-backend/.env -p mamxanh-g4 -f docker-compose.yml -f app/mamxanh-frontend/tests/integration/g4-compose.override.yml up -d --build --wait
+```
+
+Từ Frontend đặt `MAMXANH_G4_FIXTURE=true`, `MAMXANX_E2E_FRONTEND_URL=http://localhost:15174`, `MAMXANX_E2E_BACKEND_URL=http://localhost:18084/api/v1`, rồi chạy `npx playwright test --config playwright.integration.config.ts tests/integration/g4-session-recovery.spec.ts`. Giữ cùng project/ports cho mọi lifecycle command. Override không gọi SMTP, Azure, payOS hoặc Gemini. Dừng stack bằng cùng lệnh Compose với `down` thay `up`; không dùng `--volumes` nếu muốn giữ fixtures.
 
 ## ADK G1 — spike độc lập, chưa chuyển đường chat mặc định
 

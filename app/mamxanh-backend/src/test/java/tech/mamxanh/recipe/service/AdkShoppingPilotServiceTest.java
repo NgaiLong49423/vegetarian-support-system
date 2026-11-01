@@ -325,7 +325,7 @@ class AdkShoppingPilotServiceTest {
     }
 
     @Test
-    void confirmationInvalidatesOnNameChangeModeChangeExpiryOrConsentRevokeAndBlocksWhenBudgetExhaustedBeforeWrite() {
+    void confirmationKeepsModeSnapshotButInvalidatesOnExpiryOrConsentRevokeAndBlocksWhenBudgetExhaustedBeforeWrite() {
         AtomicInteger callSeq = new AtomicInteger();
         ScriptedLlm llm = new ScriptedLlm(request -> {
             List<String> fnResponses = functionResponseNames(request);
@@ -347,17 +347,11 @@ class AdkShoppingPilotServiceTest {
                 null));
         UUID conf1 = staged1.pendingConfirmation().confirmationId();
 
-        // Changing mode on approval invalidates confirmation #1
-        assertThatThrownBy(() -> service.execute(pilotRequest(
-                staged1.sessionId(),
-                UUID.randomUUID(),
-                "Duyệt",
-                ExecutionMode.AUTO,
-                null,
-                conf1,
-                ConfirmationDecision.APPROVE)))
-                .isInstanceOf(AppException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.VALIDATION_FAILED);
+        // Pending uses its original CONFIRM snapshot even when the selector now says AUTO.
+        var rejected = service.execute(pilotRequest(staged1.sessionId(), UUID.randomUUID(), "Hủy",
+                ExecutionMode.AUTO, null, conf1, ConfirmationDecision.REJECT));
+        assertThat(rejected.executionMode()).isEqualTo(ExecutionMode.CONFIRM);
+        assertThat(rejected.runStatus()).isEqualTo("CANCELLED");
 
         // Stage confirmation #2 and let 5 minutes expire
         var staged2 = service.execute(pilotRequest(
@@ -582,6 +576,32 @@ class AdkShoppingPilotServiceTest {
         }
         verify(shoppingLists,org.mockito.Mockito.times(2)).createEmpty(any());
         verify(shoppingLists,never()).get(anyLong());
+    }
+
+    @Test void cancelBypassesBusyGuardAndBlocksTheNextWriteWithoutAnotherModelCall() throws Exception {
+        var started = new java.util.concurrent.CountDownLatch(1);
+        var release = new java.util.concurrent.CountDownLatch(1);
+        var calls = new AtomicInteger();
+        var llm = new ScriptedLlm(r -> {
+            calls.incrementAndGet(); started.countDown();
+            try { assertThat(release.await(5, java.util.concurrent.TimeUnit.SECONDS)).isTrue(); }
+            catch (InterruptedException error) { throw new IllegalStateException(error); }
+            return functionCall("create_shopping_list", "after-cancel", Map.of("name", "Rau củ"));
+        });
+        var service = createPilotService(llm);
+        var consent = service.execute(pilotRequest(null, UUID.randomUUID(), "Tạo danh sách Rau củ", ExecutionMode.AUTO, null, null, null));
+        UUID requestId = UUID.randomUUID();
+        var run = java.util.concurrent.CompletableFuture.supplyAsync(() -> service.execute(pilotRequest(
+                consent.sessionId(), requestId, "Tạo danh sách Rau củ", ExecutionMode.AUTO, grantShoppingConsent(), null, null)));
+        try {
+            assertThat(started.await(5, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            var stopped = service.cancel(new AiChatRequest(AiChatRequest.ContextType.GENERAL, null, "Dừng", List.of(),
+                    null, consent.sessionId(), ExecutionMode.AUTO, null, null, null, requestId, AiChatRequest.ControlAction.CANCEL));
+            assertThat(stopped.runStatus()).isEqualTo("STOP_REQUESTED");
+            assertThat(calls).hasValue(1);
+        } finally { release.countDown(); }
+        run.get(8, java.util.concurrent.TimeUnit.SECONDS);
+        verify(shoppingLists, never()).createEmpty(any());
     }
 
     @Test void revokeDuringInFlightModelStopsTheFollowingWrite() throws Exception {

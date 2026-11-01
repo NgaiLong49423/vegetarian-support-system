@@ -70,6 +70,12 @@ public class AiAssistantSessionStore {
         return Optional.of(session.engine);
     }
 
+    /** Guard/cache reads must not count as user activity. */
+    public synchronized SessionHandle inspect(UUID id, String owner) {
+        Session session = require(id, owner);
+        return new SessionHandle(id, Set.copyOf(session.consents), session.pending, session.expiresAt, session.engine);
+    }
+
     public synchronized SessionHandle applyConsent(UUID sessionId, String owner,
             boolean grant, Set<ConsentScope> scopes) {
         Session session = require(sessionId, owner);
@@ -128,8 +134,6 @@ public class AiAssistantSessionStore {
         }
         if (!session.owner.equals(owner)) throw new AppException(ErrorCode.VALIDATION_FAILED,
                 "Phiên trợ lý không hợp lệ hoặc đã hết hạn.");
-        session.lastAccess = now;
-        session.expiresAt = now.plus(sessionTtl);
         return session;
     }
 

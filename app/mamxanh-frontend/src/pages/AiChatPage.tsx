@@ -28,6 +28,7 @@ import {
 
 import { useAuth } from "../components/AuthContext"
 import { AiMessageContent } from "../components/AiMessageContent"
+import { AiHumanInputCard } from "../components/AiHumanInputCard"
 
 import { useAiChat } from "../components/AiChatContext"
 
@@ -38,6 +39,7 @@ import { asApiError } from "../lib/apiClient"
 import { anonymousRecipeViewer } from "../lib/recipeViewer"
 import {
   clearAiChatSession,
+  pendingAiChatRequest,
   readAiChatSession,
   writeAiChatSession,
   type PersistedAiChatMessage,
@@ -75,6 +77,11 @@ export function AiChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [executionMode, setExecutionMode] = useState<AiExecutionMode>("CONFIRM")
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [sessionExpiry, setSessionExpiry] = useState(Date.now() + 30 * 60 * 1000)
+  const previousOwner = useRef(ownerKey)
+  const activeRequest = useRef<string | null>(null)
+  const privateContext = useRef(false)
+  const [recoveryRequest, setRecoveryRequest] = useState<string | null>(null)
   const [hydratedOwnerKey, setHydratedOwnerKey] = useState<string | null>(null)
 
   const [question, setQuestion] = useState("")
@@ -95,6 +102,7 @@ export function AiChatPage() {
   const modelMenuRef = useRef<HTMLDivElement>(null)
 
   const [sequence, setSequence] = useState(0)
+  const sequenceRef = useRef(0)
 
   const [windowSize, setWindowSize] = useState({ width: 420, height: 620 })
 
@@ -108,13 +116,23 @@ export function AiChatPage() {
   const contextType = hasRecipeContext ? "RECIPE" : "GENERAL"
 
   useEffect(() => {
+    if (previousOwner.current !== ownerKey) {
+      clearAiChatSession(previousOwner.current)
+      pendingAiChatRequest(previousOwner.current, null)
+      previousOwner.current = ownerKey
+    }
+    privateContext.current = false
     requestVersion.current += 1
     setLoading(false)
     const saved = readAiChatSession(ownerKey)
+    privateContext.current = saved?.messages.some((message) => message.sensitive) ?? false
+    setSessionExpiry(saved?.expiresAt ?? Date.now() + 30 * 60 * 1000)
+    setRecoveryRequest(pendingAiChatRequest(ownerKey))
     setMessages(saved?.messages ?? [])
     setExecutionMode(saved?.executionMode ?? "CONFIRM")
     setSessionId(saved?.sessionId ?? null)
-    setSequence(saved?.sequence ?? saved?.messages.reduce((max, item) => Math.max(max, item.id), 0) ?? 0)
+    sequenceRef.current = saved?.sequence ?? saved?.messages.reduce((max, item) => Math.max(max, item.id), 0) ?? 0
+    setSequence(sequenceRef.current)
     setQuestion("")
     setError("")
     setErrorAction(null)
@@ -128,16 +146,21 @@ export function AiChatPage() {
       clearAiChatSession(ownerKey)
       return
     }
-    writeAiChatSession(ownerKey, { sessionId, messages, executionMode, sequence })
+    writeAiChatSession(ownerKey, { sessionId, messages, executionMode, sequence, expiresAt: sessionExpiry })
     const expiryTimer = window.setTimeout(() => {
       clearAiChatSession(ownerKey)
+      pendingAiChatRequest(ownerKey, null)
+      setRecoveryRequest(null)
+      privateContext.current = false
+      setSessionExpiry(Date.now() + 30 * 60 * 1000)
+      setLoading(false)
       setMessages([])
       setSessionId(null)
       setExecutionMode("CONFIRM")
       setSequence(0)
-    }, 30 * 60 * 1000)
+    }, Math.max(0, sessionExpiry - Date.now()))
     return () => window.clearTimeout(expiryTimer)
-  }, [ownerKey, hydratedOwnerKey, messages, sessionId, executionMode, sequence])
+  }, [ownerKey, hydratedOwnerKey, messages, sessionId, executionMode, sequence, sessionExpiry])
 
   const chatWindowStyle = {
     width: `min(${windowSize.width}px, calc(100vw - 1rem))`,
@@ -252,11 +275,11 @@ export function AiChatPage() {
   )
 
   async function startFreshConversation() {
-    if (loading) return
     if (messages.length > 0 && !window.confirm(
-      "Xóa nội dung cuộc trò chuyện hiện tại và bắt đầu phiên mới? Thao tác này không hoàn tác các thay đổi đã hoàn tất trong hệ thống.",
+      "Xóa nội dung cuộc trò chuyện hiện tại và bắt đầu phiên mới? Thao tác ghi đã bắt đầu vẫn có thể hoàn tất; cuộc trò chuyện mới không hoàn tác thay đổi trong hệ thống.",
     )) return
     try {
+      if (loading) await stopRun()
       if (sessionId) {
         await recipesApi.clearChatSession(
           sessionId,
@@ -335,6 +358,36 @@ export function AiChatPage() {
     )
   }
 
+  async function stopRun() {
+    const clientRequestId = activeRequest.current ?? pendingAiChatRequest(ownerKey)
+    if (!isAuthenticated || !clientRequestId) return
+    await recipesApi.chat({ contextType: "GENERAL", question: "Dừng tác vụ", history: [],
+      ...(sessionId ? { sessionId } : {}), clientRequestId, controlAction: "CANCEL" })
+    setRecoveryRequest(clientRequestId)
+    setError("Đã yêu cầu dừng. Thao tác ghi đã bắt đầu có thể hoàn tất; hãy kiểm tra kết quả.")
+  }
+
+  async function recoverExecution() {
+    if (!recoveryRequest || !isAuthenticated) return
+    const version = requestVersion.current
+    try {
+      const result = await recipesApi.chatExecution(recoveryRequest)
+      if (version !== requestVersion.current) return
+      if (result.state === "SUCCEEDED" && result.shoppingListId) {
+        setSessionId(null)
+        privateContext.current = false
+        setMessages((current) => [...current.map((message) => ({ ...message, displayOnly: true, pendingConfirmation: null, consentRequest: null })), { id: Date.now(), speaker: "ASSISTANT", sensitive: true, displayOnly: true,
+          content: `Backend xác nhận đã tạo danh sách #${result.shoppingListId}. Không gửi lại thao tác tạo.`,
+          steps: [{ sequence: 1, tool: "create_shopping_list", status: "SUCCEEDED", summary: "Đã khôi phục kết quả từ Backend.", result: { id: result.shoppingListId } }] }])
+        pendingAiChatRequest(ownerKey, null)
+        setRecoveryRequest(null)
+        setError("")
+      } else setError(result.state === "UNKNOWN"
+        ? "Chưa có kết quả ghi được xác nhận. Không tự gửi lại thao tác; hãy kiểm tra danh sách mua sắm."
+        : `Trạng thái thao tác: ${result.state}. Không tự chạy lại thao tác ghi.`)
+    } catch (cause) { if (version === requestVersion.current) setError(asApiError(cause).message) }
+  }
+
   async function send(
     questionText: string,
     previous: ChatMessage[],
@@ -345,26 +398,42 @@ export function AiChatPage() {
 
     if (!normalized || loading) return
     const version = requestVersion.current
+    const clientRequestId = globalThis.crypto.randomUUID()
+    activeRequest.current = clientRequestId
+    pendingAiChatRequest(ownerKey, clientRequestId)
+    const revoked = continuation.consentDecision?.action === "REVOKE"
+    const sensitive = privateContext.current || /danh\s*sách|mua\s*sắm|đi\s*chợ|shopping|hồ sơ|sức khỏe/i.test(normalized)
+      || continuation.consentDecision?.action === "GRANT"
+    if (sensitive) privateContext.current = true
+    if (revoked) {
+      privateContext.current = false
+      setMessages((current) => current.map((message) => message.sensitive || (message.sensitive === undefined && message.engine === "ADK_SHOPPING_PILOT")
+        ? { id: message.id, speaker: message.speaker, content: "[Nội dung đã được ẩn sau khi thu hồi consent]" }
+        : { ...message, pendingConfirmation: null, consentRequest: null }))
+    }
     setLoading(true)
 
     setError("")
     setErrorAction(null)
     setRetryQuestion(normalized)
 
-    const currentId = sequence + 1
+    // A free-text revision submits reject + new instruction sequentially in one handler.
+    // Reserve IDs immediately so both calls remain unique across React renders.
+    const currentId = Math.max(sequenceRef.current, sequence) + 1
+    sequenceRef.current = currentId + 1
 
     setSequence(currentId)
 
     if (addQuestion)
       setMessages((current) => [
         ...current,
-        { id: currentId, speaker: "USER", content: normalized },
+        { id: currentId, speaker: "USER", content: normalized, sensitive },
       ])
 
     try {
       const response = await recipesApi.chat({
         contextType,
-        clientRequestId: globalThis.crypto?.randomUUID?.() ?? 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => { const r=Math.floor(Math.random()*16); return (c === 'x' ? r : (r & 3) | 8).toString(16) }),
+        clientRequestId,
         executionMode,
         ...(sessionId ? { sessionId } : {}),
         ...continuation,
@@ -376,6 +445,7 @@ export function AiChatPage() {
         question: normalized,
 
         history: previous
+          .filter((message) => !message.displayOnly)
           .slice(-8)
           .map(({ speaker, content, recommendations }) => ({
             speaker,
@@ -391,6 +461,9 @@ export function AiChatPage() {
       })
       if (version !== requestVersion.current) return
       if (response.sessionId) setSessionId(response.sessionId)
+      pendingAiChatRequest(ownerKey, null)
+      setRecoveryRequest(null)
+      setSessionExpiry(response.sessionExpiresAt ? Date.parse(response.sessionExpiresAt) : Date.now() + 30 * 60 * 1000)
       setMessages((current) => [
         ...current.map((message) => ({
           ...message,
@@ -403,6 +476,7 @@ export function AiChatPage() {
           speaker: "ASSISTANT",
 
           content: response.answer,
+          sensitive: revoked ? false : sensitive,
 
           recommendations: response.recommendations ?? [],
           workflowUrl: response.workflowUrl,
@@ -429,8 +503,12 @@ export function AiChatPage() {
       void subscriptionApi.getChatSettings(isAuthenticated ? undefined : anonymousRecipeViewer())
         .then(setChatSettings)
         .catch(() => undefined)
+      return true
     } catch (cause) {
       if (version !== requestVersion.current) return
+      if (version !== requestVersion.current) return
+      if (isAuthenticated && sensitive) setRecoveryRequest(clientRequestId)
+      else pendingAiChatRequest(ownerKey, null)
       const apiError = asApiError(cause)
       setUpgradeTier(aiRequiredTier(apiError, "PLUS"))
       setErrorAction(
@@ -454,16 +532,18 @@ export function AiChatPage() {
           .then(setChatSettings)
           .catch(() => undefined)
       }
-      if (apiError.status === 401 || apiError.status === 403 || apiError.status === 0)
+      if (apiError.status === 401 || apiError.status === 403 || apiError.status === 0 || (isAuthenticated && sensitive))
         setRetryQuestion("")
       const expiredSession = apiError.code === "VALIDATION_FAILED"
         && apiError.message.toLocaleLowerCase("vi").includes("phiên trợ lý")
       if (expiredSession) {
+        privateContext.current = false
         setSessionId(null)
         setMessages((current) => current.map((message) => ({
           ...message,
           pendingConfirmation: null,
           consentRequest: null,
+          displayOnly: true,
         })))
       }
       if (apiError.code !== "AI_MODEL_SELECTION_REQUIRED") setError(
@@ -502,9 +582,32 @@ export function AiChatPage() {
     ? Math.round(Math.max(0, Math.min(100, chatSettings.remainingTokens / chatSettings.quotaTokens * 100)))
     : 0
   const usedQuotaPercent = 100 - remainingQuotaPercent
-  const hasUnresolvedAssistantAction = messages.some((message) =>
-    message.speaker === "ASSISTANT" && (message.pendingConfirmation || message.consentRequest),
+  const humanInputMessage = [...messages].reverse().find((message) =>
+    !message.displayOnly && message.speaker === "ASSISTANT" && (message.pendingConfirmation || message.consentRequest),
   )
+  const hasUnresolvedAssistantAction = Boolean(humanInputMessage)
+
+  async function decideHumanInput(approved: boolean) {
+    const message = humanInputMessage
+    if (!message) return false
+    const previous = messages.slice(0, messages.indexOf(message))
+    if (message.consentRequest) {
+      if (!approved) {
+        setMessages(current => current.map(item => item.id === message.id ? { ...item, consentRequest: null } : item))
+        return true
+      }
+      return await send(message.requestQuestion ?? "", previous, false,
+        { consentDecision: { action: "GRANT", scopes: message.consentRequest.scopes } }) === true
+    }
+    if (!message.pendingConfirmation) return false
+    return await send(approved ? "Tiếp tục với thay đổi đã xem trước" : "Hủy thay đổi đang chờ", previous, false,
+      { confirmationId: message.pendingConfirmation.confirmationId, confirmationDecision: approved ? "APPROVE" : "REJECT" }) === true
+  }
+
+  async function replyToHumanInput(text: string) {
+    // An edit is a new instruction, never a grant or an approval of the old action.
+    if (await decideHumanInput(false)) await send(text, messages, true)
+  }
   const modeLabel = executionMode === "QA" ? "Hỏi đáp" : executionMode === "AUTO" ? "Tự động" : "Có xác nhận"
 
   return (
@@ -540,13 +643,14 @@ export function AiChatPage() {
             <button
               type="button"
               onClick={() => void startFreshConversation()}
-              disabled={loading}
               aria-label="Bắt đầu cuộc trò chuyện mới"
               title="Cuộc trò chuyện mới"
               className="rounded-full p-2 text-ink-muted hover:bg-paper hover:text-ink disabled:opacity-50"
             >
               <MessageSquarePlus className="h-4 w-4" aria-hidden="true" />
             </button>
+            {loading && isAuthenticated && <button type="button" onClick={() => void stopRun().catch((cause) => setError(asApiError(cause).message))} className="rounded-full px-2 py-1 text-xs">Dừng</button>}
+            {recoveryRequest && isAuthenticated && <button type="button" onClick={() => void recoverExecution()} className="rounded-full px-2 py-1 text-xs">Kiểm tra kết quả</button>}
             <button
               type="button"
               onClick={closeChat}
@@ -783,9 +887,9 @@ export function AiChatPage() {
                 {message.speaker === "ASSISTANT"
                   ? <AiMessageContent content={message.content} />
                   : <p className="whitespace-pre-wrap [overflow-wrap:anywhere]">{message.content}</p>}
-                {message.steps?.length ? (
+                {message.steps?.some(step => step.status !== "AWAITING_CONFIRMATION") ? (
                   <div className="mt-3 space-y-2" aria-label="Các bước AI đã xử lý">
-                    {message.steps.map((step) => {
+                    {message.steps.filter(step => step.status !== "AWAITING_CONFIRMATION").map((step) => {
                       const preview = step.result?.preview
                       const previewEntries = preview && typeof preview === "object"
                         ? Object.entries(preview as Record<string, unknown>)
@@ -809,27 +913,6 @@ export function AiChatPage() {
                     })}
                   </div>
                 ) : null}
-                {message.pendingConfirmation && (
-                  <section className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-amber-950">
-                    <p className="text-sm font-bold">Xem lại trước khi thực hiện</p>
-                    <p className="mt-1 text-xs leading-5">{message.pendingConfirmation.summary}. Các thay đổi chưa được áp dụng.</p>
-                    {message.pendingConfirmation.proposedListName && <p className="mt-1 text-xs font-semibold">Tên danh sách dự kiến: “{message.pendingConfirmation.proposedListName}”</p>}
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <button type="button" disabled={loading} onClick={() => void send("Tiếp tục với thay đổi đã xem trước", messages.slice(0, messages.indexOf(message)), false, { confirmationId: message.pendingConfirmation!.confirmationId, confirmationDecision: "APPROVE" })} className="rounded-full bg-brand-700 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">Xác nhận thay đổi</button>
-                      <button type="button" disabled={loading} onClick={() => void send("Hủy thay đổi đang chờ", messages.slice(0, messages.indexOf(message)), false, { confirmationId: message.pendingConfirmation!.confirmationId, confirmationDecision: "REJECT" })} className="rounded-full border border-brand-200 bg-paper px-3 py-2 text-xs font-semibold disabled:opacity-50">Hủy</button>
-                    </div>
-                  </section>
-                )}
-                {message.consentRequest && (
-                  <section className="mt-3 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sky-950">
-                    <p className="text-sm font-bold">Cho phép dùng dữ liệu cá nhân?</p>
-                    <p className="mt-1 text-xs leading-5">Chỉ khi đồng ý, nội dung liên quan mới được gửi tới {message.consentRequest.recipient}. Phạm vi: {Array.from(new Set(message.consentRequest.scopes.map((scope) => scope.category === "HEALTH_PROFILE" ? "hồ sơ sức khỏe" : scope.category === "DIETARY_PREFERENCES" ? "tùy chọn ăn uống" : scope.category === "SHOPPING_LIST" ? "danh sách mua sắm (nội dung yêu cầu, tên, ID và kết quả danh sách — mục đích tìm hướng dẫn và điều phối)" : "hồ sơ cơ bản"))).join(", ")}.</p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <button type="button" disabled={loading} onClick={() => void send(message.requestQuestion ?? "", messages.slice(0, messages.indexOf(message)), false, { consentDecision: { action: "GRANT", scopes: message.consentRequest!.scopes } })} className="rounded-full bg-sky-800 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">Đồng ý và tiếp tục</button>
-                      <button type="button" disabled={loading} onClick={() => setMessages((current) => current.map((item) => item.id === message.id ? { ...item, consentRequest: null } : item))} className="rounded-full border border-sky-300 bg-white px-3 py-2 text-xs font-semibold disabled:opacity-50">Không đồng ý</button>
-                    </div>
-                  </section>
-                )}
                 {message.speaker === "ASSISTANT" && message.engine === "ADK_SHOPPING_PILOT" && (
                   <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-brand-100/70 pt-2 text-[11px] text-ink-muted">
                     <span>
@@ -997,11 +1080,16 @@ export function AiChatPage() {
           )}
         </div>
 
-        <form
+        {humanInputMessage ? (
+          <div className="shrink-0 border-t border-brand-100 bg-paper p-3 sm:p-4">
+            <AiHumanInputCard key={`${humanInputMessage.id}-${humanInputMessage.pendingConfirmation?.confirmationId ?? "consent"}`}
+              message={humanInputMessage} busy={loading}
+              onDecision={async approved => { await decideHumanInput(approved) }} onReply={replyToHumanInput} />
+          </div>
+        ) : <form
           onSubmit={submit}
           className="border-t border-brand-100 bg-paper p-3 sm:p-4"
         >
-          {hasUnresolvedAssistantAction && <p className="mb-2 text-xs font-medium text-amber-800">Hãy xử lý yêu cầu xác nhận hoặc đồng ý ở trên trước khi gửi yêu cầu mới.</p>}
           <label htmlFor="ai-chat-question" className="sr-only">
             Câu hỏi của bạn
           </label>
@@ -1189,7 +1277,7 @@ export function AiChatPage() {
               </button>
             </div>
           </div>
-        </form>
+        </form>}
       </section>
     </div>
   )

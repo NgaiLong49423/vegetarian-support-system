@@ -92,6 +92,11 @@ public final class AdkShoppingPilotTools {
     private final List<Source> sources = new ArrayList<>();
     private StagedConfirmation stagedConfirmation;
     private ShoppingListResponse committedCreate;
+    private java.util.function.Function<String, ShoppingListResponse> writeExecutor;
+
+    public void bindWriteExecutor(java.util.function.Function<String, ShoppingListResponse> executor) {
+        this.writeExecutor = executor;
+    }
     private ShoppingListResponse verifiedRead;
     private boolean budgetBlockedBeforeWrite;
 
@@ -295,7 +300,9 @@ public final class AdkShoppingPilotTools {
         }
 
         try {
-            ShoppingListResponse created = shoppingLists.createEmpty(new CreateEmptyShoppingListRequest(normalized));
+            ShoppingListResponse created = writeExecutor == null
+                    ? shoppingLists.createEmpty(new CreateEmptyShoppingListRequest(normalized))
+                    : writeExecutor.apply(normalized);
             this.committedCreate = created;
             Map<String, Object> result = new LinkedHashMap<>();
             result.put("status", "SUCCEEDED");

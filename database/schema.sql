@@ -1444,3 +1444,22 @@ CREATE TABLE AI_CREDIT_LEDGER (
 CREATE INDEX IX_AI_CREDIT_LEDGER_user_created ON AI_CREDIT_LEDGER(user_id, created_at DESC, transaction_id DESC);
 
 GO
+
+
+-- G4: short-lived idempotency/results, not a conversation or workflow store.
+CREATE TABLE AI_ASSISTANT_EXECUTION (
+    owner_id BIGINT NOT NULL,
+    client_request_id UNIQUEIDENTIFIER NOT NULL,
+    session_id UNIQUEIDENTIFIER NOT NULL,
+    arguments_hash CHAR(64) NOT NULL,
+    state VARCHAR(12) NOT NULL,
+    shopping_list_id BIGINT NULL,
+    created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    expires_at DATETIME2 NOT NULL DEFAULT DATEADD(day, 7, SYSUTCDATETIME()),
+    CONSTRAINT PK_AI_ASSISTANT_EXECUTION PRIMARY KEY (owner_id, client_request_id),
+    CONSTRAINT FK_AI_ASSISTANT_EXECUTION_OWNER FOREIGN KEY (owner_id) REFERENCES [USER](user_id),
+    CONSTRAINT CK_AI_ASSISTANT_EXECUTION_state CHECK (state IN ('RESERVED','WRITING','SUCCEEDED','FAILED','CANCELLED')),
+    CONSTRAINT CK_AI_ASSISTANT_EXECUTION_result CHECK
+        ((state = 'SUCCEEDED' AND shopping_list_id IS NOT NULL) OR (state <> 'SUCCEEDED' AND shopping_list_id IS NULL))
+);
+CREATE INDEX IX_AI_ASSISTANT_EXECUTION_expiry ON AI_ASSISTANT_EXECUTION(expires_at);

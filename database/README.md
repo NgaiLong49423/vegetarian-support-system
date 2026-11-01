@@ -1,11 +1,18 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.40.0<br>
+> **Version:** v0.41.0<br>
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-11-01<br>
 > **Status:** Active  
 
 # Database Workspace
+
+## Migration V40 — Journal tối thiểu cho G4 Shopping List
+
+`V40__ai_shopping_execution_journal.sql` thêm `AI_ASSISTANT_EXECUTION`, PK `(owner_id, client_request_id)`, FK owner tới USER. Chỉ lưu session/request identity, hash tên đã chuẩn hóa, trạng thái, result ID và timestamps/expiry 7 ngày; không có FK business result để tránh thay đổi lifecycle Shopping List. Không lưu transcript/consent/tên danh sách. Người dùng đã duyệt bảng và phạm vi này trong yêu cầu triển khai G4.
+
+Reservation được commit bằng transaction riêng. Conditional UPDATE giành quyền write, `ShoppingListService.createEmpty` và result journal cùng transaction thứ hai; duplicate không tự tiếp tục RESERVED. Rollback có thể đưa state về RESERVED; chỉ sau khi transaction kết thúc mới ghi FAILED/CANCELLED nếu vẫn RESERVED. Nếu commit outcome chưa đọc được thì không replay. Startup recovery chỉ xử lý RESERVED có `created_at` trước cutoff SQL được chụp khi khởi tạo service; không xử lý reservation của process đang chạy. Cleanup record quá hạn khi startup. Đây là cơ chế một Backend instance, không phải workflow store. `database/schema.sql` đồng bộ DDL; diagrams giữ nguyên.
+
 
 ## Migration V39 — Phần Credit vượt mức hệ thống chịu trong sổ AI Credit (G3 / Issue #214)
 

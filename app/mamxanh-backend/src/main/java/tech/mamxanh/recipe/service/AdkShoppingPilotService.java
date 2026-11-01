@@ -103,6 +103,8 @@ public class AdkShoppingPilotService implements AutoCloseable {
     private final HybridKnowledgeRetriever.Embedder embedder;
     private volatile boolean pilotEnabled;
     private AiAssistantToolRegistry publicData;
+    @Autowired
+    private AiShoppingExecutionJournal journal;
 
     @Autowired
     void bindPublicData(AiAssistantToolRegistry registry) { this.publicData = registry; }
@@ -210,7 +212,9 @@ public class AdkShoppingPilotService implements AutoCloseable {
                 List.of(new SimpleGrantedAuthority("ROLE_" + member.role().name())));
 
         evictExpiredPilotStates();
-        var handle = sessionStore.open(request.sessionId(), owner, ENGINE);
+        var handle = request.sessionId() == null ? sessionStore.open(null, owner, ENGINE)
+                : sessionStore.inspect(request.sessionId(), owner);
+        if (!ENGINE.equals(handle.engine())) throw new AppException(ErrorCode.VALIDATION_FAILED, "Phiên trợ lý thuộc bộ điều phối khác.");
         UUID sessionId = handle.id();
         PilotSessionState state = pilotSessions.computeIfAbsent(sessionId,
                 id -> new PilotSessionState(id, userId, owner, memberAuth, handle.expiresAt()));
@@ -218,7 +222,7 @@ public class AdkShoppingPilotService implements AutoCloseable {
 
         if (state.busy.get() && request.consentDecision() != null && request.consentDecision().action() == ConsentAction.REVOKE) {
             var scopes=request.consentDecision().scopes();
-            sessionStore.applyConsent(sessionId, owner, false, scopes==null?Set.of():Set.copyOf(scopes));
+            state.expiresAt = sessionStore.applyConsent(sessionId, owner, false, scopes==null?Set.of():Set.copyOf(scopes)).expiresAt();
             sessionStore.discardPending(sessionId,owner);
             state.consentRevoked=true;
             state.pendingConfirmation=null;
@@ -244,19 +248,27 @@ public class AdkShoppingPilotService implements AutoCloseable {
             throw new AppException(ErrorCode.VALIDATION_FAILED,
                     "Phiên trợ lý đang xử lý một lượt chạy khác. Vui lòng đợi lượt hiện tại hoàn tất.");
         }
+        state.cancelled = false;
+        state.activeRequestId = request.clientRequestId();
+        var accepted = sessionStore.open(sessionId, owner, ENGINE);
+        state.expiresAt = accepted.expiresAt();
         state.requests.put(request.clientRequestId(), new RequestLedgerEntry(payloadHash, true, null));
 
         try {
             boolean newQuestion=request.confirmationDecision()==null && (request.consentDecision()==null || request.consentDecision().action()!=ConsentAction.REVOKE)
                     && (state.trustedTurns.isEmpty() || !state.trustedTurns.getLast().content().equals(request.question()));
-            if(state.requests.size()>100 || state.trustedTurns.size()>=8 && newQuestion)
+            if(state.requests.size()>100)
                 throw new AppException(ErrorCode.VALIDATION_FAILED,"Phiên pilot đã đạt giới hạn ngữ cảnh. Vui lòng bắt đầu cuộc trò chuyện mới.");
             // Client history is a display hint, never evidence for write authorization or consent.
             AiChatRequest trusted=new AiChatRequest(request.contextType(),request.recipeId(),request.question(),List.copyOf(state.trustedTurns),
                     request.anonymousViewerId(),request.sessionId(),request.executionMode(),request.consentDecision(),request.confirmationId(),request.confirmationDecision(),request.clientRequestId());
-            AiChatResponse response = executeTurn(trusted, userId, owner, memberAuth, handle, state);
+            AiChatResponse response = executeTurn(trusted, userId, owner, memberAuth, accepted, state);
             if(!state.consentRevoked && newQuestion)
                 state.trustedTurns.add(new AiChatRequest.Turn(AiChatRequest.Speaker.USER,request.question(),List.of()));
+            if (!state.consentRevoked) {
+                state.trustedTurns.add(new AiChatRequest.Turn(AiChatRequest.Speaker.ASSISTANT, response.answer(), List.of()));
+                while (state.trustedTurns.size() > 40) state.trustedTurns.removeFirst();
+            }
             state.requests.put(request.clientRequestId(), new RequestLedgerEntry(payloadHash, false, response));
             return response;
         } catch (RuntimeException failure) {
@@ -264,8 +276,35 @@ public class AdkShoppingPilotService implements AutoCloseable {
             throw failure;
         } finally {
             state.busy.set(false);
-            if(state.consentRevoked) {state.invalidatePendingAndCloseRunner(); state.trustedTurns.clear();}
+            if(state.consentRevoked || state.cancelled) {
+                state.invalidatePendingAndCloseRunner(); state.trustedTurns.clear(); state.requests.clear(); state.confirmedName = null;
+            }
+            if (state.deleted) { pilotSessions.remove(sessionId, state); sessionStore.delete(sessionId, owner); }
         }
+    }
+
+    /** Control requests bypass busy/idempotent chat processing and never create a runner. */
+    public AiChatResponse cancel(AiChatRequest request) {
+        if (request.clientRequestId() == null) throw new AppException(ErrorCode.VALIDATION_FAILED, "Cần clientRequestId của lượt cần dừng.");
+        long ownerId = users.requireActiveMember().id();
+        String owner = "user:" + ownerId;
+        PilotSessionState state = pilotSessions.values().stream()
+                .filter(s -> s.userId == ownerId && Objects.equals(s.activeRequestId, request.clientRequestId())
+                        && (request.sessionId() == null || s.sessionId.equals(request.sessionId())))
+                .findFirst().orElse(null);
+        if (state != null) {
+            state.cancelled = true;
+            state.pendingConfirmation = null;
+            sessionStore.discardPending(state.sessionId, owner);
+            if (journal != null && state.activeRequestId != null) journal.cancel(ownerId, state.activeRequestId);
+        }
+        var result = journal == null || request.clientRequestId() == null ? null : journal.find(ownerId, request.clientRequestId());
+        boolean committed = result != null && "SUCCEEDED".equals(result.state());
+        return buildResponse(request, state == null ? request.sessionId() : state.sessionId, request.executionMode(),
+                committed ? "COMPLETED" : "STOP_REQUESTED", state == null ? clock.instant() : state.expiresAt,
+                committed ? List.of(new AssistantStep(1, "create_shopping_list", "SUCCEEDED", "Danh sách đã được tạo trước khi dừng.", Map.of("id", result.shoppingListId()))) : List.of(),
+                List.of(), null, null, committed ? "Danh sách đã được tạo; yêu cầu dừng không hoàn tác thay đổi đã hoàn tất."
+                        : "Đã yêu cầu dừng. Bước ghi đã bắt đầu có thể hoàn tất; hãy kiểm tra kết quả thao tác.");
     }
 
     public void deleteSession(UUID sessionId, String anonymousViewerId) {
@@ -273,7 +312,14 @@ public class AdkShoppingPilotService implements AutoCloseable {
         String owner = userId == null ? "guest:" + anonymousViewerId : "user:" + userId;
         sessionStore.peekEngine(sessionId, owner); // Authenticate ownership before touching native state.
         var active=pilotSessions.get(sessionId);
-        if(active!=null && active.busy.get()) throw new AppException(ErrorCode.VALIDATION_FAILED,"Phiên đang chạy; hãy đợi kết quả trước khi xóa phiên.");
+        if(active!=null && active.busy.get()) {
+            active.cancelled=true;
+            active.consentRevoked=true;
+            active.deleted=true;
+            sessionStore.discardPending(sessionId,owner);
+            // Keep owner state until finally closes the runner. No SQL rollback is inferred.
+            return;
+        }
         PilotSessionState removed = pilotSessions.remove(sessionId);
         if (removed != null) {
             removed.invalidatePendingAndCloseRunner();
@@ -313,10 +359,8 @@ public class AdkShoppingPilotService implements AutoCloseable {
             }
         }
 
-        if (state.pendingConfirmation != null && state.pendingConfirmation.mode() != mode) {
-            state.invalidatePendingAndCloseRunner();
-            sessionStore.discardPending(handle.id(), owner);
-        }
+        if (state.pendingConfirmation != null && (request.confirmationId() != null || request.confirmationDecision() != null))
+            mode = state.pendingConfirmation.mode();
 
         if (request.confirmationDecision() != null || request.confirmationId() != null) {
             return handleConfirmationDecision(request, userId, owner, memberAuth, handle, state, mode, activeConsents);
@@ -491,7 +535,13 @@ public class AdkShoppingPilotService implements AutoCloseable {
                     "Không thể khởi tạo AI với model hoặc cấu hình hiện tại. Chưa thực hiện thao tác nghiệp vụ; vui lòng kiểm tra cấu hình. Không tự đổi model.");
         }
         AdkShoppingPilotTools tools = state.tools;
-        tools.beginTurn(userId, mode, request.question(), request.history(), approvalResume, approvedNormalizedName);
+        if (journal != null) tools.bindWriteExecutor(name -> journal.create(userId, handle.id(), request.clientRequestId(), name,
+                () -> !state.cancelled && !state.consentRevoked && pilotEnabled));
+        state.adkSession.confirmedParameters(state.confirmedName == null ? "" : mapper.writeValueAsString(Map.of("shoppingListName", state.confirmedName)));
+        List<AiChatRequest.Turn> taskHistory = new ArrayList<>(request.history() == null ? List.of() : request.history());
+        if (state.confirmedName != null) taskHistory.addFirst(new AiChatRequest.Turn(AiChatRequest.Speaker.USER,
+                "Tạo danh sách mua sắm tên là " + state.confirmedName));
+        tools.beginTurn(userId, mode, request.question(), taskHistory, approvalResume, approvedNormalizedName);
 
         List<Event> emittedEvents;
         try {
@@ -502,6 +552,7 @@ public class AdkShoppingPilotService implements AutoCloseable {
 
         AdkShoppingPilotTools.StagedConfirmation staged = tools.stagedConfirmation();
         if (staged != null) {
+            state.confirmedName = staged.proposedListName();
             String adkConfCallId = emittedEvents.stream()
                     .flatMap(event -> event.functionCalls().stream())
                     .filter(call -> "adk_request_confirmation".equals(call.name().orElse("")))
@@ -597,6 +648,15 @@ public class AdkShoppingPilotService implements AutoCloseable {
             PilotSessionState state, ExecutionMode mode, AdkShoppingPilotTools tools, RuntimeException failure) {
         Throwable root = unwrap(failure);
         ShoppingListResponse created = tools.committedCreate();
+        if (created == null && journal != null) {
+            var outcome = journal.find(state.userId, request.clientRequestId());
+            if ("SUCCEEDED".equals(outcome.state())) return buildResponse(request, handle.id(), mode,
+                    "PARTIAL_FAILURE", handle.expiresAt(), List.of(new AssistantStep(1, "create_shopping_list", "SUCCEEDED",
+                    "Danh sách đã commit; không chạy lại thao tác tạo.", Map.of("id", outcome.shoppingListId()))),
+                    tools.sources(), null, null, "Danh sách #" + outcome.shoppingListId() + " đã được tạo. Bước tiếp theo gặp sự cố; không gửi lại thao tác ghi.");
+        }
+        if (created == null && state.cancelled) return buildResponse(request, handle.id(), mode, "CANCELLED",
+                handle.expiresAt(), List.of(), tools.sources(), null, null, "Đã dừng trước bước ghi; chưa tạo danh sách.");
         if (created != null) {
             // Create already committed in SQL: preserve the real created list ID and report PARTIAL_FAILURE without replaying create.
             state.invalidatePendingAndCloseRunner();
@@ -892,6 +952,10 @@ public class AdkShoppingPilotService implements AutoCloseable {
         private final List<AiChatRequest.Turn> trustedTurns = new ArrayList<>();
         private volatile Instant expiresAt;
         private volatile boolean consentRevoked;
+        private volatile boolean cancelled;
+        private volatile boolean deleted;
+        private String confirmedName;
+        private volatile UUID activeRequestId;
         private volatile boolean shoppingContext;
         private volatile PilotPendingConfirmation pendingConfirmation;
         private HybridKnowledgeRetriever retriever;
@@ -918,7 +982,7 @@ public class AdkShoppingPilotService implements AutoCloseable {
                     g3Index,
                     embedder,
                     query -> {
-                        Set<ConsentScope> latestConsents = sessionStore.open(sessionId, owner, ENGINE).consentScopes();
+                        Set<ConsentScope> latestConsents = sessionStore.inspect(sessionId, owner).consentScopes();
                         if ((requiresShoppingConsent(query) || AiAssistantExecutionService.personalCategory(query) != null)
                                 && !latestConsents.containsAll(SHOPPING_CONSENT_SCOPES)) {
                             throw new SecurityException("CONSENT_REQUIRED_FOR_EMBEDDING");
@@ -932,8 +996,8 @@ public class AdkShoppingPilotService implements AutoCloseable {
                 @Override
                 public Object beforeCall(AdkModelGateway.Call call) {
                     users.requireActiveMember();
-                    Set<ConsentScope> latest=sessionStore.open(sessionId,owner,ENGINE).consentScopes();
-                    if(!pilotEnabled || consentRevoked || (shoppingContext && !latest.containsAll(SHOPPING_CONSENT_SCOPES))) throw new SecurityException("Consent required or pilot disabled");
+                    Set<ConsentScope> latest=sessionStore.inspect(sessionId,owner).consentScopes();
+                    if(!pilotEnabled || cancelled || consentRevoked || (shoppingContext && !latest.containsAll(SHOPPING_CONSENT_SCOPES))) throw new SecurityException("Consent required or run stopped");
                     if(!Objects.equals(resolveModel(userId),call.model())) throw new SecurityException("Model selection changed; start a new run");
                     return basePolicy.beforeCall(call);
                 }
@@ -947,8 +1011,8 @@ public class AdkShoppingPilotService implements AutoCloseable {
             AdkSpikeSession.Guard readGuard = args -> users.requireActiveMember();
             AdkSpikeSession.Guard shoppingGuard = args -> {
                 users.requireActiveMember();
-                Set<ConsentScope> currentConsents = sessionStore.open(sessionId, owner, ENGINE).consentScopes();
-                if (!pilotEnabled || consentRevoked || !currentConsents.containsAll(SHOPPING_CONSENT_SCOPES)) {
+                Set<ConsentScope> currentConsents = sessionStore.inspect(sessionId, owner).consentScopes();
+                if (!pilotEnabled || cancelled || consentRevoked || !currentConsents.containsAll(SHOPPING_CONSENT_SCOPES)) {
                     throw new SecurityException("Shopping List consent required");
                 }
             };

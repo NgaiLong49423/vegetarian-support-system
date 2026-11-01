@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.143.2
+> **Version:** v2.145.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-11-01
 > **Status:** Active
@@ -8,6 +8,47 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-11-01 — Redesign Assistant Human Input
+
+**Status:** Working tree — not committed.
+
+**Scope:** Present pending confirmations and personal-data consent in a dedicated, Codex-inspired question panel using the existing Mâm Xanh visual style.
+
+### Added
+
+- Add numbered choices, explicit Send, Skip, keyboard selection and an optional free-text response in a docked panel.
+- Add responsive UI tests covering explicit approval, skipping consent and rejecting an old proposal before submitting a revised instruction.
+
+### Changed
+
+- Replace nested confirmation/consent cards with one active question panel above the chat footer.
+- Hide duplicate waiting-step cards and update pilot browser interactions to select a choice before sending.
+
+### Fixed
+
+- Keep free-text replies separate from consent grants and write approvals.
+
+## 2026-11-01 — Add G4 Session and Shopping Write Recovery
+
+**Status:** Working tree — not committed.
+
+**Scope:** Stabilize the opt-in ADK Shopping List pilot across reload, cancellation and response loss without adding a workflow engine.
+
+### Added
+
+- Add a seven-day SQL write journal, separate reservation transaction, conditional write claim and atomic Shopping List/result commit.
+- Add owner-scoped result lookup by client request ID and test-only deterministic ADK fixtures for real-stack verification.
+
+### Changed
+
+- Bound native ADK history separately from model input, preserve confirmed parameters and pending mode snapshots, and retain same-tab transcript with Backend expiry.
+- Persist request IDs before transport and provide explicit cancellation and result recovery controls; defer task-scoped model replacement.
+
+### Fixed
+
+- Route cancellation before the chat busy guard and preserve committed writes when cancellation or later processing fails.
+- Purge owner/consent context and prevent expired-session display history from being resent as a new conversation.
 
 ## 2026-11-01 — Add Opt-In ADK Shopping List Chat Pilot
 

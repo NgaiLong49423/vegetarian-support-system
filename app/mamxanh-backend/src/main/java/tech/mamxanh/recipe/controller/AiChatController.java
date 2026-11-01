@@ -22,6 +22,19 @@ import tech.mamxanh.recipe.service.GuestChatRateLimiter;
 public class AiChatController {
     private final AiChatService service;
     private final GuestChatRateLimiter guestRateLimiter;
+    @org.springframework.beans.factory.annotation.Autowired
+    private tech.mamxanh.recipe.service.AiShoppingExecutionJournal journal;
+    @org.springframework.beans.factory.annotation.Autowired
+    private tech.mamxanh.auth.service.CurrentUserService users;
+
+    @GetMapping("/executions/{clientRequestId}")
+    @Operation(summary = "Look up this member's Shopping List write by client request ID; UNKNOWN never authorizes replay",
+            security = @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH))
+    public ResponseEntity<tech.mamxanh.recipe.service.AiShoppingExecutionJournal.Result> execution(
+            @PathVariable java.util.UUID clientRequestId) {
+        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(journal.find(users.requireActiveMember().id(), clientRequestId));
+    }
 
     public AiChatController(AiChatService service, GuestChatRateLimiter guestRateLimiter) {
         this.service = service;

@@ -23,7 +23,17 @@ public record AiChatRequest(
         @Valid ConsentDecision consentDecision,
         @Schema(description = "Server-issued confirmation ID for continuing or rejecting a pending write plan.") UUID confirmationId,
         @Schema(description = "Explicit decision for the pending write plan.") ConfirmationDecision confirmationDecision,
-        @Schema(description = "Client-generated UUID for request idempotency; required on the G3 pilot path.") UUID clientRequestId) {
+        @Schema(description = "Client-generated UUID for request idempotency; required on the G3 pilot path.") UUID clientRequestId,
+        @Schema(description = "CANCEL bypasses the normal chat busy guard and never invokes a model.") ControlAction controlAction) {
+
+    public enum ControlAction { CANCEL }
+
+    public AiChatRequest(ContextType contextType, Long recipeId, String question, List<Turn> history,
+            String anonymousViewerId, UUID sessionId, ExecutionMode executionMode, ConsentDecision consentDecision,
+            UUID confirmationId, ConfirmationDecision confirmationDecision, UUID clientRequestId) {
+        this(contextType, recipeId, question, history, anonymousViewerId, sessionId, executionMode,
+                consentDecision, confirmationId, confirmationDecision, clientRequestId, null);
+    }
 
     public AiChatRequest(ContextType contextType, Long recipeId, String question, List<Turn> history) {
         this(contextType, recipeId, question, history, null, null, null, null, null, null, null);

@@ -151,6 +151,7 @@ public class AiChatService {
     }
 
     public AiChatResponse answer(AiChatRequest request) {
+        if (request.controlAction() != null && adkShoppingPilot != null) return adkShoppingPilot.cancel(request);
         if (shouldRouteToG3Pilot(request)) {
             return adkShoppingPilot.execute(request);
         }

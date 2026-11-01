@@ -1,11 +1,22 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.59.0
+> **Version:** v0.60.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-11-01
 > **Status:** Active
 
 # API Integration Guide
+
+## G4 — Recovery và cancel của Shopping List pilot
+
+Frontend sinh và lưu `clientRequestId` vào sessionStorage trước mỗi POST chat. Một request pilot chỉ có tối đa một thao tác create; `(ownerId, clientRequestId)` xác định action, không cần POST reservation API. Request xác nhận có request ID riêng. Nếu sau này mở rộng nhiều writes/request, cần thiết kế mapping mới; G4 không mặc định hỗ trợ.
+
+- `GET /api/v1/recipes/ai/chat/executions/{clientRequestId}`: Member tra metadata của chính mình, không cần session RAM còn tồn tại. `actionId` bằng request ID; `state` là `RESERVED|WRITING|SUCCEEDED|FAILED|CANCELLED|UNKNOWN`; result chỉ chứa `shoppingListId`. `Cache-Control: no-store`. UNKNOWN không cấp quyền replay.
+- POST chat bổ sung `controlAction: CANCEL`; dùng cùng request ID của lượt cần dừng, gửi `question` ngắn và `history: []` để giữ tương thích request validation hiện có. Control request đi trước normal routing/busy guard và không gọi Gemini. Response có thể là `STOP_REQUESTED`, hoặc `COMPLETED` nếu create đã commit; không hứa rollback write đang chạy.
+- DELETE session giữ API hiện có, cho phép yêu cầu kết thúc phiên đang chạy. Pending bị vô hiệu ngay; context được dọn sau khi runner dừng an toàn. Không hoàn tác business writes.
+
+Không tự POST lại write sau disconnect. Tra GET bằng request ID đã lưu, hiển thị ID đã commit nếu có. Sau Backend restart, xác nhận/consent cũ không được phục hồi từ transcript; lịch sử cũ chỉ để xem. Pending còn trong process giữ mode snapshot, bất kể lựa chọn mode cho yêu cầu mới. Model replacement tự động không được bật.
+
 
 ## Chat Shopping List G3 local (opt-in)
 

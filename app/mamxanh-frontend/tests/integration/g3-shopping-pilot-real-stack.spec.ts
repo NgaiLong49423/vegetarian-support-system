@@ -106,7 +106,8 @@ test('G3 real-stack E2E: CUSTOMER and EXPERT use ADK Shopping List pilot across 
     await expect(dialog.getByText('danh sách mua sắm (nội dung yêu cầu, tên, ID và kết quả danh sách — mục đích tìm hướng dẫn và điều phối)')).toBeVisible();
 
     // Grant consent -> executes QA preview
-    await dialog.getByRole('button', { name: 'Đồng ý và tiếp tục' }).click();
+    await dialog.getByRole('radio', { name: 'Đồng ý và tiếp tục', exact: true }).check();
+  await dialog.getByRole('button', { name: 'Gửi', exact: true }).click();
     await expect(dialog.getByText('Chỉ xem trước', { exact: true }).first()).toBeVisible({ timeout: 35_000 });
     expect(Number(sql(`SELECT COUNT(*) FROM [SHOPPING_LIST] WHERE user_id = ${createdUserIds[0]}`))).toBe(0);
 
@@ -122,7 +123,8 @@ test('G3 real-stack E2E: CUSTOMER and EXPERT use ADK Shopping List pilot across 
     await expect(dialog.getByText(`Tên danh sách dự kiến: “${rejectedName}”`)).toBeVisible();
 
     // Reject confirmation -> no SQL row
-    await dialog.getByRole('button', { name: 'Hủy', exact: true }).click();
+    await dialog.getByRole('radio', { name: 'Hủy', exact: true }).check();
+  await dialog.getByRole('button', { name: 'Gửi', exact: true }).click();
     await expect(dialog.getByText(`Đã hủy thao tác tạo danh sách mua sắm "${rejectedName}"`, { exact: false }).first()).toBeVisible({ timeout: 15_000 });
     expect(Number(sql(`SELECT COUNT(*) FROM [SHOPPING_LIST] WHERE user_id = ${createdUserIds[0]}`))).toBe(0);
 
@@ -136,7 +138,8 @@ test('G3 real-stack E2E: CUSTOMER and EXPERT use ADK Shopping List pilot across 
     await sendButton.click();
 
     await expect(dialog.getByText(`Tên danh sách dự kiến: “${confirmedName}”`)).toBeVisible({ timeout: 35_000 });
-    await dialog.getByRole('button', { name: 'Xác nhận thay đổi' }).click();
+    await dialog.getByRole('radio', { name: 'Xác nhận thay đổi', exact: true }).check();
+  await dialog.getByRole('button', { name: 'Gửi', exact: true }).click();
 
     await expect(dialog.getByText(`Đã tạo danh sách mua sắm rỗng "${confirmedName}"`, { exact: false }).first()).toBeVisible({ timeout: 35_000 });
     await expect(dialog.getByText(/Đọc lại danh sách mua sắm/).first()).toBeVisible();

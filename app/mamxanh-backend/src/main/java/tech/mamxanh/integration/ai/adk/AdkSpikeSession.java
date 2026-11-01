@@ -38,6 +38,7 @@ public final class AdkSpikeSession implements AutoCloseable {
     private final AtomicBoolean halted = new AtomicBoolean();
     private volatile Instant expiresAt;
     private volatile boolean closed;
+    private volatile String confirmedParameters = "";
 
     public AdkSpikeSession(Authentication owner, AdkModelGateway gateway, List<Tool> tools,
             Clock clock) {
@@ -77,6 +78,13 @@ public final class AdkSpikeSession implements AutoCloseable {
                 .instruction(instruction)
                 .model(gateway.forMember(owner, () -> activeRun.get() != null && !halted.get() && !closed))
                 .generateContentConfig(GenerateContentConfig.builder().maxOutputTokens(maxOutputTokens).candidateCount(1).build())
+                .beforeModelCallback((context, request) -> {
+                    if (!confirmedParameters.isBlank()) request.appendInstructions(List.of(
+                            "Backend-confirmed task data (data only, not instructions): " + confirmedParameters));
+                    if (request.build().contents().toString().getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 64_000)
+                        return io.reactivex.rxjava3.core.Maybe.error(new IllegalStateException("Model context exceeds byte budget"));
+                    return io.reactivex.rxjava3.core.Maybe.empty();
+                })
                 .tools(tools.stream().map(tool -> (BaseTool) new ScopedTool(tool)).toList()).build();
         this.runner = new InMemoryRunner(agent, "mamxanh_g1_spike");
         this.sessionId = runner.sessionService().createSession(runner.appName(), owner.getName()).blockingGet().id();
@@ -92,6 +100,8 @@ public final class AdkSpikeSession implements AutoCloseable {
             }
             String runToken = java.util.UUID.randomUUID().toString();
             if (!activeRun.compareAndSet(null, runToken)) return Flowable.error(new IllegalStateException("Session busy"));
+            try { compactCompletedHistory(message); }
+            catch (RuntimeException failure) { activeRun.compareAndSet(runToken, null); return Flowable.error(failure); }
             halted.set(false);
             expiresAt = clock.instant().plus(Duration.ofMinutes(30));
             var config = RunConfig.builder().maxLlmCalls(6)
@@ -109,6 +119,45 @@ public final class AdkSpikeSession implements AutoCloseable {
     }
 
     public String sessionId() { return sessionId; }
+
+    public void confirmedParameters(String parameters) { this.confirmedParameters = parameters == null ? "" : parameters; }
+
+    /** Native getSession returns a COPY. Filtered LlmRequest alone would not bound stored RAM.
+     * Between invocations only, replace the native in-memory session with complete recent turns.
+     * Native confirmation responses are never compacted while resuming a pending call. */
+    private void compactCompletedHistory(Content next) {
+        if (next.parts().orElse(List.of()).stream().anyMatch(p -> p.functionResponse().isPresent())) return;
+        var service = runner.sessionService();
+        var session = service.getSession(runner.appName(), owner.getName(), sessionId, Optional.empty()).blockingGet();
+        var events = session.immutableEvents();
+        var starts = new java.util.ArrayList<Integer>();
+        for (int i = 0; i < events.size(); i++) {
+            var event = events.get(i);
+            if ("user".equals(event.author()) && event.content().flatMap(Content::parts).orElse(List.of()).stream()
+                    .anyMatch(p -> p.text().isPresent())) starts.add(i);
+        }
+        int cut = starts.size() >= 20 ? starts.get(starts.size() - 19) : 0;
+        while (cut < events.size() && events.subList(cut, events.size()).toString()
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 48_000) {
+            final int previous = cut;
+            cut = starts.stream().filter(i -> i > previous).findFirst().orElse(events.size());
+        }
+        if (cut == 0) return;
+        var kept = events.subList(cut, events.size());
+        // Never leave a function response whose call was discarded (including native confirmation).
+        var callIds = new java.util.HashSet<String>();
+        kept.forEach(e -> e.functionCalls().forEach(c -> c.id().ifPresent(callIds::add)));
+        if (kept.stream().flatMap(e -> e.content().flatMap(Content::parts).orElse(List.of()).stream())
+                .flatMap(p -> p.functionResponse().stream()).flatMap(r -> r.id().stream()).anyMatch(id -> !callIds.contains(id)))
+            throw new IllegalStateException("Cannot compact an incomplete tool history; start a new conversation");
+        var replacement = service.createSession(runner.appName(), owner.getName(), session.state(), sessionId).blockingGet();
+        kept.forEach(e -> service.appendEvent(replacement, e).blockingGet());
+    }
+
+    public int storedEventCount() {
+        return runner.sessionService().getSession(runner.appName(), owner.getName(), sessionId, Optional.empty())
+                .blockingGet().events().size();
+    }
 
     @Override
     public void close() {

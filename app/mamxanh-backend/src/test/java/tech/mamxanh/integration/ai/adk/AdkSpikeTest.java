@@ -37,6 +37,18 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 class AdkSpikeTest {
+    @Test void twentyTurnWindowBoundsNativeRamWithoutLosingConfirmedParameters() {
+        var model = new FakeModel(request -> text("Đã hiểu"));
+        var owner = actor("7", "CUSTOMER");
+        try (var session = session(owner, model, new Ledger(), new FixtureTools(), false)) {
+            session.confirmedParameters("{\"shoppingListName\":\"Cuối tuần\"}");
+            for (int i = 0; i < 25; i++) session.run(owner, user("Câu " + i)).toList().blockingGet();
+            assertThat(session.storedEventCount()).isLessThanOrEqualTo(40);
+            var last = model.requests.getLast();
+            assertThat(last.contents().toString()).doesNotContain("Câu 0]").contains("Câu 24");
+            assertThat(last.config().toString()).contains("Cuối tuần");
+        }
+    }
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-11-01T00:00:00Z"), ZoneOffset.UTC);
 
     @AfterEach void cleanup() { SecurityContextHolder.clearContext(); }

@@ -1,11 +1,24 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.65.0
+> **Version:** v1.67.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-31
+> **Last Updated:** 2026-11-01
 > **Status:** Active  
 
 # Mâm Xanh Frontend
+
+### Giao diện Human-in-the-loop của AI Assistant
+
+Khi cần xác nhận thao tác hoặc xin consent, chat hiển thị một khung hỏi riêng ở cuối cửa sổ, thay ô nhập thông thường. Người dùng chọn phương án đánh số rồi nhấn **Gửi**; mặc định không chọn đồng ý. Có thể dùng phím 1/2, Tab/arrow keys và Enter. **Bỏ qua** từ chối đề xuất ghi hoặc không cấp consent. Nhập yêu cầu khác không được xem là chấp thuận: với pending write, UI gửi REJECT trước rồi mới gửi chỉ dẫn mới; không đổi API hoặc quyền Backend. Nội dung/phạm vi/Google Gemini vẫn được hiển thị khi xin consent. Panel giữ màu và typography Mâm Xanh, có scroll cho nội dung dài trên mobile.
+
+Kiểm thử: `npx playwright test tests/e2e/ai-chat.spec.ts tests/e2e/ai-human-input.spec.ts`. Các test pilot G3/G4 dùng radio option rồi nhấn Gửi. Screenshot desktop/mobile được tạo trong Playwright output của `ai-human-input.spec.ts`.
+
+### G4 — Vòng đời session và kết quả sau mất kết nối
+
+Transcript dùng sessionStorage cùng tab; TTL dựa trên expiry Backend, không gia hạn chỉ vì reload/đổi mode. Đổi owner xóa cache phiên trước; hết session/restart thì transcript cũ chỉ hiển thị, bỏ consent/pending và không gửi lại history cũ. Revoke ẩn/xóa nội dung có dữ liệu liên quan trong browser storage và hủy pending.
+
+Client lưu request UUID trước khi gửi, có nút Dừng khi đang chạy và Kiểm tra kết quả sau lỗi. Status lookup không gọi model hoặc gửi lại write. Dừng/New chat không hoàn tác create đã commit. Kết quả được khôi phục bằng ID thật; model replacement theo tác vụ chưa triển khai. `g4-session-recovery.spec.ts` kiểm tra root Compose với model fixture test-only, tắt trace để không giữ JWT; không phải Gemini live.
+
 
 ### Giám sát giao dịch gói tài khoản
 

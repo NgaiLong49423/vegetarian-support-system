@@ -1,4 +1,5 @@
 import type { AccountSummary, AuthResponse } from '../services/authApi';
+import { clearAllAiChatSessions } from './aiChatSession';
 
 /** The signed-in session kept on this device. Never log `accessToken`. */
 export type StoredSession = {
@@ -46,6 +47,7 @@ export function loadSession(now = Date.now()): StoredSession | null {
 }
 
 export function saveSession(response: AuthResponse, now = Date.now()): StoredSession {
+  if (loadSession(now)?.account.id !== response.account.id) clearAllAiChatSessions();
   const session: StoredSession = {
     accessToken: response.accessToken,
     expiresAt: now + response.expiresInSeconds * 1000,
@@ -74,6 +76,7 @@ export function updateStoredAccountProfile(displayName: string, avatarUrl: strin
 
 /** Client-side logout (AC-03.13): the backend keeps no session, so removing the token is enough. */
 export function clearSession(): void {
+  clearAllAiChatSessions();
   storage()?.removeItem(STORAGE_KEY);
 }
 

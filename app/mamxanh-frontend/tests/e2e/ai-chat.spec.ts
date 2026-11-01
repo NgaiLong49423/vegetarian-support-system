@@ -7,6 +7,23 @@ async function signInAsMember(page: import('@playwright/test').Page, role = 'CUS
   })), role);
 }
 
+test('ending the owner session purges chat even after navigating away from the lazy chat component', async ({ page }) => {
+  await signInAsMember(page);
+  await page.route('**/api/v1/recipes/ai/chat', route => route.fulfill({ json: {
+    contextType: 'GENERAL', recipeId: null, answer: 'G4 private transcript',
+    sessionId: '11111111-1111-4111-8111-111111111111', recommendations: [],
+  } }));
+  await page.goto('/trang-chu');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Giải thích món chay');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await expect(page.getByText('G4 private transcript')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => sessionStorage.getItem('mamxanh.ai-chat.session.v1.member-7'))).not.toBeNull();
+  await page.goto('/dang-nhap');
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('mamxanh:session-ended', { detail: 'expired' })));
+  await expect.poll(() => page.evaluate(() => Object.keys(sessionStorage).filter(k => k.startsWith('mamxanh.ai-chat.session.v1.')))).toEqual([]);
+});
+
 test('Guest uses the same chatbot with a stable session-cookie ID and can register after rate limiting', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 800 });
   const identities: string[] = [];
@@ -257,7 +274,7 @@ test('expired Backend session keeps transcript and retry continues without the s
   await expect(page.getByText('Đã tiếp tục trong phiên mới.')).toBeVisible();
   expect(requests[1].sessionId).toBe('22222222-2222-4222-8222-222222222222');
   expect(requests[2].sessionId).toBeUndefined();
-  expect(requests[2].history).toContainEqual({ speaker: 'USER', content: 'Lần trước tôi hỏi về món đậu hũ' });
+  expect(requests[2].history).toEqual([]);
 });
 
 test('Enter sends a question once while Shift+Enter inserts a newline and empty input stays idle', async ({ page }) => {
@@ -471,12 +488,14 @@ test('G3 ADK pilot UI handles Shopping List consent, preview, confirmation, trut
 
   await expect(page.getByText('Cho phép dùng dữ liệu cá nhân?')).toBeVisible();
   await expect(page.getByText('danh sách mua sắm (nội dung yêu cầu, tên, ID và kết quả danh sách — mục đích tìm hướng dẫn và điều phối)')).toBeVisible();
-  await page.getByRole('button', { name: 'Đồng ý và tiếp tục' }).click();
+  await page.getByRole('radio', { name: 'Đồng ý và tiếp tục', exact: true }).check();
+  await page.getByRole('button', { name: 'Gửi', exact: true }).click();
 
   await expect(page.getByText('Xem lại trước khi thực hiện')).toBeVisible();
   await expect(page.getByText('Tên danh sách dự kiến: “Đi chợ cuối tuần”')).toBeVisible();
   await expect(page.getByText('Danh sách mua sắm · thử nghiệm').first()).toBeVisible();
-  await page.getByRole('button', { name: 'Xác nhận thay đổi' }).click();
+  await page.getByRole('radio', { name: 'Xác nhận thay đổi', exact: true }).check();
+  await page.getByRole('button', { name: 'Gửi', exact: true }).click();
 
   await expect(page.getByText('Đã tạo danh sách mua sắm rỗng "Đi chợ cuối tuần" (ID #1001) và đọc lại từ hệ thống', { exact: false })).toBeVisible();
   await expect(page.getByText(/^1\. Tạo danh sách mua sắm/).last()).toBeVisible();
@@ -489,6 +508,8 @@ test('G3 ADK pilot UI handles Shopping List consent, preview, confirmation, trut
   expect(requests[1].consentDecision).toMatchObject({ action: 'GRANT' });
   expect(requests[2]).toMatchObject({ confirmationId, confirmationDecision: 'APPROVE' });
   expect(requests[3].consentDecision).toMatchObject({ action: 'REVOKE' });
+  await expect.poll(() => page.evaluate(() => sessionStorage.getItem('mamxanh.ai-chat.session.v1.member-7')))
+    .not.toContain('Đi chợ cuối tuần');
 });
 
 test('G3 chat disconnect or failure does not auto-retry create request', async ({ page }) => {

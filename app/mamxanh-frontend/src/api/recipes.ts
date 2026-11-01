@@ -292,6 +292,7 @@ export interface AiChatRequest {
   executionMode?: AiExecutionMode;
   sessionId?: string;
   clientRequestId?: string;
+  controlAction?: 'CANCEL';
   consentDecision?: { action: 'GRANT' | 'REVOKE'; scopes: AiConsentScope[] };
   confirmationId?: string;
   confirmationDecision?: 'APPROVE' | 'REJECT';
@@ -356,6 +357,10 @@ export const recipeReactionApi = {
 };
 
 export const recipesApi = {
+  chatExecution: (clientRequestId: string) => request(
+    () => apiClient.get<{ clientRequestId: string; actionId: string; state: string; shoppingListId: number | null }>(
+      `/recipes/ai/chat/executions/${clientRequestId}`),
+  ),
   chat: (payload: AiChatRequest) => request(
     () => apiClient.post<AiChatResponse>('/recipes/ai/chat', payload, { timeout: 35_000 }),
   ),

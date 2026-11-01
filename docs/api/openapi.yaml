@@ -3,7 +3,7 @@ info:
   title: OpenAPI definition
   version: v0
 servers:
-- url: http://localhost:18080
+- url: http://127.0.0.1:18084
   description: Generated server url
 paths:
   /api/v1/shopping-lists/{listId}/recipes/{recipeId}/servings:
@@ -6206,6 +6206,49 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /api/v1/recipes/ai/chat/executions/{clientRequestId}:
+    get:
+      tags:
+      - ai-chat-controller
+      summary: Look up this member's Shopping List write by client request ID; UNKNOWN
+        never authorizes replay
+      operationId: execution
+      parameters:
+      - name: clientRequestId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Result"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/nutrition/dietary-preferences/ingredient-suggestions:
     get:
       tags:
@@ -10076,6 +10119,12 @@ components:
           format: uuid
           description: Client-generated UUID for request idempotency; required on
             the G3 pilot path.
+        controlAction:
+          type: string
+          description: CANCEL bypasses the normal chat busy guard and never invokes
+            a model.
+          enum:
+          - CANCEL
       required:
       - contextType
       - question
@@ -11490,6 +11539,20 @@ components:
           format: int32
         hasNext:
           type: boolean
+    Result:
+      type: object
+      properties:
+        clientRequestId:
+          type: string
+          format: uuid
+        actionId:
+          type: string
+          format: uuid
+        state:
+          type: string
+        shoppingListId:
+          type: integer
+          format: int64
     IngredientSuggestionResponse:
       type: object
       properties:
