@@ -67,7 +67,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Opt-in live G3 evaluation:
- * 1. Calibrates and publishes src/main/resources/ai-knowledge/g3/index.json using gemini-embedding-2 (768)
+ * 1. Calibrates and publishes src/main/resources/knowledge-base/index.json using gemini-embedding-2 (768)
  *    against G3 development queries before evaluating holdout queries.
  * 2. Executes 20 live Gemini conversations through AdkShoppingPilotService across CUSTOMER/EXPERT and
  *    QA/CONFIRM/AUTO modes, tracking the cumulative G3 budget ledger (.g3-evaluation/budget.json) capped under $5.00 USD.
@@ -99,8 +99,8 @@ class G3LiveEvaluationTest {
 
     private final ObjectMapper json = new ObjectMapper();
     private final Path outputDir = Path.of("target/g3");
-    private final Path publishedIndexPath = Path.of("src/main/resources/ai-knowledge/g3/index.json");
-    private final KnowledgeCatalog catalog = KnowledgeCatalog.packagedG3();
+    private final Path publishedIndexPath = Path.of("src/main/resources/knowledge-base/index.json");
+    private final KnowledgeCatalog catalog = KnowledgeCatalog.packaged();
 
     @Test
     void calibrateAndPublishG3IndexThenRun20LiveConversationsWithin5UsdBudget() throws Exception {
@@ -141,7 +141,7 @@ class G3LiveEvaluationTest {
 
     private KnowledgeIndex buildCalibrateAndPublishG3Index(GeminiEmbeddingClient embedder) throws Exception {
         List<EvalQuery> queries;
-        try (var stream = getClass().getResourceAsStream("/ai-knowledge/g3/evaluation.json")) {
+        try (var stream = getClass().getResourceAsStream("/ai-evaluation/g3/evaluation.json")) {
             assertThat(stream).isNotNull();
             queries = List.of(json.readValue(stream.readAllBytes(), EvalQuery[].class));
         }

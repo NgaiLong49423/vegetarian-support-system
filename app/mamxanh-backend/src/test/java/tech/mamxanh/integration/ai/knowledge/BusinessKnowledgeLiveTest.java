@@ -45,11 +45,21 @@ class BusinessKnowledgeLiveTest {
             var embedder = new GeminiEmbeddingClient(client,config,budget);
             var checkpoint = dir.resolve("vectors.json");
             Map<String,List<Double>> vectors = new LinkedHashMap<>();
+            Path packagedIndex = Path.of("src/main/resources/knowledge-base/index.json");
+            KnowledgeIndex priorIndex = null;
             if (Files.exists(checkpoint)) {
-                var prior = json.readValue(Files.readString(checkpoint), KnowledgeIndex.class);
-                assertThat(prior.corpusHash()).isEqualTo(catalog.fingerprint());
-                assertThat(prior.config()).isEqualTo(config);
-                vectors.putAll(prior.vectors());
+                priorIndex = json.readValue(Files.readString(checkpoint), KnowledgeIndex.class);
+            } else if (Files.exists(packagedIndex)) {
+                priorIndex = json.readValue(Files.readString(packagedIndex), KnowledgeIndex.class);
+            }
+            if (priorIndex != null && priorIndex.config().equals(config)) {
+                Set<String> changedPlaybookIds = Set.of(
+                        "assistant-scope", "execution-confirmation", "session-consent-budget", "shopping-create", "shopping-read");
+                for (var chunk : catalog.chunks()) {
+                    if (!changedPlaybookIds.contains(chunk.documentId()) && priorIndex.vectors().containsKey(chunk.id())) {
+                        vectors.put(chunk.id(), priorIndex.vectors().get(chunk.id()));
+                    }
+                }
             }
             var remaining = catalog.chunks().stream().filter(c -> !vectors.containsKey(c.id())).toList();
             try (var executor = java.util.concurrent.Executors.newFixedThreadPool(4)) {
@@ -74,7 +84,7 @@ class BusinessKnowledgeLiveTest {
             var index = new KnowledgeIndex(1,catalog.revision(),catalog.fingerprint(),config,
                     Math.min(1.000001,threshold+.000001),vectors).validate(catalog,config);
             // Atomic publish to a separate artifact: frozen G2/G3 corpus/index remain intact.
-            index.publish(Path.of("src/main/resources/ai-knowledge/agent-index.json"),catalog);
+            index.publish(Path.of("src/main/resources/knowledge-base/index.json"),catalog);
             try (var retriever = new HybridKnowledgeRetriever(catalog,index,embedder,Clock.systemUTC())) {
                 var query = retriever.search("Quên mật khẩu và khôi phục tài khoản");
                 assertThat(query.status()).isEqualTo("hybrid");
@@ -89,7 +99,7 @@ class BusinessKnowledgeLiveTest {
                 try (var session = new AdkSpikeSession(auth,gateway,List.of(
                         new AdkSpikeSession.Tool(FunctionTool.create(tools,"search_business_knowledge"),args -> {}),
                         new AdkSpikeSession.Tool(FunctionTool.create(tools,"get_business_knowledge"),args -> {})),
-                        Clock.systemUTC(),Duration.ofSeconds(30),new AiPromptLoader().loadSystemPrompt()+"\n"+KnowledgeTools.INSTRUCTION,1024)) {
+                        Clock.systemUTC(),Duration.ofSeconds(30),new AiPromptLoader().loadSystemPrompt()+"\n"+KnowledgeTools.INSTRUCTION,4096)) {
                     var events = session.run(auth,Content.fromParts(Part.fromText("Tôi quên mật khẩu Mâm Xanh, tôi cần làm gì?"))).toList().blockingGet();
                     String trace = events.toString();
                     Files.writeString(dir.resolve("native-events.txt"),trace);

@@ -30,10 +30,10 @@ class BusinessKnowledgeTest {
     @Test
     void loadsAllRegisteredSourcesAndKeepsPlaybooks() {
         var business = KnowledgeCatalog.business();
-        assertThat(business.documents()).hasSize(38);
+        assertThat(business.documents()).hasSize(43);
         assertThat(business.documents()).allSatisfy(d -> {
             assertThat(d.content()).doesNotStartWith("---");
-            assertThat(d.metadata().sources()).allMatch(s -> s.startsWith("knowledge-base/"));
+            assertThat(d.metadata().sources()).allMatch(s -> s.startsWith("knowledge-base/") || s.startsWith("docs/") || s.startsWith("app/"));
         });
         assertThat(KnowledgeCatalog.agent().document("shopping-create")).isNotNull();
         assertThat(KnowledgeCatalog.agent().document("password-recovery")).isNotNull();

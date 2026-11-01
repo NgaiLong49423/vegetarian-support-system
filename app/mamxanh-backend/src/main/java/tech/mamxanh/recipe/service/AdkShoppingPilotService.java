@@ -130,9 +130,9 @@ public class AdkShoppingPilotService implements AutoCloseable {
                 events,
                 clock,
                 KnowledgeCatalog.agent(),
-                loadOptionalG3Index(mapper, KnowledgeCatalog.agent()),
+                loadOptionalKnowledgeIndex(mapper, KnowledgeCatalog.agent()),
                 defaultLlmFactory(configuredApiKey, tech.mamxanh.integration.ai.adk.PilotLiveBudget.configured(budgetFile)),
-                defaultEmbedder(configuredApiKey, loadOptionalG3Index(mapper, KnowledgeCatalog.agent()), tech.mamxanh.integration.ai.adk.PilotLiveBudget.configured(budgetFile)),
+                defaultEmbedder(configuredApiKey, loadOptionalKnowledgeIndex(mapper, KnowledgeCatalog.agent()), tech.mamxanh.integration.ai.adk.PilotLiveBudget.configured(budgetFile)),
                 pilotEnabled);
     }
 
@@ -724,7 +724,7 @@ public class AdkShoppingPilotService implements AutoCloseable {
             return "Chưa có danh sách mua sắm nào được tạo ở lượt này. Bạn vui lòng cung cấp rõ tên danh sách (1–200 ký tự) và chế độ thực hiện phù hợp.";
         }
         return modelAnswer.isBlank()
-                ? "Mình có thể hỗ trợ bạn tạo danh sách mua sắm rỗng và đọc lại danh sách theo ID trong phạm vi pilot G3. Bạn muốn đặt tên danh sách mua sắm là gì?"
+                ? "Mình có thể hỗ trợ bạn tạo danh sách mua sắm rỗng và đọc lại danh sách theo ID. Bạn muốn đặt tên danh sách mua sắm là gì?"
                 : modelAnswer;
     }
 
@@ -820,8 +820,8 @@ public class AdkShoppingPilotService implements AutoCloseable {
         setPilotEnabled(false);
     }
 
-    private static KnowledgeIndex loadOptionalG3Index(ObjectMapper mapper, KnowledgeCatalog catalog) {
-        try (var stream = AdkShoppingPilotService.class.getResourceAsStream("/ai-knowledge/agent-index.json")) {
+    private static KnowledgeIndex loadOptionalKnowledgeIndex(ObjectMapper mapper, KnowledgeCatalog catalog) {
+        try (var stream = AdkShoppingPilotService.class.getResourceAsStream("/knowledge-base/index.json")) {
             if (stream == null) return null;
             KnowledgeIndex index = mapper.readValue(stream.readAllBytes(), KnowledgeIndex.class);
             return index.validate(catalog, index.config());
@@ -965,6 +965,7 @@ public class AdkShoppingPilotService implements AutoCloseable {
                     clock,
                     Duration.ofSeconds(30),
                     new tech.mamxanh.integration.ai.AiPromptLoader().loadSystemPrompt()
+                            + "\n\n" + new tech.mamxanh.integration.ai.AiPromptLoader().loadAgentInstructions()
                             + "\n\nRuntime capability restrictions (these narrow the general policies):\n"
                             + AdkShoppingPilotTools.INSTRUCTION,
                     1024);

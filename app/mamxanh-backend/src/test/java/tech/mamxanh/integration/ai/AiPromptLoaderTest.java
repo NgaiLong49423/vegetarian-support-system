@@ -27,6 +27,18 @@ class AiPromptLoaderTest {
     }
 
     @Test
+    @DisplayName("Should load agent operational instructions stripped of front matter")
+    void shouldLoadAgentInstructions() {
+        String instructions = loader.loadAgentInstructions();
+        assertThat(instructions).isNotBlank();
+        assertThat(instructions).doesNotStartWith("---");
+        assertThat(instructions).contains("CHỈ DẪN VẬN HÀNH AGENT");
+        assertThat(instructions).contains("create_shopping_list", "get_shopping_list");
+        assertThat(instructions).contains("QA", "CONFIRM", "AUTO");
+        assertThat(instructions).contains("PARTIAL_FAILURE");
+    }
+
+    @Test
     @DisplayName("Should successfully load and synthesize system.md with all four core behavioral policies")
     void shouldLoadSystemPromptWithAllPolicies() {
         String prompt = loader.loadSystemPrompt();

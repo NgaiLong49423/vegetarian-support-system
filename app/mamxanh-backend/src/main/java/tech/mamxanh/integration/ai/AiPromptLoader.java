@@ -27,6 +27,7 @@ public class AiPromptLoader {
     private static final Logger LOG = LoggerFactory.getLogger(AiPromptLoader.class);
 
     public static final String DEFAULT_SYSTEM_PROMPT_PATH = "ai/prompts/system.md";
+    public static final String DEFAULT_AGENT_INSTRUCTIONS_PATH = "ai/prompts/agent-instructions.md";
     public static final String POLICIES_PATH_PREFIX = "ai/policies/";
 
     public static final List<String> CORE_POLICY_NAMES = List.of(
@@ -75,6 +76,13 @@ public class AiPromptLoader {
         String normalizedName = policyName.endsWith(".md") ? policyName : policyName + ".md";
         String path = POLICIES_PATH_PREFIX + normalizedName;
         return loadResource(path);
+    }
+
+    /**
+     * Loads the agent operational instructions stripped of YAML front matter.
+     */
+    public String loadAgentInstructions() {
+        return loadStripped(DEFAULT_AGENT_INSTRUCTIONS_PATH);
     }
 
     /**

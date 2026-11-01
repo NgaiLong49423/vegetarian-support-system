@@ -1,6 +1,6 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.64.1
+> **Version:** v0.65.0
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-11-01
 > **Status:** Active  
@@ -27,7 +27,9 @@ Rollback spike bằng cách ngừng tạo `AdkSpikeSession`; chưa có routing p
 
 Đặt `MAMXANH_AI_CHAT_G3_PILOT_ENABLED=true` để session GENERAL mới của CUSTOMER/EXPERT dùng cùng agent Shopping List; mặc định `false`. Guest, Admin và RECIPE giữ routing hiện hành. Client không chọn executor; session đã mở giữ engine.
 
-Luồng: consent Shopping List → hỏi tên nếu thiếu → QA preview / CONFIRM duyệt trước ghi / AUTO khi yêu cầu rõ → `ShoppingListService.createEmpty` → ADK dùng ID thật gọi `get` → Backend xác lập kết quả. Chỉ có hai knowledge tools và hai business tools; không có Internet, thêm nguyên liệu hoặc xóa. Corpus/index riêng `ai-knowledge/g3/` dùng embedding-2/768 và hybrid G2; không sửa corpus G2.
+Luồng: consent Shopping List → hỏi tên nếu thiếu → QA preview / CONFIRM duyệt trước ghi / AUTO khi yêu cầu rõ → `ShoppingListService.createEmpty` → ADK dùng ID thật gọi `get` → Backend xác lập kết quả. Chỉ có hai knowledge tools và hai business tools; không có Internet, thêm nguyên liệu hoặc xóa. **Kiến trúc đích:** Agent chỉ truy xuất tri thức từ `src/main/resources/knowledge-base/`; `src/main/resources/ai/` chỉ chứa system prompt và policy. `ai-knowledge/` không còn là nguồn tri thức được phép trong kiến trúc đích.
+
+**Khoảng trống chuyển đổi (đã xác minh từ source):** runtime hiện tại vẫn ghép catalog `knowledge-base/` với playbook `ai-knowledge/` qua `KnowledgeCatalog.agent()` và dùng `/ai-knowledge/agent-index.json`; knowledge pilot G2/G3 cũng còn index dưới `ai-knowledge/`. Vì vậy quy tắc kiến trúc mới đã được ghi nhận nhưng chưa phản ánh đầy đủ trong implementation. Trước khi tuyên bố chuyển đổi hoàn tất, cần chuyển nội dung playbook có giá trị vào catalog `knowledge-base/`, xây lại index từ catalog đó và cập nhật retriever/tools để không đọc `ai-knowledge/`.
 
 Nhánh G3 cần `clientRequestId` UUID gắn payload, chống gửi trùng trong session RAM; legacy vẫn tương thích. Session idle 30 phút, confirmation 5 phút, một run/session, tối đa 6 model calls/run, 10 giây/call gồm retry và 30 giây/run. Output cap G3 1.024 tokens. Approval gắn owner/session/native call/tên/mode. Đổi tên/mode, revoke hoặc hết ngân sách vô hiệu approval cũ. Unknown/expired session bị từ chối sau restart; không tự khôi phục/replay. HTTP client timeout 35 giây, không tự gửi lại write khi mất kết nối.
 
@@ -41,7 +43,7 @@ Rollback: tắt pilot cho session mới, vô hiệu pending G3 và đóng contex
 
 ## Knowledge pilot G2 — độc lập với chat
 
-`integration/ai/knowledge` cung cấp catalog allowlist, Markdown chunking, BM25 tiếng Việt, cosine và RRF (`k=60`, trọng số bằng nhau). Corpus nằm trong `src/main/resources/ai-knowledge/`, gồm năm playbook `PILOT` dẫn xuất; chưa gắn nhãn human-reviewed và không thay thế SRS. Hai native ADK tools chỉ nhận query hoặc knowledge ID, không nhận path và không có quyền ghi nghiệp vụ. CUSTOMER/EXPERT dùng cùng instruction. Chưa có Spring bean, public API hoặc routing từ chat hiện hành.
+`integration/ai/knowledge` hiện cung cấp catalog allowlist, Markdown chunking, BM25 tiếng Việt, cosine và RRF (`k=60`, trọng số bằng nhau). **Runtime hiện trạng:** `KnowledgeCatalog.agent()` kết hợp 38 tài liệu `knowledge-base/` với năm playbook `PILOT` trong `ai-knowledge/`; index agent và index G2/G3 cũng nằm dưới `ai-knowledge/`. Đây là trạng thái code hiện tại, không phải quy tắc kiến trúc đích. Theo kiến trúc đích, catalog `knowledge-base/` sẽ là nguồn tri thức duy nhất; `ai/` chỉ cung cấp chỉ dẫn/policy. Hai native ADK tools chỉ nhận query hoặc knowledge ID, không nhận path và không có quyền ghi nghiệp vụ. CUSTOMER/EXPERT dùng cùng instruction. Chưa có Spring bean, public API hoặc routing từ chat hiện hành ngoài pilot được mô tả ở trên.
 
 Index JSON lưu corpus hash, source revision, index revision, model/dimension/input format, ngưỡng semantic và normalized vectors. Build/startup không gọi API. Nguồn nghỉ hiệu lực (`RETIRED` hoặc không bật pilot) bị loại trước retrieval. Index thiếu/hỏng/lệch corpus/configuration thì dùng corpus hiện hành ở `keyword_degraded`; embedding lỗi cũng degrade, không retry query hoặc tự đổi provider. Query tối đa 1.000 ký tự, document 12.000, tổng payload knowledge trả mỗi run 24.000; top 3 tài liệu khác nhau. RAM cache theo phiên, tối đa 30 phút; không lưu query vectors/query thật vào artifact.
 

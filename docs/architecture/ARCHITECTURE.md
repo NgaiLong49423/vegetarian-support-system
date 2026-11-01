@@ -1,6 +1,6 @@
 > **Document:** System Architecture  
 > **File:** `docs/architecture/ARCHITECTURE.md`  
-> **Version:** v1.15.0
+> **Version:** v2.0.0
 > **Created:** 2026-09-13  
 > **Last Updated:** 2026-11-01
 > **Status:** Active  
@@ -114,8 +114,8 @@ Spring Boot Backend (Modular Monolith)
  │     ├── System Instructions & Dynamic Policy Loader (AiPromptLoader)
  │     │     ├── classpath:ai/prompts/system.md
  │     │     └── classpath:ai/policies/ (scope, safety, security, response-style)
- │     ├── Internal Knowledge Base Retriever (ApprovedAiKnowledgeRetriever / HybridKnowledgeRetriever)
- │     │     └── classpath:knowledge-base/ (38 domain topics Markdown + catalog.json)
+ │     ├── Knowledge Base Retriever (ApprovedAiKnowledgeRetriever / HybridKnowledgeRetriever)
+ │     │     └── classpath:knowledge-base/ (catalog allowlist + all registered domain topics)
  │     └── Tool Registry (AiAssistantToolRegistry, filtered by Role: GUEST, CUSTOMER, EXPERT)
  │           ├── Read/Search Tools (search_recipes, get_recipe, get_meal_plan, get_shopping_list)
  │           └── Write Tools (create_shopping_list, update_profile, navigate_to_page)
@@ -124,10 +124,11 @@ Spring Boot Backend (Modular Monolith)
 ```
 
 - **Mô hình Vận hành Nội bộ (Internal Module):** AI Agent là một service nội bộ thuộc Spring Boot, chia sẻ chung cơ sở dữ liệu, mô hình xác thực và transaction boundary với toàn bộ hệ thống; không phải microservice độc lập hay chatbot bên ngoài.
-- **Kho Tri thức Nghiệp vụ Đóng gói (Packaged Classpath Knowledge Base):** Kho tri thức 38 chuyên đề ẩm thực chay và nghiệp vụ nền tảng được quản lý tại `src/main/resources/knowledge-base/` kèm `catalog.json`, nạp qua Spring Classpath Resource. AI truy xuất thông qua RAG nội bộ an toàn mà không cần truy vấn Internet hay mở cổng vector database bên ngoài.
-- **Hệ thống Quy tắc Ứng xử (Behavioral Policies) & System Instructions:**
+- **Nguồn tri thức duy nhất:** `app/mamxanh-backend/src/main/resources/knowledge-base/` là kho tri thức nghiệp vụ duy nhất cho các luồng AI, được quản lý bằng `catalog.json` và nạp qua Spring Classpath Resource. Tài liệu trong catalog là nguồn cho RAG; AI không quét toàn repository và không coi `ai-knowledge/`, prompt hay policy là tri thức nghiệp vụ hoặc nguồn thay thế. Tri thức tĩnh trong kho không thay thế dữ liệu hiện tại của hệ thống; khi cần dữ liệu tài khoản/nghiệp vụ, Agent phải dùng tool được cấp và Backend kiểm tra quyền.
+- **Chỉ dẫn và chính sách AI (System Instructions & Behavioral Policies):** `app/mamxanh-backend/src/main/resources/ai/` chỉ định nghĩa AI phải làm gì, trả lời thế nào và những giới hạn phải tuân thủ. Nội dung gồm system prompt và các policy; đây không phải kho tri thức nghiệp vụ và không được dùng làm nguồn sự thật về trạng thái dữ liệu động.
   - Được lưu trữ dưới dạng Markdown kết hợp YAML Front Matter tại `src/main/resources/ai/prompts/system.md` và `src/main/resources/ai/policies/` (`scope-policy.md`, `safety-policy.md`, `security-policy.md`, `response-style.md`).
   - Được nạp, bóc tách front matter, tổng hợp và cache trong bộ nhớ bởi `AiPromptLoader`. Cơ chế này hoạt động độc lập với filesystem vật lý, tương thích 100% khi đóng gói thành file JAR trong Docker Container.
+- **Quy tắc loại trừ nguồn cũ:** `ai-knowledge/` không thuộc kiến trúc kho tri thức đích. Không thêm nội dung nghiệp vụ hoặc duy trì catalog/index tri thức độc lập tại đó. Mọi tài liệu nghiệp vụ đang nằm ở nguồn này phải được đối chiếu và chuyển vào `knowledge-base/` trước khi ngừng sử dụng. Việc runtime hiện tại còn nạp nguồn này được ghi nhận là khoảng trống chuyển đổi trong Backend Workspace Guide; tài liệu kiến trúc này không khẳng định code đã hoàn tất chuyển đổi.
 - **Thứ bậc Quyền lực Bất khả xâm phạm (Hierarchy of Authority):**
   $\textbf{System Instruction / Policies} \gg \textbf{Backend Tool Results} \gg \textbf{Knowledge Base (RAG)} \gg \textbf{User Inputs}$
   Dữ liệu RAG và nội dung người dùng luôn là Untrusted Data; AI tuyệt đối không bị thao túng bởi các thủ thuật Prompt Injection / Jailbreak.

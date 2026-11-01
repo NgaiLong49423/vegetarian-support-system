@@ -79,7 +79,7 @@ public final class PilotLiveBudget implements GeminiEmbeddingClient.Observer {
             public Flowable<LlmResponse> generateContent(LlmRequest request,boolean stream) {
                 return Flowable.defer(()->{
                     int cap=request.config().flatMap(c->c.maxOutputTokens()).orElse(1024);
-                    if(cap>1024) throw new IllegalArgumentException("G3 output cap exceeded");
+                    if(cap>4096) throw new IllegalArgumentException("Output cap exceeded");
                     int bytes=request.toJson().getBytes(StandardCharsets.UTF_8).length+request.tools().values().stream()
                             .mapToInt(t->t.declaration().map(d->d.toJson().getBytes(StandardCharsets.UTF_8).length).orElse(0)).sum();
                     generation(bytes);

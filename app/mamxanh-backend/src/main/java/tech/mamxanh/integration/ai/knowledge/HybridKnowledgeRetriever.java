@@ -45,11 +45,16 @@ public final class HybridKnowledgeRetriever implements AutoCloseable {
         expires = clock.instant().plus(Duration.ofMinutes(30));
         terms = catalog.chunks().stream().map(c -> frequencies(c.text())).toList();
     }
+
     public synchronized Result search(String query) {
+        return search(query, false);
+    }
+
+    public synchronized Result search(String query, boolean userFacing) {
         checkSession();
         validateQuery(query);
         var keyword = keyword(query);
-        if (index == null || embedder == null) return result(keyword, "keyword_degraded", "INDEX_UNAVAILABLE");
+        if (index == null || embedder == null) return result(keyword, "keyword_degraded", "INDEX_UNAVAILABLE", userFacing);
         try {
             cache.entrySet().removeIf(e -> !e.getValue().expires().isAfter(clock.instant()));
             String key = KnowledgeCatalog.hash(query);
@@ -66,13 +71,14 @@ public final class HybridKnowledgeRetriever implements AutoCloseable {
             if (semantic.isEmpty()) return new Result("no_match", "BELOW_SEMANTIC_THRESHOLD", List.of());
             var scores = new HashMap<String, Double>();
             addRrf(scores, keyword); addRrf(scores, semantic);
-            return result(sorted(scores), "hybrid", "OK");
+            return result(sorted(scores), "hybrid", "OK", userFacing);
         } catch (SecurityException unconsented) {
             throw unconsented;
         } catch (RuntimeException unavailable) {
-            return result(keyword, "keyword_degraded", "EMBEDDING_UNAVAILABLE");
+            return result(keyword, "keyword_degraded", "EMBEDDING_UNAVAILABLE", userFacing);
         }
     }
+
     public List<String> keyword(String query) {
         validateQuery(query);
         var queryTerms = frequencies(query);
@@ -107,12 +113,18 @@ public final class HybridKnowledgeRetriever implements AutoCloseable {
     private static List<String> sorted(Map<String, Double> scores) {
         return scores.keySet().stream().sorted(Comparator.<String>comparingDouble(scores::get).reversed().thenComparing(s -> s)).toList();
     }
+
     public Result result(List<String> ranking, String status, String reason) {
+        return result(ranking, status, reason, false);
+    }
+
+    public Result result(List<String> ranking, String status, String reason, boolean userFacing) {
         var hits = new ArrayList<Hit>(); var seen = new HashSet<String>();
         for (String chunkId : ranking) {
             var chunk = catalog.chunks().stream().filter(c -> c.id().equals(chunkId)).findFirst().orElseThrow();
             if (!seen.add(chunk.documentId())) continue;
             var doc = catalog.document(chunk.documentId());
+            if (userFacing && doc.metadata().isAgentOnly()) continue;
             String excerpt = chunk.text().substring(0, Math.min(650, chunk.text().length()));
             hits.add(new Hit(chunk.documentId(), doc.metadata().title(), doc.metadata().title(), excerpt,
                     doc.metadata().version(), doc.metadata().sources()));
@@ -120,7 +132,20 @@ public final class HybridKnowledgeRetriever implements AutoCloseable {
         }
         return new Result(hits.isEmpty() && !status.equals("keyword_degraded") ? "no_match" : status, reason, List.copyOf(hits));
     }
-    public synchronized KnowledgeCatalog.Document get(String id) { checkSession(); return catalog.document(id); }
+
+    public synchronized KnowledgeCatalog.Document get(String id) {
+        return get(id, false);
+    }
+
+    public synchronized KnowledgeCatalog.Document get(String id, boolean userFacing) {
+        checkSession();
+        var doc = catalog.document(id);
+        if (userFacing && doc.metadata().isAgentOnly()) {
+            throw new SecurityException("Access to agent-only knowledge denied for user-facing request: " + id);
+        }
+        return doc;
+    }
+
     /** Called only after the owning Backend session has validated activity and ownership. */
     public synchronized void touch() {
         checkSession();

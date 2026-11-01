@@ -59,11 +59,7 @@ public record KnowledgeIndex(int schema, String revision, String indexRevision, 
         return value;
     }
     public static Optional<KnowledgeIndex> packaged(KnowledgeCatalog catalog, Config expected) {
-        return packaged("/ai-knowledge/index.json", catalog, expected);
-    }
-
-    public static Optional<KnowledgeIndex> packagedG3(KnowledgeCatalog catalog, Config expected) {
-        return packaged("/ai-knowledge/g3/index.json", catalog, expected);
+        return packaged("/knowledge-base/index.json", catalog, expected);
     }
 
     public static Optional<KnowledgeIndex> packaged(String resourcePath, KnowledgeCatalog catalog, Config expected) {

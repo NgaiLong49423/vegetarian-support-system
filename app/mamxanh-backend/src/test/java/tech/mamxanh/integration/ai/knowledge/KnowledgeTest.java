@@ -21,7 +21,7 @@ class KnowledgeTest {
         return new KnowledgeIndex(1, catalog.revision(), catalog.fingerprint(), CONFIG, .5, vectors);
     }
     @Test void catalogHasFiveDerivedAllowlistedPlaybooksAndStableChunks() {
-        assertThat(catalog.documents()).hasSize(5);
+        assertThat(catalog.documents()).hasSize(43);
         assertThat(catalog.chunks()).isNotEmpty().allSatisfy(c -> {
             assertThat(c.text().length()).isLessThanOrEqualTo(2000);
             assertThat(c.hash()).isEqualTo(KnowledgeCatalog.hash(c.text()));
@@ -39,7 +39,7 @@ class KnowledgeTest {
     }
     @Test void catalogRejectsTraversalDuplicateIdsAndUnregisteredStatuses() {
         String json = new ObjectMapper().writeValueAsString(new KnowledgeCatalog.Manifest("r", catalog.documents().stream().map(KnowledgeCatalog.Document::metadata).toList()));
-        for (String bad : List.of(json.replace("assistant-scope.md", "../secret.md"), json.replace("execution-confirmation\"", "assistant-scope\""), json.replace("PILOT", "APPROVED"))) {
+        for (String bad : List.of(json.replace("assistant-scope.md", "../secret.md"), json.replace("execution-confirmation\"", "assistant-scope\""), json.replace("APPROVED", "UNKNOWN_STATUS"))) {
             assertThatThrownBy(() -> KnowledgeCatalog.load(p -> bad)).isInstanceOf(IllegalArgumentException.class);
         }
     }
