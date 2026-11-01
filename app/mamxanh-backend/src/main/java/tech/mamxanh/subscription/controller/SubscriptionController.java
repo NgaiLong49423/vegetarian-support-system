@@ -1,38 +1,27 @@
 package tech.mamxanh.subscription.controller;
 
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.http.CacheControl;
-import tech.mamxanh.subscription.service.PaymentResultService;
-import tech.mamxanh.subscription.dto.response.PaymentResultResponse;
-import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import org.springframework.web.bind.annotation.*;
 import tech.mamxanh.common.config.OpenApiConfig;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.subscription.dto.request.CheckoutRequest;
 import tech.mamxanh.subscription.dto.request.CreditCheckoutRequest;
-import tech.mamxanh.subscription.dto.response.CheckoutResponse;
-import tech.mamxanh.subscription.dto.response.CreditCheckoutResponse;
-import tech.mamxanh.subscription.dto.response.MyAiCreditResponse;
-import tech.mamxanh.subscription.dto.response.MySubscriptionResponse;
-import tech.mamxanh.subscription.dto.response.MyAiUsageResponse;
-import tech.mamxanh.subscription.dto.response.PlanResponse;
-import tech.mamxanh.subscription.dto.response.TransactionHistoryResponse;
-import tech.mamxanh.subscription.service.SubscriptionService;
+import tech.mamxanh.subscription.dto.response.*;
 import tech.mamxanh.subscription.service.AiTokenQuotaService;
+import tech.mamxanh.subscription.service.PaymentResultService;
+import tech.mamxanh.subscription.service.SubscriptionService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping(path = "/api/v1/subscriptions", produces = MediaType.APPLICATION_JSON_VALUE)

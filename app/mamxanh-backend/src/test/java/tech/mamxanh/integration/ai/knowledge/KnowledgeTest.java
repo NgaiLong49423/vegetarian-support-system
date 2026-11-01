@@ -21,7 +21,7 @@ class KnowledgeTest {
         return new KnowledgeIndex(1, catalog.revision(), catalog.fingerprint(), CONFIG, .5, vectors);
     }
     @Test void catalogHasFiveDerivedAllowlistedPlaybooksAndStableChunks() {
-        assertThat(catalog.documents()).hasSize(5);
+        assertThat(catalog.documents()).hasSize(43);
         assertThat(catalog.chunks()).isNotEmpty().allSatisfy(c -> {
             assertThat(c.text().length()).isLessThanOrEqualTo(2000);
             assertThat(c.hash()).isEqualTo(KnowledgeCatalog.hash(c.text()));
@@ -39,7 +39,7 @@ class KnowledgeTest {
     }
     @Test void catalogRejectsTraversalDuplicateIdsAndUnregisteredStatuses() {
         String json = new ObjectMapper().writeValueAsString(new KnowledgeCatalog.Manifest("r", catalog.documents().stream().map(KnowledgeCatalog.Document::metadata).toList()));
-        for (String bad : List.of(json.replace("assistant-scope.md", "../secret.md"), json.replace("execution-confirmation\"", "assistant-scope\""), json.replace("PILOT", "APPROVED"))) {
+        for (String bad : List.of(json.replace("assistant-scope.md", "../secret.md"), json.replace("execution-confirmation\"", "assistant-scope\""), json.replace("APPROVED", "UNKNOWN_STATUS"))) {
             assertThatThrownBy(() -> KnowledgeCatalog.load(p -> bad)).isInstanceOf(IllegalArgumentException.class);
         }
     }
@@ -128,6 +128,22 @@ class KnowledgeTest {
         retriever.search("FR-53.9"); now.set(now.get().plusSeconds(1801));
         assertThatThrownBy(() -> retriever.search("FR-53.9")).isInstanceOf(IllegalStateException.class);
         retriever.close(); assertThatThrownBy(() -> retriever.get("shopping-create")).isInstanceOf(IllegalStateException.class);
+    }
+    @Test void activeBackendSessionCanRenewKnowledgeIdleExpiryWithoutRevivingAnExpiredSession() {
+        var now = new java.util.concurrent.atomic.AtomicReference<>(Instant.now());
+        var clock = new Clock() {
+            public ZoneId getZone() { return ZoneOffset.UTC; }
+            public Clock withZone(ZoneId zone) { return this; }
+            public Instant instant() { return now.get(); }
+        };
+        try (var retriever = new HybridKnowledgeRetriever(catalog, null, null, clock)) {
+            now.set(now.get().plusSeconds(1200));
+            retriever.touch();
+            now.set(now.get().plusSeconds(1200));
+            assertThat(retriever.get("shopping-create")).isNotNull();
+            now.set(now.get().plusSeconds(601));
+            assertThatThrownBy(retriever::touch).isInstanceOf(IllegalStateException.class);
+        }
     }
     @Test void cumulativeRunBudgetRejectsOverflowAndResetsOnNextRun() {
         var tools = new KnowledgeTools(new HybridKnowledgeRetriever(catalog, null, null, Clock.systemUTC()));

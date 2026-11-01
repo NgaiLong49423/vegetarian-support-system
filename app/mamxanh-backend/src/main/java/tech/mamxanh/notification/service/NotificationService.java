@@ -1,12 +1,13 @@
 package tech.mamxanh.notification.service;
 
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.math.BigDecimal;
 import java.util.List;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Service;
 
 /** Public notification write boundary; inbox/read workflows belong to FR-49. */
 @Service

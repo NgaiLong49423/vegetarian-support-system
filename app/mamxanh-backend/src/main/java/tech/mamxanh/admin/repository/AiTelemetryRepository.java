@@ -1,16 +1,17 @@
 package tech.mamxanh.admin.repository;
 
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+import tech.mamxanh.admin.dto.AiCostEstimate;
+import tech.mamxanh.admin.dto.AiTelemetryReport.Totals;
+import tech.mamxanh.integration.ai.AiTokenUsage;
+import tech.mamxanh.integration.ai.AiUsageEvent;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Repository;
-import tech.mamxanh.admin.dto.AiTelemetryReport.Totals;
-import tech.mamxanh.admin.dto.AiCostEstimate;
-import tech.mamxanh.integration.ai.AiTokenUsage;
-import tech.mamxanh.integration.ai.AiUsageEvent;
 
 /** Parameterized SQL Server operations for technical logs; no cross-module repository access. */
 @Repository

@@ -27,6 +27,7 @@ import {
 } from "lucide-react"
 
 import { useAuth } from "../components/AuthContext"
+import { AiMessageContent } from "../components/AiMessageContent"
 
 import { useAiChat } from "../components/AiChatContext"
 
@@ -363,6 +364,7 @@ export function AiChatPage() {
     try {
       const response = await recipesApi.chat({
         contextType,
+        clientRequestId: globalThis.crypto?.randomUUID?.() ?? 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => { const r=Math.floor(Math.random()*16); return (c === 'x' ? r : (r & 3) | 8).toString(16) }),
         executionMode,
         ...(sessionId ? { sessionId } : {}),
         ...continuation,
@@ -407,6 +409,10 @@ export function AiChatPage() {
           steps: response.steps ?? [],
           pendingConfirmation: response.pendingConfirmation,
           consentRequest: response.consentRequest,
+          sources: response.sources ?? [],
+          engine: response.engine ?? null,
+          runStatus: response.runStatus ?? null,
+          knowledgeRevision: response.knowledgeRevision ?? null,
           requestQuestion: normalized,
         },
       ])
@@ -448,7 +454,7 @@ export function AiChatPage() {
           .then(setChatSettings)
           .catch(() => undefined)
       }
-      if (apiError.status === 401 || apiError.status === 403)
+      if (apiError.status === 401 || apiError.status === 403 || apiError.status === 0)
         setRetryQuestion("")
       const expiredSession = apiError.code === "VALIDATION_FAILED"
         && apiError.message.toLocaleLowerCase("vi").includes("phiên trợ lý")
@@ -774,7 +780,9 @@ export function AiChatPage() {
                 <p className="mb-1 text-[11px] font-bold opacity-75">
                   {message.speaker === "USER" ? "Bạn" : "AI"}
                 </p>
-                <p className="whitespace-pre-wrap">{message.content}</p>
+                {message.speaker === "ASSISTANT"
+                  ? <AiMessageContent content={message.content} />
+                  : <p className="whitespace-pre-wrap [overflow-wrap:anywhere]">{message.content}</p>}
                 {message.steps?.length ? (
                   <div className="mt-3 space-y-2" aria-label="Các bước AI đã xử lý">
                     {message.steps.map((step) => {
@@ -784,7 +792,7 @@ export function AiChatPage() {
                         : []
                       return (
                         <section key={`${step.sequence}-${step.tool}`} className="rounded-xl border border-brand-100 bg-paper p-3 text-xs text-ink">
-                          <p className="font-semibold">{step.sequence}. {step.tool.replace(/_/g, " ")}</p>
+                          <p className="font-semibold">{step.sequence}. {({ search_business_knowledge: "Tìm hướng dẫn", get_business_knowledge: "Đọc hướng dẫn", create_shopping_list: "Tạo danh sách mua sắm", get_shopping_list: "Đọc lại danh sách mua sắm" } as Record<string,string>)[step.tool] ?? step.tool.replace(/_/g, " ")} <span className="ml-1 rounded bg-brand-50 px-1.5 py-0.5 text-[10px] font-bold text-brand-700">{({ SUCCEEDED: "Hoàn tất", FAILED: "Chưa hoàn tất", AWAITING_CONFIRMATION: "Chờ xác nhận", BLOCKED_BUDGET: "Hết ngân sách", SKIPPED_MODE: "Chỉ xem trước", CLARIFICATION_REQUIRED: "Cần thông tin", SKIPPED_INTENT: "Chưa thực hiện" } as Record<string,string>)[step.status] ?? step.status}</span></p>
                           <p className="mt-1 text-ink-muted">{step.summary}</p>
                           {previewEntries.length > 0 && (
                             <dl className="mt-2 space-y-1 border-t border-brand-50 pt-2">
@@ -805,6 +813,7 @@ export function AiChatPage() {
                   <section className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-amber-950">
                     <p className="text-sm font-bold">Xem lại trước khi thực hiện</p>
                     <p className="mt-1 text-xs leading-5">{message.pendingConfirmation.summary}. Các thay đổi chưa được áp dụng.</p>
+                    {message.pendingConfirmation.proposedListName && <p className="mt-1 text-xs font-semibold">Tên danh sách dự kiến: “{message.pendingConfirmation.proposedListName}”</p>}
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button type="button" disabled={loading} onClick={() => void send("Tiếp tục với thay đổi đã xem trước", messages.slice(0, messages.indexOf(message)), false, { confirmationId: message.pendingConfirmation!.confirmationId, confirmationDecision: "APPROVE" })} className="rounded-full bg-brand-700 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">Xác nhận thay đổi</button>
                       <button type="button" disabled={loading} onClick={() => void send("Hủy thay đổi đang chờ", messages.slice(0, messages.indexOf(message)), false, { confirmationId: message.pendingConfirmation!.confirmationId, confirmationDecision: "REJECT" })} className="rounded-full border border-brand-200 bg-paper px-3 py-2 text-xs font-semibold disabled:opacity-50">Hủy</button>
@@ -814,12 +823,49 @@ export function AiChatPage() {
                 {message.consentRequest && (
                   <section className="mt-3 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sky-950">
                     <p className="text-sm font-bold">Cho phép dùng dữ liệu cá nhân?</p>
-                    <p className="mt-1 text-xs leading-5">Chỉ khi đồng ý, nội dung liên quan mới được gửi tới {message.consentRequest.recipient}. Phạm vi: {message.consentRequest.scopes.map((scope) => scope.category === "HEALTH_PROFILE" ? "hồ sơ sức khỏe" : scope.category === "DIETARY_PREFERENCES" ? "tùy chọn ăn uống" : "hồ sơ cơ bản").join(", ")}.</p>
+                    <p className="mt-1 text-xs leading-5">Chỉ khi đồng ý, nội dung liên quan mới được gửi tới {message.consentRequest.recipient}. Phạm vi: {Array.from(new Set(message.consentRequest.scopes.map((scope) => scope.category === "HEALTH_PROFILE" ? "hồ sơ sức khỏe" : scope.category === "DIETARY_PREFERENCES" ? "tùy chọn ăn uống" : scope.category === "SHOPPING_LIST" ? "danh sách mua sắm (nội dung yêu cầu, tên, ID và kết quả danh sách — mục đích tìm hướng dẫn và điều phối)" : "hồ sơ cơ bản"))).join(", ")}.</p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button type="button" disabled={loading} onClick={() => void send(message.requestQuestion ?? "", messages.slice(0, messages.indexOf(message)), false, { consentDecision: { action: "GRANT", scopes: message.consentRequest!.scopes } })} className="rounded-full bg-sky-800 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">Đồng ý và tiếp tục</button>
                       <button type="button" disabled={loading} onClick={() => setMessages((current) => current.map((item) => item.id === message.id ? { ...item, consentRequest: null } : item))} className="rounded-full border border-sky-300 bg-white px-3 py-2 text-xs font-semibold disabled:opacity-50">Không đồng ý</button>
                     </div>
                   </section>
+                )}
+                {message.speaker === "ASSISTANT" && message.engine === "ADK_SHOPPING_PILOT" && (
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-brand-100/70 pt-2 text-[11px] text-ink-muted">
+                    <span>
+                      <strong className="text-ink">Danh sách mua sắm · thử nghiệm</strong>
+                      {message.runStatus ? ` · ${({ COMPLETED: "Hoàn tất", AWAITING_CONFIRMATION: "Chờ xác nhận", PREVIEW_ONLY: "Chỉ xem trước", PARTIAL_FAILURE: "Hoàn tất một phần", FAILED: "Chưa hoàn tất", CANCELLED: "Đã hủy", BLOCKED_BUDGET: "Hết ngân sách", CONSENT_REVOKED: "Đã thu hồi đồng ý", CLARIFICATION_REQUIRED: "Cần thêm thông tin", AWAITING_CONSENT: "Chờ đồng ý" } as Record<string,string>)[message.runStatus] ?? "Đang xử lý"}` : ""}
+                      {message.knowledgeRevision ? ` · Tri thức: ${message.knowledgeRevision}` : ""}
+                    </span>
+                    {!message.consentRequest && message.runStatus !== "CONSENT_REVOKED" && (
+                      <button
+                        type="button"
+                        disabled={loading}
+                        onClick={() => void send("Thu hồi đồng ý dữ liệu danh sách mua sắm", messages, false, {
+                          consentDecision: {
+                            action: "REVOKE",
+                            scopes: [
+                              { category: "SHOPPING_LIST", purpose: "AI_CHAT" },
+                              { category: "SHOPPING_LIST", purpose: "SHOPPING_LIST_READ" },
+                              { category: "SHOPPING_LIST", purpose: "SHOPPING_LIST_WRITE" },
+                            ],
+                          },
+                        })}
+                        className="font-semibold text-brand-700 underline disabled:opacity-50"
+                      >
+                        Thu hồi đồng ý dữ liệu
+                      </button>
+                    )}
+                  </div>
+                )}
+                {message.speaker === "ASSISTANT" && Boolean(message.sources?.length) && (
+                  <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-ink-muted" aria-label="Nguồn hướng dẫn nội bộ">
+                    {message.sources?.map((source) => (
+                      <span key={source.id} className="rounded-full bg-paper px-2 py-0.5 font-medium text-ink">
+                        {source.title || source.id}
+                      </span>
+                    ))}
+                  </div>
                 )}
                 {message.speaker === "ASSISTANT" &&
                   Boolean(message.recommendations?.length) && (

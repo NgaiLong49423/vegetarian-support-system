@@ -26,25 +26,48 @@ public class AiAssistantSessionStore {
         this.sessionTtl = sessionTtl.isNegative() || sessionTtl.isZero() ? Duration.ofMinutes(30) : sessionTtl;
     }
 
+    public static final String ENGINE_LEGACY = "LEGACY_ASSISTANT";
+    public static final String ENGINE_G3_PILOT = "ADK_SHOPPING_PILOT";
+
     public synchronized SessionHandle open(UUID requestedId, String owner) {
+        return open(requestedId, owner, ENGINE_LEGACY);
+    }
+
+    public synchronized SessionHandle open(UUID requestedId, String owner, String requestedEngine) {
         Instant now = clock.instant();
         removeExpired(now);
-        UUID id = requestedId == null ? UUID.randomUUID() : requestedId;
-        Session session = sessions.get(id);
-        if (session != null && !session.owner.equals(owner)) {
+        String targetEngine = requestedEngine == null ? ENGINE_LEGACY : requestedEngine;
+        if (requestedId != null) {
+            Session existing = sessions.get(requestedId);
+            if (existing == null || !existing.owner.equals(owner)) {
+                throw new AppException(ErrorCode.VALIDATION_FAILED, "Phiên trợ lý không hợp lệ hoặc đã hết hạn.");
+            }
+            if (!existing.engine.equals(targetEngine)) {
+                throw new AppException(ErrorCode.VALIDATION_FAILED, "Phiên trợ lý đã gắn cố định với bộ điều phối khác.");
+            }
+            existing.lastAccess = now;
+            existing.expiresAt = now.plus(sessionTtl);
+            return new SessionHandle(existing.id, Set.copyOf(existing.consents), existing.pending, existing.expiresAt, existing.engine);
+        }
+        if (sessions.size() >= MAX_SESSIONS) {
+            sessions.values().stream().min(java.util.Comparator.comparing(item -> item.lastAccess))
+                    .map(item -> item.id).ifPresent(sessions::remove);
+        }
+        UUID id = UUID.randomUUID();
+        Session session = new Session(id, owner, targetEngine, now, sessionTtl);
+        sessions.put(id, session);
+        return new SessionHandle(id, Set.copyOf(session.consents), session.pending, session.expiresAt, session.engine);
+    }
+
+    public synchronized Optional<String> peekEngine(UUID sessionId, String owner) {
+        if (sessionId == null) return Optional.empty();
+        Instant now = clock.instant();
+        removeExpired(now);
+        Session session = sessions.get(sessionId);
+        if (session == null || !session.owner.equals(owner)) {
             throw new AppException(ErrorCode.VALIDATION_FAILED, "Phiên trợ lý không hợp lệ hoặc đã hết hạn.");
         }
-        if (session == null) {
-            if (sessions.size() >= MAX_SESSIONS) {
-                sessions.values().stream().min(java.util.Comparator.comparing(item -> item.lastAccess))
-                        .map(item -> item.id).ifPresent(sessions::remove);
-            }
-            session = new Session(id, owner, now);
-            sessions.put(id, session);
-        }
-        session.lastAccess = now;
-        session.expiresAt = now.plus(sessionTtl);
-        return new SessionHandle(id, Set.copyOf(session.consents), session.pending, session.expiresAt);
+        return Optional.of(session.engine);
     }
 
     public synchronized SessionHandle applyConsent(UUID sessionId, String owner,
@@ -56,7 +79,7 @@ public class AiAssistantSessionStore {
         Instant now = clock.instant();
         session.lastAccess = now;
         session.expiresAt = now.plus(sessionTtl);
-        return new SessionHandle(session.id, Set.copyOf(session.consents), session.pending, session.expiresAt);
+        return new SessionHandle(session.id, Set.copyOf(session.consents), session.pending, session.expiresAt, session.engine);
     }
 
     public synchronized PendingPlan createPending(UUID sessionId, String owner,
@@ -115,7 +138,11 @@ public class AiAssistantSessionStore {
     }
 
     public record SessionHandle(UUID id, Set<ConsentScope> consentScopes,
-            PendingPlan pending, Instant expiresAt) { }
+            PendingPlan pending, Instant expiresAt, String engine) {
+        public SessionHandle(UUID id, Set<ConsentScope> consentScopes, PendingPlan pending, Instant expiresAt) {
+            this(id, consentScopes, pending, expiresAt, ENGINE_LEGACY);
+        }
+    }
 
     public record PendingAction(String tool, Map<String, Object> arguments, boolean requiresExplicitConfirmation) {
         public PendingAction {
@@ -129,16 +156,18 @@ public class AiAssistantSessionStore {
     private static final class Session {
         private final UUID id;
         private final String owner;
+        private final String engine;
         private final Set<ConsentScope> consents = new HashSet<>();
         private Instant lastAccess;
         private Instant expiresAt;
         private PendingPlan pending;
 
-        private Session(UUID id, String owner, Instant createdAt) {
+        private Session(UUID id, String owner, String engine, Instant createdAt, Duration ttl) {
             this.id = id;
             this.owner = owner;
+            this.engine = engine;
             this.lastAccess = createdAt;
-            this.expiresAt = createdAt.plus(Duration.ofMinutes(30));
+            this.expiresAt = createdAt.plus(ttl);
         }
     }
 }

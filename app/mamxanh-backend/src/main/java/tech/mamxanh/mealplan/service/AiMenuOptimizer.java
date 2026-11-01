@@ -1,12 +1,13 @@
 package tech.mamxanh.mealplan.service;
 
+import tech.mamxanh.nutrition.dto.response.NutritionProfileResponse.Target;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import tech.mamxanh.nutrition.dto.response.NutritionProfileResponse.Target;
 
 /** Deterministically combines trusted, one-serving recipes against the member's daily targets. */
 final class AiMenuOptimizer {

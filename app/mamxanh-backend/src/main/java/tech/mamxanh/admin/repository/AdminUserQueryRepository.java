@@ -1,16 +1,17 @@
 package tech.mamxanh.admin.repository;
 
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+import tech.mamxanh.admin.dto.AdminUserAuditResponse;
+import tech.mamxanh.admin.dto.AdminUserResponse;
+import tech.mamxanh.admin.dto.AdminUserSummaryResponse;
+
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Repository;
-import tech.mamxanh.admin.dto.AdminUserAuditResponse;
-import tech.mamxanh.admin.dto.AdminUserResponse;
-import tech.mamxanh.admin.dto.AdminUserSummaryResponse;
 
 /** Bounded read side of the Administrator account-management API. */
 @Repository

@@ -27,7 +27,7 @@ class KnowledgeLiveTest {
     private final Path output = Path.of("target/g2");
     private final KnowledgeCatalog catalog=KnowledgeCatalog.packaged();
     private List<Case> dataset() throws Exception {
-        try(var input=getClass().getResourceAsStream("/ai-knowledge/evaluation.json")) {
+        try(var input=getClass().getResourceAsStream("/ai-evaluation/evaluation.json")) {
             return List.of(json.readValue(input.readAllBytes(),Case[].class));
         }
     }
@@ -44,7 +44,7 @@ class KnowledgeLiveTest {
         try(var client=Client.builder().apiKey(System.getenv("GEMINI_API_KEY"))
                 .httpOptions(HttpOptions.builder().timeout(10000).retryOptions(HttpRetryOptions.builder().attempts(1).build()).build()).build()) {
             if (Set.of("agents","diagnostic","validation").contains(phase)) {
-                Path resource=Path.of("src/main/resources/ai-knowledge/index.json");
+                Path resource=Path.of("src/main/resources/knowledge-base/index.json");
                 var selected=json.readValue(Files.readString(resource),KnowledgeIndex.class);
                 selected.validate(catalog,selected.config());
                 var lock=json.readTree(Files.readString(output.resolve("selection-lock.json")));
@@ -87,7 +87,7 @@ class KnowledgeLiveTest {
             var selected=candidates.getFirst().index();
             // Lock before any holdout requests. Publishing is explicit in this opt-in command only.
             Files.writeString(output.resolve("selection-lock.json"),json.writeValueAsString(Map.of("config",selected.config(),"threshold",selected.threshold(),"corpusHash",selected.corpusHash(),"selection","development-only")));
-            selected.publish(Path.of("src/main/resources/ai-knowledge/index.json"),catalog);
+            selected.publish(Path.of("src/main/resources/knowledge-base/index.json"),catalog);
             var holdout=cases.stream().filter(c->c.split().equals("holdout")).toList();
             var embedder=new GeminiEmbeddingClient(client,selected.config(),budget);
             var holdoutVectors=new LinkedHashMap<String,List<Double>>();

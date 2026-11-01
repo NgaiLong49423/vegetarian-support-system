@@ -1,10 +1,11 @@
 package tech.mamxanh.recipe.service;
 
+import tech.mamxanh.recipe.dto.request.AiChatRequest;
+
 import java.text.Normalizer;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
-import tech.mamxanh.recipe.dto.request.AiChatRequest;
 
 /** Local routing only: never asks the provider to decide whether a paid operation is allowed. */
 final class AiChatIntent {

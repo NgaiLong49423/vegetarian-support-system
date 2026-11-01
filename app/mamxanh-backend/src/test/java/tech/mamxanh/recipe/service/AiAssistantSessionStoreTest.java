@@ -62,6 +62,24 @@ class AiAssistantSessionStoreTest {
                 .isInstanceOf(AppException.class);
     }
 
+    @Test
+    void unknownOrExpiredSessionIdIsRejectedAndEngineRemainsPinned() {
+        var clock = new MutableClock(Instant.parse("2026-10-31T00:00:00Z"));
+        var store = new AiAssistantSessionStore(clock, Duration.ofMinutes(30));
+        assertThatThrownBy(() -> store.open(java.util.UUID.randomUUID(), "user:7", AiAssistantSessionStore.ENGINE_G3_PILOT))
+                .isInstanceOf(AppException.class);
+
+        var session = store.open(null, "user:7", AiAssistantSessionStore.ENGINE_G3_PILOT);
+        assertThat(session.engine()).isEqualTo(AiAssistantSessionStore.ENGINE_G3_PILOT);
+        assertThat(store.peekEngine(session.id(), "user:7")).contains(AiAssistantSessionStore.ENGINE_G3_PILOT);
+        assertThatThrownBy(() -> store.open(session.id(), "user:7", AiAssistantSessionStore.ENGINE_LEGACY))
+                .isInstanceOf(AppException.class);
+
+        clock.advance(Duration.ofMinutes(31));
+        assertThatThrownBy(() -> store.open(session.id(), "user:7", AiAssistantSessionStore.ENGINE_G3_PILOT))
+                .isInstanceOf(AppException.class);
+    }
+
     private static final class MutableClock extends Clock {
         private Instant instant;
         private MutableClock(Instant instant) { this.instant = instant; }

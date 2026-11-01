@@ -2,9 +2,10 @@ package tech.mamxanh.recipe.repository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import java.util.List;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /** Bounded SQL Server ranking over current public recipes; no cached recipe copies. */
 @Repository

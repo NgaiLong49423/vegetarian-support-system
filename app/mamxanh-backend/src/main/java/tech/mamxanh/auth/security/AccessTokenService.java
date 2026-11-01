@@ -1,16 +1,15 @@
 package tech.mamxanh.auth.security;
 
-import java.time.Clock;
-import java.time.Instant;
-
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
-
 import tech.mamxanh.auth.entity.User;
+
+import java.time.Clock;
+import java.time.Instant;
 
 /**
  * Issues Stateless JWT access tokens (API.md section 3.1). Claims: {@code iss}, {@code sub} (the

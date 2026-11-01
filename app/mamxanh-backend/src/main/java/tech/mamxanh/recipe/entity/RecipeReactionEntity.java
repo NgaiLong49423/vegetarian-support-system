@@ -1,12 +1,8 @@
 package tech.mamxanh.recipe.entity;
 
+import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
-import jakarta.persistence.Column;
-import jakarta.persistence.EmbeddedId;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "\"RECIPE_REACTION\"")

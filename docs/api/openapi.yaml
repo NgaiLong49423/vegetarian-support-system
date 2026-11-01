@@ -3,7 +3,7 @@ info:
   title: OpenAPI definition
   version: v0
 servers:
-- url: http://localhost:8080
+- url: http://localhost:18080
   description: Generated server url
 paths:
   /api/v1/shopping-lists/{listId}/recipes/{recipeId}/servings:
@@ -3352,12 +3352,13 @@ paths:
         \ independently for cookie and peer IP. General context or the latest public\
         \ RecipePost is loaded server-side. Recipe discovery selects only current\
         \ public RecipePosts from the Backend catalog; explicitly requested recipe\
-        \ drafts remain chat text only. Conversation history is request-scoped and\
-        \ is not persisted. Guest has no account dietary context. Explicit weekly-menu\
-        \ and recipe-authoring requests are checked for entitlement and routed to\
-        \ their dedicated workflow without calling Gemini. Follow-up recipe searches\
-        \ use current public data; assistant recipe IDs are untrusted exclusion hints\
-        \ only."
+        \ drafts remain chat text only. Legacy conversation history is request-scoped.\
+        \ Orchestration clients may use a bounded Backend session with consent and\
+        \ confirmation; prompts are not persisted. Guest has no account dietary context.\
+        \ Explicit weekly-menu and recipe-authoring requests are checked for entitlement\
+        \ and routed to their dedicated workflow without calling Gemini. Follow-up\
+        \ recipe searches use current public data; assistant recipe IDs are untrusted\
+        \ exclusion hints only."
       operationId: answer
       requestBody:
         content:
@@ -8095,6 +8096,52 @@ paths:
                 $ref: "#/components/schemas/ShoppingListResponse"
       security:
       - bearerAuth: []
+  /api/v1/recipes/ai/chat/sessions/{sessionId}:
+    delete:
+      tags:
+      - ai-chat-controller
+      summary: Delete the current temporary AI conversation session
+      description: Deletes ephemeral consent and pending-action state for the session
+        owned by this member or anonymous viewer. It does not undo completed business
+        actions.
+      operationId: deleteSession
+      parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: anonymousViewerId
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "204":
+          description: Session deleted or already expired.
+        "400":
+          description: Invalid session identifier or viewer identifier.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - {}
+      - bearerAuth: []
 components:
   schemas:
     UpdateShoppingRecipeSourceServingsRequest:
@@ -10000,9 +10047,79 @@ components:
           description: Session-cookie UUID required for Guest rate limiting; ignored
             for authenticated Members.
           pattern: "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+        sessionId:
+          type: string
+          format: uuid
+          description: Opaque AI conversation session identifier returned by the Backend.
+        executionMode:
+          type: string
+          description: Execution mode for this request. Defaults to CONFIRM when omitted.
+          enum:
+          - QA
+          - CONFIRM
+          - AUTO
+        consentDecision:
+          $ref: "#/components/schemas/ConsentDecision"
+        confirmationId:
+          type: string
+          format: uuid
+          description: Server-issued confirmation ID for continuing or rejecting a
+            pending write plan.
+        confirmationDecision:
+          type: string
+          description: Explicit decision for the pending write plan.
+          enum:
+          - APPROVE
+          - REJECT
+        clientRequestId:
+          type: string
+          format: uuid
+          description: Client-generated UUID for request idempotency; required on
+            the G3 pilot path.
       required:
       - contextType
       - question
+    ConsentDecision:
+      type: object
+      properties:
+        action:
+          type: string
+          enum:
+          - GRANT
+          - REVOKE
+        scopes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConsentScope"
+          maxItems: 10
+          minItems: 0
+      required:
+      - action
+    ConsentScope:
+      type: object
+      properties:
+        category:
+          type: string
+          enum:
+          - BASIC_PROFILE
+          - DIETARY_PREFERENCES
+          - HEALTH_PROFILE
+          - SHOPPING_LIST
+        purpose:
+          type: string
+          enum:
+          - AI_CHAT
+          - PROFILE_READ
+          - PROFILE_UPDATE
+          - DIETARY_READ
+          - DIETARY_UPDATE
+          - HEALTH_PROFILE_READ
+          - HEALTH_PROFILE_UPDATE
+          - SHOPPING_LIST_READ
+          - SHOPPING_LIST_WRITE
+      required:
+      - category
+      - purpose
     Turn:
       type: object
       properties:
@@ -10058,6 +10175,86 @@ components:
           type: string
           description: Optional local workflow link. Routing guidance is returned
             without a Gemini call; currently /ke-hoach?view=for-you or /dang-cong-thuc.
+        sessionId:
+          type: string
+          format: uuid
+          description: Opaque Backend-managed conversation session; send it with the
+            next request.
+        executionMode:
+          type: string
+          enum:
+          - QA
+          - CONFIRM
+          - AUTO
+        runId:
+          type: string
+          format: uuid
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssistantStep"
+        consentRequest:
+          $ref: "#/components/schemas/ConsentRequest"
+        pendingConfirmation:
+          $ref: "#/components/schemas/PendingConfirmation"
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/Source"
+        engine:
+          type: string
+          description: Active chat engine for this session (LEGACY_ASSISTANT or ADK_SHOPPING_PILOT).
+        runStatus:
+          type: string
+          description: "Overall run status (COMPLETED, AWAITING_CONSENT, AWAITING_INPUT,\
+            \ AWAITING_CONFIRMATION, PARTIAL_FAILURE, REJECTED, FAILED)."
+        sessionExpiresAt:
+          type: string
+          format: date-time
+          description: Session inactivity expiration timestamp.
+        knowledgeRevision:
+          type: string
+          description: Knowledge catalog/index revision used by the pilot.
+    AssistantStep:
+      type: object
+      properties:
+        sequence:
+          type: integer
+          format: int32
+        tool:
+          type: string
+        status:
+          type: string
+        summary:
+          type: string
+        result:
+          type: object
+          additionalProperties: {}
+    ConsentRequest:
+      type: object
+      properties:
+        scopes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConsentScope"
+        recipient:
+          type: string
+    PendingConfirmation:
+      type: object
+      properties:
+        confirmationId:
+          type: string
+          format: uuid
+        summary:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        requiresExplicitConfirmation:
+          type: boolean
+        proposedListName:
+          type: string
+          description: Preview of the normalized Shopping List name pending confirmation.
     RecipeRecommendation:
       type: object
       properties:
@@ -10077,6 +10274,22 @@ components:
           type: string
         reason:
           type: string
+    Source:
+      type: object
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+        title:
+          type: string
+        excerpt:
+          type: string
+        uri:
+          type: string
+        version:
+          type: string
+          description: "Version of the registered knowledge source, when applicable."
     RecipeAiAssistanceRequest:
       type: object
       properties:
@@ -10137,19 +10350,19 @@ components:
           additionalProperties: {}
         signature:
           type: string
-        amount:
-          type: integer
-          format: int32
-        transactionAtUtc:
+        paymentLinkId:
           type: string
-          format: date-time
-        paymentSuccess:
-          type: boolean
         orderCode:
           type: integer
           format: int64
-        paymentLinkId:
+        amount:
+          type: integer
+          format: int32
+        paymentSuccess:
+          type: boolean
+        transactionAtUtc:
           type: string
+          format: date-time
     ConfirmNutritionEligibilityRequest:
       type: object
       properties:

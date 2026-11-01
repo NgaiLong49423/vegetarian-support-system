@@ -1,21 +1,16 @@
 package tech.mamxanh.admin.repository;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import tech.mamxanh.admin.dto.AdminReportGroupResponse;
 import tech.mamxanh.admin.dto.AdminReportResponse;
 import tech.mamxanh.admin.dto.AdminReportStatusCountsResponse;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.*;
 
 /** Read side of the FR-28 Administrator queue: Recipe Post reports joined with their accounts, grouped by post for FR-30. */
 @Repository

@@ -1,21 +1,9 @@
 package tech.mamxanh.recipe.service;
 
-import java.text.Normalizer;
-import java.time.Clock;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
 import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
@@ -27,8 +15,14 @@ import tech.mamxanh.nutrition.service.DietaryPreferenceService;
 import tech.mamxanh.recipe.dto.response.AiRecipeRecommendationResponse;
 import tech.mamxanh.recipe.dto.response.AiWeeklyMenuPreviewResponse;
 import tech.mamxanh.recipe.dto.response.RecipePostResponse;
-import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 import tech.mamxanh.subscription.service.AiTokenQuotaService;
+import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+
+import java.text.Normalizer;
+import java.time.Clock;
+import java.util.*;
 
 /** FR-34: AI selects only currently published RecipePosts; generated previews are never persisted. */
 @Service

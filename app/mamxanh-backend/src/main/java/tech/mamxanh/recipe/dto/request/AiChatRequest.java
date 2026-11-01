@@ -22,15 +22,23 @@ public record AiChatRequest(
         @Schema(description = "Execution mode for this request. Defaults to CONFIRM when omitted.") ExecutionMode executionMode,
         @Valid ConsentDecision consentDecision,
         @Schema(description = "Server-issued confirmation ID for continuing or rejecting a pending write plan.") UUID confirmationId,
-        @Schema(description = "Explicit decision for the pending write plan.") ConfirmationDecision confirmationDecision) {
+        @Schema(description = "Explicit decision for the pending write plan.") ConfirmationDecision confirmationDecision,
+        @Schema(description = "Client-generated UUID for request idempotency; required on the G3 pilot path.") UUID clientRequestId) {
 
     public AiChatRequest(ContextType contextType, Long recipeId, String question, List<Turn> history) {
-        this(contextType, recipeId, question, history, null, null, null, null, null, null);
+        this(contextType, recipeId, question, history, null, null, null, null, null, null, null);
     }
 
     public AiChatRequest(ContextType contextType, Long recipeId, String question, List<Turn> history,
             String anonymousViewerId) {
-        this(contextType, recipeId, question, history, anonymousViewerId, null, null, null, null, null);
+        this(contextType, recipeId, question, history, anonymousViewerId, null, null, null, null, null, null);
+    }
+
+    public AiChatRequest(ContextType contextType, Long recipeId, String question, List<Turn> history,
+            String anonymousViewerId, UUID sessionId, ExecutionMode executionMode,
+            ConsentDecision consentDecision, UUID confirmationId, ConfirmationDecision confirmationDecision) {
+        this(contextType, recipeId, question, history, anonymousViewerId, sessionId, executionMode,
+                consentDecision, confirmationId, confirmationDecision, null);
     }
 
     @Override
@@ -39,13 +47,19 @@ public record AiChatRequest(
     public enum ContextType { GENERAL, RECIPE }
     public enum ExecutionMode { QA, CONFIRM, AUTO }
     public enum ConsentAction { GRANT, REVOKE }
-    public enum ConsentCategory { BASIC_PROFILE, DIETARY_PREFERENCES, HEALTH_PROFILE }
-    public enum ConsentPurpose { AI_CHAT, PROFILE_READ, PROFILE_UPDATE, DIETARY_READ, DIETARY_UPDATE, HEALTH_PROFILE_READ, HEALTH_PROFILE_UPDATE }
+    public enum ConsentCategory { BASIC_PROFILE, DIETARY_PREFERENCES, HEALTH_PROFILE, SHOPPING_LIST }
+    public enum ConsentPurpose {
+        AI_CHAT,
+        PROFILE_READ, PROFILE_UPDATE,
+        DIETARY_READ, DIETARY_UPDATE,
+        HEALTH_PROFILE_READ, HEALTH_PROFILE_UPDATE,
+        SHOPPING_LIST_READ, SHOPPING_LIST_WRITE
+    }
     public enum ConfirmationDecision { APPROVE, REJECT }
     public enum Speaker { USER, ASSISTANT }
 
     public record ConsentDecision(@NotNull ConsentAction action,
-            @Size(max = 7) List<@Valid ConsentScope> scopes) {
+            @Size(max = 10) List<@Valid ConsentScope> scopes) {
         @AssertTrue(message = "Phạm vi consent phải ghép đúng loại dữ liệu và mục đích.")
         @JsonIgnore
         @Schema(hidden = true)
@@ -59,6 +73,7 @@ public record AiChatRequest(
                         case BASIC_PROFILE -> scope.purpose() == ConsentPurpose.PROFILE_READ || scope.purpose() == ConsentPurpose.PROFILE_UPDATE;
                         case DIETARY_PREFERENCES -> scope.purpose() == ConsentPurpose.DIETARY_READ || scope.purpose() == ConsentPurpose.DIETARY_UPDATE;
                         case HEALTH_PROFILE -> scope.purpose() == ConsentPurpose.HEALTH_PROFILE_READ || scope.purpose() == ConsentPurpose.HEALTH_PROFILE_UPDATE;
+                        case SHOPPING_LIST -> scope.purpose() == ConsentPurpose.SHOPPING_LIST_READ || scope.purpose() == ConsentPurpose.SHOPPING_LIST_WRITE;
                     }));
         }
     }

@@ -24,7 +24,7 @@ final class G2Budget implements GeminiEmbeddingClient.Observer {
         if (!LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).equals(LocalDate.of(2026,11,1)))
             throw new IllegalStateException("Reverify official pricing and update budget bounds before a later live batch");
         Files.createDirectories(directory);
-        if(!Files.exists(directory.resolve("budget.json")) && Files.exists(Path.of("src/main/resources/ai-knowledge/index.json")))
+        if(!Files.exists(directory.resolve("budget.json")) && Files.exists(Path.of("src/main/resources/knowledge-base/index.json")))
             throw new IllegalStateException("Published G2 index exists but cumulative ledger is missing; restore it before live calls");
     }
     synchronized void reserve(double amount, boolean generation) {

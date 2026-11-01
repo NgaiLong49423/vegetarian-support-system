@@ -1,7 +1,8 @@
 package tech.mamxanh.shopping.dto.request;
 
-import java.math.BigDecimal;
 import jakarta.validation.constraints.*;
+
+import java.math.BigDecimal;
 
 public record CreateShoppingItemRequest(
         @NotBlank @Size(max = 200) String name,

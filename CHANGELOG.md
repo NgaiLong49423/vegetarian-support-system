@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.142.1
+> **Version:** v2.143.2
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-11-01
 > **Status:** Active
@@ -8,6 +8,51 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-11-01 — Add Opt-In ADK Shopping List Chat Pilot
+
+**Status:** Committed — `67eacd04`.
+
+**Scope:** Connect local Member chat to native ADK, G3 hybrid knowledge and existing Shopping List services, preserving default routing.
+
+### Added
+
+- Add shared Customer/Expert Shopping List consent, QA previews, native confirmation, AUTO guards and real-ID create/read sequencing.
+- Add call-start accounting snapshots, transactional quota-to-Credit completion, exact system-absorbed Credit migration V39 and a cumulative live-evaluation budget guard.
+- Add native fault/authorization tests, SQL accounting/ownership tests and isolated real-stack live/browser scenarios.
+
+### Changed
+
+- Extend chat metadata and legacy-compatible request identifiers; show source versions, proposed names and Backend step results, with a 35-second HTTP deadline.
+- Add a separate G3 corpus/index revision using embedding-2/768, preserving G2.
+- Clarify exhausted-budget checks before writes and Shopping List consent, including query embeddings.
+
+### Fixed
+
+- Preserve sources across clarification/cancellation, reject forged history and stale/foreign actions, and prevent duplicate creates or incorrect read-back IDs.
+- Preserve committed create results on later failure and roll back usage with Credit when accounting persistence fails.
+
+## 2026-11-01 — Implement AI Agent Knowledge Base and Behavioral Policies
+
+**Status:** Committed — 900d000f.
+
+**Scope:** Packaged business knowledge base, core behavioral policies, and dynamic classpath prompt loader for Mâm Xanh AI Agent.
+
+### Added
+
+- Add structured business Knowledge Base in Spring classpath resources (`knowledge-base/`) with 38 domain topic guides across 8 user-oriented categories and verified `catalog.json` manifest.
+- Add foundational system instructions (`ai/prompts/system.md`) and four core behavioral policies (`ai/policies/`: `scope-policy.md`, `safety-policy.md`, `security-policy.md`, `response-style.md`).
+- Add `AiPromptLoader` component in `tech.mamxanh.integration.ai` to dynamically load, strip YAML front matter, synthesize, and cache prompts in memory from classpath resources with safe fallback.
+- Add comprehensive unit test suite in `AiPromptLoaderTest` verifying classpath loading, front matter stripping, memory caching, fallback handling, and secret protection.
+
+### Changed
+
+- Update `AiChatService` and `AiAssistantExecutionService` to dynamically load system instructions and behavioral policies from classpath via `AiPromptLoader`.
+- Update system architecture (`ARCHITECTURE.md`), technology stack (`TECHNOLOGY-STACK.md`), backend workspace guide (`app/mamxanh-backend/README.md`), API integration guide (`API.md`), and repository overview (`README.md`) to reflect the transition from a passive chatbot to an active AI Agent backed by an internal Knowledge Base and Behavioral Policies.
+
+### Fixed
+
+- None.
 
 ## 2026-11-01 — Add Isolated ADK Knowledge and Hybrid Retrieval Pilot
 

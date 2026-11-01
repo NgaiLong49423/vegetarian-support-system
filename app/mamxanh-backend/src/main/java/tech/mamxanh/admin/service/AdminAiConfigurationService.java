@@ -1,20 +1,5 @@
 package tech.mamxanh.admin.service;
 
-import java.text.NumberFormat;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -37,6 +22,16 @@ import tech.mamxanh.subscription.entity.AiConfigurationSnapshot.Credit;
 import tech.mamxanh.subscription.entity.AiConfigurationSnapshot.Model;
 import tech.mamxanh.subscription.entity.AiConfigurationSnapshot.Plan;
 import tech.mamxanh.subscription.repository.AiConfigurationRepository;
+
+import java.text.NumberFormat;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /** Admin operations over the subscription-owned AI settings. Provider validation runs outside SQL transactions. */
 @Service

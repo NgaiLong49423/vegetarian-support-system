@@ -1,8 +1,8 @@
 > **Document:** System Architecture  
 > **File:** `docs/architecture/ARCHITECTURE.md`  
-> **Version:** v1.14.0
+> **Version:** v2.0.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-10-29
+> **Last Updated:** 2026-11-01
 > **Status:** Active  
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/TECHNOLOGY-STACK.md`, `docs/diagrams/C4 Container Diagram/README.md`, `docs/diagrams/ERD/README.md`
 
@@ -98,24 +98,43 @@ Luồng ban đầu giữ authorization cho upload và kiểm tra file (JPEG/PNG/
 
 Recipe Post lưu link YouTube hoặc video ID được hỗ trợ. Browser nhúng YouTube iframe player; ứng dụng không upload, sao chép hoặc lưu trữ file video YouTube.
 
-### 4.4 Luồng Gemini AI
+### 4.4 Kiến trúc AI Agent Orchestration, Knowledge Base & Behavioral Policies
+
+Mâm Xanh không sử dụng mô hình Chatbot thụ động mà vận hành một **AI Agent nội bộ đa năng (Internal AI Agent)** tích hợp chặt chẽ trong ứng dụng Spring Boot Backend. Trợ lý AI có khả năng hiểu mục tiêu người dùng, tra cứu kho tri thức nghiệp vụ chuyên biệt, tự động lập kế hoạch và điều phối công cụ đa bước theo các chế độ thực thi an toàn.
 
 ```text
-Browser request -> backend feature entitlement & rate limit checks -> AiClient (GeminiClient)
-                                                                             |
-                                                                             v
-                                                                    Google Gen AI Java SDK
-                                                                             |
-                                                                             v
-                                                                    gemini-3.8-flash
-                                                                             |
-            valid JSON response <- structured output validation
-            failure / timeout   <- classified error, ghi log kỹ thuật, phản hồi thân thiện
+Browser Client (AiChatRequest: sessionId, executionMode, consentDecision, confirmationDecision)
+       │
+       ▼
+Spring Boot Backend (Modular Monolith)
+ ├── Security & Rate Limiting (Stateless JWT / Anonymous Guest Cookie, Quota & Entitlements)
+ ├── Scope Classification (classifyScope: MX_CHAT_OK, MX_CHAT_OFF_TOPIC, MX_CHAT_SENSITIVE)
+ ├── AI Agent Orchestrator (AiAssistantExecutionService / AdkShoppingPilotService)
+ │     ├── Session & Consent Store (AiAssistantSessionStore, RAM TTL 30m, ConsentScopes)
+ │     ├── System Instructions & Dynamic Policy Loader (AiPromptLoader)
+ │     │     ├── classpath:ai/prompts/system.md
+ │     │     └── classpath:ai/policies/ (scope, safety, security, response-style)
+ │     ├── Knowledge Base Retriever (ApprovedAiKnowledgeRetriever / HybridKnowledgeRetriever)
+ │     │     └── classpath:knowledge-base/ (catalog allowlist + all registered domain topics)
+ │     └── Tool Registry (AiAssistantToolRegistry, filtered by Role: GUEST, CUSTOMER, EXPERT)
+ │           ├── Read/Search Tools (search_recipes, get_recipe, get_meal_plan, get_shopping_list)
+ │           └── Write Tools (create_shopping_list, update_profile, navigate_to_page)
+ │                 └── Hard Safeguards (alwaysConfirm = true for destructive / publishing actions)
+ └── AiClient (GeminiAiClient) -> Google Gen AI SDK (gemini-3.8-flash)
 ```
 
-- **SDK & Model:** Dùng Google Gen AI Java SDK chính thức (`com.google.genai:google-genai`), khóa model ID cố định là `gemini-3.8-flash`.
-- **Abstraction:** Đóng gói qua interface `AiClient` để độc lập logic nghiệp vụ và hỗ trợ viết Mock Unit Test.
-- **Resilience:** Cấu hình timeout và tối đa 1 lần retry cho transient errors (mạng, 429, 5xx). Lỗi external AI không làm gián đoạn các tính năng phi AI của ứng dụng.
+- **Mô hình Vận hành Nội bộ (Internal Module):** AI Agent là một service nội bộ thuộc Spring Boot, chia sẻ chung cơ sở dữ liệu, mô hình xác thực và transaction boundary với toàn bộ hệ thống; không phải microservice độc lập hay chatbot bên ngoài.
+- **Nguồn tri thức duy nhất:** `app/mamxanh-backend/src/main/resources/knowledge-base/` là kho tri thức nghiệp vụ duy nhất cho các luồng AI, được quản lý bằng `catalog.json` và nạp qua Spring Classpath Resource. Tài liệu trong catalog là nguồn cho RAG; AI không quét toàn repository và không coi `ai-knowledge/`, prompt hay policy là tri thức nghiệp vụ hoặc nguồn thay thế. Tri thức tĩnh trong kho không thay thế dữ liệu hiện tại của hệ thống; khi cần dữ liệu tài khoản/nghiệp vụ, Agent phải dùng tool được cấp và Backend kiểm tra quyền.
+- **Chỉ dẫn và chính sách AI (System Instructions & Behavioral Policies):** `app/mamxanh-backend/src/main/resources/ai/` chỉ định nghĩa AI phải làm gì, trả lời thế nào và những giới hạn phải tuân thủ. Nội dung gồm system prompt và các policy; đây không phải kho tri thức nghiệp vụ và không được dùng làm nguồn sự thật về trạng thái dữ liệu động.
+  - Được lưu trữ dưới dạng Markdown kết hợp YAML Front Matter tại `src/main/resources/ai/prompts/system.md` và `src/main/resources/ai/policies/` (`scope-policy.md`, `safety-policy.md`, `security-policy.md`, `response-style.md`).
+  - Được nạp, bóc tách front matter, tổng hợp và cache trong bộ nhớ bởi `AiPromptLoader`. Cơ chế này hoạt động độc lập với filesystem vật lý, tương thích 100% khi đóng gói thành file JAR trong Docker Container.
+- **Quy tắc loại trừ nguồn cũ:** `ai-knowledge/` không thuộc kiến trúc kho tri thức đích. Không thêm nội dung nghiệp vụ hoặc duy trì catalog/index tri thức độc lập tại đó. Mọi tài liệu nghiệp vụ đang nằm ở nguồn này phải được đối chiếu và chuyển vào `knowledge-base/` trước khi ngừng sử dụng. Việc runtime hiện tại còn nạp nguồn này được ghi nhận là khoảng trống chuyển đổi trong Backend Workspace Guide; tài liệu kiến trúc này không khẳng định code đã hoàn tất chuyển đổi.
+- **Thứ bậc Quyền lực Bất khả xâm phạm (Hierarchy of Authority):**
+  $\textbf{System Instruction / Policies} \gg \textbf{Backend Tool Results} \gg \textbf{Knowledge Base (RAG)} \gg \textbf{User Inputs}$
+  Dữ liệu RAG và nội dung người dùng luôn là Untrusted Data; AI tuyệt đối không bị thao túng bởi các thủ thuật Prompt Injection / Jailbreak.
+- **Nguyên tắc Phân quyền (Server-Side RBAC Enforcement):** AI Agent không tự ý phân quyền. Toàn bộ quyền truy cập dữ liệu, kiểm tra quyền sở hữu (`Ownership`) và thẩm quyền vai trò (`GUEST`, `CUSTOMER`, `EXPERT`) được mã nguồn Java Spring Boot kiểm soát triệt để khi gọi Tool.
+- **Chốt chặn An toàn Cứng (Hard Safeguards):** Các thao tác có rủi ro cao (đăng công thức, xóa công thức, xóa danh sách đi chợ) luôn kích hoạt cờ `alwaysConfirm = true` và bắt buộc có xác nhận rõ ràng của người dùng (`AWAITING_CONFIRMATION` $\rightarrow$ `APPROVE`) mới được ghi vào cơ sở dữ liệu.
+- **SDK, Model & Resilience:** Dùng Google Gen AI Java SDK chính thức (`com.google.genai:google-genai`), khóa model ID cố định `gemini-3.8-flash`. Đóng gói qua interface `AiClient` để dễ dàng mock test; cấu hình timeout và tối đa 1 lần retry cho transient errors.
 - **Output:** Áp dụng Native Structured Outputs (JSON Schema) để nhận kết quả gợi ý món ăn/thực đơn có cấu trúc chặt chẽ.
 
 ### 4.5 Capability Google Maps không thuộc baseline hiện hành

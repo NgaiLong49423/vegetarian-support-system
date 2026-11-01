@@ -1,30 +1,15 @@
 package tech.mamxanh.auth.controller;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
-
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-
 import jakarta.validation.Valid;
-import tech.mamxanh.auth.dto.request.EmailRequest;
-import tech.mamxanh.auth.dto.request.GoogleLoginRequest;
-import tech.mamxanh.auth.dto.request.LoginRequest;
-import tech.mamxanh.auth.dto.request.PasswordResetConfirmRequest;
-import tech.mamxanh.auth.dto.request.RegisterRequest;
-import tech.mamxanh.auth.dto.request.TokenRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+import tech.mamxanh.auth.dto.request.*;
 import tech.mamxanh.auth.dto.response.AuthResponse;
 import tech.mamxanh.auth.dto.response.MessageResponse;
 import tech.mamxanh.auth.dto.response.RegistrationResponse;
-import tech.mamxanh.auth.service.EmailVerificationService;
-import tech.mamxanh.auth.service.GoogleLoginService;
-import tech.mamxanh.auth.service.LoginService;
-import tech.mamxanh.auth.service.PasswordResetService;
-import tech.mamxanh.auth.service.RegistrationService;
+import tech.mamxanh.auth.service.*;
 
 /** FR-03 authentication endpoints; springdoc generates their runtime OpenAPI contract. */
 @RestController

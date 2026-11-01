@@ -1,9 +1,9 @@
 package tech.mamxanh.recipe.dto.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.time.LocalDateTime;
 import java.util.List;
-
-import io.swagger.v3.oas.annotations.media.Schema;
 
 /** One FR-46 comment with its visible replies, oldest first. */
 public record CommentResponse(

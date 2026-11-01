@@ -58,7 +58,7 @@ public final class AdkSpikeSession implements AutoCloseable {
 
     public AdkSpikeSession(Authentication owner, AdkModelGateway gateway, List<Tool> tools,
             Clock clock, Duration runTimeout, String instruction, int maxOutputTokens) {
-        if (maxOutputTokens < 512 || maxOutputTokens > 1024) throw new IllegalArgumentException("Pilot output limit");
+        if (maxOutputTokens < 512 || maxOutputTokens > 8192) throw new IllegalArgumentException("Output limit");
         if (!"false".equalsIgnoreCase(System.getenv("ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS"))) {
             throw new IllegalStateException("Disable ADK message-content tracing before constructing the runner");
         }

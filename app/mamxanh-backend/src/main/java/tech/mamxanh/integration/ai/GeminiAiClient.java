@@ -28,6 +28,7 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
     private static final String MODEL = "gemini-3.8-flash";
     static final int DEFAULT_TIMEOUT_MILLIS = REQUEST_TIMEOUT_MS;
     private final Client client;
+    private final AiPromptLoader promptLoader = new AiPromptLoader();
     private final ExecutorService requests = Executors.newThreadPerTaskExecutor(
             Thread.ofVirtual().name("gemini-request-", 0).factory());
 
@@ -77,6 +78,7 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                 .required(List.of("description", "steps")).build();
         GenerateContentConfig config = GenerateContentConfig.builder()
                 .responseMimeType("application/json")
+                .systemInstruction(Content.fromParts(Part.fromText(promptLoader.loadSystemPrompt())))
                 .responseSchema(schema)
                 .candidateCount(1)
                 .maxOutputTokens(8192)
@@ -232,6 +234,7 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                         .maxItems((long) limit).items(Schema.builder().type(Type.Known.INTEGER)).build()))
                 .required(List.of("recipeIds")).build();
         GenerateContentConfig config = GenerateContentConfig.builder().responseMimeType("application/json")
+                .systemInstruction(Content.fromParts(Part.fromText(promptLoader.loadSystemPrompt())))
                 .responseSchema(schema).candidateCount(1).maxOutputTokens(2048)
                 .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build()).build();
         return request("RECOMMENDATIONS", "Gemini recommendation request failed", () -> {
@@ -256,6 +259,7 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                                 .items(Schema.builder().type(Type.Known.INTEGER).build()).build()))
                 .required(List.of("analysis", "recipeIds")).build();
         GenerateContentConfig config = GenerateContentConfig.builder().responseMimeType("application/json")
+                .systemInstruction(Content.fromParts(Part.fromText(promptLoader.loadSystemPrompt())))
                 .responseSchema(schema).candidateCount(1).maxOutputTokens(2048)
                 .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build()).build();
         return request("NUTRITION", "Gemini nutrition analysis failed", () -> {

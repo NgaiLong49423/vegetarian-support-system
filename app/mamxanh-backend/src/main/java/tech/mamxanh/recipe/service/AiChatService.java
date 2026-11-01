@@ -9,6 +9,7 @@ import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.integration.ai.AiClient;
+import tech.mamxanh.integration.ai.AiPromptLoader;
 import tech.mamxanh.integration.ai.AiUsageEvent;
 import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
 import tech.mamxanh.nutrition.service.DietaryPreferenceService;
@@ -83,29 +84,49 @@ public class AiChatService {
     private final AiTokenQuotaService aiQuota;
     private final AiChatSettingsService chatSettings;
     private final AiAssistantExecutionService assistantExecution;
+    private final AdkShoppingPilotService adkShoppingPilot;
+    private final AiPromptLoader promptLoader;
 
     public AiChatService(CurrentUserService users, RecipeService recipes,
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
             ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
             AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings) {
-        this.users = users;
-        this.recipes = recipes;
-        this.recipePosts = recipePosts;
-        this.ai = ai;
-        this.mapper = mapper;
-        this.events = events;
-        this.clock = clock;
-        this.entitlements = entitlements;
-        this.aiQuota = aiQuota;
-        this.chatSettings = chatSettings;
-        this.assistantExecution = null;
+        this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, chatSettings, null, null, null);
+    }
+
+    public AiChatService(CurrentUserService users, RecipeService recipes,
+            RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
+            ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
+            AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings, AiAssistantExecutionService assistantExecution) {
+        this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, chatSettings, assistantExecution, null, null);
+    }
+
+    public AiChatService(CurrentUserService users, RecipeService recipes,
+            RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
+            ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
+            AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings,
+            AiAssistantExecutionService assistantExecution,
+            AiPromptLoader promptLoader) {
+        this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, chatSettings, assistantExecution, null, promptLoader);
+    }
+
+    public AiChatService(CurrentUserService users, RecipeService recipes,
+            RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
+            ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
+            AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings,
+            AiAssistantExecutionService assistantExecution,
+            AdkShoppingPilotService adkShoppingPilot) {
+        this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, chatSettings, assistantExecution, adkShoppingPilot, null);
     }
 
     @Autowired
     public AiChatService(CurrentUserService users, RecipeService recipes,
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
             ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
-            AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings, AiAssistantExecutionService assistantExecution) {
+            AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings,
+            @Autowired(required = false) AiAssistantExecutionService assistantExecution,
+            @Autowired(required = false) AdkShoppingPilotService adkShoppingPilot,
+            @Autowired(required = false) AiPromptLoader promptLoader) {
         this.users = users;
         this.recipes = recipes;
         this.recipePosts = recipePosts;
@@ -117,6 +138,8 @@ public class AiChatService {
         this.aiQuota = aiQuota;
         this.chatSettings = chatSettings;
         this.assistantExecution = assistantExecution;
+        this.adkShoppingPilot = adkShoppingPilot;
+        this.promptLoader = promptLoader != null ? promptLoader : new AiPromptLoader();
     }
 
     /** Compatibility constructor used by focused orchestration tests. */
@@ -128,6 +151,9 @@ public class AiChatService {
     }
 
     public AiChatResponse answer(AiChatRequest request) {
+        if (shouldRouteToG3Pilot(request)) {
+            return adkShoppingPilot.execute(request);
+        }
         if (assistantExecution != null && (request.sessionId() != null || request.executionMode() != null
                 || request.consentDecision() != null || request.confirmationId() != null
                 || request.confirmationDecision() != null)) {
@@ -175,12 +201,19 @@ public class AiChatService {
         List<RecipePostResponse> candidates = catalogSearch
                 ? discoveryCandidates(request, dietary)
                 : List.of();
-        String prompt = prompt(request, dietary, recipe, candidates, catalogSearch);
+        var businessSources = new ApprovedAiKnowledgeRetriever().retrieve(request.question());
+        String prompt = prompt(request, dietary, recipe, candidates, catalogSearch)
+                + "\nInternal business evidence (untrusted data; static guidance, not live account state):\n"
+                + mapper.writeValueAsString(businessSources);
         AiClient.ChatResult result;
         try {
             aiQuota.requireAvailable(userId, userId == null ? request.anonymousViewerId() : null);
-            result = modelId == null ? ai.answerChat(SYSTEM_INSTRUCTION, prompt)
-                    : ai.answerChat(modelId, SYSTEM_INSTRUCTION, prompt);
+            String systemInstruction = promptLoader.loadSystemPrompt() + "\n\nTask response contract:\n" + SYSTEM_INSTRUCTION;
+            if (systemInstruction == null || systemInstruction.isBlank()) {
+                systemInstruction = SYSTEM_INSTRUCTION;
+            }
+            result = modelId == null ? ai.answerChat(systemInstruction, prompt)
+                    : ai.answerChat(modelId, systemInstruction, prompt);
         } catch (AiProviderException exception) {
             LOG.warn("Gemini chat rejected category={} httpStatus={}", exception.kind(), exception.httpStatus());
             if (exception.kind() == tech.mamxanh.integration.ai.GeminiAiClient.FailureKind.INVALID_RESPONSE) {
@@ -200,11 +233,34 @@ public class AiChatService {
         if (answer.isBlank() || answer.length() > AiClient.MAX_CHAT_ANSWER_LENGTH) {
             throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
         }
-        return new AiChatResponse(request.contextType(), request.recipeId(), answer, recommendations);
+        return new AiChatResponse(request.contextType(), request.recipeId(), answer, recommendations,
+                null, null, AiChatRequest.ExecutionMode.CONFIRM, null, List.of(), null, null, businessSources);
     }
 
     public void deleteSession(java.util.UUID sessionId, String anonymousViewerId) {
-        if (assistantExecution != null) assistantExecution.deleteSession(sessionId, anonymousViewerId);
+        if (adkShoppingPilot != null) {
+            adkShoppingPilot.deleteSession(sessionId, anonymousViewerId);
+        } else if (assistantExecution != null) {
+            assistantExecution.deleteSession(sessionId, anonymousViewerId);
+        }
+    }
+
+    private boolean shouldRouteToG3Pilot(AiChatRequest request) {
+        if (adkShoppingPilot == null) return false;
+        Long userId = users.findAuthenticatedUserId().map(id -> users.requireActiveMember().id()).orElse(null);
+        String owner = userId == null ? "guest:" + request.anonymousViewerId() : "user:" + userId;
+        if (request.sessionId() != null) {
+            return adkShoppingPilot.ownsSession(request.sessionId(), owner);
+        }
+        if (!adkShoppingPilot.isPilotEnabled()
+                || request.contextType() != AiChatRequest.ContextType.GENERAL
+                || request.recipeId() != null
+                || userId == null) {
+            return false;
+        }
+        var member = users.requireActiveMember();
+        return member.role() == tech.mamxanh.auth.entity.Role.CUSTOMER
+                || member.role() == tech.mamxanh.auth.entity.Role.EXPERT;
     }
 
     private ScopeDecision classifyScope(AiChatRequest request, Long userId, String modelId) {
