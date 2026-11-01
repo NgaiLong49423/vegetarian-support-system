@@ -35,4 +35,19 @@ public final class MemberAccountingPolicy implements AdkModelGateway.Policy {
         quota.completeCall(call.id(),snapshot,usage.metadata());
         if(events!=null) events.publishEvent(new AiUsageEvent(call.id(),snapshot.userId(),null,snapshot.feature(),snapshot.startedAt(),usage.metadata()));
     }
+
+    /** Single-step business services settle usage after validating their response. */
+    public AdkModelGateway.Policy preflightOnly() {
+        return new AdkModelGateway.Policy() {
+            @Override
+            public Object beforeCall(AdkModelGateway.Call call) {
+                return MemberAccountingPolicy.this.beforeCall(call);
+            }
+
+            @Override
+            public void onUsableResponse(AdkModelGateway.Call call, Object context, AdkModelGateway.Usage usage) {
+                // The calling business service owns its ledger write and telemetry event.
+            }
+        };
+    }
 }

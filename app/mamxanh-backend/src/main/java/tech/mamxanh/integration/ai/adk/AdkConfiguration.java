@@ -49,10 +49,11 @@ public class AdkConfiguration {
         String apiKey = (configuredApiKey != null && !configuredApiKey.isBlank())
                 ? configuredApiKey
                 : System.getenv("GEMINI_API_KEY");
-        MemberAccountingPolicy policy = new MemberAccountingPolicy(users, aiQuota, events);
-        return new AdkSingleStepTaskRunner(defaultGateway, clock, modelId -> {
+        AdkModelGateway.Policy policy = new MemberAccountingPolicy(users, aiQuota, events).preflightOnly();
+        AdkModelGateway singleStepGateway = defaultGateway.withPolicy(policy);
+        return new AdkSingleStepTaskRunner(singleStepGateway, clock, modelId -> {
             if (modelId == null || modelId.isBlank() || modelId.equals(defaultGateway.model())) {
-                return defaultGateway;
+                return singleStepGateway;
             }
             BaseLlm model = createLlm(apiKey, modelId);
             return new AdkModelGateway(model, policy, clock);

@@ -8,8 +8,11 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.security.core.context.SecurityContextHolder;
 import tech.mamxanh.integration.ai.adk.AdkSingleStepTaskRunner;
 import tech.mamxanh.integration.ai.adk.AdkSingleStepTaskRunner.SingleStepResult;
+import tech.mamxanh.auth.service.CurrentUserService;
+import tech.mamxanh.subscription.service.AiChatSettingsService;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,6 +29,12 @@ class AdkAiClientTest {
 
     @Mock
     private GeminiAiClient fallbackClient;
+
+    @Mock
+    private CurrentUserService users;
+
+    @Mock
+    private AiChatSettingsService chatSettings;
 
     private AutoCloseable mocks;
     private AdkAiClient primaryClient;
@@ -57,6 +66,23 @@ class AdkAiClientTest {
         assertThat(result.promptTokens()).isEqualTo(100);
         assertThat(result.responseTokens()).isEqualTo(200);
         assertThat(result.totalTokens()).isEqualTo(300);
+        verifyNoInteractions(fallbackClient);
+    }
+
+    @Test
+    void recipeTaskUsesTheMembersAllowedModelInsteadOfTheFixedDefault() {
+        when(users.findAuthenticatedUserId()).thenReturn(Optional.of(7L));
+        when(chatSettings.resolve(7L, null)).thenReturn("gemini-3.5-flash-lite");
+        AiTokenUsage usage = new AiTokenUsage("gemini-3.5-flash-lite", "STANDARD", 10, 20, 30, 0, 0, 0);
+        when(taskRunner.executeTaskWithResult(any(), eq("gemini-3.5-flash-lite"), eq("RECIPE_TEXT"),
+                any(), any(), any(), anyInt(), any()))
+                .thenReturn(new SingleStepResult("{\"description\":\"Món chay\",\"steps\":[]}", usage));
+
+        var client = new AdkAiClient(taskRunner, fallbackClient, "ADK_PRIMARY", users, chatSettings);
+        var result = client.generateRecipeContent("Nấu đậu phụ", List.of(1L));
+
+        assertThat(result.usage().model()).isEqualTo("gemini-3.5-flash-lite");
+        verify(chatSettings).resolve(7L, null);
         verifyNoInteractions(fallbackClient);
     }
 

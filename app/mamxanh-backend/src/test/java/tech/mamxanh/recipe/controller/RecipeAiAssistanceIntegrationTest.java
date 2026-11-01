@@ -2,7 +2,6 @@ package tech.mamxanh.recipe.controller;
 
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -60,26 +59,22 @@ class RecipeAiAssistanceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void requiresAuthenticationAndRejectsFreePlanBeforeGemini() throws Exception {
+    void requiresAuthenticationButAllowsFreeExpertWithBudget() throws Exception {
         mockMvc.perform(post("/api/v1/recipes/ai-assistance").contentType(MediaType.APPLICATION_JSON).content(request()))
                 .andExpect(status().isUnauthorized());
         mockMvc.perform(post("/api/v1/recipes/ai-assistance").with(principal(freeExpertId))
                         .contentType(MediaType.APPLICATION_JSON).content(request()))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("AI_SUBSCRIPTION_REQUIRED"));
-        verify(aiClient, never()).generateRecipeContent(anyString(), anyList());
+                .andExpect(status().isOk());
+        verify(aiClient).generateRecipeContent(anyString(), anyList());
     }
 
     @Test
-    void activePlusSubscriptionRequiresProBeforeCallingGemini() throws Exception {
+    void activePlusSubscriptionCanCallGemini() throws Exception {
         jdbcTemplate.update("UPDATE [SUBSCRIPTION] SET tier='PLUS' WHERE user_id=?", proExpertId);
         mockMvc.perform(post("/api/v1/recipes/ai-assistance").with(principal(proExpertId))
                         .contentType(MediaType.APPLICATION_JSON).content(request()))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("AI_SUBSCRIPTION_REQUIRED"))
-                .andExpect(jsonPath("$.requiredTier").value("PRO"))
-                .andExpect(jsonPath("$.upgradeUrl").value("/goi-ai"));
-        verify(aiClient, never()).generateRecipeText(anyString(), anyList());
+                .andExpect(status().isOk());
+        verify(aiClient).generateRecipeContent(anyString(), anyList());
     }
 
     @Test
@@ -94,14 +89,14 @@ class RecipeAiAssistanceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void expiredSubscriptionIsDeniedByTheSqlServerEntitlementQuery() throws Exception {
+    void expiredSubscriptionFallsBackToFreeBudget() throws Exception {
         jdbcTemplate.update("UPDATE [SUBSCRIPTION] SET ends_at = ? WHERE user_id = ?",
                 LocalDateTime.of(2026, 9, 1, 0, 0), proExpertId);
 
         mockMvc.perform(post("/api/v1/recipes/ai-assistance").with(principal(proExpertId))
                         .contentType(MediaType.APPLICATION_JSON).content(request()))
-                .andExpect(status().isForbidden());
-        verify(aiClient, never()).generateRecipeContent(anyString(), anyList());
+                .andExpect(status().isOk());
+        verify(aiClient).generateRecipeContent(anyString(), anyList());
     }
 
     @Test

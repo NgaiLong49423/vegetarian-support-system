@@ -11,8 +11,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import tech.mamxanh.common.exception.AppException;
+import tech.mamxanh.common.exception.ApiException;
 import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
 import tech.mamxanh.integration.ai.adk.AdkSingleStepTaskRunner;
+import tech.mamxanh.auth.service.CurrentUserService;
+import tech.mamxanh.subscription.service.AiChatSettingsService;
 
 import java.time.Duration;
 import java.util.List;
@@ -35,15 +38,25 @@ public class AdkAiClient implements AiClient, AutoCloseable {
     private final AiPromptLoader promptLoader;
     private final GeminiAiClient fallbackClient;
     private final String migrationMode;
+    private final CurrentUserService users;
+    private final AiChatSettingsService chatSettings;
 
     @Autowired
     public AdkAiClient(AdkSingleStepTaskRunner taskRunner,
                        @Autowired(required = false) GeminiAiClient fallbackClient,
-                       @Value("${mamxanh.ai.migration.mode:ADK_PRIMARY}") String migrationMode) {
+                       @Value("${mamxanh.ai.migration.mode:ADK_PRIMARY}") String migrationMode,
+                       CurrentUserService users,
+                       AiChatSettingsService chatSettings) {
         this.taskRunner = taskRunner;
         this.promptLoader = new AiPromptLoader();
         this.fallbackClient = fallbackClient;
         this.migrationMode = migrationMode != null ? migrationMode : "ADK_PRIMARY";
+        this.users = users;
+        this.chatSettings = chatSettings;
+    }
+
+    public AdkAiClient(AdkSingleStepTaskRunner taskRunner, GeminiAiClient fallbackClient, String migrationMode) {
+        this(taskRunner, fallbackClient, migrationMode, null, null);
     }
 
     public AdkAiClient(AdkSingleStepTaskRunner taskRunner, GeminiAiClient fallbackClient) {
@@ -56,6 +69,12 @@ public class AdkAiClient implements AiClient, AutoCloseable {
 
     private Authentication currentAuth() {
         return SecurityContextHolder.getContext().getAuthentication();
+    }
+
+    private String selectedModel() {
+        if (users == null || chatSettings == null) return taskRunner.model();
+        Long userId = users.findAuthenticatedUserId().orElse(null);
+        return userId == null ? taskRunner.model() : chatSettings.resolve(userId, null);
     }
 
     @Override
@@ -83,7 +102,7 @@ public class AdkAiClient implements AiClient, AutoCloseable {
         String fullPrompt = prompt + "\nIngredient IDs entered by the author: " + enteredIngredientIds;
         try {
             var result = taskRunner.executeTaskWithResult(
-                    currentAuth(), null, "RECIPE_TEXT", promptLoader.loadSystemPrompt(), fullPrompt,
+                    currentAuth(), selectedModel(), "RECIPE_TEXT", promptLoader.loadSystemPrompt(), fullPrompt,
                     schema, 8192, DEFAULT_TIMEOUT);
 
             if (result.text() == null || result.text().isBlank()) {
@@ -91,7 +110,7 @@ public class AdkAiClient implements AiClient, AutoCloseable {
             }
             var usage = result.usage();
             return new RecommendationResult(result.text(), usage.promptTokens(), usage.responseTokens(), usage.totalTokens(), usage);
-        } catch (AppException e) {
+        } catch (AppException | ApiException e) {
             throw e;
         } catch (AiProviderException e) {
             throw e;
@@ -120,7 +139,7 @@ public class AdkAiClient implements AiClient, AutoCloseable {
         String fullPrompt = prompt + "\nChoose at most " + slots + " IDs from " + allowedRecipeIds;
         try {
             var result = taskRunner.executeTaskWithResult(
-                    currentAuth(), null, "RECOMMENDATIONS", promptLoader.loadSystemPrompt(), fullPrompt,
+                    currentAuth(), selectedModel(), "RECOMMENDATIONS", promptLoader.loadSystemPrompt(), fullPrompt,
                     schema, 2048, DEFAULT_TIMEOUT);
 
             if (result.text() == null || result.text().isBlank()) {
@@ -128,7 +147,7 @@ public class AdkAiClient implements AiClient, AutoCloseable {
             }
             var usage = result.usage();
             return new RecommendationResult(result.text(), usage.promptTokens(), usage.responseTokens(), usage.totalTokens(), usage);
-        } catch (AppException e) {
+        } catch (AppException | ApiException e) {
             throw e;
         } catch (AiProviderException e) {
             throw e;
@@ -154,7 +173,7 @@ public class AdkAiClient implements AiClient, AutoCloseable {
         String fullPrompt = prompt + "\nChoose at most " + limit + " IDs from " + allowedRecipeIds;
         try {
             var result = taskRunner.executeTaskWithResult(
-                    currentAuth(), null, "NUTRITION", promptLoader.loadSystemPrompt(), fullPrompt,
+                    currentAuth(), selectedModel(), "NUTRITION", promptLoader.loadSystemPrompt(), fullPrompt,
                     schema, 2048, DEFAULT_TIMEOUT);
 
             if (result.text() == null || result.text().isBlank()) {
@@ -162,7 +181,7 @@ public class AdkAiClient implements AiClient, AutoCloseable {
             }
             var usage = result.usage();
             return new RecommendationResult(result.text(), usage.promptTokens(), usage.responseTokens(), usage.totalTokens(), usage);
-        } catch (AppException e) {
+        } catch (AppException | ApiException e) {
             throw e;
         } catch (AiProviderException e) {
             throw e;
