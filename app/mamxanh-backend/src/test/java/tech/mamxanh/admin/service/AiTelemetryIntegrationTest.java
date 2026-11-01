@@ -137,7 +137,7 @@ class AiTelemetryIntegrationTest extends AbstractIntegrationTest {
         String body = "{\"contextType\":\"GENERAL\",\"question\":\"FR11 private question marker\",\"anonymousViewerId\":\""+guest+"\"}";
         mockMvc.perform(post("/api/v1/recipes/ai/chat").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.answer").value("Chao ban"));
-        awaitCount(1);
+        awaitCount(2);
         assertThat(output.getAll()).doesNotContain("FR11 private question marker", "Chao ban", "private provider failure");
         assertThat(jdbc.queryForObject("SELECT TOP 1 anonymous_session_id FROM AI_USAGE_TELEMETRY WHERE anonymous_session_id=?",String.class,guest)).isEqualTo(guest);
         when(ai.answerChat(anyString(),anyString())).thenThrow(new GeminiAiClient.AiProviderException("private provider failure"));
