@@ -1,19 +1,20 @@
 package tech.mamxanh.subscription.service;
 
-import java.time.Clock;
-import java.time.LocalDateTime;
-import java.util.Objects;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tech.mamxanh.auth.repository.UserRepository;
 import tech.mamxanh.auth.entity.Role;
+import tech.mamxanh.auth.repository.UserRepository;
 import tech.mamxanh.common.exception.ApiException;
 import tech.mamxanh.subscription.entity.SubscriptionEntity;
 import tech.mamxanh.subscription.entity.SubscriptionStatus;
 import tech.mamxanh.subscription.entity.SubscriptionTier;
 import tech.mamxanh.subscription.repository.AiConfigurationRepository;
 import tech.mamxanh.subscription.repository.SubscriptionRepository;
+
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.util.Objects;
 
 /** Admin-facing subscription mutation boundary; payment checkout remains in SubscriptionService. */
 @Service

@@ -1,10 +1,11 @@
 package tech.mamxanh.shopping.entity;
 
-import java.math.BigDecimal;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "\"SHOPPING_LIST_ITEM\"")

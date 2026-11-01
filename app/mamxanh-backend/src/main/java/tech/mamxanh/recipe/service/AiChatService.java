@@ -9,6 +9,7 @@ import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.integration.ai.AiClient;
+import tech.mamxanh.integration.ai.AiPromptLoader;
 import tech.mamxanh.integration.ai.AiUsageEvent;
 import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
 import tech.mamxanh.nutrition.service.DietaryPreferenceService;
@@ -84,6 +85,7 @@ public class AiChatService {
     private final AiChatSettingsService chatSettings;
     private final AiAssistantExecutionService assistantExecution;
     private final AdkShoppingPilotService adkShoppingPilot;
+    private final AiPromptLoader promptLoader;
 
     public AiChatService(CurrentUserService users, RecipeService recipes,
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
@@ -101,6 +103,7 @@ public class AiChatService {
         this.chatSettings = chatSettings;
         this.assistantExecution = null;
         this.adkShoppingPilot = null;
+        this.promptLoader = new AiPromptLoader();
     }
 
     public AiChatService(CurrentUserService users, RecipeService recipes,
@@ -119,6 +122,15 @@ public class AiChatService {
         this.chatSettings = chatSettings;
         this.assistantExecution = assistantExecution;
         this.adkShoppingPilot = null;
+        this.promptLoader = new AiPromptLoader();
+    }
+
+    public AiChatService(CurrentUserService users, RecipeService recipes,
+            RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
+            ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
+            AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings,
+            AiAssistantExecutionService assistantExecution, AdkShoppingPilotService adkShoppingPilot) {
+        this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, chatSettings, assistantExecution, adkShoppingPilot, null);
     }
 
     @Autowired
@@ -126,7 +138,8 @@ public class AiChatService {
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
             ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
             AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings,
-            AiAssistantExecutionService assistantExecution, AdkShoppingPilotService adkShoppingPilot) {
+            AiAssistantExecutionService assistantExecution, AdkShoppingPilotService adkShoppingPilot,
+            @Autowired(required = false) AiPromptLoader promptLoader) {
         this.users = users;
         this.recipes = recipes;
         this.recipePosts = recipePosts;
@@ -139,6 +152,7 @@ public class AiChatService {
         this.chatSettings = chatSettings;
         this.assistantExecution = assistantExecution;
         this.adkShoppingPilot = adkShoppingPilot;
+        this.promptLoader = promptLoader != null ? promptLoader : new AiPromptLoader();
     }
 
     /** Compatibility constructor used by focused orchestration tests. */
@@ -204,8 +218,12 @@ public class AiChatService {
         AiClient.ChatResult result;
         try {
             aiQuota.requireAvailable(userId, userId == null ? request.anonymousViewerId() : null);
-            result = modelId == null ? ai.answerChat(SYSTEM_INSTRUCTION, prompt)
-                    : ai.answerChat(modelId, SYSTEM_INSTRUCTION, prompt);
+            String systemInstruction = promptLoader != null ? promptLoader.loadSystemPrompt() : SYSTEM_INSTRUCTION;
+            if (systemInstruction == null || systemInstruction.isBlank()) {
+                systemInstruction = SYSTEM_INSTRUCTION;
+            }
+            result = modelId == null ? ai.answerChat(systemInstruction, prompt)
+                    : ai.answerChat(modelId, systemInstruction, prompt);
         } catch (AiProviderException exception) {
             LOG.warn("Gemini chat rejected category={} httpStatus={}", exception.kind(), exception.httpStatus());
             if (exception.kind() == tech.mamxanh.integration.ai.GeminiAiClient.FailureKind.INVALID_RESPONSE) {

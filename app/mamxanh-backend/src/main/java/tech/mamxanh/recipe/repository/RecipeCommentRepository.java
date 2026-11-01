@@ -1,13 +1,12 @@
 package tech.mamxanh.recipe.repository;
 
-import java.util.Collection;
-import java.util.List;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
 import tech.mamxanh.recipe.entity.RecipeCommentEntity;
+
+import java.util.Collection;
+import java.util.List;
 
 /**
  * FR-46 thread queries. A root thread is visible while at least one of its comments is not deleted;

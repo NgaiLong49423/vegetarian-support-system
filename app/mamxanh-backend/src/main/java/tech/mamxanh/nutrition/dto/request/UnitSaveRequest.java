@@ -1,12 +1,9 @@
 package tech.mamxanh.nutrition.dto.request;
 
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Digits;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import java.math.BigDecimal;
+import jakarta.validation.constraints.*;
 import tech.mamxanh.nutrition.entity.MeasurementDimension;
+
+import java.math.BigDecimal;
 
 public record UnitSaveRequest(
         @NotBlank @Size(max = 20) String code,

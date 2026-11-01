@@ -1,9 +1,9 @@
 package tech.mamxanh.mealplan.dto.response;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.math.BigDecimal;
 
 public record AiMenuPreviewResponse(LocalDate weekStartDate, String mode, String goal,
         BigDecimal energyTargetKcal, BigDecimal bmi, String bmiCategory,

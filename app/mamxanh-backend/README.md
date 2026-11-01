@@ -1,6 +1,6 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.63.0
+> **Version:** v0.64.0
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-11-01
 > **Status:** Active  
@@ -88,6 +88,24 @@ Bằng chứng local ngày 01/11/2026: 84 targeted tests pass (gồm regression 
 Chatbot phân luồng yêu cầu rõ ràng về thực đơn tuần và hỗ trợ soạn Recipe Post trước provider: yêu cầu tuần kiểm tra Pro; soạn bài kiểm tra Expert và Plus/Pro. Guest nhận yêu cầu đăng nhập; Member thiếu gói nhận 403 kèm `requiredTier`/`upgradeUrl`. Tài khoản đủ quyền nhận liên kết workflow, không sinh thực đơn hoặc ghi bài từ chat và không phát usage event Gemini cho việc điều hướng. Hỏi đáp dinh dưỡng tổng quát và bản nháp công thức được yêu cầu rõ vẫn thuộc FR-51.
 
 ### AI Assistant orchestration — Issue #214
+
+#### Kho Tri thức Nghiệp vụ (Knowledge Base) & AI Behavioral Policies
+
+- **Knowledge Base (`src/main/resources/knowledge-base/`):**
+  - Gồm 38 tài liệu chuyên đề chuẩn hóa dạng Markdown kèm YAML front matter, được đăng ký tập trung trong `catalog.json` (revision `kb-v1.0.0-20261101`).
+  - Phân chia thành các nhóm chủ đề nghiệp vụ hướng người dùng: `getting-started/`, `recipes/`, `meal-planning/`, `shopping-list/`, `ai-features/`, `subscriptions/`, `policies/`, `troubleshooting/`.
+  - Được đóng gói vào Spring Boot JAR và nạp qua Spring Classpath Resources, không phụ thuộc filesystem vật lý.
+- **AI Behavioral Policies & System Instructions (`src/main/resources/ai/`):**
+  - `prompts/system.md`: Chỉ dẫn nền tảng về vai trò, danh tính, ranh giới công cụ và 8 quy tắc vận hành cốt lõi của AI Agent.
+  - `policies/scope-policy.md`: Ranh giới phạm vi được phép, từ chối và xử lý yêu cầu hỗn hợp.
+  - `policies/safety-policy.md`: Ranh giới y tế (tuyệt đối không chẩn đoán/kê đơn), chống tự hại, bạo lực và phân biệt câu hỏi an toàn.
+  - `policies/security-policy.md`: Chống Prompt Injection, bảo vệ bí mật, khẳng định RBAC thuộc trách nhiệm của Backend Code (không ỷ lại vào prompt), và cơ chế Hard Safeguards.
+  - `policies/response-style.md`: Hình tượng nhân vật, giọng điệu thuần Việt, xưng hô "Mình" - "Bạn", và lệnh cấm hiển thị mã kỹ thuật nội bộ (`FR-xx`, `BR-xx`, `UC-xx`) trong câu trả lời người dùng.
+- **Cơ chế nạp `AiPromptLoader`:**
+  - Tự động nạp `system.md` và 4 core policies từ classpath.
+  - Tách lọc YAML front matter để tối ưu token.
+  - Cache trong RAM (`ConcurrentHashMap`) sau lần đọc đầu tiên.
+  - Cơ chế fallback an toàn: nếu file lỗi hoặc thiếu, trả về fallback prompt tối thiểu, bảo đảm không crash ứng dụng.
 
 Chat API nhận thêm session UUID, `executionMode=QA|CONFIRM|AUTO`, consent theo cặp loại dữ liệu/mục đích, và confirmation ID/decision. Các client cũ tiếp tục dùng response chat hiện tại; client gửi trường orchestration đi vào planner/tool flow. Session được giữ trong bộ nhớ Backend tối đa 30 phút (có thể đặt `mamxanh.ai-chat.session-ttl`), gắn với account hoặc guest cookie, tự hết hạn và không lưu prompt. Restart Backend làm mất session và confirmation đang chờ.
 

@@ -1,18 +1,19 @@
 package tech.mamxanh.recipe.service;
 
+import org.springframework.stereotype.Service;
+import tech.mamxanh.common.exception.AppException;
+import tech.mamxanh.common.exception.ErrorCode;
+
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.HashMap;
-import java.util.Map;
-import org.springframework.stereotype.Service;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
-import tech.mamxanh.common.exception.AppException;
-import tech.mamxanh.common.exception.ErrorCode;
+import java.util.Map;
 
 /** FR-10 Guest prerequisite: rolling minute limits for cookie and peer IP independently.
  * Bounded, process-local state for the current single Backend; never stores prompts or raw IPs.

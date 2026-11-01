@@ -1,9 +1,9 @@
 package tech.mamxanh.auth.security;
 
-import java.time.Duration;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
+
+import java.time.Duration;
 
 /**
  * FR-03-E password-reset parameters ({@code mamxanh.auth.password-reset.*}).

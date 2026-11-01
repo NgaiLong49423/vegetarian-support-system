@@ -1,5 +1,11 @@
 package tech.mamxanh.subscription.repository;
 
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+import tech.mamxanh.subscription.dto.response.AdminTransactionReport.Summary;
+import tech.mamxanh.subscription.dto.response.AdminTransactionResponse;
+import tech.mamxanh.subscription.entity.SubscriptionTier;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -9,11 +15,6 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Repository;
-import tech.mamxanh.subscription.dto.response.AdminTransactionResponse;
-import tech.mamxanh.subscription.dto.response.AdminTransactionReport.Summary;
-import tech.mamxanh.subscription.entity.SubscriptionTier;
 
 /** Read-only payment accounting: no provider calls, settlement, or entitlement updates. */
 @Repository

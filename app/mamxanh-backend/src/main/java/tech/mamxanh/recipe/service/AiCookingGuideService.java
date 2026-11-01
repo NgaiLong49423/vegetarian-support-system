@@ -1,16 +1,9 @@
 package tech.mamxanh.recipe.service;
 
-import java.text.Normalizer;
-import java.time.Clock;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 import org.springframework.context.ApplicationEventPublisher;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
+import org.springframework.stereotype.Service;
 import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
@@ -20,9 +13,17 @@ import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
 import tech.mamxanh.nutrition.dto.response.DietaryPreferencesResponse;
 import tech.mamxanh.nutrition.service.DietaryPreferenceService;
 import tech.mamxanh.nutrition.service.IngredientCatalogLookupService;
-import tech.mamxanh.subscription.service.AiTokenQuotaService;
 import tech.mamxanh.recipe.dto.response.AiCookingGuideResponse;
 import tech.mamxanh.recipe.dto.response.RecipeDetailResponse;
+import tech.mamxanh.subscription.service.AiTokenQuotaService;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+
+import java.text.Normalizer;
+import java.time.Clock;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 @Service
 public class AiCookingGuideService {

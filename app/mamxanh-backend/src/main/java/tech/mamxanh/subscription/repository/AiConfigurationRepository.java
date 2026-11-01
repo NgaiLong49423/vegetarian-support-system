@@ -1,9 +1,5 @@
 package tech.mamxanh.subscription.repository;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,6 +7,11 @@ import tech.mamxanh.subscription.entity.AiConfigurationSnapshot;
 import tech.mamxanh.subscription.entity.AiConfigurationSnapshot.Credit;
 import tech.mamxanh.subscription.entity.AiConfigurationSnapshot.Model;
 import tech.mamxanh.subscription.entity.AiConfigurationSnapshot.Plan;
+
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
 
 /** SQL Server persistence for the Admin-managed AI configuration. */
 @Repository

@@ -1,8 +1,9 @@
 package tech.mamxanh.admin.repository;
 
-import java.time.LocalDateTime;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+
+import java.time.LocalDateTime;
 
 @Repository
 public class AdminUserAuditRepository {

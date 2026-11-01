@@ -1,9 +1,7 @@
 package tech.mamxanh.admin.service;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import org.springframework.stereotype.Service;
 import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -16,6 +14,9 @@ import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.integration.storage.StorageClient;
 import tech.mamxanh.nutrition.entity.IngredientEntity;
 import tech.mamxanh.nutrition.repository.IngredientRepository;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 
 /** Uploads and persists the administrator-managed ingredient reference image. */
 @Service

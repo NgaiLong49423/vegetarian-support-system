@@ -1,15 +1,16 @@
 package tech.mamxanh.nutrition.repository;
 
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Collection;
-import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import tech.mamxanh.nutrition.entity.IngredientUnitConversionEntity;
 import tech.mamxanh.nutrition.entity.IngredientUnitConversionId;
+
+import java.math.BigDecimal;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 
 public interface IngredientUnitConversionRepository extends JpaRepository<IngredientUnitConversionEntity, IngredientUnitConversionId> {
     Optional<IngredientUnitConversionEntity> findByIdAndActiveTrue(IngredientUnitConversionId id);

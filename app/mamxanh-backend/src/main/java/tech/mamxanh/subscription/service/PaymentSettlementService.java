@@ -1,22 +1,19 @@
 package tech.mamxanh.subscription.service;
 
-import java.time.Clock;
-import java.time.LocalDateTime;
-import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.mamxanh.auth.repository.UserRepository;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
-import tech.mamxanh.subscription.entity.PaymentStatus;
-import tech.mamxanh.subscription.entity.PaymentTransactionEntity;
-import tech.mamxanh.subscription.entity.SubscriptionEntity;
-import tech.mamxanh.subscription.entity.SubscriptionStatus;
-import tech.mamxanh.subscription.entity.SubscriptionTier;
+import tech.mamxanh.notification.service.NotificationService;
+import tech.mamxanh.subscription.entity.*;
+import tech.mamxanh.subscription.repository.AiCreditAdministrationRepository;
 import tech.mamxanh.subscription.repository.PaymentTransactionRepository;
 import tech.mamxanh.subscription.repository.SubscriptionRepository;
-import tech.mamxanh.subscription.repository.AiCreditAdministrationRepository;
-import tech.mamxanh.notification.service.NotificationService;
+
+import java.time.Clock;
+import java.time.LocalDateTime;
 
 /** Database-only settlement, shared by verified webhooks and server-to-server reconciliation. */
 @Service

@@ -1,19 +1,7 @@
 package tech.mamxanh.mealplan.service;
 
-import tools.jackson.databind.ObjectMapper;
-import java.time.LocalDate;
-import java.time.Clock;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import org.springframework.stereotype.Service;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.exception.AppException;
@@ -29,15 +17,17 @@ import tech.mamxanh.mealplan.entity.MealPlanEntryEntity;
 import tech.mamxanh.mealplan.repository.MealPlanEntryRepository;
 import tech.mamxanh.mealplan.repository.MealPlanRepository;
 import tech.mamxanh.nutrition.dto.response.UnitResponse;
-import tech.mamxanh.nutrition.service.DietaryPreferenceService;
-import tech.mamxanh.nutrition.service.IngredientCatalogLookupService;
-import tech.mamxanh.nutrition.service.IngredientConversionLookupService;
-import tech.mamxanh.nutrition.service.NutritionProfileService;
-import tech.mamxanh.nutrition.service.RecipeNutritionService;
+import tech.mamxanh.nutrition.service.*;
 import tech.mamxanh.recipe.dto.response.RecipePostResponse;
 import tech.mamxanh.recipe.service.RecipePostService;
-import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 import tech.mamxanh.subscription.service.AiTokenQuotaService;
+import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
+import tools.jackson.databind.ObjectMapper;
+
+import java.time.Clock;
+import java.time.LocalDate;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class AiMenuService {

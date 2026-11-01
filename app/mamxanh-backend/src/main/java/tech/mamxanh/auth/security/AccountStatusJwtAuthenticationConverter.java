@@ -1,8 +1,5 @@
 package tech.mamxanh.auth.security;
 
-import java.util.List;
-import java.util.Optional;
-
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.LockedException;
@@ -11,10 +8,12 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
-
 import tech.mamxanh.auth.entity.AccountStatus;
 import tech.mamxanh.auth.entity.User;
 import tech.mamxanh.auth.repository.UserRepository;
+
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Runs after the Resource Server has verified the token signature, issuer and expiry. Every

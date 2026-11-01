@@ -32,6 +32,28 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Preserve sources across clarification/cancellation, reject forged history and stale/foreign actions, and prevent duplicate creates or incorrect read-back IDs.
 - Preserve committed create results on later failure and roll back usage with Credit when accounting persistence fails.
 
+## 2026-11-01 — Implement AI Agent Knowledge Base and Behavioral Policies
+
+**Status:** Working tree.
+
+**Scope:** Packaged business knowledge base, core behavioral policies, and dynamic classpath prompt loader for Mâm Xanh AI Agent.
+
+### Added
+
+- Add structured business Knowledge Base in Spring classpath resources (`knowledge-base/`) with 38 domain topic guides across 8 user-oriented categories and verified `catalog.json` manifest.
+- Add foundational system instructions (`ai/prompts/system.md`) and four core behavioral policies (`ai/policies/`: `scope-policy.md`, `safety-policy.md`, `security-policy.md`, `response-style.md`).
+- Add `AiPromptLoader` component in `tech.mamxanh.integration.ai` to dynamically load, strip YAML front matter, synthesize, and cache prompts in memory from classpath resources with safe fallback.
+- Add comprehensive unit test suite in `AiPromptLoaderTest` verifying classpath loading, front matter stripping, memory caching, fallback handling, and secret protection.
+
+### Changed
+
+- Update `AiChatService` and `AiAssistantExecutionService` to dynamically load system instructions and behavioral policies from classpath via `AiPromptLoader`.
+- Update system architecture (`ARCHITECTURE.md`), technology stack (`TECHNOLOGY-STACK.md`), backend workspace guide (`app/mamxanh-backend/README.md`), API integration guide (`API.md`), and repository overview (`README.md`) to reflect the transition from a passive chatbot to an active AI Agent backed by an internal Knowledge Base and Behavioral Policies.
+
+### Fixed
+
+- None.
+
 ## 2026-11-01 — Add Isolated ADK Knowledge and Hybrid Retrieval Pilot
 
 **Status:** Committed — `64444508`.

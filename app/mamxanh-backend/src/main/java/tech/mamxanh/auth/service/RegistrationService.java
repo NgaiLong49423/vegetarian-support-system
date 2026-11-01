@@ -1,14 +1,10 @@
 package tech.mamxanh.auth.service;
 
-import java.time.Clock;
-import java.time.LocalDateTime;
-
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import tech.mamxanh.auth.dto.request.RegisterRequest;
 import tech.mamxanh.auth.dto.response.RegistrationResponse;
 import tech.mamxanh.auth.entity.User;
@@ -18,6 +14,9 @@ import tech.mamxanh.auth.security.OneTimeTokenService;
 import tech.mamxanh.auth.security.OneTimeTokenService.IssuedToken;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
+
+import java.time.Clock;
+import java.time.LocalDateTime;
 
 /** UC-03.1 — register with email and password (AC-03.1–AC-03.3). */
 @Service

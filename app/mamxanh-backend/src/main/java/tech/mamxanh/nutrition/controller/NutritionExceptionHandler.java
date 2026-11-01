@@ -1,6 +1,5 @@
 package tech.mamxanh.nutrition.controller;
 
-import java.util.List;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -9,6 +8,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import tech.mamxanh.nutrition.service.NutritionProfileException;
+
+import java.util.List;
 
 @RestControllerAdvice(assignableTypes = NutritionController.class)
 @Order(Ordered.HIGHEST_PRECEDENCE)
