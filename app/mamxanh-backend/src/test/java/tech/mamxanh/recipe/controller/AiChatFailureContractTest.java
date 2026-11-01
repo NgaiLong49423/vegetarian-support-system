@@ -48,6 +48,14 @@ class AiChatFailureContractTest {
     @MockitoBean DietaryPreferenceService preferences;
     @MockitoBean AiClient ai;
     @MockitoBean tech.mamxanh.subscription.service.SubscriptionEntitlementService entitlements;
+    @MockitoBean tech.mamxanh.subscription.service.AiTokenQuotaService aiQuota;
+    @MockitoBean tech.mamxanh.subscription.service.AiChatSettingsService chatSettings;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setupScopeClassifier() {
+        when(ai.classifyChatScope(anyString(), anyString())).thenReturn(
+                new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 1, 1, 2));
+    }
 
     @Test
     void mvcDebugLoggingHidesPrivatePayloadsButHttpStillReturnsThem(CapturedOutput output) throws Exception {

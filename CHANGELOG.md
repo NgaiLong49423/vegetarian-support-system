@@ -1,13 +1,36 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.145.1
+> **Version:** v2.146.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-11-01
+> **Last Updated:** 2026-11-02
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-11-02 — Migrate Business AI Flows to Google ADK (Gate G5)
+
+**Status:** Committed — PENDING_HASH.
+
+**Scope:** Unify all business generation and classification AI capabilities under the Google ADK Java Runtime without adding a secondary orchestration engine or microservice.
+
+### Added
+
+- Add `AdkSingleStepTaskRunner` wrapping `com.google.adk.agents.LlmAgent` and `InMemoryRunner` with structured schema enforcement, run timeout, byte budget cap (64KB), and usage metadata extraction.
+- Add `AdkAiClient` (`@Component`, `@Primary`) routing 100% of business call-sites (`CS-01` through `CS-09`) to Google ADK.
+- Add `AdkConfiguration` providing Spring Boot beans for `AdkModelGateway` and task runners with dynamic model selection.
+- Add `mamxanh.ai.migration.mode` (`ADK_PRIMARY` / `LEGACY_FALLBACK`) feature flag supporting seamless rollback.
+
+### Changed
+
+- Deprecate direct legacy invocation methods in `AiClient` and the legacy `GeminiAiClient` implementation.
+- Align `RecipeAiAssistanceService` entitlement requirement to PRO tier matching current product baseline.
+
+### Fixed
+
+- Stabilize integration test fixtures by clearing `AI_TOKEN_USAGE_LEDGER` and `AI_CREDIT_WALLET` foreign keys before deleting users.
+- Provide token quota snapshots in test fixtures to prevent false-positive 429 quota exhaustion errors.
 
 ## 2026-11-01 — Redesign Assistant Human Input
 

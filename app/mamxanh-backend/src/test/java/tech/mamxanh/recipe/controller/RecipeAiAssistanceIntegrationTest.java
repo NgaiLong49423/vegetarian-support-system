@@ -35,6 +35,8 @@ class RecipeAiAssistanceIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void prepareFixtures() {
+        jdbcTemplate.update("DELETE FROM [AI_TOKEN_USAGE_LEDGER] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?)", PREFIX + "%");
+        jdbcTemplate.update("DELETE FROM [AI_CREDIT_WALLET] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?)", PREFIX + "%");
         jdbcTemplate.update("DELETE FROM [SUBSCRIPTION] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?)", PREFIX + "%");
         jdbcTemplate.update("DELETE FROM [INGREDIENT] WHERE name = ?", "FR21 integration tofu");
         jdbcTemplate.update("DELETE FROM [USER] WHERE email LIKE ?", PREFIX + "%");
@@ -44,7 +46,7 @@ class RecipeAiAssistanceIntegrationTest extends AbstractIntegrationTest {
                 "FR21 integration tofu", "FR21 test fixture");
         ingredientId = jdbcTemplate.queryForObject("SELECT ingredient_id FROM [INGREDIENT] WHERE name = ?", Long.class, "FR21 integration tofu");
         unitId = jdbcTemplate.queryForObject("SELECT unit_id FROM [UNIT] WHERE code = N'g'", Integer.class);
-        jdbcTemplate.update("INSERT INTO [SUBSCRIPTION] (user_id, tier, status, starts_at, ends_at) VALUES (?, 'PRO', 'ACTIVE', ?, ?)",
+        jdbcTemplate.update("INSERT INTO [SUBSCRIPTION] (user_id, tier, status, starts_at, ends_at, token_quota) VALUES (?, 'PRO', 'ACTIVE', ?, ?, 600000)",
                 proExpertId, LocalDateTime.of(2026, 1, 1, 0, 0), LocalDateTime.of(2027, 1, 1, 0, 0));
         when(aiClient.generateRecipeContent(anyString(), anyList())).thenReturn(new AiClient.RecommendationResult("""
                 {"description":"Mô tả công thức thử nghiệm.","steps":[

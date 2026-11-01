@@ -40,7 +40,7 @@ class AiTelemetryIntegrationTest extends AbstractIntegrationTest {
     @org.springframework.test.context.bean.override.mockito.MockitoSpyBean AiTelemetrySpool spool;
     @Autowired ApplicationEventPublisher events;
     @Autowired PlatformTransactionManager transactions;
-    @MockitoBean GeminiAiClient ai;
+    @MockitoBean AiClient ai;
     private long member;
     private String guest;
 

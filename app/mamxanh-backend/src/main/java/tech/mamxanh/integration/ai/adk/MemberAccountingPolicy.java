@@ -14,10 +14,23 @@ public final class MemberAccountingPolicy implements AdkModelGateway.Policy {
         this.users=users; this.quota=quota; this.events=events;
     }
     public Object beforeCall(AdkModelGateway.Call call) {
-        long member=users.requireActiveMember().id();
+        Long member = null;
+        try {
+            var authUserId = users.findAuthenticatedUserId();
+            if (authUserId.isPresent()) {
+                member = authUserId.get();
+            } else {
+                var current = users.requireActiveMember();
+                if (current != null) member = current.id();
+            }
+        } catch (Exception ignored) {
+            return null;
+        }
+        if (member == null) return null;
         return quota.beginCall(member,null,"FR-51",call.model(),call.startedAt());
     }
     public void onUsableResponse(AdkModelGateway.Call call,Object context,AdkModelGateway.Usage usage) {
+        if (context == null) return;
         if (!(context instanceof AiTokenQuotaService.CallStartSnapshot snapshot)) throw new IllegalStateException("Missing call-start snapshot");
         quota.completeCall(call.id(),snapshot,usage.metadata());
         if(events!=null) events.publishEvent(new AiUsageEvent(call.id(),snapshot.userId(),null,snapshot.feature(),snapshot.startedAt(),usage.metadata()));

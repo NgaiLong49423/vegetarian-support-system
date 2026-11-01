@@ -62,7 +62,7 @@ class RecipeAiAssistanceServiceTest {
 
         assertThat(result.content()).startsWith("1. Đun nóng chảo rồi đảo đều đến khi mềm. (Đậu phụ, Cà chua)\n");
         assertThat(result.content().lines()).hasSize(6);
-        verify(entitlementService).requirePlusOrPro(7L);
+        verify(entitlementService).requirePro(7L);
         org.mockito.ArgumentCaptor<tech.mamxanh.integration.ai.AiUsageEvent> telemetry =
                 org.mockito.ArgumentCaptor.forClass(tech.mamxanh.integration.ai.AiUsageEvent.class);
         verify(events).publishEvent(telemetry.capture());
@@ -115,7 +115,7 @@ class RecipeAiAssistanceServiceTest {
     @Test
     void blocksProviderWhenEntitlementIsDenied() {
         org.mockito.Mockito.doThrow(new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED))
-                .when(entitlementService).requirePlusOrPro(anyLong());
+                .when(entitlementService).requirePro(anyLong());
 
         assertThatThrownBy(() -> service.generate(request(ContentType.INSTRUCTIONS)))
                 .isInstanceOf(AppException.class);
