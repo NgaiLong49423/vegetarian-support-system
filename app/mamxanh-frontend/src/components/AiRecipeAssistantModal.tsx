@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from './AuthContext';
-import { subscriptionApi, type MySubscriptionResponse } from '../api/subscription';
 import {
   Sparkles,
   ArrowDownToLine,
@@ -309,35 +307,7 @@ export function AiRecipeAssistantModal({
   onApplyRecipe,
   isPro,
 }: AiRecipeAssistantModalProps) {
-  const { account } = useAuth();
-  const [internalSubscription, setInternalSubscription] = useState<MySubscriptionResponse | null>(null);
-  const [entitlementError, setEntitlementError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (typeof isPro === 'boolean') return;
-    let active = true;
-    subscriptionApi.getMySubscription()
-      .then((sub) => {
-        if (active) setInternalSubscription(sub);
-      })
-      .catch(() => {
-        if (active) setInternalSubscription(null);
-      });
-    return () => { active = false; };
-  }, [isPro, open]);
-
-  const isDemoPro = account?.email === 'demo-expert@mamxanh.local';
-  const effectiveIsPro = typeof isPro === 'boolean'
-    ? isPro
-    : (internalSubscription
-        ? internalSubscription.status === 'ACTIVE' && internalSubscription.tier === 'PRO'
-        : isDemoPro);
-
-  useEffect(() => {
-    if (!open) {
-      setEntitlementError(null);
-    }
-  }, [open]);
+  const effectiveIsPro = Boolean(isPro);
 
   useEffect(() => {
     if (!effectiveIsPro) {
@@ -373,11 +343,7 @@ export function AiRecipeAssistantModal({
 
   // Thuật toán AI phân giải nguyên liệu & tối ưu hóa calo chuẩn xác cao
   const generateRecipe = () => {
-    if (!effectiveIsPro) {
-      setEntitlementError('Tính năng Trợ lý AI phân tích nguyên liệu & gợi ý định lượng yêu cầu gói AI PRO còn hiệu lực. Hãy nâng cấp lên gói AI PRO để tiếp tục.');
-      return;
-    }
-    setEntitlementError(null);
+    if (!effectiveIsPro) return;
     setIsGenerating(true);
 
     setTimeout(() => {
@@ -709,10 +675,6 @@ export function AiRecipeAssistantModal({
     : null;
 
   const handleApply = () => {
-    if (!effectiveIsPro) {
-      setEntitlementError('Tính năng Trợ lý AI phân tích nguyên liệu & gợi ý định lượng yêu cầu gói AI PRO còn hiệu lực. Hãy nâng cấp lên gói AI PRO để tiếp tục.');
-      return;
-    }
     if (generatedResult) {
       onApplyRecipe(generatedResult);
       onClose();
@@ -912,27 +874,10 @@ export function AiRecipeAssistantModal({
         </div>
 
         {/* Nút kích hoạt AI phân tích & tối ưu calo */}
-        <div className="flex flex-col items-end gap-2 pt-1">
-          {entitlementError && (
-            <div role="alert" className="w-full flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 shrink-0 text-red-600" />
-                <span>{entitlementError}</span>
-              </div>
-              <Link to="/goi-ai" className="font-bold underline text-red-900 hover:text-red-700 shrink-0 ml-2">
-                Nâng cấp gói PRO
-              </Link>
-            </div>
-          )}
+        <div className="flex justify-end pt-1">
           <Button
             type="button"
-            onClick={() => {
-              if (!effectiveIsPro) {
-                setEntitlementError('Tính năng Trợ lý AI phân tích nguyên liệu & gợi ý định lượng yêu cầu gói AI PRO còn hiệu lực. Hãy nâng cấp lên gói AI PRO để tiếp tục.');
-                return;
-              }
-              generateRecipe();
-            }}
+            onClick={generateRecipe}
             disabled={isGenerating || !rawIngredients.trim() || !effectiveIsPro}
             className={`flex items-center gap-2 font-bold px-4 py-2.5 rounded-xl shadow-sm transition ${
               !effectiveIsPro
