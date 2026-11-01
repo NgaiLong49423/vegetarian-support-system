@@ -1,13 +1,5 @@
 package tech.mamxanh.shopping.service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.Clock;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -20,18 +12,22 @@ import tech.mamxanh.common.response.PageResponse;
 import tech.mamxanh.nutrition.dto.response.IngredientResponse;
 import tech.mamxanh.nutrition.dto.response.UnitResponse;
 import tech.mamxanh.nutrition.service.IngredientCatalogLookupService;
-import tech.mamxanh.shopping.dto.request.CreateShoppingItemRequest;
-import tech.mamxanh.shopping.dto.request.CreateEmptyShoppingListRequest;
-import tech.mamxanh.shopping.dto.request.RenameShoppingListRequest;
-import tech.mamxanh.shopping.dto.request.UpdateShoppingItemRequest;
-import tech.mamxanh.shopping.dto.request.ShoppingAggregationLine;
+import tech.mamxanh.shopping.dto.request.*;
 import tech.mamxanh.shopping.dto.response.ShoppingListResponse;
 import tech.mamxanh.shopping.dto.response.ShoppingListResponse.Item;
 import tech.mamxanh.shopping.entity.ShoppingListEntity;
 import tech.mamxanh.shopping.entity.ShoppingListItemEntity;
-import tech.mamxanh.shopping.repository.ShoppingListRepository;
 import tech.mamxanh.shopping.repository.ShoppingListItemRepository;
-import tech.mamxanh.shopping.service.ShoppingAggregationService;
+import tech.mamxanh.shopping.repository.ShoppingListRepository;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /** FR-53 checklist operations on persisted lists; source creation is coordinated separately. */
 @Service

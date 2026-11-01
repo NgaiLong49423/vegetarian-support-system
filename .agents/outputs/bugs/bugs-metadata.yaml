@@ -1,11 +1,11 @@
 # Đồng bộ develop: BUG-067–069 của FR-10 chuyển thành BUG-082–084, giữ bản ghi develop ở mã gốc.
 schema_version: 1
-last_updated: 2026-10-29
+last_updated: 2026-11-01
 # BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
 # BUG-066 được cấp khi đồng bộ PR #161 ngày 2026-10-25 vì BUG-065 đã được dùng cho lỗi OpenAPI.
 # BUG-078–080 đã được cấp trên nhánh feature/17-ai-usage-telemetry, tránh cấp trùng khi tích hợp.
-next_id: 86
+next_id: 95
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -15,6 +15,78 @@ status_definitions:
 # Đồng bộ PR #194: mã gốc FR-10 → mã sau tích hợp: BUG-054 → BUG-070, BUG-055 → BUG-071, BUG-056 → BUG-072, BUG-057 → BUG-073, BUG-058 → BUG-074, BUG-059 → BUG-075, BUG-060 → BUG-076, BUG-066 → BUG-077.
 # Bản ghi BUG-060 của FR-11 tại 79394340 trùng lỗi privacy đã hợp nhất dưới BUG-076; giữ BUG-060 của develop.
 bugs:
+  - id: BUG-094
+    title: Chatbox hiển thị Markdown của AI dưới dạng văn bản thuần
+    status: RESOLVED
+    severity: Medium
+    area: Frontend/AI Chatbox/Hiển thị phản hồi
+    file: .agents/outputs/bugs/BUG-094.md
+    created: 2026-11-01
+    updated: 2026-11-01
+    related_issue: Unknown
+  - id: BUG-092
+    title: Telemetry từ chối model Gemini 3.5 Flash-Lite hợp lệ
+    status: RESOLVED
+    severity: Medium
+    area: Backend/AI telemetry/persistence
+    file: .agents/outputs/bugs/BUG-092.md
+    created: 2026-10-31
+    updated: 2026-10-31
+    related_issue: Unknown
+  - id: BUG-091
+    title: Chat báo chuyển trang dù công cụ điều hướng thất bại
+    status: RESOLVED
+    severity: High
+    area: Backend/AI Assistant/Điều hướng
+    file: .agents/outputs/bugs/BUG-091.md
+    created: 2026-10-31
+    updated: 2026-10-31
+    related_issue: Unknown
+  - id: BUG-090
+    title: Dữ liệu demo tạo gói Pro với quota token bằng 0
+    status: RESOLVED
+    severity: Medium
+    area: Backend/AI quota/Demo seed
+    file: .agents/outputs/bugs/BUG-090.md
+    created: 2026-10-31
+    updated: 2026-10-31
+    related_issue: Unknown
+  - id: BUG-089
+    title: Regex model ID chặn mọi thao tác lưu cấu hình AI
+    status: RECORDED
+    severity: Unknown
+    area: Backend/Admin AI configuration/API validation
+    file: .agents/outputs/bugs/BUG-089.md
+    created: 2026-10-31
+    updated: 2026-10-31
+    related_issue: 212
+  - id: BUG-088
+    title: Form cấu hình model cho phép bỏ quyền của model mặc định rồi gửi cấu hình không hợp lệ
+    status: RECORDED
+    severity: Unknown
+    area: Frontend/Backend/Admin AI configuration
+    file: .agents/outputs/bugs/BUG-088.md
+    created: 2026-10-31
+    updated: 2026-10-31
+    related_issue: 212
+  - id: BUG-087
+    title: Hướng dẫn Frontend ghi trang quản lý người dùng vẫn là bản minh họa
+    status: RESOLVED
+    severity: Unknown
+    area: Frontend/Documentation/Admin user management
+    file: .agents/outputs/bugs/BUG-087.md
+    created: 2026-10-31
+    updated: 2026-10-31
+    related_issue: 212
+  - id: BUG-086
+    title: Quyền gói AI soạn công thức chưa thống nhất giữa SRS và API
+    status: RECORDED
+    severity: Unknown
+    area: Backend/AI/Recipe assistance/Feature entitlement
+    file: .agents/outputs/bugs/BUG-086.md
+    created: 2026-10-30
+    updated: 2026-10-30
+    related_issue: Unknown
   - id: BUG-085
     title: Thông báo nâng gói AI chưa chỉ rõ gói tối thiểu
     status: RESOLVED

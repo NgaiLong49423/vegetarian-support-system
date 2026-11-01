@@ -60,3 +60,5 @@ playwright-report/
 # Draw.io temporary and backup files
 .$*.bkp
 .$*.dtmp
+
+qodana.yamlqodana.yaml

@@ -33,6 +33,9 @@ class SubscriptionSecurityTest {
     private tech.mamxanh.subscription.service.PaymentResultService paymentResults;
 
     @MockitoBean
+    private tech.mamxanh.subscription.service.AiTokenQuotaService aiTokenQuota;
+
+    @MockitoBean
     private UserRepository userRepository;
 
     @MockitoBean
@@ -70,6 +73,7 @@ class SubscriptionSecurityTest {
         mockMvc.perform(get("/api/v1/subscriptions/transactions"))
                 .andExpect(status().isUnauthorized());
         mockMvc.perform(get("/api/v1/subscriptions/transactions/123")).andExpect(status().isUnauthorized());
-        verifyNoInteractions(subscriptionService, paymentResults);
+        mockMvc.perform(get("/api/v1/subscriptions/my-ai-usage")).andExpect(status().isUnauthorized());
+        verifyNoInteractions(subscriptionService, paymentResults, aiTokenQuota);
     }
 }

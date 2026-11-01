@@ -1,8 +1,8 @@
 > **Document:** Mâm Xanh — Vegetarian Support System Project Overview
 > **File:** `README.md`
-> **Version:** v0.15.0
+> **Version:** v0.16.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-15
+> **Last Updated:** 2026-11-01
 > **Status:** Active
 
 # Mâm Xanh — Vegetarian Support System
@@ -11,7 +11,7 @@
   <img src="image/logo.png" alt="Mâm Xanh Logo" width="200" />
 </p>
 
-**Mâm Xanh** (Vegetarian Support System) là ứng dụng web hỗ trợ người ăn chay khám phá bài công thức, lập thực đơn tuần và nhận gợi ý thông minh từ Gemini AI dựa trên nội dung đang công khai trong hệ thống. Đây là dự án môn SWP391 do nhóm 5 thành viên phát triển.
+**Mâm Xanh** (Vegetarian Support System) là ứng dụng web hỗ trợ người ăn chay khám phá bài công thức, lập thực đơn tuần và tương tác với Trợ lý AI Agent thông minh tích hợp kho tri thức ẩm thực chuyên biệt và các quy tắc hành vi an toàn. Đây là dự án môn SWP391 do nhóm 5 thành viên phát triển.
 
 > **Trạng thái hiện tại:** Backend và Frontend đã được scaffold. Backend dùng Java 21 + Spring Boot + Maven và đã có cấu hình local SQL Server theo mẫu; Frontend dùng React + Vite + TypeScript và đã có Playwright Chromium smoke test. Auth API contract đã được chấp nhận nhưng chưa phải bằng chứng chức năng đã triển khai; cấu trúc package Backend vẫn là đề xuất Draft.
 
@@ -91,7 +91,7 @@ Xem chi tiết trong [Technology Stack](docs/architecture/TECHNOLOGY-STACK.md) v
 | Kiến trúc cấp cao | [System Architecture](docs/architecture/ARCHITECTURE.md) | Active; chưa phải bằng chứng implementation |
 | Công nghệ | [Technology Stack](docs/architecture/TECHNOLOGY-STACK.md) | Active baseline |
 | API integration | [API Guide](docs/api/API.md), runtime `/v3/api-docs`, [generated OpenAPI snapshot](docs/api/openapi.yaml) | Springdoc runtime là nguồn contract; CI kiểm tra snapshot YAML được sinh trong repo khớp với Backend |
-| Đề xuất package Backend | [Backend Package Structure Proposal](docs/architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md) | Draft; chỉ dùng để định hướng vertical slice |
+| Đề xuất package Backend | [Backend Package Structure Proposal](docs/architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md) | Active; chuẩn kiến trúc bắt buộc cho package Backend |
 | Chiến lược kiểm thử | [Test Strategy](docs/testing/TEST-STRATEGY.md) | Active; Frontend đã có Playwright smoke test, phạm vi khác theo bằng chứng triển khai |
 | Quy trình Git/PR/release | [CONTRIBUTING.md](CONTRIBUTING.md) | Active |
 | Quyết định workflow | [ADR-001](docs/decisions/001-team-workflow.md) | Active |

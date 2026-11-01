@@ -2,32 +2,26 @@ package tech.mamxanh.integration.ai;
 
 import com.google.genai.Client;
 import com.google.genai.errors.ApiException;
-import com.google.genai.types.HttpRetryOptions;
-import com.google.genai.types.GenerateContentConfig;
-import com.google.genai.types.HttpOptions;
-import com.google.genai.types.Content;
-import com.google.genai.types.Part;
-import com.google.genai.types.Schema;
-import com.google.genai.types.Type;
-import com.google.genai.types.ThinkingConfig;
-import com.google.genai.types.ThinkingLevel;
-import java.util.List;
-import java.util.Map;
-import java.io.InterruptedIOException;
-import java.util.function.Supplier;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.ThreadLocalRandom;
+import com.google.genai.types.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.io.InterruptedIOException;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.*;
+import java.util.function.Supplier;
+
 @Component
+/**
+ * Legacy direct Gemini SDK client.
+ * @deprecated As of G5, all generation and classification workflows use {@link AdkAiClient} backed by Google ADK.
+ *             Retained only for fallback mode and Admin model checks (CS-11).
+ */
+@Deprecated(since = "G5", forRemoval = false)
 public class GeminiAiClient implements AiClient, AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(GeminiAiClient.class);
     // Reserve application overhead within the NFR-18 ten-second provider budget.
@@ -40,12 +34,22 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
     private static final String MODEL = "gemini-3.8-flash";
     static final int DEFAULT_TIMEOUT_MILLIS = REQUEST_TIMEOUT_MS;
     private final Client client;
+    private final AiPromptLoader promptLoader = new AiPromptLoader();
     private final ExecutorService requests = Executors.newThreadPerTaskExecutor(
             Thread.ofVirtual().name("gemini-request-", 0).factory());
 
     @Autowired
     public GeminiAiClient(@Value("${GEMINI_API_KEY:}") String apiKey) {
         this(apiKey, HttpOptions.builder().timeout(DEFAULT_TIMEOUT_MILLIS).build());
+    }
+
+    /** Verifies a model through Gemini's model metadata endpoint without generating billable content. */
+    public boolean verifyModel(String modelId) {
+        return request("MODEL_VALIDATION", "Gemini model validation failed", () -> {
+            var model = client.models.get(modelId, com.google.genai.types.GetModelConfig.builder().build());
+            if (model == null) throw AiProviderException.invalidResponse("Gemini did not return model metadata");
+            return model.supportedActions().orElse(List.of()).contains("generateContent");
+        });
     }
 
     GeminiAiClient(String apiKey, HttpOptions httpOptions) {
@@ -80,6 +84,7 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                 .required(List.of("description", "steps")).build();
         GenerateContentConfig config = GenerateContentConfig.builder()
                 .responseMimeType("application/json")
+                .systemInstruction(Content.fromParts(Part.fromText(promptLoader.loadSystemPrompt())))
                 .responseSchema(schema)
                 .candidateCount(1)
                 .maxOutputTokens(8192)
@@ -110,6 +115,11 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
 
     @Override
     public ChatResult classifyChatScope(String systemInstruction, String prompt) {
+        return classifyChatScope(MODEL, systemInstruction, prompt);
+    }
+
+    @Override
+    public ChatResult classifyChatScope(String modelId, String systemInstruction, String prompt) {
         Schema schema = Schema.builder().type(Type.Known.OBJECT)
                 .properties(Map.of("decisionId", Schema.builder().type(Type.Known.STRING).build(),
                         "reasonId", Schema.builder().type(Type.Known.STRING).build()))
@@ -123,11 +133,11 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                 .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build())
                 .build();
         return request("CHAT_SCOPE", "Gemini chat scope classification failed", CHAT_SCOPE_TIMEOUT_MS, () -> {
-            var response = client.models.generateContent(MODEL, prompt, config);
+            var response = client.models.generateContent(modelId, prompt, config);
             String finishReason = response.candidates().orElse(List.of()).stream().findFirst()
                     .flatMap(candidate -> candidate.finishReason()).map(Object::toString).orElse("STOP");
             String text = response.text();
-            var usage = tokenUsage(response);
+            var usage = tokenUsage(response, modelId);
             if (!"STOP".equals(finishReason) || text == null || text.isBlank()) {
                 // Provider safety filters can suppress a classifier response for high-risk text.
                 // Fail closed into the Backend's prepared warning instead of surfacing a 502.
@@ -142,6 +152,11 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
 
     @Override
     public ChatResult answerChat(String systemInstruction, String prompt) {
+        return answerChat(MODEL, systemInstruction, prompt);
+    }
+
+    @Override
+    public ChatResult answerChat(String modelId, String systemInstruction, String prompt) {
         Schema recommendationSchema = Schema.builder().type(Type.Known.OBJECT)
                 .properties(Map.of("recipeId", Schema.builder().type(Type.Known.INTEGER).build(),
                         "reason", Schema.builder().type(Type.Known.STRING).build()))
@@ -162,14 +177,54 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                 .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build())
                 .build();
         return request("CHAT", "Gemini chat request failed", CHAT_ANSWER_TIMEOUT_MS, () -> {
-            var response = client.models.generateContent(MODEL, prompt, config);
+            var response = client.models.generateContent(modelId, prompt, config);
             String finishReason = response.candidates().orElse(List.of()).stream().findFirst()
                     .flatMap(candidate -> candidate.finishReason()).map(Object::toString).orElse("STOP");
             String text = response.text();
             if (!"STOP".equals(finishReason) || text == null || text.isBlank()) {
                 throw AiProviderException.invalidResponse("Gemini returned an incomplete chat response");
             }
-            var usage = tokenUsage(response);
+            var usage = tokenUsage(response, modelId);
+            return new ChatResult(null, text.strip(), usage.promptTokens(), usage.responseTokens(), usage.totalTokens(), usage);
+        });
+    }
+
+    @Override
+    public ChatResult planAssistantTools(String systemInstruction, String prompt) {
+        return planAssistantTools(MODEL, systemInstruction, prompt);
+    }
+
+    @Override
+    public ChatResult planAssistantTools(String modelId, String systemInstruction, String prompt) {
+        Schema toolCallSchema = Schema.builder().type(Type.Known.OBJECT)
+                .properties(Map.of("name", Schema.builder().type(Type.Known.STRING).build(),
+                        "arguments", Schema.builder().type(Type.Known.OBJECT)
+                                .properties(Map.of("page", Schema.builder().type(Type.Known.STRING)
+                                        .enum_("HOME", "EXPLORE", "MEAL_PLAN", "SHOPPING_LIST", "AI_PLANS",
+                                                "AI_CREDIT_TOP_UP", "PROFILE", "DIETARY_PREFERENCES", "HEALTH_PROFILE",
+                                                "RECIPE_CREATE", "EXPERT_DIRECTORY", "COMMUNITY", "TRANSACTION_HISTORY")
+                                        .build()))
+                                .build()))
+                .required(List.of("name", "arguments")).build();
+        Schema schema = Schema.builder().type(Type.Known.OBJECT)
+                .properties(Map.of("answer", Schema.builder().type(Type.Known.STRING)
+                                .maxLength((long) AiClient.MAX_CHAT_ANSWER_LENGTH).build(),
+                        "toolCalls", Schema.builder().type(Type.Known.ARRAY).maxItems(5L).items(toolCallSchema).build()))
+                .required(List.of("answer", "toolCalls")).build();
+        GenerateContentConfig config = GenerateContentConfig.builder()
+                .systemInstruction(Content.fromParts(Part.fromText(systemInstruction)))
+                .responseMimeType("application/json").responseSchema(schema).candidateCount(1)
+                .maxOutputTokens(2048)
+                .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build()).build();
+        return request("CHAT", "Gemini tool planning request failed", CHAT_ANSWER_TIMEOUT_MS, () -> {
+            var response = client.models.generateContent(modelId, prompt, config);
+            String finishReason = response.candidates().orElse(List.of()).stream().findFirst()
+                    .flatMap(candidate -> candidate.finishReason()).map(Object::toString).orElse("STOP");
+            String text = response.text();
+            if (!"STOP".equals(finishReason) || text == null || text.isBlank()) {
+                throw AiProviderException.invalidResponse("Gemini returned an incomplete tool plan");
+            }
+            var usage = tokenUsage(response, modelId);
             return new ChatResult(null, text.strip(), usage.promptTokens(), usage.responseTokens(), usage.totalTokens(), usage);
         });
     }
@@ -185,6 +240,7 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                         .maxItems((long) limit).items(Schema.builder().type(Type.Known.INTEGER)).build()))
                 .required(List.of("recipeIds")).build();
         GenerateContentConfig config = GenerateContentConfig.builder().responseMimeType("application/json")
+                .systemInstruction(Content.fromParts(Part.fromText(promptLoader.loadSystemPrompt())))
                 .responseSchema(schema).candidateCount(1).maxOutputTokens(2048)
                 .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build()).build();
         return request("RECOMMENDATIONS", "Gemini recommendation request failed", () -> {
@@ -209,6 +265,7 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                                 .items(Schema.builder().type(Type.Known.INTEGER).build()).build()))
                 .required(List.of("analysis", "recipeIds")).build();
         GenerateContentConfig config = GenerateContentConfig.builder().responseMimeType("application/json")
+                .systemInstruction(Content.fromParts(Part.fromText(promptLoader.loadSystemPrompt())))
                 .responseSchema(schema).candidateCount(1).maxOutputTokens(2048)
                 .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build()).build();
         return request("NUTRITION", "Gemini nutrition analysis failed", () -> {
@@ -225,7 +282,11 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
     }
 
     private static AiTokenUsage tokenUsage(com.google.genai.types.GenerateContentResponse response) {
-        return response.usageMetadata().map(value -> new AiTokenUsage(MODEL, "STANDARD",
+        return tokenUsage(response, MODEL);
+    }
+
+    private static AiTokenUsage tokenUsage(com.google.genai.types.GenerateContentResponse response, String modelId) {
+        return response.usageMetadata().map(value -> new AiTokenUsage(modelId, "STANDARD",
                 value.promptTokenCount().orElse(null), value.candidatesTokenCount().orElse(null),
                 value.totalTokenCount().orElse(null), value.thoughtsTokenCount().orElse(0),
                 value.cachedContentTokenCount().orElse(0), value.toolUsePromptTokenCount().orElse(0)))

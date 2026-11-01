@@ -1,26 +1,18 @@
 package tech.mamxanh.nutrition.controller;
 
-import java.util.List;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
-
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
 import tech.mamxanh.common.config.OpenApiConfig;
 import tech.mamxanh.nutrition.dto.request.SaveDietaryPreferencesRequest;
 import tech.mamxanh.nutrition.dto.response.DietaryPreferencesResponse;
 import tech.mamxanh.nutrition.dto.response.IngredientSuggestionResponse;
 import tech.mamxanh.nutrition.dto.response.OnboardingInvitationResponse;
 import tech.mamxanh.nutrition.service.DietaryPreferenceService;
+
+import java.util.List;
 
 /** FR-31: the signed-in Member's own dietary preferences and Onboarding state. */
 @RestController

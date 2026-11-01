@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom"
 import { AuthProvider } from "./components/AuthContext"
 import { ThemeProvider } from "./components/ThemeContext"
 import { LandingPage } from "./pages/LandingPage"
+import { AiChatHost } from "./components/AiChatHost"
 
 const ApplicationRoutes = lazy(() => import("./components/ApplicationRoutes"))
 
@@ -19,24 +20,26 @@ export default function App() {
     <ThemeProvider>
       <BrowserRouter>
         <AuthProvider>
-          <ScrollToTop />
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route
-              path="*"
-              element={
-                <Suspense
-                  fallback={
-                    <main role="status" className="p-8">
-                      Đang mở ứng dụng…
-                    </main>
-                  }
-                >
-                  <ApplicationRoutes />
-                </Suspense>
-              }
-            />
-          </Routes>
+          <AiChatHost>
+            <ScrollToTop />
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route
+                path="*"
+                element={
+                  <Suspense
+                    fallback={
+                      <main role="status" className="p-8">
+                        Đang mở ứng dụng…
+                      </main>
+                    }
+                  >
+                    <ApplicationRoutes />
+                  </Suspense>
+                }
+              />
+            </Routes>
+          </AiChatHost>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>

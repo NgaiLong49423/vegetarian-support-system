@@ -6,20 +6,16 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
-import java.util.List;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.*;
 import tech.mamxanh.common.response.PageResponse;
-import tech.mamxanh.nutrition.dto.response.PublicIngredientGroupResponse;
-import tech.mamxanh.nutrition.dto.response.PublicIngredientDetailResponse;
-import tech.mamxanh.nutrition.dto.response.PublicIngredientResponse;
 import tech.mamxanh.nutrition.dto.response.IngredientUnitOptionResponse;
+import tech.mamxanh.nutrition.dto.response.PublicIngredientDetailResponse;
+import tech.mamxanh.nutrition.dto.response.PublicIngredientGroupResponse;
+import tech.mamxanh.nutrition.dto.response.PublicIngredientResponse;
 import tech.mamxanh.nutrition.service.IngredientCatalogService;
+
+import java.util.List;
 
 /** Public read-only browsing of active ingredient groups and their catalog entries (FR-62). */
 @RestController

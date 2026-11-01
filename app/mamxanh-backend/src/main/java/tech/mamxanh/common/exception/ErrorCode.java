@@ -56,6 +56,7 @@ public enum ErrorCode {
     RECIPE_DATA_INVALID(HttpStatus.BAD_REQUEST, "Recipe data invalid", "Thông tin công thức không hợp lệ."),
     AI_SUBSCRIPTION_REQUIRED(HttpStatus.FORBIDDEN, "AI subscription required", "Gói AI hiện tại chưa hỗ trợ tính năng được yêu cầu."),
     AI_GUEST_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "Guest chat rate limited", "Bạn đã gửi nhiều câu hỏi trong thời gian ngắn. Hãy thử lại sau hoặc đăng ký tài khoản."),
+    AI_TOKEN_QUOTA_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "AI token quota exceeded", "Bạn đã dùng hết hạn mức token của kỳ hiện tại. Hạn mức sẽ được cấp lại khi bắt đầu kỳ mới."),
     AI_PROVIDER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "AI provider unavailable", "Dịch vụ AI hiện không khả dụng. Bạn có thể tiếp tục tự soạn nội dung."),
     AI_RESPONSE_INVALID(HttpStatus.BAD_GATEWAY, "AI response invalid", "AI trả về nội dung không hợp lệ. Vui lòng thử lại hoặc tự soạn nội dung."),
     AI_TELEMETRY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "AI accounting unavailable", "Không thể lưu dữ liệu sử dụng AI lúc này. Vui lòng thử lại sau."),

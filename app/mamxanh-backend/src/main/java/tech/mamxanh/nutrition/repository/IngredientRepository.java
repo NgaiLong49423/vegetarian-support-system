@@ -1,14 +1,15 @@
 package tech.mamxanh.nutrition.repository;
 
-import java.util.Collection;
-import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.data.jpa.repository.JpaRepository;
 import tech.mamxanh.nutrition.entity.CatalogStatus;
 import tech.mamxanh.nutrition.entity.IngredientEntity;
+
+import java.util.Collection;
+import java.util.List;
 
 public interface IngredientRepository extends JpaRepository<IngredientEntity, Long> {
     boolean existsByNameIgnoreCaseAndStatus(String name, CatalogStatus status);

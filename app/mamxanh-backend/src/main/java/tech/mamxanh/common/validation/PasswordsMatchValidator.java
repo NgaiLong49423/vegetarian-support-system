@@ -1,9 +1,9 @@
 package tech.mamxanh.common.validation;
 
-import java.util.Objects;
-
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+
+import java.util.Objects;
 
 public class PasswordsMatchValidator implements ConstraintValidator<PasswordsMatch, PasswordConfirmation> {
 

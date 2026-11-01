@@ -28,8 +28,22 @@
     </scm>
     <properties>
         <java.version>21</java.version>
+        <google-adk.version>1.13.0</google-adk.version>
     </properties>
     <dependencies>
+        <!-- G1: opt-in runner; no Spring bean or public endpoint is registered. -->
+        <dependency>
+            <groupId>com.google.adk</groupId>
+            <artifactId>google-adk</artifactId>
+            <version>${google-adk.version}</version>
+            <exclusions>
+                <!-- Springdoc owns the Jakarta annotations; ADK's provider SDK adds an older duplicate. -->
+                <exclusion>
+                    <groupId>io.swagger.core.v3</groupId>
+                    <artifactId>swagger-annotations</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
@@ -149,6 +163,15 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <environmentVariables>
+                        <ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS>false</ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS>
+                    </environmentVariables>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

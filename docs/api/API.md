@@ -1,11 +1,49 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.51.0
+> **Version:** v0.61.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-30
+> **Last Updated:** 2026-11-02
 > **Status:** Active
 
 # API Integration Guide
+
+## G4 — Recovery và cancel của Shopping List pilot
+
+Frontend sinh và lưu `clientRequestId` vào sessionStorage trước mỗi POST chat. Một request pilot chỉ có tối đa một thao tác create; `(ownerId, clientRequestId)` xác định action, không cần POST reservation API. Request xác nhận có request ID riêng. Nếu sau này mở rộng nhiều writes/request, cần thiết kế mapping mới; G4 không mặc định hỗ trợ.
+
+- `GET /api/v1/recipes/ai/chat/executions/{clientRequestId}`: Member tra metadata của chính mình, không cần session RAM còn tồn tại. `actionId` bằng request ID; `state` là `RESERVED|WRITING|SUCCEEDED|FAILED|CANCELLED|UNKNOWN`; result chỉ chứa `shoppingListId`. `Cache-Control: no-store`. UNKNOWN không cấp quyền replay.
+- POST chat bổ sung `controlAction: CANCEL`; dùng cùng request ID của lượt cần dừng, gửi `question` ngắn và `history: []` để giữ tương thích request validation hiện có. Control request đi trước normal routing/busy guard và không gọi Gemini. Response có thể là `STOP_REQUESTED`, hoặc `COMPLETED` nếu create đã commit; không hứa rollback write đang chạy.
+- DELETE session giữ API hiện có, cho phép yêu cầu kết thúc phiên đang chạy. Pending bị vô hiệu ngay; context được dọn sau khi runner dừng an toàn. Không hoàn tác business writes.
+
+Không tự POST lại write sau disconnect. Tra GET bằng request ID đã lưu, hiển thị ID đã commit nếu có. Sau Backend restart, xác nhận/consent cũ không được phục hồi từ transcript; lịch sử cũ chỉ để xem. Pending còn trong process giữ mode snapshot, bất kể lựa chọn mode cho yêu cầu mới. Model replacement tự động không được bật.
+
+
+## Chat Shopping List G3 local (opt-in)
+
+Tái dùng POST `/api/v1/recipes/ai/chat` và DELETE session hiện có. Backend chọn routing, client không cấp quyền chọn engine. Nhánh pilot cần `clientRequestId` UUID gắn payload; trùng đã hoàn tất trả kết quả cũ, đang chạy hoặc cùng ID khác payload bị từ chối. Legacy không bắt buộc trường mới. Không tự retry request ghi sau lỗi kết nối.
+
+Response bổ sung `engine`, `runStatus`, `sessionExpiresAt`, `knowledgeRevision`, source `version` và `pendingConfirmation.proposedListName`. UI xác định create/read bằng steps/service results; lời model không xác lập thành công. Consent category `SHOPPING_LIST` với `AI_CHAT`, `SHOPPING_LIST_READ`, `SHOPPING_LIST_WRITE` bao gồm câu hỏi, tên, ID và kết quả gửi Google Gemini; tách khỏi confirmation. QA chỉ preview; CONFIRM mặc định; AUTO chỉ ghi khi yêu cầu rõ và có tên người dùng cung cấp. UI hỗ trợ approve/reject và revoke.
+
+Session idle 30 phút, confirmation 5 phút; restart/expiry từ chối session/action cũ. Run deadline 30 giây, client timeout 35 giây. Create đã commit mà bước sau lỗi trả partial failure cùng ID thật, không replay create. Chi tiết schema/status/security trong OpenAPI sinh từ runtime.
+
+## Bảng gói AI và checkout theo cấu hình Admin
+
+- `GET /api/v1/subscriptions/plans` trả đúng ba tier cùng giá hiện hành từ cấu hình Admin, quota token tháng, Gemini model được bật và mô tả quyền chức năng theo role/capability. Không phân quyền chức năng AI theo Plus/Pro.
+- `POST /api/v1/subscriptions/checkout` dùng giá và quota đã đọc từ cấu hình tại thời điểm tạo đơn. Response `amountVnd` là số tiền payOS phải thu; Backend lưu tier/quota cùng đơn để webhook kích hoạt đúng quyền lợi đã mua.
+- Thay đổi giá/quota sau đó không đổi đơn `PENDING` hoặc chu kỳ đã kích hoạt. Checkout vẫn yêu cầu giao dịch dương và payOS xác minh đúng số tiền đã lưu.
+
+### Admin tặng gói AI và cấp AI Credit cho tài khoản — Issue #212
+
+- `GET /api/v1/admin/ai-accounts/{userId}/tier` xem tier/quota hiện hành, thời điểm bắt đầu và hết hạn; chỉ Administrator.
+- `POST /api/v1/admin/ai-accounts/{userId}/package-gifts` chỉ nhận tài khoản CUSTOMER hoặc EXPERT; ADMIN nhận `400 AI_PACKAGE_GIFT_MEMBER_ONLY`. Request gồm `tier=FREE|PLUS|PRO` và lý do 10–500 ký tự. Gói áp dụng ngay, thay gói hiện tại; Plus/Pro bắt đầu chu kỳ 30 ngày với quota hiện hành, Free kết thúc subscription trả phí. Không tạo payment order hoặc hoàn tiền. Giao dịch ghi vào lịch sử tài khoản kèm Admin, tier cũ/mới, lý do, thời điểm tặng và thời điểm hết hạn; người nhận nhận in-app notification. Nếu tier đó đang hiệu lực thì không tạo giao dịch mới.
+- `POST /api/v1/admin/ai-accounts/{userId}/credit-grants` nhận số Credit dương (tối đa 9 chữ số thập phân) và lý do 10–500 ký tự. Backend cập nhật wallet và append-only `AI_CREDIT_LEDGER` trong một transaction; người nhận được in-app notification. `ADMIN_GRANT` xuất hiện trong lịch sử tài khoản với số Credit, số dư sau giao dịch, Admin, lý do và thời điểm. Grant độc lập với tặng gói và không đổi tier/quota/model access.
+- Cả ba endpoint yêu cầu Bearer JWT của Administrator. Backend là nơi quyết định cuối cùng cho RBAC, validation và cập nhật quyền lợi; AI Assistant không gọi các endpoint này.
+
+## Cấu hình AI của Administrator — Issue #212
+
+- `GET /api/v1/admin/ai-config` trả cấu hình gói Free/Plus/Pro, quota Free đang chờ áp dụng, Gemini model catalog và tỷ lệ AI Credit/top-up. Response đặt `Cache-Control: no-store`.
+- `PUT /api/v1/admin/ai-config` lưu cùng cấu hình; cần Bearer token của Administrator. API xác thực các giá trị gói, quyền/default model theo tier và khoảng nạp. Model ID mới được xác minh với Gemini trước khi ghi; nếu provider từ chối hoặc không khả dụng, cấu hình cũ được giữ nguyên.
+- Giá/quota Plus/Pro áp dụng cho lần kích hoạt/mua mới; quota Free đổi có hiệu lực từ đầu tháng Việt Nam tiếp theo. Các chu kỳ trả phí đang hoạt động giữ snapshot. Thay đổi tỷ lệ overage có hiệu lực ngay; tỷ lệ nạp và giới hạn nạp áp dụng cho đơn mới. Contract schema/status chi tiết được sinh trong `openapi.yaml` từ Backend runtime.
 
 ## Giám sát giao dịch gói tài khoản
 
@@ -396,13 +434,13 @@ Dùng `GET /api/v1/recipes/form-options` để lấy mã/nhãn loại ăn chay v
 
 ## 11. AI hỗ trợ soạn Recipe Post — FR-21
 
-`POST /api/v1/recipes/ai-assistance` yêu cầu Bearer token của Expert đang hoạt động và gói Plus hoặc Pro còn hiệu lực. Backend xác thực entitlement trước khi gọi Gemini. Generated OpenAPI runtime là hợp đồng chi tiết cho request/response và các lỗi.
+`POST /api/v1/recipes/ai-assistance` yêu cầu Bearer token của Expert đang hoạt động. Backend kiểm tra hạn mức token và model được phép theo tier hiện tại trước khi gọi AI. Generated OpenAPI runtime là hợp đồng chi tiết cho request/response và các lỗi.
 
 Request chọn `contentType` là `DESCRIPTION` hoặc `INSTRUCTIONS`, gửi tiêu đề, mã danh mục, loại ăn chay, khẩu phần và các dòng nguyên liệu gồm `ingredientId`, `unitId`, `quantity`. Backend đối chiếu ingredient ID đầu vào với danh mục đang hoạt động, rồi hướng prompt để Gemini ưu tiên nguyên liệu tác giả đã nhập. Nội dung có thể gợi ý thêm nguyên liệu để tác giả rà soát/chỉnh sửa; Backend không từ chối chỉ vì nội dung nhắc thêm nguyên liệu. Với hướng dẫn, ingredient ID dùng để hiển thị tên nguyên liệu đã nhập; nguyên liệu gợi ý thêm được nêu trong text.
 
-Response trả `contentType` và `content` để Frontend điền trực tiếp vào trường có thể chỉnh sửa. API không tạo RecipePost hoặc bản nháp; chỉ thao tác đăng/lưu hiện có mới ghi công thức sau khi tác giả rà soát và chủ động xác nhận. Free, hết hạn hoặc thiếu subscription nhận `403 AI_SUBSCRIPTION_REQUIRED` trước khi provider được gọi. Gemini thiếu cấu hình/lỗi nhận `503 AI_PROVIDER_UNAVAILABLE`; kết quả sai định dạng hoặc vượt giới hạn cấu trúc nhận `502 AI_RESPONSE_INVALID`. Các lỗi không ngăn tác giả tự nhập và đăng theo validation hiện hành; công thức sau khi đăng tiếp tục theo cơ chế hậu kiểm hiện hành.
+Response trả `contentType` và `content` để Frontend điền trực tiếp vào trường có thể chỉnh sửa. API không tạo RecipePost hoặc bản nháp; chỉ thao tác đăng/lưu hiện có mới ghi công thức sau khi tác giả rà soát và chủ động xác nhận. Expert ở tier Free hoặc có subscription hết hạn vẫn được dùng trong hạn mức Free; hết hạn mức và không còn AI Credit thì nhận `429 AI_TOKEN_QUOTA_EXCEEDED`. Model không còn được tier hỗ trợ nhận `409 AI_MODEL_SELECTION_REQUIRED`; provider thiếu cấu hình/lỗi nhận `503 AI_PROVIDER_UNAVAILABLE`; kết quả sai định dạng hoặc vượt giới hạn cấu trúc nhận `502 AI_RESPONSE_INVALID`. Các lỗi không ngăn tác giả tự nhập và đăng theo validation hiện hành; công thức sau khi đăng tiếp tục theo cơ chế hậu kiểm hiện hành.
 
-Backend gọi model cố định `gemini-3.8-flash` qua Google Gen AI Java SDK; khóa chỉ được đọc từ `GEMINI_API_KEY` ở Backend. Không gửi API key xuống Frontend. Không ghi prompt thô vào log.
+Backend chọn model đang được phép theo tier và ưu tiên của tài khoản qua Google ADK; khóa chỉ được đọc từ `GEMINI_API_KEY` ở Backend. Không gửi API key xuống Frontend. Không ghi prompt thô vào log.
 
 ## 12. Hồ sơ thành viên — FR-23
 
@@ -453,9 +491,9 @@ Generated `/v3/api-docs` là hợp đồng runtime chi tiết cho hai endpoint d
 - Mục tiêu chỉ điều hướng lựa chọn món, không làm thay đổi mục tiêu số FR-35, không tự suy ra thâm hụt/thặng dư năng lượng và không đảm bảo kết quả sức khỏe. Dữ liệu câu trả lời tuần không được lưu/tái sử dụng. Không gửi số đo nhân trắc học hoặc mục tiêu cá nhân chi tiết vào telemetry; không ghi prompt hay câu trả lời cá nhân vào log.
 - Nếu chưa xác nhận trạng thái dinh dưỡng, API trả `403 NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED`; nếu người dùng đã xác nhận không đủ điều kiện, trả `403 NUTRITION_ELIGIBILITY_INELIGIBLE`. Hồ sơ nhân trắc học chưa lưu trả `409 NUTRITION_PROFILE_REQUIRED`.
 
-## 16. Chatbot hỏi đáp theo ngữ cảnh — FR-51
+## 16. AI Agent hỏi đáp và điều phối theo ngữ cảnh — FR-51 / FR-66
 
-`POST /api/v1/recipes/ai/chat` phục vụ cả Guest và Member đang hoạt động trên cùng một chatbot. Member gửi Bearer token; Guest gửi thêm `anonymousViewerId` dạng UUID lấy từ session cookie cùng origin Frontend (`mamxanh.recipe-viewer`, dùng chung định danh ẩn danh hiện có của FR-58). Không dùng cookie xác thực hoặc bật credentials xuyên origin. Endpoint nhận `contextType` (`GENERAL` hoặc `RECIPE`), `question` (tối đa 1.000 ký tự), tối đa 8 lượt `history` gần nhất (`speaker`: `USER` tối đa 1.000 ký tự, `ASSISTANT` tối đa 8.000 ký tự), và `recipeId` khi dùng ngữ cảnh `RECIPE`. Câu trả lời được Backend kiểm tra tối đa 8.000 ký tự trước khi trả thành công, để Frontend gửi lại đầy đủ ở lượt tiếp theo mà không cắt mất nội dung. Giới hạn này do Backend thực thi, không phụ thuộc provider có tuân thủ length constraint của schema hay không. `GENERAL` không nhận `recipeId`; `RECIPE` bắt buộc có ID dương.
+`POST /api/v1/recipes/ai/chat` phục vụ cả Guest và Member đang hoạt động trên cùng một hệ thống AI Agent điều phối thông minh, kết hợp kho tri thức nghiệp vụ nội bộ (Knowledge Base) và các chính sách hành vi (Behavioral Policies) đóng gói trong Spring resources. Member gửi Bearer token; Guest gửi thêm `anonymousViewerId` dạng UUID lấy từ session cookie cùng origin Frontend (`mamxanh.recipe-viewer`, dùng chung định danh ẩn danh hiện có của FR-58). Không dùng cookie xác thực hoặc bật credentials xuyên origin. Endpoint nhận `contextType` (`GENERAL` hoặc `RECIPE`), `question` (tối đa 1.000 ký tự), tối đa 8 lượt `history` gần nhất (`speaker`: `USER` tối đa 1.000 ký tự, `ASSISTANT` tối đa 8.000 ký tự), và `recipeId` khi dùng ngữ cảnh `RECIPE`. Câu trả lời được Backend kiểm tra tối đa 8.000 ký tự trước khi trả thành công, để Frontend gửi lại đầy đủ ở lượt tiếp theo mà không cắt mất nội dung. Giới hạn này do Backend thực thi, không phụ thuộc provider có tuân thủ length constraint của schema hay không. `GENERAL` không nhận `recipeId`; `RECIPE` bắt buộc có ID dương.
 
 Ví dụ body cho ngữ cảnh công thức:
 
@@ -468,7 +506,7 @@ Ví dụ body cho ngữ cảnh công thức:
 }
 ```
 
-Backend tải RecipePost hiện hành theo ID và chỉ dùng bài đang công khai; không nhận nội dung công thức do Frontend gửi. Context gồm nội dung công thức, nguyên liệu/định lượng, dinh dưỡng hiện có và ràng buộc ăn chay/nguyên liệu cần tránh của Member nếu đã khai báo. Khi câu hỏi yêu cầu dữ liệu cá nhân về BMI hoặc năng lượng, chatbot không tự tải hồ sơ sức khỏe vào prompt; Member cần dùng luồng hồ sơ dinh dưỡng đã có.
+Backend tải RecipePost hiện hành theo ID và chỉ dùng bài đang công khai; không nhận nội dung công thức do Frontend gửi. Request legacy không tự đọc tùy chọn ăn uống hoặc hồ sơ sức khỏe vào prompt. Câu hỏi/lượt USER có dấu hiệu dữ liệu cá nhân bị chặn trước Gemini nếu thiếu consent; client cần dùng orchestration contract bên dưới để cấp consent theo phạm vi.
 
 Response gồm `contextType`, `recipeId` (null với ngữ cảnh chung), `answer` và `recommendations` (mảng rỗng nếu không tìm công thức). Khi người dùng tìm món/công thức, Backend tải tối đa 50 Recipe Post công khai, lọc trường phái ăn chay và nguyên liệu cần tránh đã khai báo rồi gửi danh sách giới hạn cho Gemini; Gemini chỉ được chọn tối đa 4 ID trong danh sách. Backend xác minh ID và trạng thái công khai lần nữa trước khi trả các thẻ bài viết gồm `id`, `title`, `description`, `coverUrl`, `totalTimeMinutes`, `difficulty` và `reason`. FE dùng `id` để mở trang `/cong-thuc/id/{id}`; không dùng URL do Gemini tạo. Nếu không tìm được bài phù hợp, `recommendations` rỗng và `answer` nói rõ không có kết quả. Nội dung công thức mới hoặc biến tấu chỉ được trả trong `answer` khi người dùng yêu cầu rõ; đây là bản nháp AI trong hội thoại, không lưu hoặc đăng.
 
@@ -493,7 +531,17 @@ Ví dụ phần response cho yêu cầu tìm món:
 }
 ```
 
-Gemini phải phân biệt dữ kiện ghi trong RecipePost với gợi ý/ước tính của AI, không bịa thông tin còn thiếu, tôn trọng loại ăn chay và không chẩn đoán hoặc kê phác đồ điều trị. API chỉ đọc; không lưu lịch sử hội thoại hay thay đổi dữ liệu nghiệp vụ. Frontend giữ tối đa lịch sử cần gửi trong state của phiên hiện tại. Backend chỉ phát telemetry token `AiUsageEvent` sau phản hồi hợp lệ; không đưa câu hỏi, lịch sử, context công thức hoặc câu trả lời vào telemetry/log.
+Gemini phải phân biệt dữ kiện ghi trong RecipePost với gợi ý/ước tính của AI, không bịa thông tin còn thiếu, tôn trọng loại ăn chay và không chẩn đoán hoặc kê phác đồ điều trị. Request legacy không thay đổi dữ liệu nghiệp vụ. Backend chỉ phát telemetry token `AiUsageEvent`; không đưa câu hỏi, lịch sử, context công thức hoặc câu trả lời vào telemetry/log.
+
+### Orchestration, consent và tool execution — Issue #214
+
+Request orchestration bổ sung `sessionId`, `executionMode` (`QA|CONFIRM|AUTO`), `consentDecision`, `confirmationId` và `confirmationDecision`. Các trường này hiện là additive; khi client gửi ít nhất một trường orchestration, Backend dùng execution service mới. `sessionId` được Backend tạo và trả về, gắn với account hoặc `anonymousViewerId`; TTL mặc định 30 phút. Pending confirmation hết hạn sau 5 phút và chỉ dùng một lần. Session lưu trong process memory, không giữ prompt; restart làm mất consent/pending.
+
+Consent gồm action `GRANT|REVOKE` và danh sách `scopes`, mỗi scope là `category` (`BASIC_PROFILE|DIETARY_PREFERENCES|HEALTH_PROFILE`) cùng `purpose` (`AI_CHAT` hoặc thao tác PROFILE/DIETARY/HEALTH_PROFILE READ/UPDATE tương ứng). Dữ liệu cá nhân nhận diện được trong câu hỏi/lịch sử yêu cầu consent `AI_CHAT` trước provider. Đọc/ghi hồ sơ bằng tool yêu cầu thêm consent đúng category/purpose. Thu hồi scope làm mất quyền dùng scope đó; thu hồi danh sách rỗng xóa toàn bộ consent phiên.
+
+Planner chỉ được chọn tool trong allowlist mà `role` hiện tại được cấp; tool gọi service nghiệp vụ hiện có. Chạy tối đa 5 bước tuần tự. `QA` không ghi; `CONFIRM` xếp thao tác ghi vào `pendingConfirmation`; `AUTO` chạy yêu cầu ghi rõ ràng, nhưng publish và xóa luôn chờ xác nhận. Response trả `steps` với trạng thái từng tool, `consentRequest`, `pendingConfirmation`, và `sources`. Bước lỗi dừng phần còn lại, không hoàn tác bước đã thành công. Internal RAG dùng snippets đã duyệt và dữ liệu công khai Mâm Xanh; không truy vấn Internet. Chat client cung cấp selector mode, preview bước ghi, và thao tác confirmation/consent; form preview nâng cao thuộc Issue #215.
+
+Tool `navigate_to_page` chỉ nhận page key trong danh sách Backend cố định và chỉ dùng khi người dùng yêu cầu mở/đi tới trang. Backend trả đường dẫn nội bộ qua `workflowUrl`; Frontend kiểm tra allowlist lần nữa, đóng chat và điều hướng tự động. Mode được gửi theo lựa chọn hiện tại; tool điều hướng chỉ đọc nên không thể thực hiện thao tác ghi. URL ngoài allowlist không được mở hoặc render thành liên kết.
 
 Lỗi request trả `400`; bài không tồn tại hoặc không còn công khai trả `404`; phản hồi Gemini sai/thiếu trả `502 AI_RESPONSE_INVALID`; Gemini lỗi hoặc timeout trả `503 AI_PROVIDER_UNAVAILABLE`. Backend giới hạn thời gian chờ Gemini theo NFR-18. Guest chịu giới hạn trượt 10 request/phút độc lập theo UUID và peer IP; đổi cookie không vượt được giới hạn IP, đổi IP không vượt được giới hạn cookie. Vượt ngưỡng trả `429 AI_GUEST_RATE_LIMITED` cùng `Retry-After` trước khi gọi chatbot/provider. Bộ đếm có giới hạn bộ nhớ, hết hiệu lực sau một phút, lưu hash SHA-256 và không tin `X-Forwarded-For`. Đây là bộ đếm trong một tiến trình cho baseline Backend hiện tại; không bảo đảm giới hạn chung khi chạy nhiều replica. Member không dùng bộ đếm Guest hoặc daily quota. Bearer sai/hết hạn trả `401`, tài khoản bị khóa trả `403`; không hạ request có Bearer lỗi thành Guest. Guest không đọc hồ sơ sở thích hoặc sức khỏe tài khoản; `AiUsageEvent.userId` là null cho Guest, chỉ chứa metadata token. Generated `/v3/api-docs` là contract chi tiết cho request, response, validation và security.
 
@@ -529,19 +577,23 @@ Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dù
 - Nội dung là văn bản thuần: Backend lưu nguyên văn, Frontend hiển thị như text nên mã HTML/JavaScript không được thực thi (AC-46.3).
 
 
-## 19. Kết quả thanh toán đã xác minh — FR-13 / Issue #142
+## 19. Thanh toán gói AI và nạp AI Credit — FR-13 / FR-64
 
 Generated OpenAPI là contract chi tiết; endpoint mới không thay đổi các route thanh toán hiện có.
 
 | Endpoint | Quyền và hành vi |
 | --- | --- |
 | `POST /api/v1/subscriptions/checkout` | Member đang hoạt động; body chỉ có `tier: PLUS` hoặc `PRO`; Backend quyết định giá. HTTP 201 trả `orderCode`, `amountVnd`, `tier`, `checkoutUrl`, `qrCode`. |
+| `GET /api/v1/subscriptions/my-ai-credit` | Member đang hoạt động; trả `balance`, `creditsPer1000Vnd`, `minimumTopUpVnd`, `maximumTopUpVnd` để hiển thị ví và tỷ lệ nạp hiện hành. |
+| `POST /api/v1/subscriptions/credit-checkout` | Member đang hoạt động; body `{ "amountVnd": integer }`; Backend kiểm tra giới hạn Admin, chụp số tiền/Credit/tỷ lệ, tạo đơn payOS có hạn 15 phút và trả `orderCode`, `amountVnd`, `creditAmount`, `expiresAt`, `checkoutUrl`, `qrCode`. |
 | `GET /api/v1/subscriptions/transactions/{orderCode}` | Chỉ chủ đơn; 200 trả trạng thái đã xác minh và subscription, `Cache-Control: no-store`. Mã đơn là chuỗi số dương trong giới hạn integer an toàn của JavaScript. |
 | `POST /api/v1/payments/webhook` | Không yêu cầu Bearer; bắt buộc chữ ký HMAC hợp lệ và dữ liệu tiền tệ/số tiền hợp lệ trước khi xử lý. |
 
-Response kết quả đơn gồm `orderCode` (string), `tier`, `amountVnd`, `status`, `paidAt`, `activated`, `subscription`. `activated` chỉ đúng khi subscription liên kết với chính đơn còn hiệu lực và gói hiện tại tương ứng; `PAID` là lịch sử thanh toán, không đồng nghĩa subscription còn hiệu lực mãi. Subscription gồm `tier`, `status`, `active`, `startsAt`, `endsAt`, `unlockedFeatures`.
+Response kết quả đơn gồm `orderCode` (string), `productType` (`SUBSCRIPTION` hoặc `AI_CREDIT`), `tier`, `creditAmount`, `creditsPer1000VndSnapshot`, `amountVnd`, `status`, `paidAt`, `activated`, `subscription`. `activated` chỉ đúng với đơn gói khi subscription liên kết còn hiệu lực và gói hiện tại tương ứng; với nạp Credit, giá trị này cho biết số Credit đã được cộng. `PAID` là lịch sử thanh toán, không đồng nghĩa subscription còn hiệu lực mãi. Subscription gồm `tier`, `status`, `active`, `startsAt`, `endsAt`, `unlockedFeatures`.
 
 - Đơn còn `PENDING` được Backend đối soát qua API payOS có credential server; kiểm tra chữ ký response, mã đơn, số tiền và số tiền đã trả trước khi kích hoạt. Webhook và đối soát dùng chung transaction/locking, xử lý lặp không cộng thêm kỳ.
+- Đơn nạp đang chờ hết hạn sau 15 phút. Khi payOS xác nhận thanh toán trước hạn, Backend cập nhật `PAYMENT_TRANSACTION`, `AI_CREDIT_WALLET` và `AI_CREDIT_LEDGER` nguyên tử; lặp webhook không cộng trùng. `NEEDS_RECONCILIATION` nghĩa là payOS ghi nhận thanh toán sau hạn hoặc không có bằng chứng thời điểm: Credit chưa được cộng, Member nhận in-app notification và đơn xuất hiện trong lịch sử để đối soát.
+- Lịch sử giao dịch trả thêm `productType`, `creditAmount`, `creditsPer1000VndSnapshot` và `expiresAt`; Admin transaction report/CSV cũng phân biệt đơn nạp, tỷ lệ đã chụp và trạng thái `NEEDS_RECONCILIATION`.
 - `404 PAYMENT_TRANSACTION_NOT_FOUND` dùng chung cho đơn không tồn tại và đơn của người khác; `403` cho role không phù hợp hoặc tài khoản LOCKED. Guest nhận 401.
 - `503 PAYMENT_UNAVAILABLE` khi thiếu cấu hình hoặc provider lỗi; `502 PAYMENT_RESPONSE_INVALID` khi dữ liệu provider không xác minh được; webhook sai chữ ký/số tiền/currency trả 400. Các lỗi không được tạo quyền trả phí.
 - Lịch sử giao dịch giữ các trường cũ và bổ sung `tier` (nullable với giao dịch cũ có số tiền không khớp giá gói). Checkout không nhận return/cancel URL tùy ý từ trình duyệt; các URL thuộc cấu hình Backend.

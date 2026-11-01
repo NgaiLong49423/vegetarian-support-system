@@ -1,24 +1,17 @@
 package tech.mamxanh.auth.security;
 
-import java.nio.charset.StandardCharsets;
-import java.time.Clock;
-import java.time.Duration;
-
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-
+import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.JwtIssuerValidator;
-import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.jwt.*;
 
-import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Duration;
 
 /**
  * Stateless JWT access tokens signed with HS256 (decision Q19): Spring Security OAuth2 Resource

@@ -1,10 +1,10 @@
 package tech.mamxanh.auth.entity;
 
-import java.io.Serializable;
-import java.util.Objects;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+
+import java.io.Serializable;
+import java.util.Objects;
 
 /** Composite key {@code PK_USER_FOLLOW (follower_user_id, followed_user_id)}; one row per directed pair. */
 @Embeddable

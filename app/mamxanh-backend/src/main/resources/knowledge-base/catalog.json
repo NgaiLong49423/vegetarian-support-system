@@ -1,0 +1,1047 @@
+{
+    "revision":  "kb-v1.0.0-20261101",
+    "version":  "1.0.0",
+    "basePath":  "knowledge-base",
+    "totalDocuments":  43,
+    "documents":  [
+                      {
+                          "id":  "expert-registration",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Quy trình đăng ký trở thành Chuyên gia ẩm thực chay",
+                          "category":  "accounts",
+                          "resourcePath":  "knowledge-base/accounts/expert-registration.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/accounts/expert-registration.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "following-members",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Theo dõi Chuyên gia và thành viên khác",
+                          "category":  "accounts",
+                          "resourcePath":  "knowledge-base/accounts/following-members.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/accounts/following-members.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "password-recovery",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Quên mật khẩu và khôi phục tài khoản",
+                          "category":  "accounts",
+                          "resourcePath":  "knowledge-base/accounts/password-recovery.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/accounts/password-recovery.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "profile-management",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Quản lý thông tin hồ sơ và cài đặt tài khoản",
+                          "category":  "accounts",
+                          "resourcePath":  "knowledge-base/accounts/profile-management.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/accounts/profile-management.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "registration-and-login",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Đăng ký, đăng nhập và bảo mật tài khoản",
+                          "category":  "accounts",
+                          "resourcePath":  "knowledge-base/accounts/registration-and-login.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/accounts/registration-and-login.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "ai-assistant-overview",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Tổng quan về Trợ lý AI Mâm Xanh",
+                          "category":  "ai-features",
+                          "resourcePath":  "knowledge-base/ai-features/ai-assistant-overview.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/ai-features/ai-assistant-overview.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "ai-chat-cooking-guidance",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Hỏi đáp ẩm thực chay và tư vấn nấu nướng cùng AI",
+                          "category":  "ai-features",
+                          "resourcePath":  "knowledge-base/ai-features/ai-chat-cooking-guidance.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/ai-features/ai-chat-cooking-guidance.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "ai-execution-modes",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Ba chế độ thực thi của AI và bảo vệ quyền riêng tư",
+                          "category":  "ai-features",
+                          "resourcePath":  "knowledge-base/ai-features/ai-execution-modes.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/ai-features/ai-execution-modes.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "ai-meal-recommendations",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "AI gợi ý món ăn và tạo thực đơn tuần tự động",
+                          "category":  "ai-features",
+                          "resourcePath":  "knowledge-base/ai-features/ai-meal-recommendations.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/ai-features/ai-meal-recommendations.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "ai-recipe-drafting-assistance",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Dành cho Chuyên gia: AI hỗ trợ soạn bản nháp công thức",
+                          "category":  "ai-features",
+                          "resourcePath":  "knowledge-base/ai-features/ai-recipe-drafting-assistance.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/ai-features/ai-recipe-drafting-assistance.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "introduction",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Giới thiệu nền tảng ẩm thực chay Mâm Xanh",
+                          "category":  "getting-started",
+                          "resourcePath":  "knowledge-base/getting-started/introduction.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/getting-started/introduction.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "onboarding-guide",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Khởi tạo sở thích ăn uống ban đầu (Onboarding)",
+                          "category":  "getting-started",
+                          "resourcePath":  "knowledge-base/getting-started/onboarding-guide.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/getting-started/onboarding-guide.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "user-roles-and-permissions",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Các vai trò người dùng và phân quyền trên Mâm Xanh",
+                          "category":  "getting-started",
+                          "resourcePath":  "knowledge-base/getting-started/user-roles-and-permissions.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/getting-started/user-roles-and-permissions.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "exporting-meal-plan-and-nutrition",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Xuất công thức và báo cáo dinh dưỡng ra file TXT / PDF",
+                          "category":  "meal-planning",
+                          "resourcePath":  "knowledge-base/meal-planning/exporting-meal-plan-and-nutrition.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/meal-planning/exporting-meal-plan-and-nutrition.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "nutrition-tracking",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Theo dõi và phân tích dinh dưỡng thực đơn",
+                          "category":  "meal-planning",
+                          "resourcePath":  "knowledge-base/meal-planning/nutrition-tracking.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/meal-planning/nutrition-tracking.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "weekly-meal-planner",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Lập kế hoạch thực đơn tuần 3 bữa",
+                          "category":  "meal-planning",
+                          "resourcePath":  "knowledge-base/meal-planning/weekly-meal-planner.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/meal-planning/weekly-meal-planner.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "content-and-community-guidelines",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Quy chuẩn nội dung và tiêu chuẩn cộng đồng",
+                          "category":  "policies",
+                          "resourcePath":  "knowledge-base/policies/content-and-community-guidelines.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/policies/content-and-community-guidelines.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "health-and-medical-disclaimer",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Tuyên bố miễn trừ trách nhiệm y tế và dinh dưỡng",
+                          "category":  "policies",
+                          "resourcePath":  "knowledge-base/policies/health-and-medical-disclaimer.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/policies/health-and-medical-disclaimer.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "privacy-and-data-protection",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Chính sách bảo vệ dữ liệu và quyền riêng tư",
+                          "category":  "policies",
+                          "resourcePath":  "knowledge-base/policies/privacy-and-data-protection.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/policies/privacy-and-data-protection.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "reporting-and-moderation",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Báo cáo vi phạm và quy trình xử lý của Quản trị viên",
+                          "category":  "policies",
+                          "resourcePath":  "knowledge-base/policies/reporting-and-moderation.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/policies/reporting-and-moderation.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "expert-recipe-creation",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Dành cho Chuyên gia: Hướng dẫn đăng và chỉnh sửa công thức",
+                          "category":  "recipes",
+                          "resourcePath":  "knowledge-base/recipes/expert-recipe-creation.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/recipes/expert-recipe-creation.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "ingredient-directory",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Tra cứu danh mục nguyên liệu và thông tin dinh dưỡng",
+                          "category":  "recipes",
+                          "resourcePath":  "knowledge-base/recipes/ingredient-directory.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/recipes/ingredient-directory.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "recipe-comments",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Thảo luận, bình luận và phản hồi nhiều cấp",
+                          "category":  "recipes",
+                          "resourcePath":  "knowledge-base/recipes/recipe-comments.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/recipes/recipe-comments.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "recipe-comparison",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "So sánh hai công thức món chay",
+                          "category":  "recipes",
+                          "resourcePath":  "knowledge-base/recipes/recipe-comparison.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/recipes/recipe-comparison.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "recipe-details-and-ratings",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Xem chi tiết công thức và đánh giá Like / Dislike",
+                          "category":  "recipes",
+                          "resourcePath":  "knowledge-base/recipes/recipe-details-and-ratings.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/recipes/recipe-details-and-ratings.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "saved-recipes",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Lưu và quản lý danh sách công thức yêu thích",
+                          "category":  "recipes",
+                          "resourcePath":  "knowledge-base/recipes/saved-recipes.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/recipes/saved-recipes.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "search-and-filter",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Tìm kiếm và lọc công thức món chay",
+                          "category":  "recipes",
+                          "resourcePath":  "knowledge-base/recipes/search-and-filter.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/recipes/search-and-filter.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "sorting-modes",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "6 chế độ sắp xếp công thức trên Mâm Xanh",
+                          "category":  "recipes",
+                          "resourcePath":  "knowledge-base/recipes/sorting-modes.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/recipes/sorting-modes.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "shopping-list-actions",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Thao tác khi đi chợ và xuất danh sách mua sắm",
+                          "category":  "shopping-list",
+                          "resourcePath":  "knowledge-base/shopping-list/shopping-list-actions.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/shopping-list/shopping-list-actions.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "shopping-list-overview",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Tạo và quản lý danh sách đi chợ",
+                          "category":  "shopping-list",
+                          "resourcePath":  "knowledge-base/shopping-list/shopping-list-overview.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/shopping-list/shopping-list-overview.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "smart-ingredient-aggregation",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Cơ chế tự động tổng hợp nguyên liệu an toàn",
+                          "category":  "shopping-list",
+                          "resourcePath":  "knowledge-base/shopping-list/smart-ingredient-aggregation.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/shopping-list/smart-ingredient-aggregation.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "ai-credit-and-top-up",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "AI Credit và hướng dẫn nạp thêm ngân sách",
+                          "category":  "subscriptions",
+                          "resourcePath":  "knowledge-base/subscriptions/ai-credit-and-top-up.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/subscriptions/ai-credit-and-top-up.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "managing-subscription",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Quản lý gói đăng ký và lịch sử giao dịch",
+                          "category":  "subscriptions",
+                          "resourcePath":  "knowledge-base/subscriptions/managing-subscription.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/subscriptions/managing-subscription.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "plans-overview",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "So sánh các gói dịch vụ AI: Free, Plus và Pro",
+                          "category":  "subscriptions",
+                          "resourcePath":  "knowledge-base/subscriptions/plans-overview.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/subscriptions/plans-overview.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "account-and-login-issues",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Khắc phục sự cố đăng ký, đăng nhập và tài khoản",
+                          "category":  "troubleshooting",
+                          "resourcePath":  "knowledge-base/troubleshooting/account-and-login-issues.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/troubleshooting/account-and-login-issues.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "ai-limits-and-errors",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Xử lý sự cố và các trường hợp AI từ chối trả lời",
+                          "category":  "troubleshooting",
+                          "resourcePath":  "knowledge-base/troubleshooting/ai-limits-and-errors.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/troubleshooting/ai-limits-and-errors.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "recipe-creation-errors",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Khắc phục lỗi khi đăng hoặc chỉnh sửa công thức",
+                          "category":  "troubleshooting",
+                          "resourcePath":  "knowledge-base/troubleshooting/recipe-creation-errors.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/troubleshooting/recipe-creation-errors.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "subscription-and-payment-issues",
+                          "type":  "DOMAIN_KNOWLEDGE",
+                          "retrievalPolicy":  "BOTH",
+                          "accessScopes":  [
+                                               "GUEST",
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Xử lý sự cố thanh toán gói dịch vụ và nạp AI Credit",
+                          "category":  "troubleshooting",
+                          "resourcePath":  "knowledge-base/troubleshooting/subscription-and-payment-issues.md",
+                          "version":  "1.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "knowledge-base/troubleshooting/subscription-and-payment-issues.md"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "assistant-scope",
+                          "type":  "PLAYBOOK",
+                          "retrievalPolicy":  "AGENT_ONLY",
+                          "accessScopes":  [
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Phạm vi hoạt động của Trợ lý AI và nguyên tắc làm rõ yêu cầu",
+                          "category":  "playbooks",
+                          "resourcePath":  "knowledge-base/playbooks/assistant-scope.md",
+                          "version":  "2.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-51",
+                                          "docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-66",
+                                          "docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-25"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "execution-confirmation",
+                          "type":  "PLAYBOOK",
+                          "retrievalPolicy":  "AGENT_ONLY",
+                          "accessScopes":  [
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Chế độ thực thi (Execution Modes) và quy trình xác nhận hành động",
+                          "category":  "playbooks",
+                          "resourcePath":  "knowledge-base/playbooks/execution-confirmation.md",
+                          "version":  "2.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-66",
+                                          "docs/requirements/srs/BUSINESS-RULES.md#br-79"
+                                      ],
+                          "tools":  [
+                                        "create_shopping_list"
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "session-consent-budget",
+                          "type":  "PLAYBOOK",
+                          "retrievalPolicy":  "AGENT_ONLY",
+                          "accessScopes":  [
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Quản lý phiên hội thoại, consent dữ liệu và hạn mức AI",
+                          "category":  "playbooks",
+                          "resourcePath":  "knowledge-base/playbooks/session-consent-budget.md",
+                          "version":  "2.0.1",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-66",
+                                          "docs/requirements/srs/BUSINESS-RULES.md#br-03",
+                                          "docs/requirements/srs/BUSINESS-RULES.md#br-04",
+                                          "docs/requirements/srs/BUSINESS-RULES.md#br-77",
+                                          "docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-18",
+                                          "docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-22"
+                                      ],
+                          "tools":  [
+
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "shopping-create",
+                          "type":  "PLAYBOOK",
+                          "retrievalPolicy":  "AGENT_ONLY",
+                          "accessScopes":  [
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Quy trình tạo danh sách mua sắm rỗng và quản lý trạng thái (FR-53.9)",
+                          "category":  "playbooks",
+                          "resourcePath":  "knowledge-base/playbooks/shopping-create.md",
+                          "version":  "2.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-53",
+                                          "app/mamxanh-backend/src/main/java/tech/mamxanh/shopping/service/ShoppingListService.java#createEmpty"
+                                      ],
+                          "tools":  [
+                                        "create_shopping_list",
+                                        "get_shopping_list"
+                                    ],
+                          "enabled":  true
+                      },
+                      {
+                          "id":  "shopping-read",
+                          "type":  "PLAYBOOK",
+                          "retrievalPolicy":  "AGENT_ONLY",
+                          "accessScopes":  [
+                                               "CUSTOMER",
+                                               "EXPERT"
+                                           ],
+                          "title":  "Quy trình tra cứu danh sách mua sắm và bảo vệ quyền sở hữu (FR-53.1 / FR-53.2)",
+                          "category":  "playbooks",
+                          "resourcePath":  "knowledge-base/playbooks/shopping-read.md",
+                          "version":  "2.0.0",
+                          "status":  "APPROVED",
+                          "implementationStatus":  "verified",
+                          "enabledForPilot":  true,
+                          "sources":  [
+                                          "docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-53",
+                                          "docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-66",
+                                          "app/mamxanh-backend/src/main/java/tech/mamxanh/shopping/service/ShoppingListService.java#get"
+                                      ],
+                          "tools":  [
+                                        "get_shopping_list"
+                                    ],
+                          "enabled":  true
+                      }
+                  ]
+}

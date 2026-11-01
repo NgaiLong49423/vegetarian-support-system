@@ -54,6 +54,14 @@ class AiTelemetryServiceTest {
             assertThat(pricing.estimate(value,now,"COMPLETE")).isNull();
         }
     }
+    @Test void persistsSupportedGeminiModelsWithoutInventingPricing() {
+        var usage = new AiTokenUsage("gemini-3.5-flash-lite", "STANDARD", 150, 300, 450, 0, 0, 0);
+        var event = new AiUsageEvent(7L, "FR-51", now, usage);
+
+        writer.record(event);
+
+        verify(repository).insert(eq(event), eq(usage), eq("COMPLETE"), isNull());
+    }
     @Test void validatesEnvelopeAndSkipsExpiredReplay() {
         var good = usage(1,2,3,0,0,0);
         for (var event : List.of(new AiUsageEvent(null,1L,null,"FR-51",now,good),

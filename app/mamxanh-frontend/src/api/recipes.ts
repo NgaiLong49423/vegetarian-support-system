@@ -267,9 +267,35 @@ export interface RecipeReferenceData {
 }
 
 export type AiChatContext = 'GENERAL' | 'RECIPE';
+export type AiExecutionMode = 'QA' | 'CONFIRM' | 'AUTO';
+export interface AiConsentScope {
+  category: 'BASIC_PROFILE' | 'DIETARY_PREFERENCES' | 'HEALTH_PROFILE' | 'SHOPPING_LIST';
+  purpose: 'AI_CHAT' | 'PROFILE_READ' | 'PROFILE_UPDATE' | 'DIETARY_READ' | 'DIETARY_UPDATE' | 'HEALTH_PROFILE_READ' | 'HEALTH_PROFILE_UPDATE' | 'SHOPPING_LIST_READ' | 'SHOPPING_LIST_WRITE';
+}
+export interface AiAssistantStep {
+  sequence: number;
+  tool: string;
+  status: string;
+  summary: string;
+  result: Record<string, unknown> | null;
+}
+export interface AiPendingConfirmation {
+  confirmationId: string;
+  summary: string;
+  expiresAt: string;
+  requiresExplicitConfirmation: boolean;
+  proposedListName?: string | null;
+}
 export interface AiChatTurn { speaker: 'USER' | 'ASSISTANT'; content: string; recommendedRecipeIds?: number[] }
 export interface AiChatRequest {
   anonymousViewerId?: string;
+  executionMode?: AiExecutionMode;
+  sessionId?: string;
+  clientRequestId?: string;
+  controlAction?: 'CANCEL';
+  consentDecision?: { action: 'GRANT' | 'REVOKE'; scopes: AiConsentScope[] };
+  confirmationId?: string;
+  confirmationDecision?: 'APPROVE' | 'REJECT';
   contextType: AiChatContext;
   recipeId?: number;
   question: string;
@@ -280,6 +306,17 @@ export interface AiChatResponse {
   recipeId: number | null;
   answer: string;
   workflowUrl?: string | null;
+  sessionId?: string | null;
+  executionMode?: AiExecutionMode;
+  runId?: string | null;
+  engine?: string | null;
+  runStatus?: string | null;
+  sessionExpiresAt?: string | null;
+  knowledgeRevision?: string | null;
+  steps?: AiAssistantStep[];
+  consentRequest?: { scopes: AiConsentScope[]; recipient: string } | null;
+  pendingConfirmation?: AiPendingConfirmation | null;
+  sources?: Array<{ type: string; id: string; title: string; excerpt: string; uri: string | null; version?: string | null }>;
   recommendations: Array<{
     id: number;
     title: string;
@@ -320,8 +357,17 @@ export const recipeReactionApi = {
 };
 
 export const recipesApi = {
+  chatExecution: (clientRequestId: string) => request(
+    () => apiClient.get<{ clientRequestId: string; actionId: string; state: string; shoppingListId: number | null }>(
+      `/recipes/ai/chat/executions/${clientRequestId}`),
+  ),
   chat: (payload: AiChatRequest) => request(
-    () => apiClient.post<AiChatResponse>('/recipes/ai/chat', payload, { timeout: 15_000 }),
+    () => apiClient.post<AiChatResponse>('/recipes/ai/chat', payload, { timeout: 35_000 }),
+  ),
+  clearChatSession: (sessionId: string, anonymousViewerId?: string) => request(
+    () => apiClient.delete<void>(`/recipes/ai/chat/sessions/${sessionId}`, {
+      params: anonymousViewerId ? { anonymousViewerId } : undefined,
+    }),
   ),
   recommendByIngredients: (ingredientIds: number[]) => request(
     () => apiClient.post<AiRecipeSuggestion>('/recipes/ai/recommendations', { ingredientIds }, { timeout: 60_000 }),

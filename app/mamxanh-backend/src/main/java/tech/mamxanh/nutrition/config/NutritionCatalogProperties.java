@@ -1,8 +1,9 @@
 package tech.mamxanh.nutrition.config;
 
-import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
+
+import java.util.List;
 
 @ConfigurationProperties(prefix = "mamxanh.nutrition.catalog")
 public record NutritionCatalogProperties(List<String> allowedSources, List<String> allowedGroups) {

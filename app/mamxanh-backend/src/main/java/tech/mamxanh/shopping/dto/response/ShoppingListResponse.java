@@ -1,9 +1,10 @@
 package tech.mamxanh.shopping.dto.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ShoppingListResponse(long id, String name, LocalDateTime createdAt, LocalDateTime updatedAt,
         List<Item> items, List<RecipeSource> recipeSources) {

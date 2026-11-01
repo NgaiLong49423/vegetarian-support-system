@@ -1,33 +1,27 @@
 package tech.mamxanh.subscription.controller;
 
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.http.CacheControl;
-import tech.mamxanh.subscription.service.PaymentResultService;
-import tech.mamxanh.subscription.dto.response.PaymentResultResponse;
-import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import org.springframework.web.bind.annotation.*;
 import tech.mamxanh.common.config.OpenApiConfig;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.subscription.dto.request.CheckoutRequest;
-import tech.mamxanh.subscription.dto.response.CheckoutResponse;
-import tech.mamxanh.subscription.dto.response.MySubscriptionResponse;
-import tech.mamxanh.subscription.dto.response.PlanResponse;
-import tech.mamxanh.subscription.dto.response.TransactionHistoryResponse;
+import tech.mamxanh.subscription.dto.request.CreditCheckoutRequest;
+import tech.mamxanh.subscription.dto.response.*;
+import tech.mamxanh.subscription.service.AiTokenQuotaService;
+import tech.mamxanh.subscription.service.PaymentResultService;
 import tech.mamxanh.subscription.service.SubscriptionService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping(path = "/api/v1/subscriptions", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -36,10 +30,13 @@ public class SubscriptionController {
     private final SubscriptionService subscriptionService;
 
     private final PaymentResultService paymentResults;
+    private final AiTokenQuotaService aiTokenQuota;
 
-    public SubscriptionController(SubscriptionService subscriptionService, PaymentResultService paymentResults) {
+    public SubscriptionController(SubscriptionService subscriptionService, PaymentResultService paymentResults,
+            AiTokenQuotaService aiTokenQuota) {
         this.subscriptionService = subscriptionService;
         this.paymentResults = paymentResults;
+        this.aiTokenQuota = aiTokenQuota;
     }
 
     /**
@@ -72,6 +69,30 @@ public class SubscriptionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "payOS checkout link and snapshotted AI Credit amount."),
+            @ApiResponse(responseCode = "400", description = "VALIDATION_FAILED: amount is outside the current Admin-configured range."),
+            @ApiResponse(responseCode = "403", description = "ACCESS_DENIED: caller is not an active Customer or Expert."),
+            @ApiResponse(responseCode = "503", description = "PAYMENT_UNAVAILABLE: payOS is unavailable or not configured.")
+    })
+    @PostMapping("/credit-checkout")
+    public ResponseEntity<CreditCheckoutResponse> createCreditCheckout(Authentication authentication,
+            @Valid @RequestBody CreditCheckoutRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(subscriptionService.createCreditCheckout(
+                extractUserId(authentication), request.amountVnd()));
+    }
+
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Current AI Credit balance and top-up settings for the caller."),
+            @ApiResponse(responseCode = "403", description = "ACCESS_DENIED: caller is not an active Customer or Expert.")
+    })
+    @GetMapping("/my-ai-credit")
+    public ResponseEntity<MyAiCreditResponse> getMyAiCredit(Authentication authentication) {
+        return ResponseEntity.ok(subscriptionService.getMyAiCredit(extractUserId(authentication)));
+    }
+
     /**
      * AC-13.4 & AC-13.7: Returns active subscription status and expiration date.
      */
@@ -85,6 +106,17 @@ public class SubscriptionController {
     public ResponseEntity<MySubscriptionResponse> getMySubscription(Authentication authentication) {
         Long userId = extractUserId(authentication);
         return ResponseEntity.ok(subscriptionService.getMySubscription(userId));
+    }
+
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Current token usage and quota for the caller."),
+            @ApiResponse(responseCode = "401", description = "Authentication is missing or invalid."),
+            @ApiResponse(responseCode = "403", description = "The account is locked or is not an active Member.")
+    })
+    @GetMapping("/my-ai-usage")
+    public ResponseEntity<MyAiUsageResponse> getMyAiUsage(Authentication authentication) {
+        return ResponseEntity.ok(aiTokenQuota.getMyUsage(extractUserId(authentication)));
     }
 
     /**

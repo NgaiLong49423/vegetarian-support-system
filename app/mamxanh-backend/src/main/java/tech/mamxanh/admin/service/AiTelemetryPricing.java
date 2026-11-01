@@ -1,11 +1,12 @@
 package tech.mamxanh.admin.service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.Instant;
 import org.springframework.stereotype.Service;
 import tech.mamxanh.admin.dto.AiCostEstimate;
 import tech.mamxanh.integration.ai.AiTokenUsage;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
 
 /** Versioned Standard text-token equivalent; not a Google invoice or application-plan charge.
  * Source: https://ai.google.dev/gemini-api/docs/pricing#gemini-3.8-flash (verified 2026-10-28).

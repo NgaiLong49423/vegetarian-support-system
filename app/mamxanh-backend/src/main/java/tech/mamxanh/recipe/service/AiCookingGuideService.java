@@ -1,16 +1,9 @@
 package tech.mamxanh.recipe.service;
 
-import java.text.Normalizer;
-import java.time.Clock;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 import org.springframework.context.ApplicationEventPublisher;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
+import org.springframework.stereotype.Service;
 import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
@@ -22,6 +15,15 @@ import tech.mamxanh.nutrition.service.DietaryPreferenceService;
 import tech.mamxanh.nutrition.service.IngredientCatalogLookupService;
 import tech.mamxanh.recipe.dto.response.AiCookingGuideResponse;
 import tech.mamxanh.recipe.dto.response.RecipeDetailResponse;
+import tech.mamxanh.subscription.service.AiTokenQuotaService;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+
+import java.text.Normalizer;
+import java.time.Clock;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 @Service
 public class AiCookingGuideService {
@@ -39,10 +41,11 @@ public class AiCookingGuideService {
     private final ObjectMapper mapper;
     private final ApplicationEventPublisher events;
     private final Clock clock;
+    private final AiTokenQuotaService aiQuota;
 
     public AiCookingGuideService(CurrentUserService users, DietaryPreferenceService preferences,
             RecipeService recipes, IngredientCatalogLookupService ingredientCatalog, AiClient ai, ObjectMapper mapper,
-            ApplicationEventPublisher events, Clock clock) {
+            ApplicationEventPublisher events, Clock clock, AiTokenQuotaService aiQuota) {
         this.users = users;
         this.preferences = preferences;
         this.recipes = recipes;
@@ -51,6 +54,7 @@ public class AiCookingGuideService {
         this.mapper = mapper;
         this.events = events;
         this.clock = clock;
+        this.aiQuota = aiQuota;
     }
 
     public AiCookingGuideResponse generate(long recipeId) {
@@ -66,7 +70,10 @@ public class AiCookingGuideService {
                 .filter(java.util.Objects::nonNull).distinct().toList();
         AiClient.RecommendationResult result;
         try {
+            aiQuota.requireAvailable(member.id(), null);
             result = ai.generateRecipeContent(prompt(recipe), allowedIds);
+        } catch (AppException exception) {
+            throw exception;
         } catch (AiProviderException exception) {
             LOG.warn("Cooking guide provider is unavailable: {}", exception.getClass().getSimpleName());
             throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE);
@@ -76,10 +83,12 @@ public class AiCookingGuideService {
         }
 
         if (result == null) throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+        var usageEvent = new AiUsageEvent(member.id(), "FR-34", clock.instant(), result.usage());
+        aiQuota.record(usageEvent);
+        events.publishEvent(usageEvent);
         GeneratedContent generated = parse(result.json());
         List<String> steps = validateSteps(generated.steps(), recipe, allowedIds);
         rejectUnlistedCatalogIngredients(steps, recipe);
-        events.publishEvent(new AiUsageEvent(member.id(), "FR-34", clock.instant(), result.usage()));
         return new AiCookingGuideResponse(recipe.recipeId(), recipe.title(), steps, AI_NOTICE);
     }
 

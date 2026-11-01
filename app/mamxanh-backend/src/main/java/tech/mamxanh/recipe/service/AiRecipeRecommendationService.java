@@ -1,21 +1,9 @@
 package tech.mamxanh.recipe.service;
 
-import java.text.Normalizer;
-import java.time.Clock;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
 import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
@@ -27,7 +15,14 @@ import tech.mamxanh.nutrition.service.DietaryPreferenceService;
 import tech.mamxanh.recipe.dto.response.AiRecipeRecommendationResponse;
 import tech.mamxanh.recipe.dto.response.AiWeeklyMenuPreviewResponse;
 import tech.mamxanh.recipe.dto.response.RecipePostResponse;
+import tech.mamxanh.subscription.service.AiTokenQuotaService;
 import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+
+import java.text.Normalizer;
+import java.time.Clock;
+import java.util.*;
 
 /** FR-34: AI selects only currently published RecipePosts; generated previews are never persisted. */
 @Service
@@ -43,10 +38,12 @@ public class AiRecipeRecommendationService {
     private final ObjectMapper mapper;
     private final ApplicationEventPublisher events;
     private final Clock clock;
+    private final AiTokenQuotaService aiQuota;
 
     public AiRecipeRecommendationService(RecipePostService recipes, CurrentUserService users,
             DietaryPreferenceService preferences, SubscriptionEntitlementService entitlements,
-            AiClient ai, ObjectMapper mapper, ApplicationEventPublisher events, Clock clock) {
+            AiClient ai, ObjectMapper mapper, ApplicationEventPublisher events, Clock clock,
+            AiTokenQuotaService aiQuota) {
         this.recipes = recipes;
         this.users = users;
         this.preferences = preferences;
@@ -55,6 +52,7 @@ public class AiRecipeRecommendationService {
         this.mapper = mapper;
         this.events = events;
         this.clock = clock;
+        this.aiQuota = aiQuota;
     }
 
     public AiRecipeRecommendationResponse recommend(List<Long> ingredientIds) {
@@ -66,8 +64,10 @@ public class AiRecipeRecommendationService {
         List<RecipePostResponse> candidates = candidateRecipes(selected, profile);
         if (candidates.isEmpty()) return new AiRecipeRecommendationResponse(List.of());
         List<Long> allowed = candidates.stream().map(RecipePostResponse::id).toList();
+        aiQuota.requireAvailable(user.id(), null);
         AiClient.RecommendationResult result = request(() -> ai.recommendRecipes(
                 prompt("Choose 3 to 5 recipes using as many selected ingredients as possible.", candidates, selected), allowed, 5));
+        publishUsage(user.id(), result);
         List<Long> ids = parseIds(result, allowed, 3, 5, false);
         Map<Long, RecipePostResponse> byId = index(candidates);
         List<AiRecipeRecommendationResponse.Item> items = ids.stream()
@@ -78,7 +78,6 @@ public class AiRecipeRecommendationService {
                     return new AiRecipeRecommendationResponse.Item(recipe,
                             "Dùng " + matches + " nguyên liệu bạn đã chọn.");
                 }).toList();
-        publishUsage(user.id(), result);
         return new AiRecipeRecommendationResponse(items);
     }
 
@@ -93,9 +92,11 @@ public class AiRecipeRecommendationService {
         List<Long> allowed = candidates.stream().map(RecipePostResponse::id).toList();
         String instruction = "Return exactly 21 recipe IDs in day-major order: breakfast, lunch, dinner for each of 7 days. "
                 + "IDs may repeat when the catalog is small, but adjacent slots must never use the same ID.";
+        aiQuota.requireAvailable(user.id(), null);
         AiClient.RecommendationResult result = request(() -> ai.recommendRecipeSequence(
                 prompt(instruction, candidates, selected),
                 allowed, 21));
+        publishUsage(user.id(), result);
         List<Long> ids = parseIds(result, allowed, 21, 21, true);
         for (int i = 1; i < ids.size(); i++) {
             if (ids.get(i).equals(ids.get(i - 1))) throw invalid("consecutive menu slots repeat a recipe");
@@ -109,7 +110,6 @@ public class AiRecipeRecommendationService {
             slots.add(new AiWeeklyMenuPreviewResponse.Slot(i / 3, MEALS.get(i % 3), recipe.id(), recipe.title(), cover,
                     recipe.dishCategory(), recipe.vegetarianType(), "Phù hợp với hồ sơ ăn chay của bạn."));
         }
-        publishUsage(user.id(), result);
         return new AiWeeklyMenuPreviewResponse(slots);
     }
 
@@ -232,8 +232,9 @@ public class AiRecipeRecommendationService {
     }
 
     private void publishUsage(long userId, AiClient.RecommendationResult result) {
-        events.publishEvent(new AiUsageEvent(userId, "FR-34", clock.instant(),
-                result.usage()));
+        var event = new AiUsageEvent(userId, "FR-34", clock.instant(), result.usage());
+        aiQuota.record(event);
+        events.publishEvent(event);
     }
 
     private static AppException invalid(String reason) {

@@ -38,6 +38,8 @@ class RelatedRecipeIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     void fixtures() {
         jdbc.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email = 'fr47@test.local')");
+        jdbc.update("DELETE FROM [AI_TOKEN_USAGE_LEDGER] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email = 'fr47@test.local')");
+        jdbc.update("DELETE FROM [AI_CREDIT_WALLET] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email = 'fr47@test.local')");
         jdbc.update("DELETE FROM [SUBSCRIPTION] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email = 'fr47@test.local')");
         jdbc.update("DELETE FROM [USER] WHERE email = 'fr47@test.local'");
         jdbc.update("DELETE FROM [INGREDIENT_UNIT_CONVERSION] WHERE ingredient_id IN (SELECT ingredient_id FROM [INGREDIENT] WHERE name LIKE 'FR47 %')");
@@ -195,6 +197,12 @@ class RelatedRecipeIntegrationTest extends AbstractIntegrationTest {
     }
 
     private void paid(String tier) {
+        long quota = "PRO".equals(tier) ? 600000L : 300000L;
+        jdbc.update("INSERT INTO [SUBSCRIPTION](user_id,tier,status,starts_at,ends_at,token_quota) VALUES (?,?,'ACTIVE',?,?,?)",
+                member, tier, LocalDateTime.of(2026, 1, 1, 0, 0), LocalDateTime.of(2027, 1, 1, 0, 0), quota);
+        return;
+    }
+    private void paidOld(String tier) {
         jdbc.update("INSERT INTO [SUBSCRIPTION](user_id,tier,status,starts_at,ends_at) VALUES (?,?,'ACTIVE',?,?)",
                 member, tier, LocalDateTime.of(2026, 1, 1, 0, 0), LocalDateTime.of(2027, 1, 1, 0, 0));
     }

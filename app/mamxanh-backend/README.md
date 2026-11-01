@@ -1,11 +1,99 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.53.0
+> **Version:** v0.67.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-30
+> **Last Updated:** 2026-11-02
 > **Status:** Active  
 
 # Backend Workspace
+
+## G4 — Session và phục hồi kết quả tối thiểu
+
+G4 giữ ADK Java 1.13.0 làm bộ điều phối duy nhất; không có workflow engine hoặc durable conversation mới. `AiAssistantSessionStore` giữ owner/consent/pending ngắn hạn; ADK giữ native events. Transcript trong `sessionStorage` chỉ được bảo đảm qua reload/navigation cùng tab. Sau Backend restart, transcript cũ chỉ để hiển thị; context, consent và pending cần thiết lập mới.
+
+`AiShoppingExecutionJournal` chỉ bao quanh tool tạo Shopping List: reservation commit riêng, sau đó conditional UPDATE `RESERVED → WRITING`, lời gọi public `ShoppingListService.createEmpty()` và `SUCCEEDED`/ID kết quả cùng transaction SQL. `saveAndFlush()` không phải commit. Unique `(owner_id, client_request_id)` chống duplicate; mỗi request pilot tối đa một write, action ID chính là request ID. Journal giữ 7 ngày, không giữ tên danh sách, transcript hoặc raw tool payload. `RESERVED` không tự đồng nghĩa thất bại: runtime không replay; startup chỉ đánh dấu reservation có trước thời điểm process mới được tạo bằng clock SQL. Chỉ hỗ trợ một Backend instance.
+
+Cancel đi qua control action trên POST chat, trước busy guard, không gọi model. Cancel trước claim ngăn create; sau claim không bảo đảm rollback, journal success luôn được giữ. New chat vô hiệu phiên và dọn runner sau lượt đang chạy. Không dùng RxJava dispose làm bằng chứng SQL rollback. Recovery GET trả `UNKNOWN` khi không tìm thấy record còn hạn; trạng thái này không chứng minh chưa có write và không cho phép tự gửi lại.
+
+History tách recent messages (20 cặp), confirmed task parameters và pending. Do native `getSession` trả bản sao và compactor yêu cầu summarizer, wrapper dùng native create/append APIs để thay RAM session bằng các lượt hoàn chỉnh giữa các invocations; không compact khi resume function response. Events RAM được giới hạn riêng với model request; không bỏ rời cặp call/result. Byte caps bảo vệ dung lượng, không được coi là token count chính xác. Không AI summarization. Model replacement theo tác vụ được deferred: guard hiện gắn model với preference tài khoản; chưa bổ sung replay/context migration để tránh mở rộng G4.
+
+Kiểm chứng: `./mvnw.cmd -Dtest=AdkSpikeTest,AdkShoppingPilotServiceTest,AiShoppingExecutionJournalIntegrationTest test`. SQL tests dùng SQL Server Testcontainers thật. React–Backend–SQL tests ở `tests/integration/g4-session-recovery.spec.ts`, opt-in `MAMXANH_G4_FIXTURE=true`, root Compose project `mamxanh-g4`. Test-only `g4fixture.G4FixtureApplication` được đóng gói riêng, dùng native ADK và service/accounting thật với model deterministic; không phải Gemini live. Khi bind mount JAR vào container, dừng Backend trước khi đóng gói lại và chỉ khởi động sau khi package hoàn tất.
+
+
+### Chạy lại G4 fixture stack
+
+Từ Backend chạy `./mvnw.cmd clean package -DskipTests`, rồi `jar --create --file target/g4-fixture.jar -C target/test-classes g4fixture`. Chỉ test JAR chứa entry point fixture; production JAR không chứa model giả.
+
+Từ repository root, đặt các process variables `MAMXANH_SQL_PORT=12434`, `MAMXANH_BACKEND_PORT=18084`, `MAMXANH_FRONTEND_PORT=15174`, rồi chạy:
+
+```powershell
+docker compose --env-file app/mamxanh-backend/.env -p mamxanh-g4 -f docker-compose.yml -f app/mamxanh-frontend/tests/integration/g4-compose.override.yml up -d --build --wait
+```
+
+Từ Frontend đặt `MAMXANH_G4_FIXTURE=true`, `MAMXANX_E2E_FRONTEND_URL=http://localhost:15174`, `MAMXANX_E2E_BACKEND_URL=http://localhost:18084/api/v1`, rồi chạy `npx playwright test --config playwright.integration.config.ts tests/integration/g4-session-recovery.spec.ts`. Giữ cùng project/ports cho mọi lifecycle command. Override không gọi SMTP, Azure, payOS hoặc Gemini. Dừng stack bằng cùng lệnh Compose với `down` thay `up`; không dùng `--volumes` nếu muốn giữ fixtures.
+
+## ADK G1 — spike độc lập, chưa chuyển đường chat mặc định
+
+`integration.ai.adk.AdkModelGateway` triển khai ADK `BaseLlm` boundary và giữ nguyên structured tool/history data. `AdkSpikeSession` dựng một native runner với session RAM, tối đa 6 lượt model logic/run (mỗi lượt có tối đa hai provider attempts khi đủ điều kiện retry), tools tuần tự, 512 output tokens/call, 10 giây/model call (gồm retry) và 30 giây/run hoặc resume. Chờ người dùng giữa hai lần thực thi không tính vào run deadline. Các class này không có Spring component annotation hoặc public endpoint; G1 tự nó không chuyển routing; pilot opt-in G3 bên dưới tái dùng runner này.
+
+CUSTOMER/EXPERT dùng cùng agent và tools chung; identity do caller Backend cấp, được đặt/khôi phục riêng trên worker cho tool và policy hooks. Guest/Admin không được dùng session Member của spike. Guard được kiểm tra cả khi resume; native confirmation có owner binding, thời hạn 5 phút và ngăn write lặp trong session RAM. Không xem cơ chế này là durable idempotency qua restart hoặc API retry mới.
+
+Gateway chỉ retry tối đa một lần cho provider 502/503/504, cùng model và trong call deadline; không retry lỗi policy/accounting hoặc tự đổi model/provider. Response phải dùng được trước khi gọi accounting hook. Call ID và thời điểm bắt đầu được chuyển cùng accounting context; usage thiếu/sai mang trạng thái MISSING/INVALID, không ước lượng token. G1 kiểm chứng policy bằng fixture; G3 nối MemberAccountingPolicy qua Spring proxy vào quota/Credit thật cho nhánh pilot. Các nhánh ngoài pilot giữ accounting hiện hành.
+
+ADK 1.13.0 mặc định capture nội dung trong spans. Runner fail-closed nếu process không đặt `ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS=false`; Maven Surefire luôn đặt giá trị này cho tests. Không bật lại hoặc export raw prompt/tool payload qua tracing. Credentials tiếp tục theo cơ chế Backend hiện có, không có dotenv loader mới.
+
+Chạy fake verification từ component: `./mvnw.cmd -Dtest=AdkSpikeTest test`. Test dùng ADK thật với fake model/tools và Spring context nhỏ, không chứng minh tích hợp FE/SQL Server.
+
+Live test mặc định skip. Trong shell đã được cấp `GEMINI_API_KEY` hợp lệ theo cơ chế local hiện có, đặt `MAMXANH_G1_LIVE=true` rồi chạy `./mvnw.cmd -Dtest=AdkLiveTest test`. Test chỉ dùng model ID baseline `gemini-3.8-flash`, fixture list ID 42, một read tool và một lượt hỏi tiếp; không đọc dữ liệu user thật, không debit wallet và không ghi SQL. Không tự đổi model khi lỗi. Sau kiểm tra, bỏ flag live khỏi process. Xem Surefire reports để phân biệt kết quả live và mock; không in credential hoặc toàn bộ `.env`.
+
+Rollback spike bằng cách ngừng tạo `AdkSpikeSession`; chưa có routing production để chuyển ngược, không replay pending writes sang executor cũ.
+
+## Chat local G3 — Shopping List bằng ADK (opt-in)
+
+Đặt `MAMXANH_AI_CHAT_G3_PILOT_ENABLED=true` để session GENERAL mới của CUSTOMER/EXPERT dùng cùng agent Shopping List; mặc định `false`. Guest, Admin và RECIPE giữ routing hiện hành. Client không chọn executor; session đã mở giữ engine.
+
+Luồng: consent Shopping List → hỏi tên nếu thiếu → QA preview / CONFIRM duyệt trước ghi / AUTO khi yêu cầu rõ → `ShoppingListService.createEmpty` → ADK dùng ID thật gọi `get` → Backend xác lập kết quả. Chỉ có hai knowledge tools và hai business tools; không có Internet, thêm nguyên liệu hoặc xóa. **Kiến trúc đích:** Agent chỉ truy xuất tri thức từ `src/main/resources/knowledge-base/`; `src/main/resources/ai/` chỉ chứa system prompt và policy. `ai-knowledge/` không còn là nguồn tri thức được phép trong kiến trúc đích.
+
+**Khoảng trống chuyển đổi (đã xác minh từ source):** runtime hiện tại vẫn ghép catalog `knowledge-base/` với playbook `ai-knowledge/` qua `KnowledgeCatalog.agent()` và dùng `/ai-knowledge/agent-index.json`; knowledge pilot G2/G3 cũng còn index dưới `ai-knowledge/`. Vì vậy quy tắc kiến trúc mới đã được ghi nhận nhưng chưa phản ánh đầy đủ trong implementation. Trước khi tuyên bố chuyển đổi hoàn tất, cần chuyển nội dung playbook có giá trị vào catalog `knowledge-base/`, xây lại index từ catalog đó và cập nhật retriever/tools để không đọc `ai-knowledge/`.
+
+Nhánh G3 cần `clientRequestId` UUID gắn payload, chống gửi trùng trong session RAM; legacy vẫn tương thích. Session idle 30 phút, confirmation 5 phút, một run/session, tối đa 6 model calls/run, 10 giây/call gồm retry và 30 giây/run. Output cap G3 1.024 tokens. Approval gắn owner/session/native call/tên/mode. Đổi tên/mode, revoke hoặc hết ngân sách vô hiệu approval cũ. Unknown/expired session bị từ chối sau restart; không tự khôi phục/replay. HTTP client timeout 35 giây, không tự gửi lại write khi mất kết nối.
+
+`MemberAccountingPolicy` gọi Spring proxy để completion transaction ghi usage và debit Credit nguyên tử, dedupe call ID. Chụp quota period/model/tỷ lệ ở call start, quota trước rồi Credit decimal, không reserve trong lúc gọi Gemini, không âm balance. V39 giữ chính xác phần Credit hệ thống chịu. Metadata thiếu/sai hoặc model lỗi không debit; accounting persistence lỗi chặn bước kế tiếp. Kiểm tra ngân sách ngay trước create; create đã commit nhưng read/model lỗi giữ ID và trả partial failure.
+
+Live dùng root Compose project `mamxanh-g3`, ports 15173/18080/11434, SQL/fixtures tổng hợp riêng. Không bật trên stack dữ liệu đang dùng. `MAMXANH_AI_CHAT_G3_LIVE_BUDGET_FILE` là guard đánh giá tùy chọn, khác quota/Credit tài khoản; phải trỏ ledger đã tồn tại và bind mount bền vững. Đợt 01/11/2026 được người dùng xác nhận loại phần G3 có sẵn khỏi ngân sách 5 USD mới. Ledger ignored `.g3-evaluation/budget.json` không reset khi clean/build. Mọi failed attempt vẫn reserve conservative upper bound; metadata provider lưu riêng, không coi estimate là hóa đơn. Kiểm tra lại giá khi sang ngày khác. Batch hiện tại tối đa 140 generation/150 embedding attempts, 48.000 UTF-8 bytes/generation request và 1.024 output tokens; từng call vẫn kiểm tra trần 5 USD.
+
+Offline: `./mvnw.cmd -Dtest=AdkShoppingPilotServiceTest,AiTokenQuotaServiceTest,KnowledgeTest test`. SQL accounting/ownership: `AiTokenQuotaIntegrationTest` với SQL Server Testcontainers. Real-stack acceptance ở Frontend `tests/integration/g3-shopping-live-evaluation.spec.ts` (HTTP/SQL, 20 conversations hoặc subset qua `G3_SCENARIOS`) và `g3-shopping-pilot-real-stack.spec.ts` (browser). Mock provider không phải Gemini live. Packaged smoke dùng entry point G2 bên dưới với đối số cuối `g3`; không cần mạng/SQL.
+
+Rollback: tắt pilot cho session mới, vô hiệu pending G3 và đóng context/cache; session cũ không chuyển executor. Dữ liệu đã commit và usage đã ghi được giữ nguyên. Journal bền vững qua restart, đổi model tạm thời và production cutover thuộc gate sau.
+
+## Knowledge pilot G2 — độc lập với chat
+
+`integration/ai/knowledge` hiện cung cấp catalog allowlist, Markdown chunking, BM25 tiếng Việt, cosine và RRF (`k=60`, trọng số bằng nhau). **Runtime hiện trạng:** `KnowledgeCatalog.agent()` kết hợp 38 tài liệu `knowledge-base/` với năm playbook `PILOT` trong `ai-knowledge/`; index agent và index G2/G3 cũng nằm dưới `ai-knowledge/`. Đây là trạng thái code hiện tại, không phải quy tắc kiến trúc đích. Theo kiến trúc đích, catalog `knowledge-base/` sẽ là nguồn tri thức duy nhất; `ai/` chỉ cung cấp chỉ dẫn/policy. Hai native ADK tools chỉ nhận query hoặc knowledge ID, không nhận path và không có quyền ghi nghiệp vụ. CUSTOMER/EXPERT dùng cùng instruction. Chưa có Spring bean, public API hoặc routing từ chat hiện hành ngoài pilot được mô tả ở trên.
+
+Index JSON lưu corpus hash, source revision, index revision, model/dimension/input format, ngưỡng semantic và normalized vectors. Build/startup không gọi API. Nguồn nghỉ hiệu lực (`RETIRED` hoặc không bật pilot) bị loại trước retrieval. Index thiếu/hỏng/lệch corpus/configuration thì dùng corpus hiện hành ở `keyword_degraded`; embedding lỗi cũng degrade, không retry query hoặc tự đổi provider. Query tối đa 1.000 ký tự, document 12.000, tổng payload knowledge trả mỗi run 24.000; top 3 tài liệu khác nhau. RAM cache theo phiên, tối đa 30 phút; không lưu query vectors/query thật vào artifact.
+
+Chạy offline: `./mvnw.cmd -Dtest=KnowledgeTest,KnowledgeAdkTest test`. Native ADK fake tests chứng minh cấu trúc tool loop, instruction boundary và actor parity; không thay thế live đánh giá khả năng chống prompt injection.
+
+Lệnh live/index generation tường minh: trong shell có Backend `GEMINI_API_KEY` hợp lệ, đặt `MAMXANH_G2_LIVE=true`, chạy `./mvnw.cmd -Dtest=KnowledgeLiveTest test`, rồi bỏ flag khỏi process. Không đọc hoặc in `.env` để lấy credential trong report. Lệnh dùng SDK hiện có, không bật billing. Bốn candidate chạy riêng, chỉ development chọn model/dimension/threshold; `target/g2/selection-lock.json` được ghi trước holdout. Dataset tổng hợp 60 câu (36 development/24 holdout) nằm trong test resources; 20 agent cases lấy từ holdout. Index được publish atomically vào resources; artifacts benchmark/operational usage/chi phí nằm dưới `target/g2/`.
+
+`target/g2/budget.json` giữ cộng dồn conservative upper bound của toàn đợt G2, tối đa 5 USD; không phải hóa đơn provider hoặc số Credit người dùng. Không xóa/reset ledger để chạy thêm. Nếu index đã tồn tại nhưng ledger mất (ví dụ sau Maven clean), live fail-closed; khôi phục ledger gốc trước khi gọi API. Guard cũng giới hạn tổng calls/input/output và yêu cầu kiểm tra lại bảng giá cho ngày khác. Metadata provider thiếu được giữ `null`, không thay bằng dự toán. Embedding là chi phí vận hành riêng theo BR-03/04 và FR-63. Live generation cũng là chi phí pilot hệ thống, chưa tích hợp production accounting.
+
+`-Dg2.phase=agents` dùng index/lock hiện có, không tune holdout. `-Dg2.phase=diagnostic` chỉ replay một case lỗi với output 512 và lưu finish reason/error category; `-Dg2.phase=validation` chạy lại đủ 20 cases với output 1.024, input tối đa 16.000 UTF-8 bytes/request (bao gồm tool schema), tối đa 70 generation attempts và 30 embedding attempts cho batch. Mọi attempt vẫn cộng dồn vào ledger cũ; preflight từ chối batch có upper bound vượt số dư ngân sách. Baseline lỗi giữ ở `agent-evaluation-initial.json`; không trộn pass cũ với lượt validation mới. Chạy `KnowledgeSafetyLiveTest` riêng để kiểm tra Markdown injection tổng hợp, cảnh báo degraded và hai actor bằng Gemini thật (batch riêng tối đa 12 generation attempts, không embedding). Khi hết ngân sách phải chốt phạm vi đợt mới, không tự reset.
+
+Rebuild chỉ bằng lệnh explicit; khi đổi Markdown/catalog/model/format, tạo revision mới và benchmark lại development trước holdout mới. `KnowledgeIndex.publish` validate toàn snapshot và atomic replace, không có fallback non-atomic. Catalog là manifest nguồn; header trong index là manifest embedding. Đóng gói catalog, Markdown và index thành cùng một JAR bất biến; rollback bằng toàn bộ JAR/bundle trước đó, đóng session/cache pilot cũ, không ghép index cũ với corpus mới. G2 không có pending business action và không replay business writes khi rollback.
+
+Sau package, kiểm tra classpath ngoài cwd bằng `java -Dloader.main=tech.mamxanh.integration.ai.knowledge.KnowledgeSmoke -cp <absolute-backend-jar> org.springframework.boot.loader.launch.PropertiesLauncher`. Entry point chỉ đọc packaged resources, không khởi động Spring/SQL hoặc gọi mạng. Chạy cùng entry point trong container `--network none` là smoke độc lập, không phải FE/Backend/SQL E2E. Container evidence phải ghi riêng nếu Docker daemon chưa sẵn sàng.
+
+Bằng chứng local ngày 01/11/2026: 84 targeted tests pass (gồm regression G1/Gemini và live safety test cho hai actor); 20/20 agent cases đạt sau khi sửa output truncation 512 → 1.024; Backend package và offline JAR/container smoke pass. Container dùng cached Java 21.0.13 image, network disabled, JAR bind mount read-only, không chạy FE/SQL. Hybrid holdout Recall@3 1,00/MRR 1,00 nhưng còn 1/5 câu ngoài nguồn có retrieval hit; agent vẫn báo thiếu nguồn. Đây là pilot nhỏ, chưa chứng minh chất lượng chat production. Tổng conservative cost bound của toàn đợt là 3,285978 USD/5 USD; 342 embedding attempts không có token/billable-character metadata, giữ thiếu và không giả hóa đơn. Xem [official embeddings](https://ai.google.dev/gemini-api/docs/embeddings) và [pricing](https://ai.google.dev/gemini-api/docs/pricing); giá dùng cho bound được kiểm tra ngày trên.
+
+## Cấu hình AI do Admin quản lý — Issue #212
+
+- `GET`/`PUT /api/v1/admin/ai-config` chỉ dành cho Administrator. Cấu hình và dữ liệu pilot được lưu qua migration V33; API không trả thông tin xác thực Gemini.
+- `AI_PLAN_CONFIGURATION` là nguồn giá/quota cho bảng gói và checkout. Thay đổi quota Free được áp dụng đầu tháng kế tiếp theo `Asia/Ho_Chi_Minh`; chu kỳ Plus/Pro đã kích hoạt tiếp tục giữ `SUBSCRIPTION.token_quota` snapshot. Migration V34 lưu tier/quota khi tạo đơn để đơn chờ giữ nguyên điều kiện lúc mua.
+- `AI_GEMINI_MODEL_CONFIGURATION` lưu catalog Gemini, tier access và model mặc định. Model ID mới được kiểm tra với Gemini trước khi lưu; quyền lựa chọn tại mọi luồng AI thuộc #210.
+- `AI_CREDIT_CONFIGURATION` lưu tỷ lệ quy đổi và giới hạn nạp cho #211/#213. Trong quản lý người dùng, Admin có thể tặng gói cho CUSTOMER và EXPERT, nhưng không cho ADMIN; gói áp dụng ngay, Plus/Pro bắt đầu chu kỳ 30 ngày mới, không tạo đơn thanh toán hoặc hoàn phần cũ. Mỗi lần tặng ghi lịch sử theo tài khoản và gửi thông báo in-app. Credit grant độc lập với tặng gói, cập nhật wallet và ghi `AI_CREDIT_LEDGER` trong cùng transaction; lịch sử tài khoản hiển thị số lượng, số dư sau giao dịch, lý do, người cấp và thời điểm. Người nhận nhận in-app notification.
+- Member tạo đơn nạp tại `POST /api/v1/subscriptions/credit-checkout`; số tiền, Credit quy đổi, tỷ lệ và hạn 15 phút được lưu snapshot trước khi gọi payOS. `PAYMENT_TRANSACTION.product_type` phân biệt đơn gói và đơn AI Credit; webhook xác minh mới cộng vào `AI_CREDIT_WALLET` và ghi `TOP_UP` vào `AI_CREDIT_LEDGER` idempotently trong transaction. Đơn thanh toán sau hạn hoặc thiếu mốc thời gian vào `NEEDS_RECONCILIATION`, giữ nguyên tiền đã nhận nhưng chưa tự cộng Credit và gửi thông báo Member. `GET /api/v1/subscriptions/my-ai-credit` trả số dư cùng tỷ lệ/giới hạn nạp hiện hành.
+- Các thay đổi đã lưu tạo thông báo in-app cho Customer/Expert đang hoạt động; Admin có thể chọn email bất đồng bộ tới email đã xác minh.
 
 ### Giám sát giao dịch gói tài khoản
 
@@ -25,6 +113,34 @@
 
 
 Chatbot phân luồng yêu cầu rõ ràng về thực đơn tuần và hỗ trợ soạn Recipe Post trước provider: yêu cầu tuần kiểm tra Pro; soạn bài kiểm tra Expert và Plus/Pro. Guest nhận yêu cầu đăng nhập; Member thiếu gói nhận 403 kèm `requiredTier`/`upgradeUrl`. Tài khoản đủ quyền nhận liên kết workflow, không sinh thực đơn hoặc ghi bài từ chat và không phát usage event Gemini cho việc điều hướng. Hỏi đáp dinh dưỡng tổng quát và bản nháp công thức được yêu cầu rõ vẫn thuộc FR-51.
+
+### AI Assistant orchestration — Issue #214
+
+#### Kho Tri thức Nghiệp vụ (Knowledge Base) & AI Behavioral Policies
+
+- **Knowledge Base (`src/main/resources/knowledge-base/`):**
+  - Gồm 38 tài liệu chuyên đề chuẩn hóa dạng Markdown kèm YAML front matter, được đăng ký tập trung trong `catalog.json` (revision `kb-v1.0.0-20261101`).
+  - Phân chia thành các nhóm chủ đề nghiệp vụ hướng người dùng: `getting-started/`, `recipes/`, `meal-planning/`, `shopping-list/`, `ai-features/`, `subscriptions/`, `policies/`, `troubleshooting/`.
+  - Được đóng gói vào Spring Boot JAR và nạp qua Spring Classpath Resources, không phụ thuộc filesystem vật lý.
+- **AI Behavioral Policies & System Instructions (`src/main/resources/ai/`):**
+  - `prompts/system.md`: Chỉ dẫn nền tảng về vai trò, danh tính, ranh giới công cụ và 8 quy tắc vận hành cốt lõi của AI Agent.
+  - `policies/scope-policy.md`: Ranh giới phạm vi được phép, từ chối và xử lý yêu cầu hỗn hợp.
+  - `policies/safety-policy.md`: Ranh giới y tế (tuyệt đối không chẩn đoán/kê đơn), chống tự hại, bạo lực và phân biệt câu hỏi an toàn.
+  - `policies/security-policy.md`: Chống Prompt Injection, bảo vệ bí mật, khẳng định RBAC thuộc trách nhiệm của Backend Code (không ỷ lại vào prompt), và cơ chế Hard Safeguards.
+  - `policies/response-style.md`: Hình tượng nhân vật, giọng điệu thuần Việt, xưng hô "Mình" - "Bạn", và lệnh cấm hiển thị mã kỹ thuật nội bộ (`FR-xx`, `BR-xx`, `UC-xx`) trong câu trả lời người dùng.
+- **Cơ chế nạp `AiPromptLoader`:**
+  - Tự động nạp `system.md` và 4 core policies từ classpath.
+  - Tách lọc YAML front matter để tối ưu token.
+  - Cache trong RAM (`ConcurrentHashMap`) sau lần đọc đầu tiên.
+  - Cơ chế fallback an toàn: nếu file lỗi hoặc thiếu, trả về fallback prompt tối thiểu, bảo đảm không crash ứng dụng.
+
+Chat API nhận thêm session UUID, `executionMode=QA|CONFIRM|AUTO`, consent theo cặp loại dữ liệu/mục đích, và confirmation ID/decision. Các client cũ tiếp tục dùng response chat hiện tại; client gửi trường orchestration đi vào planner/tool flow. Session được giữ trong bộ nhớ Backend tối đa 30 phút (có thể đặt `mamxanh.ai-chat.session-ttl`), gắn với account hoặc guest cookie, tự hết hạn và không lưu prompt. Restart Backend làm mất session và confirmation đang chờ.
+
+Planner chỉ được chọn tool trong registry theo role; tool gọi service nghiệp vụ hiện có để backend tiếp tục kiểm tra quyền, ownership và validation. Chạy tối đa 5 tool tuần tự. `QA` chỉ đọc và không ghi; `CONFIRM` đưa các thao tác ghi vào pending confirmation; `AUTO` chỉ chạy yêu cầu ghi có dấu hiệu yêu cầu trực tiếp, trong khi đăng bài, xóa dữ liệu và tool destructive luôn cần xác nhận. Confirmation một lần hết hạn sau 5 phút. Lỗi tool dừng chuỗi và giữ kết quả bước đã hoàn tất. Quota được kiểm tra trước lần gọi model và mỗi bước thực thi.
+
+Tool điều hướng `navigate_to_page` chỉ chấp nhận page key Backend allowlist, trả `workflowUrl` nội bộ và không gọi service ghi dữ liệu. Mode người dùng chọn được gửi nguyên trạng; điều hướng không thực thi thao tác ghi và response route hợp lệ làm chat đóng, chuyển trang tự động.
+
+Consent grant/revoke gắn với session, loại dữ liệu và mục đích; dữ liệu hồ sơ chỉ đọc/cập nhật bằng tool tương ứng khi có consent. Câu hỏi/lịch sử có dấu hiệu email, số điện thoại, hồ sơ ăn uống hoặc sức khỏe bị chặn trước Gemini nếu thiếu consent `AI_CHAT`. Không ghi raw prompt vào telemetry. Internal retrieval chỉ dùng snippets đã duyệt trong source code và bài công thức công khai được lấy từ service Mâm Xanh; không có truy vấn Internet. Response trả `steps`, `pendingConfirmation`, `consentRequest` và `sources`. Chat client hiện có selector mode, bước/preview, cùng thao tác consent và confirmation; form preview nâng cao vẫn thuộc #215.
 
 Với yêu cầu hỏi đáp còn lại, Backend gọi Gemini để phân loại tin nhắn mới trước khi tải ngữ cảnh hồ sơ/công thức và trước khi gọi Gemini sinh câu trả lời. Classifier trả `decisionId` trong allowlist `MX_CHAT_OK`, `MX_CHAT_OFF_TOPIC`, `MX_CHAT_SENSITIVE`; `reasonId` phân biệt các vùng nhạy cảm nội bộ. Chỉ `MX_CHAT_OK` tiếp tục luồng chat; hai mã còn lại được Backend chuyển thành câu trả lời chuẩn bị sẵn và không trả recommendation cards. Nếu Gemini safety filter chặn response phân loại, Backend chuyển sang cảnh báo nhạy cảm chuẩn bị sẵn; timeout/lỗi phân loại trả response dự phòng và không gọi bước sinh câu trả lời. Cả hai lượt provider được ghi token usage riêng; timeout tối đa là 6 giây cho phân loại và 7 giây cho câu trả lời. API response giữ nguyên schema; frontend đặt timeout Chatbox 15 giây cho luồng có tối đa hai lần gọi Gemini.
 
@@ -334,7 +450,7 @@ Dừng bằng `Ctrl+C`. Container tự xóa vì dùng `--rm`. Khi source hoặc 
 - Gemini, Azure, Brevo SMTP và payOS credential chỉ đến từ cấu hình môi trường/secret store (local `.env`, GitHub Secrets, Azure App Service Settings); không commit giá trị thật. Maps chỉ được cấu hình nếu M11 được kích hoạt lại bằng quyết định scope mới.
 - API được mô tả bằng OpenAPI và trả lỗi nhất quán; không để frontend suy đoán business rule.
 
-Ma trận quyền AI hiện hành: PLUS mở lập thực đơn tuần thông thường (UC-34.2/UC-34.3) và theo dinh dưỡng (FR-36). PRO kế thừa PLUS, thêm AI soạn bài cho Chuyên gia (FR-21), AI gợi ý món liên quan/biến tấu (FR-47) và AI đề xuất điều chỉnh dinh dưỡng (FR-37). FREE giữ Chatbot, gợi ý nguyên liệu và hướng dẫn chế biến. Giá và thời hạn đã mua không đổi.
+Đối với AI soạn bài FR-21, Chuyên gia đủ quyền đăng bài có thể dùng tính năng với ngân sách token và Gemini model hợp lệ theo tier Free/Plus/Pro. Giá và thời hạn đã mua không đổi.
 
 ## Thanh toán xác minh — FR-13 / Issue #142
 

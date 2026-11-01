@@ -1,8 +1,8 @@
 > **Document:** Product Requirements Document — Mâm Xanh
 > **File:** `docs/requirements/PRD.md`
-> **Version:** v2.5.0
+> **Version:** v2.9.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-29
+> **Last Updated:** 2026-10-31
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `README.md`
 
@@ -32,7 +32,7 @@ Sản phẩm MVP quản lý nội dung `Recipe Post` với hướng dẫn chuẩ
 | Administrator | Quản lý tài khoản thật (tìm kiếm, lọc, phân trang, xem lịch sử, khóa/mở khóa, đổi role có lý do/audit), từ điển nguyên liệu, đơn vị đo lường và bảng quy đổi, xét duyệt đơn (`FR-05`), hậu kiểm báo cáo (`FR-06`) | ADMIN chỉ xem, không bị khóa/đổi role từ trang này; chỉ chuyển CUSTOMER/EXPERT; cấp Expert trực tiếp không cần đơn đã duyệt, đơn PENDING bị kết thúc có lý do và thông báo; xử lý vi phạm ghi trên Report; không sửa bài công thức hoặc quản lý bảng danh mục động |
 | Dịch vụ ngoài | Gemini, Azure Blob Storage, YouTube, Google authentication/email và dịch vụ thanh toán hỗ trợ năng lực MVP | Lỗi provider phải được xử lý minh bạch; không giả lập dữ liệu thành kết quả thật. Google Maps không thuộc baseline hiện tại. |
 
-Free, Plus và Pro là hạng gói dịch vụ (Subscription Tier) của Customer/Expert xác định quyền sử dụng tính năng AI, không phải actor hoặc role phân quyền.
+Free, Plus và Pro là hạng gói dịch vụ (Subscription Tier) của Customer/Expert, xác định hạn mức token và model Gemini được chọn; quyền dùng chức năng AI vẫn theo role, ownership, eligibility và quyền nghiệp vụ gốc.
 
 ## 4. Năng lực cốt lõi MVP
 
@@ -43,13 +43,13 @@ Free, Plus và Pro là hạng gói dịch vụ (Subscription Tier) của Custome
 | Thẩm định Chuyên gia | Customer nộp đơn theo format văn bản (`EXPERT_APPLICATION`: kinh nghiệm ẩm thực, trường phái chay, tóm tắt công thức và link tham khảo) và có thể đính kèm tài liệu chứng chỉ/văn bằng chuyên môn cùng ảnh thẻ chân dung khung 3:4 riêng cho đơn; Administrator xem hoặc tải tệp để thẩm định rồi phê duyệt hoặc từ chối kèm lý do; khi duyệt, tài khoản được thăng cấp `EXPERT` (`FR-05`). Admin cũng cấp role Expert trực tiếp trong FR-06; đơn PENDING khi có sẽ chuyển CANCELLED và gửi notification. Tệp chỉ Admin truy cập được; ảnh thẻ không cập nhật avatar hồ sơ công khai. |
 | Đăng bài Chuyên gia | Chỉ tài khoản có vai trò `Chuyên gia` được cấp qua FR-05 hoặc FR-06 mới được tạo và công khai Recipe Post trực tiếp (hướng dẫn chế biến 10–5.000 ký tự linh hoạt, chọn 1 thể loại món ăn `dish_category`, người đăng không bắt buộc phải viết từng bước nấu ăn, tối đa 5 ảnh với đúng 1 ảnh cover, 1 YouTube URL, nguyên liệu bắt buộc số lượng > 0 và đơn vị có công thức quy đổi hợp lệ); Administrator hậu kiểm sau đăng dựa trên báo cáo vi phạm |
 | Cá nhân hóa | Thu thập sở thích/kiêng/dị ứng tối thiểu trước khi gọi AI cá nhân hóa; lưu trực tiếp trong hồ sơ User và User Ingredient Preference |
-| AI (Feature-based) | Guest dùng AI Chatbot cơ bản với technical rate limit. Free Member dùng Chatbot và gợi ý món cơ bản theo nguyên liệu (`UC-34.1`). Plus có thêm thực đơn tuần thông thường (`UC-34.2`/`UC-34.3`), thực đơn theo dinh dưỡng cá nhân (`FR-36`). Pro kế thừa Plus, thêm AI hỗ trợ soạn nội dung cho Chuyên gia (`FR-21`) gợi ý món liên quan/biến tấu (`FR-47`) và AI đề xuất điều chỉnh dinh dưỡng (`FR-37`). |
+| AI Assistant | Guest/Member dùng chức năng AI theo quyền nghiệp vụ hiện có; mức token và Gemini model phụ thuộc gói. Có các mode Hỏi đáp/Gợi ý, Có xác nhận, Tự động; mặc định Có xác nhận. RAG MVP dùng dữ liệu Mâm Xanh và tài liệu nội bộ được duyệt. |
 | Meal planning & Shopping | Lưu công thức vào Saved Recipe, quản lý lịch ăn ngày/tuần ba bữa và Shopping List; chuẩn hóa đơn vị qua `UNIT` và `INGREDIENT_UNIT_CONVERSION` theo 3 chiều (`MASS`, `VOLUME`, `COUNT`), gom nguyên liệu cùng chiều an toàn; cấm hoàn toàn giá trị phi số học như “vừa đủ”. |
 | Xuất file (Export) & Báo cáo | Hỗ trợ Customer xuất dữ liệu công thức chi tiết (.txt/.pdf), báo cáo dinh dưỡng ngày hoặc tuần (.pdf) kèm thực đơn dự kiến, và Shopping List (.txt) để tiện theo dõi, nấu nướng và mua sắm |
 | Dinh dưỡng | Tính từ gram nguyên liệu/khẩu phần và danh mục có nguồn USDA/NIH; 100% nguyên liệu công khai đều có đơn vị đo lường và tỷ lệ quy đổi xác định (chặn xuất bản nếu thiếu quy đổi); BMI chỉ tham khảo, không tự kê calorie/macro target từ BMI hoặc weight goal |
 | Cộng đồng | Bình luận/reply tối đa 5 cấp, cha bị xóa thành tombstone, lưu công thức (Saved Recipe), báo cáo nội dung; đánh giá chất lượng công thức bằng bình chọn Like / Dislike dành cho Customer/Expert đã đăng nhập (`RECIPE_REACTION`, Guest chỉ có quyền xem); hiển thị tỷ lệ % hài lòng `👍 {like_percentage}%` trên thẻ món ăn (tương tự Samsung Food); lưu vết lượt xem chi tiết có khử trùng lặp (`RECIPE_VIEW`); không áp dụng Like cho bình luận/reply |
 | Địa điểm | Không có chức năng tìm hoặc quản lý nhà hàng; Google Maps không phải dependency hiện hành. |
-| Gói AI | Phân quyền tính năng theo gói: FREE 0 VNĐ/tháng, PLUS 49.000 VNĐ/tháng, PRO 99.000 VNĐ/tháng; không auto-renew/partial refund; entitlement kích hoạt sau xác minh thanh toán và hết hạn cuối kỳ; xử lý trùng idempotent; không quản lý quota đếm số lượt/ngày. |
+| Gói AI và Credit | Quota pilot Guest 20.000 token/session, Free 50.000/tháng, Plus 300.000/tháng (99.000đ), Pro 600.000/tháng (199.000đ); Free có giá 0đ. Model pilot mặc định: Guest theo Free/Flash-Lite, Plus/Pro chọn Flash-Lite hoặc Flash. Admin cấu hình quota, giá Plus/Pro, Gemini catalog/access/default theo tier và tỷ lệ; mọi model tier có thể đổi theo cấu hình Admin. 1.000đ = 1.000 Credit; 1.000 token overage = 400 Credit (0,4 Credit/token, hỗ trợ số lẻ); Credit không hết hạn. Không giữ trước ngân sách, số dư không âm và hệ thống chịu phần vượt của lượt đã bắt đầu. Đơn nạp chờ hết hạn sau 15 phút; thanh toán sau hạn cần đối soát thủ công. |
 
 ## 5. Ngoài phạm vi MVP
 
@@ -68,7 +68,7 @@ Free, Plus và Pro là hạng gói dịch vụ (Subscription Tier) của Custome
 
 ## 6. Nguyên tắc chất lượng
 
-- Backend thực thi authentication, authorization, validation, feature entitlement và ownership; frontend không phải lớp bảo vệ duy nhất.
+- Backend thực thi authentication, authorization, validation, ownership và model/quota checks; Frontend không phải lớp bảo vệ duy nhất. Gói AI không cấp thêm quyền nghiệp vụ hoặc khóa riêng capability.
 - Secret và credential của Gemini, Azure, Maps hoặc thanh toán không được đưa vào frontend, source code hay Git.
 - Kết quả AI và dịch vụ ngoài phải có trạng thái loading/error rõ ràng, có rate limit kỹ thuật chống spam; khi request thất bại do lỗi mạng/provider, hệ thống phản hồi thân thiện và ghi log kỹ thuật.
 - Không lưu lịch sử hội thoại AI theo account; telemetry chỉ lưu lượng token tiêu thụ và không giữ raw prompt, lưu trữ trong 90 ngày. Báo cáo kiểm duyệt và quyết định xử lý được lưu trữ trực tiếp trên Report.

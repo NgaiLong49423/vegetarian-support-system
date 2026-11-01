@@ -1,18 +1,32 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.62.0
+> **Version:** v1.67.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-29
+> **Last Updated:** 2026-11-01
 > **Status:** Active  
 
 # Mâm Xanh Frontend
+
+### Giao diện Human-in-the-loop của AI Assistant
+
+Khi cần xác nhận thao tác hoặc xin consent, chat hiển thị một khung hỏi riêng ở cuối cửa sổ, thay ô nhập thông thường. Người dùng chọn phương án đánh số rồi nhấn **Gửi**; mặc định không chọn đồng ý. Có thể dùng phím 1/2, Tab/arrow keys và Enter. **Bỏ qua** từ chối đề xuất ghi hoặc không cấp consent. Nhập yêu cầu khác không được xem là chấp thuận: với pending write, UI gửi REJECT trước rồi mới gửi chỉ dẫn mới; không đổi API hoặc quyền Backend. Nội dung/phạm vi/Google Gemini vẫn được hiển thị khi xin consent. Panel giữ màu và typography Mâm Xanh, có scroll cho nội dung dài trên mobile.
+
+Kiểm thử: `npx playwright test tests/e2e/ai-chat.spec.ts tests/e2e/ai-human-input.spec.ts`. Các test pilot G3/G4 dùng radio option rồi nhấn Gửi. Screenshot desktop/mobile được tạo trong Playwright output của `ai-human-input.spec.ts`.
+
+### G4 — Vòng đời session và kết quả sau mất kết nối
+
+Transcript dùng sessionStorage cùng tab; TTL dựa trên expiry Backend, không gia hạn chỉ vì reload/đổi mode. Đổi owner xóa cache phiên trước; hết session/restart thì transcript cũ chỉ hiển thị, bỏ consent/pending và không gửi lại history cũ. Revoke ẩn/xóa nội dung có dữ liệu liên quan trong browser storage và hủy pending.
+
+Client lưu request UUID trước khi gửi, có nút Dừng khi đang chạy và Kiểm tra kết quả sau lỗi. Status lookup không gọi model hoặc gửi lại write. Dừng/New chat không hoàn tác create đã commit. Kết quả được khôi phục bằng ID thật; model replacement theo tác vụ chưa triển khai. `g4-session-recovery.spec.ts` kiểm tra root Compose với model fixture test-only, tắt trace để không giữ JWT; không phải Gemini live.
+
 
 ### Giám sát giao dịch gói tài khoản
 
 - `/admin/giao-dich` đọc giao dịch thật từ Backend cho Admin, thay phần minh họa cũ. Tìm theo mã `TX-<id>`, mã đơn payOS, tên/email; kết hợp gói, trạng thái và ngày tạo; hỗ trợ phân trang, làm mới, trạng thái tải/lỗi/thử lại/rỗng và chi tiết bằng hộp thoại hỗ trợ bàn phím.
 - Các thẻ thống kê tính trên toàn bộ kết quả theo bộ lọc đã áp dụng, không chỉ trang đang xem. Chỉ PAID được tính doanh thu; giữ riêng PENDING, FAILED và CANCELLED. Thời gian hiển thị theo Việt Nam. Không hiển thị trạng thái cổng payOS hoặc tỷ lệ thành công cố định.
 - Xuất CSV lấy cùng bộ lọc đã áp dụng, tối đa 10.000 dòng; bộ lọc đang nhập chưa áp dụng không ảnh hưởng file. Đây là dữ liệu local phục vụ đối soát, không phải hóa đơn hoặc xác nhận từ payOS. Chi tiết hiển thị chu kỳ của lần mua, không suy ra quyền hiện tại; gói lịch sử không xác định được hiện rõ thay vì gán Plus.
-- Test UI có mock trong `admin-transactions.spec.ts`; test stack thật trong `admin-transactions-real-stack.spec.ts`. Phần quản lý người dùng tại `/admin/nguoi-dung` vẫn là bản minh họa riêng.
+- Test UI có mock trong `admin-transactions.spec.ts`; test stack thật trong `admin-transactions-real-stack.spec.ts`. Trang `/admin/nguoi-dung` đọc và cập nhật tài khoản qua API Backend. Nút quyền lợi AI mở màn hình chọn thao tác, rồi tách riêng form tặng gói và form tặng AI Credit; Credit grant được ghi vào `AI_CREDIT_LEDGER` và hiển thị trong lịch sử theo tài khoản. Trang cấu hình AI hiển thị tổng quan chỉ xem; mỗi phần có chế độ sửa riêng và yêu cầu Admin xác nhận danh sách thay đổi trước khi lưu.
+- Trang `/goi-ai` là overview gói và mức sử dụng AI, hiển thị số dư AI Credit hiện tại cho Customer/Expert và có nút **Nạp tiền** dẫn tới `/nap-ai-credit`. Trang nạp riêng hiển thị số dư, tỷ lệ quy đổi, giới hạn và bản xem trước Credit; nút **Nạp tiền qua payOS** tạo giao dịch, hết hạn sau 15 phút và chỉ cộng Credit sau webhook xác minh. `/giao-dich` hiển thị riêng giao dịch nạp, bao gồm trạng thái cần đối soát.
 
 ### Mức sử dụng AI — FR-11 / Issue #17
 
@@ -24,7 +38,9 @@
 
 ### Chatbot và phân quyền AI — FR-10 / FR-51
 
-Chatbot gửi thêm ID của tối đa bốn thẻ công thức trong mỗi lượt ASSISTANT thuộc tám lượt lịch sử gần nhất để Backend xử lý “món khác”; dữ liệu chỉ ở phiên giao diện, không lưu lịch sử tài khoản. Khi Backend từ chối chức năng nâng cao, chat hiển thị đường dẫn đăng nhập hoặc xem gói và không mời retry nguyên yêu cầu thiếu quyền. Khi đủ quyền, liên kết workflow chỉ được hiển thị cho hai đường dẫn nội bộ đã biết: `/ke-hoach?view=for-you` và `/dang-cong-thuc`.
+Người dùng mở menu chế độ từ nút bánh răng trong thanh nhập để chọn `Hỏi đáp (QA)`, `Có xác nhận (CONFIRM)` hoặc `Tự động (AUTO)`; mặc định là `CONFIRM`. Mỗi yêu cầu gửi mode đã chọn và session ID do Backend cấp. Với thao tác ghi chờ duyệt, chat hiển thị các bước và dữ liệu xem trước, rồi gửi quyết định bằng confirmation ID server cấp; tác vụ đăng bài và xóa luôn phải xác nhận. Khi cần dữ liệu cá nhân, giao diện nêu loại dữ liệu và bên nhận trước khi gửi consent; từ chối sẽ không gửi tiếp câu hỏi. Mode áp dụng cho yêu cầu mới; chat khóa gửi câu tiếp theo đến khi xử lý confirmation/consent đang chờ. Kết quả điều hướng vẫn chỉ mở route nội bộ trong allowlist.
+
+Chatbot gửi thêm ID của tối đa bốn thẻ công thức trong mỗi lượt ASSISTANT thuộc tám lượt lịch sử gần nhất để Backend xử lý “món khác”; dữ liệu chỉ ở phiên giao diện, không lưu lịch sử tài khoản. Khi Backend từ chối chức năng nâng cao, chat hiển thị đường dẫn đăng nhập hoặc xem gói và không mời retry nguyên yêu cầu thiếu quyền. Khi người dùng yêu cầu mở trang, Frontend kiểm tra `workflowUrl` trùng route nội bộ trong allowlist, chat tự đóng và chuyển trang. URL ngoài danh sách bị bỏ qua, không tạo liên kết.
 
 Chatbot hiện dùng chung cho Guest và Member theo FR-10: Guest gửi định danh session cookie hiện có qua body, có hướng dẫn đăng ký và xử lý lỗi 429; không đọc hồ sơ tài khoản. Đổi tài khoản hoặc ngữ cảnh xóa hội thoại trên giao diện và bỏ qua phản hồi cũ đang chờ. Các luồng AI thiếu quyền dẫn tới `/goi-ai`, hướng dẫn Plus hoặc Pro theo tính năng; việc kiểm tra quyền và thời hạn gói thuộc Backend. Chi tiết giao tiếp và giới hạn bộ đếm Guest nằm trong [API Guide](../../docs/api/API.md#16-chatbot-hỏi-đáp-theo-ngữ-cảnh--fr-51). Đây là mô tả source, không phải xác nhận nghiệm thu Issue trên main.
 

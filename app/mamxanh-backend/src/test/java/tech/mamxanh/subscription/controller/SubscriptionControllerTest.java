@@ -37,6 +37,8 @@ class SubscriptionControllerTest {
 
     @Mock private tech.mamxanh.subscription.service.PaymentResultService paymentResults;
 
+    @Mock private tech.mamxanh.subscription.service.AiTokenQuotaService aiTokenQuota;
+
     @InjectMocks
     private SubscriptionController subscriptionController;
 
@@ -98,6 +100,23 @@ class SubscriptionControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(mockSub);
         verify(subscriptionService).getMySubscription(1L);
+    }
+
+    @Test
+    @DisplayName("FR-63: Usage reads are scoped to the authenticated member")
+    void shouldReturnMyAiUsageForAuthenticatedMember() {
+        Authentication auth = mock(Authentication.class);
+        when(auth.isAuthenticated()).thenReturn(true);
+        when(auth.getName()).thenReturn("7");
+        var expected = new tech.mamxanh.subscription.dto.response.MyAiUsageResponse("FREE", 12_000,
+                50_000, 38_000, java.time.Instant.parse("2026-09-30T17:00:00Z"),
+                java.time.Instant.parse("2026-10-31T17:00:00Z"));
+        when(aiTokenQuota.getMyUsage(7L)).thenReturn(expected);
+
+        var response = subscriptionController.getMyAiUsage(auth);
+
+        assertThat(response.getBody()).isEqualTo(expected);
+        verify(aiTokenQuota).getMyUsage(7L);
     }
 
     @Test

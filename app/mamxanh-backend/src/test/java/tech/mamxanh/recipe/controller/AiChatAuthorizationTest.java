@@ -68,6 +68,14 @@ class AiChatAuthorizationTest {
         verify(service, times(12)).answer(any());
     }
 
+    @Test void guestCanDeleteOnlyTheTemporarySessionIdentifiedByItsViewerCookie() throws Exception {
+        UUID sessionId = UUID.randomUUID();
+        String viewerId = UUID.randomUUID().toString();
+        mvc.perform(delete(PATH + "/sessions/" + sessionId).param("anonymousViewerId", viewerId))
+                .andExpect(status().isNoContent());
+        verify(service).deleteSession(sessionId, viewerId);
+    }
+
     @Test void invalidBearerCannotFallBackToGuestEvenWithAValidCookie() throws Exception {
         when(decoder.decode("invalid-token")).thenThrow(new BadJwtException("invalid"));
         String body = MEMBER_BODY.replace("\"history\":[]", "\"history\":[],\"anonymousViewerId\":\"" + UUID.randomUUID() + "\"");

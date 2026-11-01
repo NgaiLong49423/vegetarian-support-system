@@ -1,16 +1,12 @@
 package tech.mamxanh.recipe.service;
 
-import java.time.Clock;
-import java.util.HashSet;
-import java.util.List;
-import org.springframework.stereotype.Service;
-import org.springframework.context.ApplicationEventPublisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
 import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.exception.AppException;
+import tech.mamxanh.common.exception.ApiException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.integration.ai.AiClient;
 import tech.mamxanh.integration.ai.AiUsageEvent;
@@ -20,35 +16,41 @@ import tech.mamxanh.nutrition.service.IngredientCatalogLookupService;
 import tech.mamxanh.recipe.dto.request.RecipeAiAssistanceRequest;
 import tech.mamxanh.recipe.dto.request.RecipeAiAssistanceRequest.ContentType;
 import tech.mamxanh.recipe.dto.response.RecipeAiAssistanceResponse;
-import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
+import tech.mamxanh.subscription.service.AiTokenQuotaService;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+
+import java.time.Clock;
+import java.util.HashSet;
+import java.util.List;
 
 @Service
 public class RecipeAiAssistanceService {
     private static final Logger log = LoggerFactory.getLogger(RecipeAiAssistanceService.class);
 
     private final CurrentUserService currentUserService;
-    private final SubscriptionEntitlementService entitlementService;
     private final IngredientCatalogLookupService ingredientCatalog;
     private final AiClient aiClient;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher events;
     private final Clock clock;
+    private final AiTokenQuotaService aiQuota;
 
     public RecipeAiAssistanceService(CurrentUserService currentUserService,
-            SubscriptionEntitlementService entitlementService, IngredientCatalogLookupService ingredientCatalog,
-            AiClient aiClient, ObjectMapper objectMapper, ApplicationEventPublisher events, Clock clock) {
+            IngredientCatalogLookupService ingredientCatalog,
+            AiClient aiClient, ObjectMapper objectMapper, ApplicationEventPublisher events, Clock clock,
+            AiTokenQuotaService aiQuota) {
         this.currentUserService = currentUserService;
-        this.entitlementService = entitlementService;
         this.ingredientCatalog = ingredientCatalog;
         this.aiClient = aiClient;
         this.objectMapper = objectMapper;
         this.events = events;
         this.clock = clock;
+        this.aiQuota = aiQuota;
     }
 
     public RecipeAiAssistanceResponse generate(RecipeAiAssistanceRequest request) {
         var expert = currentUserService.requireActiveExpert();
-        entitlementService.requirePlusOrPro(expert.id());
 
         List<Long> ingredientIds = request.ingredients().stream().map(RecipeAiAssistanceRequest.Ingredient::ingredientId).toList();
         if (new HashSet<>(ingredientIds).size() != ingredientIds.size()) {
@@ -62,25 +64,32 @@ public class RecipeAiAssistanceService {
         String prompt = prompt(request, ingredients);
         String raw;
         AiClient.RecommendationResult result;
+        aiQuota.requireAvailable(expert.id(), null);
         try {
             result = aiClient.generateRecipeContent(prompt, ingredientIds);
-            raw = result.json();
+            raw = result == null ? null : result.json();
         } catch (AiProviderException exception) {
             log.warn("Recipe AI provider is unavailable: {}", exception.getClass().getSimpleName());
             if (exception.kind() == tech.mamxanh.integration.ai.GeminiAiClient.FailureKind.INVALID_RESPONSE) {
                 throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
             }
             throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE);
+        } catch (ApiException exception) {
+            throw exception;
         } catch (RuntimeException exception) {
             log.warn("Recipe AI provider failed: {}", exception.getClass().getSimpleName());
             throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE);
         }
+        if (result == null) throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+
+        var usageEvent = new AiUsageEvent(expert.id(), "FR-21", clock.instant(), result.usage());
+        aiQuota.record(usageEvent);
+        events.publishEvent(usageEvent);
 
         GeneratedContent generated = parse(raw);
         String content = request.contentType() == ContentType.DESCRIPTION
                 ? validateDescription(generated.description())
                 : validateInstructions(generated.steps(), ingredients);
-        events.publishEvent(new AiUsageEvent(expert.id(), "FR-21", clock.instant(), result.usage()));
         return new RecipeAiAssistanceResponse(request.contentType(), content);
     }
 

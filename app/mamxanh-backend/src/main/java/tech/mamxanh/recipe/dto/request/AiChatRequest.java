@@ -1,16 +1,13 @@
 package tech.mamxanh.recipe.dto.request;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.AssertTrue;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import tech.mamxanh.integration.ai.AiClient;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import jakarta.validation.constraints.Pattern;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import tech.mamxanh.integration.ai.AiClient;
+
 import java.util.List;
+import java.util.UUID;
 
 public record AiChatRequest(
         @NotNull @Schema(description = "GENERAL for cooking questions; RECIPE for a server-loaded public RecipePost.") ContextType contextType,
@@ -20,17 +17,78 @@ public record AiChatRequest(
         List<@Valid Turn> history,
         @Pattern(regexp = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
         @Schema(description = "Session-cookie UUID required for Guest rate limiting; ignored for authenticated Members.")
-        String anonymousViewerId) {
+        String anonymousViewerId,
+        @Schema(description = "Opaque AI conversation session identifier returned by the Backend.") UUID sessionId,
+        @Schema(description = "Execution mode for this request. Defaults to CONFIRM when omitted.") ExecutionMode executionMode,
+        @Valid ConsentDecision consentDecision,
+        @Schema(description = "Server-issued confirmation ID for continuing or rejecting a pending write plan.") UUID confirmationId,
+        @Schema(description = "Explicit decision for the pending write plan.") ConfirmationDecision confirmationDecision,
+        @Schema(description = "Client-generated UUID for request idempotency; required on the G3 pilot path.") UUID clientRequestId,
+        @Schema(description = "CANCEL bypasses the normal chat busy guard and never invokes a model.") ControlAction controlAction) {
+
+    public enum ControlAction { CANCEL }
+
+    public AiChatRequest(ContextType contextType, Long recipeId, String question, List<Turn> history,
+            String anonymousViewerId, UUID sessionId, ExecutionMode executionMode, ConsentDecision consentDecision,
+            UUID confirmationId, ConfirmationDecision confirmationDecision, UUID clientRequestId) {
+        this(contextType, recipeId, question, history, anonymousViewerId, sessionId, executionMode,
+                consentDecision, confirmationId, confirmationDecision, clientRequestId, null);
+    }
 
     public AiChatRequest(ContextType contextType, Long recipeId, String question, List<Turn> history) {
-        this(contextType, recipeId, question, history, null);
+        this(contextType, recipeId, question, history, null, null, null, null, null, null, null);
+    }
+
+    public AiChatRequest(ContextType contextType, Long recipeId, String question, List<Turn> history,
+            String anonymousViewerId) {
+        this(contextType, recipeId, question, history, anonymousViewerId, null, null, null, null, null, null);
+    }
+
+    public AiChatRequest(ContextType contextType, Long recipeId, String question, List<Turn> history,
+            String anonymousViewerId, UUID sessionId, ExecutionMode executionMode,
+            ConsentDecision consentDecision, UUID confirmationId, ConfirmationDecision confirmationDecision) {
+        this(contextType, recipeId, question, history, anonymousViewerId, sessionId, executionMode,
+                consentDecision, confirmationId, confirmationDecision, null);
     }
 
     @Override
     public String toString() { return "AiChatRequest[redacted]"; }
 
     public enum ContextType { GENERAL, RECIPE }
+    public enum ExecutionMode { QA, CONFIRM, AUTO }
+    public enum ConsentAction { GRANT, REVOKE }
+    public enum ConsentCategory { BASIC_PROFILE, DIETARY_PREFERENCES, HEALTH_PROFILE, SHOPPING_LIST }
+    public enum ConsentPurpose {
+        AI_CHAT,
+        PROFILE_READ, PROFILE_UPDATE,
+        DIETARY_READ, DIETARY_UPDATE,
+        HEALTH_PROFILE_READ, HEALTH_PROFILE_UPDATE,
+        SHOPPING_LIST_READ, SHOPPING_LIST_WRITE
+    }
+    public enum ConfirmationDecision { APPROVE, REJECT }
     public enum Speaker { USER, ASSISTANT }
+
+    public record ConsentDecision(@NotNull ConsentAction action,
+            @Size(max = 10) List<@Valid ConsentScope> scopes) {
+        @AssertTrue(message = "Phạm vi consent phải ghép đúng loại dữ liệu và mục đích.")
+        @JsonIgnore
+        @Schema(hidden = true)
+        public boolean isScopeCombinationValid() {
+            if (action == null) return true;
+            if (action == ConsentAction.GRANT && (scopes == null || scopes.isEmpty())) return false;
+            if (scopes == null) return true;
+            return scopes.stream().allMatch(scope -> scope != null && scope.category() != null && scope.purpose() != null
+                    && (scope.purpose() == ConsentPurpose.AI_CHAT
+                    || switch (scope.category()) {
+                        case BASIC_PROFILE -> scope.purpose() == ConsentPurpose.PROFILE_READ || scope.purpose() == ConsentPurpose.PROFILE_UPDATE;
+                        case DIETARY_PREFERENCES -> scope.purpose() == ConsentPurpose.DIETARY_READ || scope.purpose() == ConsentPurpose.DIETARY_UPDATE;
+                        case HEALTH_PROFILE -> scope.purpose() == ConsentPurpose.HEALTH_PROFILE_READ || scope.purpose() == ConsentPurpose.HEALTH_PROFILE_UPDATE;
+                        case SHOPPING_LIST -> scope.purpose() == ConsentPurpose.SHOPPING_LIST_READ || scope.purpose() == ConsentPurpose.SHOPPING_LIST_WRITE;
+                    }));
+        }
+    }
+
+    public record ConsentScope(@NotNull ConsentCategory category, @NotNull ConsentPurpose purpose) { }
 
     public record Turn(@NotNull Speaker speaker,
             @NotBlank @Size(max = AiClient.MAX_CHAT_ANSWER_LENGTH)

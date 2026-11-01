@@ -1,18 +1,9 @@
 package tech.mamxanh.mealplan.service;
 
-import java.time.Clock;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
 import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
@@ -24,10 +15,20 @@ import tech.mamxanh.mealplan.entity.MealPlanEntryEntity;
 import tech.mamxanh.mealplan.repository.MealPlanEntryRepository;
 import tech.mamxanh.mealplan.repository.MealPlanRepository;
 import tech.mamxanh.nutrition.service.NutritionProfileService;
+import tech.mamxanh.recipe.dto.response.RecipePostResponse;
 import tech.mamxanh.recipe.service.RecipePostService;
 import tech.mamxanh.recipe.service.RecipeService;
-import tech.mamxanh.recipe.dto.response.RecipePostResponse;
+import tech.mamxanh.subscription.service.AiTokenQuotaService;
 import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+
+import java.time.Clock;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class MealPlanNutritionAiService {
@@ -44,14 +45,17 @@ public class MealPlanNutritionAiService {
     private final ObjectMapper mapper;
     private final ApplicationEventPublisher events;
     private final Clock clock;
+    private final AiTokenQuotaService aiQuota;
 
     public MealPlanNutritionAiService(CurrentUserService users, NutritionProfileService profiles,
             SubscriptionEntitlementService entitlements, MealPlanRepository plans, MealPlanEntryRepository entries,
             RecipeService nutrition, RecipePostService recipePosts, AiClient ai, ObjectMapper mapper,
-            ApplicationEventPublisher events, Clock clock, MealPlanNutritionService analysisService) {
+            ApplicationEventPublisher events, Clock clock, MealPlanNutritionService analysisService,
+            AiTokenQuotaService aiQuota) {
         this.users = users; this.profiles = profiles; this.entitlements = entitlements; this.plans = plans;
         this.entries = entries; this.nutrition = nutrition; this.recipePosts = recipePosts; this.ai = ai;
         this.mapper = mapper; this.events = events; this.clock = clock; this.analysisService = analysisService;
+        this.aiQuota = aiQuota;
     }
 
     /** Provider call is deliberately outside a database transaction. */
@@ -83,12 +87,18 @@ public class MealPlanNutritionAiService {
                 + mapper.writeValueAsString(Map.of("currentMeal", currentNutrition, "analysis", currentAnalysis.days().get(0).nutrients(),
                         "referenceTargets", currentAnalysis.targets(), "candidates", candidateNutrition));
         AiClient.RecommendationResult result;
-        try { result = ai.analyzeNutritionRecommendations(prompt, allowed, 3); }
+        try {
+            aiQuota.requireAvailable(owner, null);
+            result = ai.analyzeNutritionRecommendations(prompt, allowed, 3);
+        }
         catch (AiProviderException exception) {
             LOG.warn("Meal plan nutrition AI unavailable ({})", exception.getClass().getSimpleName());
             throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE);
         }
         if (result == null) throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+        var usageEvent = new AiUsageEvent(owner, "FR-37", clock.instant(), result.usage());
+        aiQuota.record(usageEvent);
+        events.publishEvent(usageEvent);
         String explanation = analysis(result.json());
         List<Long> ids = selection(result.json(), allowed);
         Map<Long, RecipePostResponse> cards = candidateCards.stream()
@@ -99,7 +109,6 @@ public class MealPlanNutritionAiService {
                     return new MealPlanNutritionRecommendationsResponse.Recommendation(id, cards.get(id).title(),
                             value.complete(), value.ingredientsMissingData());
                 }).toList();
-        events.publishEvent(new AiUsageEvent(owner, "FR-37", clock.instant(), result.usage()));
         return new MealPlanNutritionRecommendationsResponse(entryId, explanation, recommendations);
     }
 

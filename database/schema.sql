@@ -4,7 +4,7 @@
 -- Project         : Mâm Xanh — Vegetarian Support System (SWP391)
 -- Issue           : Refs #63 — Pha 2 Physical ERD & Schema
 -- Author          : Trương Văn Khải
--- Date            : 2026-10-30
+-- Date            : 2026-10-31
 -- Source          : Logical ERD v1.0.0 + Data Dictionary v0.7.5
 --                   (Nguyễn Hải Dương — Pha 1, commit 827353e)
 -- Synchronized with: V1__baseline_schema.sql + V2__unit_code_unicode.sql
@@ -37,6 +37,14 @@
 --                   + V29__shopping_unknown_contributions.sql
 --                   + V30__admin_user_management_audit.sql
 --                   + V31__ai_usage_telemetry.sql
+--                   + V32__ai_token_quota_usage_ledger.sql
+--                   + V33__admin_ai_configuration.sql
+--                   + V34__subscription_order_plan_snapshot.sql
+--                   + V35__add_user_preferred_ai_model.sql
+--                   + V36__ai_credit_wallet_ledger.sql
+--                   + V37__admin_ai_entitlement_audit.sql — AI package gift history
+--                   + V38__ai_credit_top_up_orders.sql
+--                   + V39__ai_credit_ledger_absorbed_credits.sql
 --                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
@@ -170,6 +178,7 @@ CREATE TABLE [USER] (
     vegetarian_type            VARCHAR(20)    NULL,
     cuisine_preference         NVARCHAR(200)  NULL,
     preferred_difficulty       VARCHAR(20)    NULL,
+    preferred_ai_model_id      NVARCHAR(128)  NULL,
     max_cooking_time_min       INT            NULL,
     biological_sex             VARCHAR(10)    NULL,
     height_cm                  DECIMAL(5,1)   NULL,
@@ -675,7 +684,7 @@ CREATE TABLE [REPORT] (
 );
 GO
 
--- 6.1b USER_ACCOUNT_AUDIT — Administrator account status and role changes
+-- 6.1b USER_ACCOUNT_AUDIT — Administrator account status, role and AI package gifts
 CREATE TABLE [USER_ACCOUNT_AUDIT] (
     user_account_audit_id BIGINT IDENTITY(1,1) NOT NULL,
     target_user_id BIGINT NOT NULL,
@@ -685,6 +694,9 @@ CREATE TABLE [USER_ACCOUNT_AUDIT] (
     new_role VARCHAR(20) NULL,
     old_account_status VARCHAR(20) NULL,
     new_account_status VARCHAR(20) NULL,
+    old_tier VARCHAR(10) NULL,
+    new_tier VARCHAR(10) NULL,
+    new_tier_ends_at DATETIME2(7) NULL,
     reason NVARCHAR(500) NOT NULL,
     expert_application_id BIGINT NULL,
     created_at DATETIME2(7) NOT NULL,
@@ -692,17 +704,26 @@ CREATE TABLE [USER_ACCOUNT_AUDIT] (
     CONSTRAINT FK_USER_ACCOUNT_AUDIT_TARGET FOREIGN KEY (target_user_id) REFERENCES [USER](user_id),
     CONSTRAINT FK_USER_ACCOUNT_AUDIT_ADMIN FOREIGN KEY (administrator_id) REFERENCES [USER](user_id),
     CONSTRAINT FK_USER_ACCOUNT_AUDIT_APPLICATION FOREIGN KEY (expert_application_id) REFERENCES [EXPERT_APPLICATION](application_id),
-    CONSTRAINT CK_USER_ACCOUNT_AUDIT_ACTION CHECK (action IN ('STATUS_CHANGED','ROLE_CHANGED')),
+    CONSTRAINT CK_USER_ACCOUNT_AUDIT_ACTION CHECK (action IN ('STATUS_CHANGED','ROLE_CHANGED','AI_PACKAGE_GIFTED')),
     CONSTRAINT CK_USER_ACCOUNT_AUDIT_REASON CHECK (LEN(LTRIM(RTRIM(reason))) BETWEEN 10 AND 500),
     CONSTRAINT CK_USER_ACCOUNT_AUDIT_VALUES CHECK (
         (action='STATUS_CHANGED' AND old_account_status IS NOT NULL
             AND old_account_status IN ('ACTIVE','LOCKED') AND new_account_status IS NOT NULL
             AND new_account_status IN ('ACTIVE','LOCKED')
-            AND old_role IS NULL AND new_role IS NULL AND expert_application_id IS NULL)
+            AND old_role IS NULL AND new_role IS NULL AND old_tier IS NULL AND new_tier IS NULL
+            AND expert_application_id IS NULL)
         OR
         (action='ROLE_CHANGED' AND old_role IS NOT NULL AND old_role IN ('CUSTOMER','EXPERT')
             AND new_role IS NOT NULL AND new_role IN ('CUSTOMER','EXPERT')
-            AND old_account_status IS NULL AND new_account_status IS NULL)
+            AND old_account_status IS NULL AND new_account_status IS NULL
+            AND old_tier IS NULL AND new_tier IS NULL)
+        OR
+        (action='AI_PACKAGE_GIFTED' AND old_tier IS NOT NULL AND old_tier IN ('FREE','PLUS','PRO')
+            AND new_tier IS NOT NULL AND new_tier IN ('FREE','PLUS','PRO')
+            AND ((new_tier='FREE' AND new_tier_ends_at IS NULL) OR (new_tier IN ('PLUS','PRO') AND new_tier_ends_at IS NOT NULL))
+            AND old_role IS NULL AND new_role IS NULL
+            AND old_account_status IS NULL AND new_account_status IS NULL
+            AND expert_application_id IS NULL)
     )
 );
 CREATE INDEX IX_USER_ACCOUNT_AUDIT_TARGET_CREATED
@@ -922,8 +943,8 @@ CREATE TABLE [SUBSCRIPTION] (
 );
 GO
 
--- 9.2 PAYMENT_TRANSACTION — payOS payment to activate subscription
--- Source: Data Dictionary 4.22, FR-13, BR-03
+-- 9.2 PAYMENT_TRANSACTION — payOS subscription and AI Credit top-up orders
+-- Source: Data Dictionary 4.22, FR-13, FR-64, BR-03, BR-77
 -- order_code UNIQUE: idempotency mechanism for payOS webhook (constraint #12)
 CREATE TABLE [PAYMENT_TRANSACTION] (
     payment_transaction_id  BIGINT        IDENTITY(1,1)  NOT NULL,
@@ -931,6 +952,13 @@ CREATE TABLE [PAYMENT_TRANSACTION] (
     subscription_id         BIGINT        NULL,
     order_code              VARCHAR(100)  NOT NULL,
     amount_vnd              INT           NOT NULL,
+    subscription_tier       VARCHAR(10)   NULL,
+    token_quota_snapshot    BIGINT        NULL,
+    product_type            VARCHAR(20)   NOT NULL
+        CONSTRAINT DF_PAYMENT_product_type DEFAULT 'SUBSCRIPTION',
+    credit_amount_snapshot  DECIMAL(38,9) NULL,
+    credits_per_1000_vnd_snapshot DECIMAL(19,6) NULL,
+    expires_at              DATETIME2(7)  NULL,
     status                  VARCHAR(20)   NOT NULL
         CONSTRAINT DF_PAYMENT_status DEFAULT 'PENDING',
     created_at              DATETIME2(7)  NOT NULL
@@ -944,9 +972,21 @@ CREATE TABLE [PAYMENT_TRANSACTION] (
         REFERENCES [SUBSCRIPTION](subscription_id) ON DELETE NO ACTION,
     CONSTRAINT UQ_PAYMENT_order_code UNIQUE (order_code),
     CONSTRAINT CK_PAYMENT_status CHECK (
-        status IN ('PENDING', 'PAID', 'FAILED', 'CANCELLED')
+        status IN ('PENDING', 'PAID', 'FAILED', 'CANCELLED', 'NEEDS_RECONCILIATION')
     ),
-    CONSTRAINT CK_PAYMENT_amount CHECK (amount_vnd > 0)
+    CONSTRAINT CK_PAYMENT_amount CHECK (amount_vnd > 0),
+    CONSTRAINT CK_PAYMENT_token_quota_snapshot CHECK (
+        token_quota_snapshot IS NULL OR token_quota_snapshot >= 0),
+    CONSTRAINT CK_PAYMENT_subscription_tier_snapshot CHECK (
+        subscription_tier IS NULL OR subscription_tier IN ('PLUS', 'PRO')),
+    CONSTRAINT CK_PAYMENT_product_type CHECK (
+        product_type IN ('SUBSCRIPTION', 'AI_CREDIT')),
+    CONSTRAINT CK_PAYMENT_credit_snapshot CHECK (
+        (product_type = 'SUBSCRIPTION' AND credit_amount_snapshot IS NULL
+            AND credits_per_1000_vnd_snapshot IS NULL)
+        OR (product_type = 'AI_CREDIT' AND subscription_tier IS NULL
+            AND token_quota_snapshot IS NULL AND credit_amount_snapshot > 0
+            AND credits_per_1000_vnd_snapshot > 0 AND expires_at IS NOT NULL))
 );
 GO
 
@@ -1257,3 +1297,169 @@ CREATE INDEX IX_AI_TELEMETRY_time ON AI_USAGE_TELEMETRY(occurred_at);
 CREATE INDEX IX_AI_TELEMETRY_feature_time ON AI_USAGE_TELEMETRY(feature, occurred_at);
 
 GO
+
+-- FR-63: quota snapshot on each paid subscription cycle, separate from telemetry.
+ALTER TABLE [SUBSCRIPTION]
+    ADD token_quota BIGINT NOT NULL CONSTRAINT DF_SUBSCRIPTION_token_quota DEFAULT 0;
+EXEC sys.sp_executesql N'UPDATE [SUBSCRIPTION]
+SET token_quota = CASE tier WHEN ''PLUS'' THEN 300000 WHEN ''PRO'' THEN 600000 ELSE 0 END';
+EXEC sys.sp_executesql N'ALTER TABLE [SUBSCRIPTION]
+    ADD CONSTRAINT CK_SUBSCRIPTION_token_quota CHECK (token_quota >= 0)';
+
+CREATE TABLE AI_TOKEN_USAGE_LEDGER (
+    event_id VARCHAR(36) NOT NULL,
+    user_id BIGINT NULL,
+    anonymous_session_id VARCHAR(36) NULL,
+    feature VARCHAR(10) NOT NULL,
+    model VARCHAR(80) NULL,
+    usage_status VARCHAR(20) NOT NULL,
+    token_count BIGINT NULL,
+    quota_limit BIGINT NOT NULL,
+    period_start DATETIME2(7) NOT NULL,
+    period_end DATETIME2(7) NOT NULL,
+    occurred_at DATETIME2(7) NOT NULL,
+    expires_at DATETIME2(7) NOT NULL,
+    CONSTRAINT PK_AI_TOKEN_USAGE_LEDGER PRIMARY KEY (event_id),
+    CONSTRAINT FK_AI_TOKEN_USAGE_LEDGER_USER FOREIGN KEY (user_id)
+        REFERENCES [USER](user_id) ON DELETE NO ACTION,
+    CONSTRAINT CK_AI_TOKEN_USAGE_LEDGER_actor CHECK (
+        (user_id IS NOT NULL AND anonymous_session_id IS NULL) OR
+        (user_id IS NULL AND anonymous_session_id IS NOT NULL)),
+    CONSTRAINT CK_AI_TOKEN_USAGE_LEDGER_status CHECK (
+        usage_status IN ('RECORDED', 'MISSING', 'INVALID')),
+    CONSTRAINT CK_AI_TOKEN_USAGE_LEDGER_tokens CHECK (
+        (token_count IS NULL OR token_count >= 0) AND quota_limit >= 0 AND period_end > period_start)
+);
+
+CREATE INDEX IX_AI_TOKEN_USAGE_LEDGER_user_period
+    ON AI_TOKEN_USAGE_LEDGER(user_id, period_start, period_end)
+    INCLUDE (token_count, usage_status);
+CREATE INDEX IX_AI_TOKEN_USAGE_LEDGER_guest
+    ON AI_TOKEN_USAGE_LEDGER(anonymous_session_id)
+    INCLUDE (token_count, usage_status);
+CREATE INDEX IX_AI_TOKEN_USAGE_LEDGER_expiry
+    ON AI_TOKEN_USAGE_LEDGER(expires_at);
+
+GO
+
+CREATE TABLE AI_PLAN_CONFIGURATION (
+    plan_tier VARCHAR(10) NOT NULL,
+    price_vnd INT NOT NULL,
+    token_quota BIGINT NOT NULL,
+    pending_token_quota BIGINT NULL,
+    pending_effective_at DATETIME2(7) NULL,
+    updated_at DATETIME2(7) NOT NULL CONSTRAINT DF_AI_PLAN_CONFIGURATION_updated_at DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT PK_AI_PLAN_CONFIGURATION PRIMARY KEY (plan_tier),
+    CONSTRAINT CK_AI_PLAN_CONFIGURATION_tier CHECK (plan_tier IN ('FREE', 'PLUS', 'PRO')),
+    CONSTRAINT CK_AI_PLAN_CONFIGURATION_price CHECK (price_vnd >= 0),
+    CONSTRAINT CK_AI_PLAN_CONFIGURATION_quota CHECK (
+        token_quota >= 0 AND (pending_token_quota IS NULL OR pending_token_quota >= 0)),
+    CONSTRAINT CK_AI_PLAN_CONFIGURATION_pending CHECK (
+        (pending_token_quota IS NULL AND pending_effective_at IS NULL) OR
+        (pending_token_quota IS NOT NULL AND pending_effective_at IS NOT NULL))
+);
+
+INSERT INTO AI_PLAN_CONFIGURATION (plan_tier, price_vnd, token_quota)
+VALUES ('FREE', 0, 50000), ('PLUS', 99000, 300000), ('PRO', 199000, 600000);
+
+CREATE TABLE AI_GEMINI_MODEL_CONFIGURATION (
+    model_id VARCHAR(128) NOT NULL,
+    display_name NVARCHAR(120) NOT NULL,
+    enabled BIT NOT NULL,
+    free_allowed BIT NOT NULL,
+    free_default BIT NOT NULL,
+    plus_allowed BIT NOT NULL,
+    plus_default BIT NOT NULL,
+    pro_allowed BIT NOT NULL,
+    pro_default BIT NOT NULL,
+    updated_at DATETIME2(7) NOT NULL CONSTRAINT DF_AI_GEMINI_MODEL_CONFIGURATION_updated_at DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT PK_AI_GEMINI_MODEL_CONFIGURATION PRIMARY KEY (model_id),
+    CONSTRAINT CK_AI_GEMINI_MODEL_CONFIGURATION_id CHECK (model_id LIKE 'gemini-%'),
+    CONSTRAINT CK_AI_GEMINI_MODEL_CONFIGURATION_default_access CHECK (
+        (free_default = 0 OR (enabled = 1 AND free_allowed = 1)) AND
+        (plus_default = 0 OR (enabled = 1 AND plus_allowed = 1)) AND
+        (pro_default = 0 OR (enabled = 1 AND pro_allowed = 1)))
+);
+
+INSERT INTO AI_GEMINI_MODEL_CONFIGURATION
+    (model_id, display_name, enabled, free_allowed, free_default, plus_allowed, plus_default, pro_allowed, pro_default)
+VALUES
+    ('gemini-3.5-flash-lite', N'Gemini 3.5 Flash-Lite', 1, 1, 1, 1, 0, 1, 0),
+    ('gemini-3.8-flash', N'Gemini 3.8 Flash', 1, 0, 0, 1, 1, 1, 1);
+
+CREATE TABLE AI_CREDIT_CONFIGURATION (
+    configuration_id TINYINT NOT NULL,
+    credits_per_1000_vnd DECIMAL(19,6) NOT NULL,
+    credits_per_1000_overage_tokens BIGINT NOT NULL,
+    minimum_top_up_vnd INT NOT NULL,
+    maximum_top_up_vnd INT NOT NULL,
+    updated_at DATETIME2(7) NOT NULL CONSTRAINT DF_AI_CREDIT_CONFIGURATION_updated_at DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT PK_AI_CREDIT_CONFIGURATION PRIMARY KEY (configuration_id),
+    CONSTRAINT CK_AI_CREDIT_CONFIGURATION_singleton CHECK (configuration_id = 1),
+    CONSTRAINT CK_AI_CREDIT_CONFIGURATION_positive CHECK (
+        credits_per_1000_vnd > 0 AND credits_per_1000_overage_tokens > 0 AND minimum_top_up_vnd > 0),
+    CONSTRAINT CK_AI_CREDIT_CONFIGURATION_top_up_range CHECK (maximum_top_up_vnd >= minimum_top_up_vnd)
+);
+
+INSERT INTO AI_CREDIT_CONFIGURATION
+    (configuration_id, credits_per_1000_vnd, credits_per_1000_overage_tokens, minimum_top_up_vnd, maximum_top_up_vnd)
+VALUES (1, 1000, 400, 10000, 500000);
+
+GO
+
+
+CREATE TABLE AI_CREDIT_WALLET (
+    user_id BIGINT NOT NULL,
+    balance DECIMAL(38,9) NOT NULL CONSTRAINT DF_AI_CREDIT_WALLET_balance DEFAULT 0,
+    updated_at DATETIME2(7) NOT NULL CONSTRAINT DF_AI_CREDIT_WALLET_updated_at DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT PK_AI_CREDIT_WALLET PRIMARY KEY (user_id),
+    CONSTRAINT FK_AI_CREDIT_WALLET_USER FOREIGN KEY (user_id) REFERENCES [USER](user_id),
+    CONSTRAINT CK_AI_CREDIT_WALLET_nonnegative CHECK (balance >= 0)
+);
+
+CREATE TABLE AI_CREDIT_LEDGER (
+    transaction_id BIGINT IDENTITY(1,1) NOT NULL,
+    user_id BIGINT NOT NULL,
+    transaction_type VARCHAR(20) NOT NULL,
+    reference_id NVARCHAR(100) NOT NULL,
+    credit_delta DECIMAL(38,9) NOT NULL,
+    balance_after DECIMAL(38,9) NOT NULL,
+    overage_tokens BIGINT NULL,
+    credits_per_1000_tokens BIGINT NULL,
+    system_absorbed_tokens BIGINT NULL,
+    system_absorbed_credits DECIMAL(38,9) NULL,
+    granted_by_user_id BIGINT NULL,
+    reason NVARCHAR(500) NULL,
+    created_at DATETIME2(7) NOT NULL CONSTRAINT DF_AI_CREDIT_LEDGER_created_at DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT PK_AI_CREDIT_LEDGER PRIMARY KEY (transaction_id),
+    CONSTRAINT FK_AI_CREDIT_LEDGER_USER FOREIGN KEY (user_id) REFERENCES [USER](user_id),
+    CONSTRAINT FK_AI_CREDIT_LEDGER_GRANTOR FOREIGN KEY (granted_by_user_id) REFERENCES [USER](user_id),
+    CONSTRAINT UQ_AI_CREDIT_LEDGER_reference UNIQUE (transaction_type, reference_id),
+    CONSTRAINT CK_AI_CREDIT_LEDGER_type CHECK (transaction_type IN ('TOP_UP','ADMIN_GRANT','OVERAGE')),
+    CONSTRAINT CK_AI_CREDIT_LEDGER_balance CHECK (balance_after >= 0),
+    CONSTRAINT CK_AI_CREDIT_LEDGER_absorbed_credits CHECK (
+        system_absorbed_credits IS NULL OR system_absorbed_credits >= 0)
+);
+
+CREATE INDEX IX_AI_CREDIT_LEDGER_user_created ON AI_CREDIT_LEDGER(user_id, created_at DESC, transaction_id DESC);
+
+GO
+
+
+-- G4: short-lived idempotency/results, not a conversation or workflow store.
+CREATE TABLE AI_ASSISTANT_EXECUTION (
+    owner_id BIGINT NOT NULL,
+    client_request_id UNIQUEIDENTIFIER NOT NULL,
+    session_id UNIQUEIDENTIFIER NOT NULL,
+    arguments_hash CHAR(64) NOT NULL,
+    state VARCHAR(12) NOT NULL,
+    shopping_list_id BIGINT NULL,
+    created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    expires_at DATETIME2 NOT NULL DEFAULT DATEADD(day, 7, SYSUTCDATETIME()),
+    CONSTRAINT PK_AI_ASSISTANT_EXECUTION PRIMARY KEY (owner_id, client_request_id),
+    CONSTRAINT FK_AI_ASSISTANT_EXECUTION_OWNER FOREIGN KEY (owner_id) REFERENCES [USER](user_id),
+    CONSTRAINT CK_AI_ASSISTANT_EXECUTION_state CHECK (state IN ('RESERVED','WRITING','SUCCEEDED','FAILED','CANCELLED')),
+    CONSTRAINT CK_AI_ASSISTANT_EXECUTION_result CHECK
+        ((state = 'SUCCEEDED' AND shopping_list_id IS NOT NULL) OR (state <> 'SUCCEEDED' AND shopping_list_id IS NULL))
+);
+CREATE INDEX IX_AI_ASSISTANT_EXECUTION_expiry ON AI_ASSISTANT_EXECUTION(expires_at);

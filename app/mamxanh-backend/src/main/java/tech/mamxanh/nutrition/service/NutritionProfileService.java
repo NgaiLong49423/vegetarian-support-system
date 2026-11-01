@@ -1,10 +1,5 @@
 package tech.mamxanh.nutrition.service;
 
-import java.time.Clock;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -19,9 +14,15 @@ import tech.mamxanh.nutrition.dto.response.NutritionEligibilityResponse;
 import tech.mamxanh.nutrition.dto.response.NutritionProfileResponse;
 import tech.mamxanh.nutrition.dto.response.NutritionProfileResponse.Profile;
 import tech.mamxanh.nutrition.dto.response.NutritionProfileResponse.Results;
-import tech.mamxanh.nutrition.entity.NutritionProfileEntity;
 import tech.mamxanh.nutrition.entity.NutritionEligibilityStatus;
+import tech.mamxanh.nutrition.entity.NutritionProfileEntity;
 import tech.mamxanh.nutrition.repository.NutritionProfileRepository;
+
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
 
 @Service
 public class NutritionProfileService {

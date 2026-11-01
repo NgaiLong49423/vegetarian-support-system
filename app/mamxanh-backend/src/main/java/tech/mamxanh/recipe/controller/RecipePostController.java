@@ -1,36 +1,28 @@
 package tech.mamxanh.recipe.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import tech.mamxanh.common.config.OpenApiConfig;
-import tech.mamxanh.recipe.dto.request.UpdateRecipePostRequest;
 import tech.mamxanh.recipe.dto.request.RecipeAiAssistanceRequest;
+import tech.mamxanh.recipe.dto.request.UpdateRecipePostRequest;
 import tech.mamxanh.recipe.dto.response.RecipeAiAssistanceResponse;
 import tech.mamxanh.recipe.dto.response.RecipePostResponse;
-import tech.mamxanh.recipe.service.RecipePostService;
 import tech.mamxanh.recipe.service.RecipeAiAssistanceService;
-import tech.mamxanh.recipe.service.RecipePostService.RecipePageResponse;
+import tech.mamxanh.recipe.service.RecipePostService;
 import tech.mamxanh.recipe.service.RecipePostService.RecipeBrowseResponse;
+import tech.mamxanh.recipe.service.RecipePostService.RecipePageResponse;
 import tech.mamxanh.recipe.service.RecipePostService.RecipeReferenceData;
 import tech.mamxanh.recipe.service.RecipeSortMode;
 import tech.mamxanh.recipe.service.RecipeViewPeriod;
@@ -134,10 +126,12 @@ public class RecipePostController {
     @PostMapping(path = "/ai-assistance", consumes = MediaType.APPLICATION_JSON_VALUE)
     @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
     @Operation(summary = "Generate editable AI-assisted recipe text",
-            description = "Requires an active Expert account with an active Pro subscription. Does not create or publish a recipe draft.")
+            description = "Requires an active Expert account and available AI token budget. Does not create or publish a recipe draft.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Editable recipe text generated."),
-            @ApiResponse(responseCode = "403", description = "Expert role or Pro entitlement is required."),
+            @ApiResponse(responseCode = "403", description = "Expert role is required."),
+            @ApiResponse(responseCode = "409", description = "The selected AI model is not available for the account tier."),
+            @ApiResponse(responseCode = "429", description = "AI token budget is exhausted."),
             @ApiResponse(responseCode = "502", description = "AI response did not satisfy the recipe output constraints."),
             @ApiResponse(responseCode = "503", description = "Gemini is not configured or unavailable.")
     })

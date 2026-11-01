@@ -5,6 +5,10 @@ import java.util.List;
 public interface AiClient {
     /** Maximum number of characters allowed in an AI chat answer (and stored assistant turn). */
     int MAX_CHAT_ANSWER_LENGTH = 8_000;
+    /**
+     * @deprecated Use {@link #generateRecipeContent(String, List)} instead to capture full token telemetry.
+     */
+    @Deprecated(since = "G5", forRemoval = false)
     String generateRecipeText(String prompt, List<Long> enteredIngredientIds);
 
     default RecommendationResult generateRecipeContent(String prompt, List<Long> enteredIngredientIds) {
@@ -18,7 +22,20 @@ public interface AiClient {
     /** Classifies the latest chat request without generating a user-facing answer. */
     ChatResult classifyChatScope(String systemInstruction, String prompt);
 
+    default ChatResult classifyChatScope(String modelId, String systemInstruction, String prompt) {
+        return classifyChatScope(systemInstruction, prompt);
+    }
+
     ChatResult answerChat(String systemInstruction, String prompt);
+    default ChatResult answerChat(String modelId, String systemInstruction, String prompt) {
+        return answerChat(systemInstruction, prompt);
+    }
+    default ChatResult planAssistantTools(String systemInstruction, String prompt) {
+        return answerChat(systemInstruction, prompt);
+    }
+    default ChatResult planAssistantTools(String modelId, String systemInstruction, String prompt) {
+        return planAssistantTools(systemInstruction, prompt);
+    }
     /** Selects an ordered sequence; IDs may repeat when the caller explicitly permits it. */
     default RecommendationResult recommendRecipeSequence(String prompt, List<Long> allowedRecipeIds, int slots) {
         return recommendRecipes(prompt, allowedRecipeIds, slots);

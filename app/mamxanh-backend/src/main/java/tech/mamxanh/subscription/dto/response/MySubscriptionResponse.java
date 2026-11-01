@@ -23,10 +23,7 @@ public record MySubscriptionResponse(
                 true,
                 null,
                 null,
-                List.of(
-                        "AI Chatbot hỗ trợ ẩm thực chay",
-                        "Gợi ý món theo nguyên liệu sẵn có"
-                )
+                List.of("Các chức năng AI theo vai trò và quyền nghiệp vụ của tài khoản")
         );
     }
 }

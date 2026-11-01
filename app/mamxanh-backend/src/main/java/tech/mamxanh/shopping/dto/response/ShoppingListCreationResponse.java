@@ -1,7 +1,8 @@
 package tech.mamxanh.shopping.dto.response;
 
-import java.util.List;
 import io.swagger.v3.oas.annotations.media.Schema;
+
+import java.util.List;
 
 /** Creation diagnostics; the checklist itself is persisted independently of its current recipe sources. */
 public record ShoppingListCreationResponse(ShoppingListResponse shoppingList,

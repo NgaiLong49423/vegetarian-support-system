@@ -60,13 +60,14 @@ class AiCookingGuideServiceTest {
     @Mock private IngredientCatalogLookupService ingredientCatalog;
     @Mock private AiClient ai;
     @Mock private ApplicationEventPublisher events;
+    @Mock private tech.mamxanh.subscription.service.AiTokenQuotaService aiQuota;
 
     private AiCookingGuideService service;
 
     @BeforeEach
     void setUp() {
         service = new AiCookingGuideService(users, preferences, recipes, ingredientCatalog, ai,
-                new JsonMapper(), events, Clock.systemUTC());
+                new JsonMapper(), events, Clock.systemUTC(), aiQuota);
         when(users.requireActiveMember()).thenReturn(new CurrentUser(MEMBER_ID, Role.CUSTOMER));
         lenient().when(preferences.getOwnPreferences()).thenReturn(profile(VegetarianType.LACTO_OVO, List.of()));
         when(recipes.getPublishedRecipe(RECIPE_ID)).thenReturn(recipe("VEGAN", ingredient(1L, "Đậu phụ")));

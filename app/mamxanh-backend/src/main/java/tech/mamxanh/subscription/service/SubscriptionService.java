@@ -1,10 +1,5 @@
 package tech.mamxanh.subscription.service;
 
-import java.time.Clock;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.security.SecureRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,17 +14,21 @@ import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.integration.payos.PayOsClient;
 import tech.mamxanh.integration.payos.dto.CreatePaymentLinkResponse;
 import tech.mamxanh.integration.payos.dto.PayOsWebhookPayload;
-import tech.mamxanh.subscription.dto.response.CheckoutResponse;
-import tech.mamxanh.subscription.dto.response.MySubscriptionResponse;
-import tech.mamxanh.subscription.dto.response.PlanResponse;
-import tech.mamxanh.subscription.dto.response.TransactionHistoryResponse;
-import tech.mamxanh.subscription.entity.PaymentStatus;
-import tech.mamxanh.subscription.entity.PaymentTransactionEntity;
-import tech.mamxanh.subscription.entity.SubscriptionEntity;
-import tech.mamxanh.subscription.entity.SubscriptionStatus;
-import tech.mamxanh.subscription.entity.SubscriptionTier;
+import tech.mamxanh.subscription.dto.response.*;
+import tech.mamxanh.subscription.entity.*;
+import tech.mamxanh.subscription.repository.AiConfigurationRepository;
+import tech.mamxanh.subscription.repository.AiCreditAdministrationRepository;
 import tech.mamxanh.subscription.repository.PaymentTransactionRepository;
 import tech.mamxanh.subscription.repository.SubscriptionRepository;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.security.SecureRandom;
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class SubscriptionService {
@@ -44,6 +43,8 @@ public class SubscriptionService {
     private final Clock clock;
     private final PaymentSettlementService settlement;
     private final PaymentOrderService orders;
+    private final AiConfigurationRepository aiConfiguration;
+    private final AiCreditAdministrationRepository aiCredit;
 
     @Autowired
     public SubscriptionService(
@@ -51,7 +52,8 @@ public class SubscriptionService {
             PaymentTransactionRepository paymentTransactionRepository,
             UserRepository userRepository,
             PayOsClient payOsClient,
-            Clock clock, PaymentSettlementService settlement, PaymentOrderService orders) {
+            Clock clock, PaymentSettlementService settlement, PaymentOrderService orders,
+            AiConfigurationRepository aiConfiguration, AiCreditAdministrationRepository aiCredit) {
         this.subscriptionRepository = subscriptionRepository;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.userRepository = userRepository;
@@ -59,6 +61,16 @@ public class SubscriptionService {
         this.clock = clock;
         this.settlement = settlement;
         this.orders = orders;
+        this.aiConfiguration = aiConfiguration;
+        this.aiCredit = aiCredit;
+    }
+
+    public SubscriptionService(SubscriptionRepository subscriptionRepository,
+            PaymentTransactionRepository paymentTransactionRepository, UserRepository userRepository,
+            PayOsClient payOsClient, Clock clock, PaymentSettlementService settlement,
+            PaymentOrderService orders, AiConfigurationRepository aiConfiguration) {
+        this(subscriptionRepository, paymentTransactionRepository, userRepository, payOsClient, clock,
+                settlement, orders, aiConfiguration, null);
     }
 
     /**
@@ -66,43 +78,49 @@ public class SubscriptionService {
      */
     @Transactional(readOnly = true)
     public List<PlanResponse> getAvailablePlans() {
+        var configuration = aiConfiguration.findConfiguration();
+        long freeQuota = aiConfiguration.currentFreeQuota(clock.instant());
         return List.of(
-                new PlanResponse(
-                        "FREE",
-                        0,
-                        "Gói FREE",
-                        "Gói trải nghiệm mặc định dành cho mọi tài khoản",
-                        List.of(
-                                "AI Chatbot hỗ trợ ẩm thực chay",
-                                "Gợi ý món theo nguyên liệu sẵn có"
-                        ),
-                        "Không thời hạn"
-                ),
-                new PlanResponse(
-                        SubscriptionTier.PLUS.name(),
-                        SubscriptionTier.PLUS.priceVnd(),
-                        SubscriptionTier.PLUS.displayName(),
-                        SubscriptionTier.PLUS.description(),
-                        List.of(
-                                "Toàn bộ quyền lợi gói FREE",
-                                "AI lập thực đơn tuần 7 ngày",
-                                "AI lập thực đơn theo dinh dưỡng cá nhân"
-                        ),
-                        "Tháng (không tự động gia hạn)"
-                ),
-                new PlanResponse(
-                        SubscriptionTier.PRO.name(),
-                        SubscriptionTier.PRO.priceVnd(),
-                        SubscriptionTier.PRO.displayName(),
-                        SubscriptionTier.PRO.description(),
-                        List.of(
-                                "Toàn bộ quyền lợi gói PLUS",
-                                "AI hỗ trợ soạn bài viết và công thức",
-                                "AI gợi ý biến tấu món chay sáng tạo"
-                        ),
-                        "Tháng (không tự động gia hạn)"
-                )
+                plan(configuration, "FREE", freeQuota, "Gói miễn phí với hạn mức AI hàng tháng"),
+                plan(configuration, "PLUS", null, "Thêm ngân sách AI hàng tháng cho tài khoản của bạn"),
+                plan(configuration, "PRO", null, "Ngân sách AI hàng tháng cao hơn cho tài khoản của bạn")
         );
+    }
+
+    private static PlanResponse plan(tech.mamxanh.subscription.entity.AiConfigurationSnapshot configuration,
+            String tier, Long overrideQuota, String description) {
+        var configured = configuration.plans().stream().filter(value -> value.tier().equals(tier)).findFirst()
+                .orElseThrow(() -> new IllegalStateException("AI plan configuration missing: " + tier));
+        long quota = overrideQuota == null ? configured.tokenQuota() : overrideQuota;
+        List<String> features = features(configuration, tier, quota);
+        String name = switch (tier) { case "FREE" -> "FREE"; case "PLUS" -> "PLUS"; default -> "PRO"; };
+        return new PlanResponse(tier, "FREE".equals(tier) ? 0 : configured.priceVnd(), name,
+                description, features, "FREE".equals(tier)
+                        ? "Tháng dương lịch" : "Mỗi tháng trong chu kỳ gói; không tự động gia hạn");
+    }
+
+    private static List<String> features(tech.mamxanh.subscription.entity.AiConfigurationSnapshot configuration,
+            String tier, long quota) {
+        List<String> features = new java.util.ArrayList<>();
+        features.add("Các chức năng AI theo vai trò và quyền nghiệp vụ của tài khoản");
+        features.add("Hạn mức " + String.format(java.util.Locale.forLanguageTag("vi-VN"), "%,d", quota) + " token mỗi tháng");
+        var allowedModels = configuration.models().stream().filter(model -> model.enabled())
+                .filter(model -> switch (tier) {
+                    case "FREE" -> model.freeAllowed();
+                    case "PLUS" -> model.plusAllowed();
+                    case "PRO" -> model.proAllowed();
+                    default -> false;
+                }).toList();
+        String modelNames = allowedModels.stream().map(model -> model.displayName()
+                + (switch (tier) {
+                    case "FREE" -> model.freeDefault();
+                    case "PLUS" -> model.plusDefault();
+                    case "PRO" -> model.proDefault();
+                    default -> false;
+                } ? " (mặc định)" : "")).collect(java.util.stream.Collectors.joining(", "));
+        if (!modelNames.isBlank()) features.add("Model Gemini: " + modelNames);
+        features.add("Có thể dùng AI Credit để tiếp tục khi vượt hạn mức tháng");
+        return List.copyOf(features);
     }
 
     /**
@@ -118,10 +136,16 @@ public class SubscriptionService {
         payOsClient.validateCheckoutConfiguration();
 
         long orderCode = generateOrderCode();
-        int amount = tier.priceVnd();
+        var configuredPlan = aiConfiguration.findConfiguration().plans().stream()
+                .filter(plan -> plan.tier().equals(tier.name())).findFirst()
+                .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_RESPONSE_INVALID));
+        int amount = configuredPlan.priceVnd();
+        if (amount <= 0) throw new AppException(ErrorCode.VALIDATION_FAILED, "Gói trả phí phải có giá lớn hơn 0đ.");
         String description = "Nang cap " + tier.name();
 
         PaymentTransactionEntity transaction = new PaymentTransactionEntity(user.getId(), String.valueOf(orderCode), amount);
+        transaction.setSubscriptionTier(tier);
+        transaction.setTokenQuotaSnapshot(configuredPlan.tokenQuota());
         transaction.setCreatedAt(LocalDateTime.now(clock));
         orders.create(transaction);
 
@@ -142,6 +166,46 @@ public class SubscriptionService {
         );
     }
 
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
+    public CreditCheckoutResponse createCreditCheckout(Long userId, int amountVnd) {
+        User user = validateActiveMember(userId);
+        var rate = aiConfiguration.findConfiguration().credit();
+        if (amountVnd < rate.minimumTopUpVnd() || amountVnd > rate.maximumTopUpVnd()) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED,
+                    "Số tiền nạp phải từ " + rate.minimumTopUpVnd() + " đến " + rate.maximumTopUpVnd() + " VND.");
+        }
+        payOsClient.validateCheckoutConfiguration();
+        BigDecimal credits = rate.creditsPer1000Vnd().multiply(BigDecimal.valueOf(amountVnd))
+                .divide(BigDecimal.valueOf(1000), 9, RoundingMode.HALF_UP).stripTrailingZeros();
+        long orderCode = generateOrderCode();
+        LocalDateTime now = LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC);
+        LocalDateTime expiresAt = now.plusMinutes(15);
+        PaymentTransactionEntity payment = new PaymentTransactionEntity(user.getId(), String.valueOf(orderCode), amountVnd);
+        payment.setCreatedAt(now);
+        payment.setProductType(PaymentTransactionEntity.ProductType.AI_CREDIT);
+        payment.setCreditAmountSnapshot(credits);
+        payment.setCreditsPer1000VndSnapshot(rate.creditsPer1000Vnd());
+        payment.setExpiresAt(expiresAt);
+        orders.create(payment);
+
+        CreatePaymentLinkResponse link = payOsClient.createPaymentLink(orderCode, amountVnd, "Nap AI Credit",
+                Math.toIntExact(expiresAt.toEpochSecond(ZoneOffset.UTC)));
+        if (link == null || !link.isSuccess() || link.data() == null) {
+            orders.markFailed(payment.getOrderCode());
+            throw new AppException(ErrorCode.INTERNAL_ERROR, "Không thể khởi tạo liên kết nạp AI Credit. Vui lòng thử lại sau.");
+        }
+        return new CreditCheckoutResponse(orderCode, amountVnd, credits, rate.creditsPer1000Vnd(), expiresAt,
+                link.data().checkoutUrl(), link.data().qrCode());
+    }
+
+    @Transactional(readOnly = true)
+    public MyAiCreditResponse getMyAiCredit(Long userId) {
+        validateActiveMember(userId);
+        var credit = aiConfiguration.findConfiguration().credit();
+        return new MyAiCreditResponse(aiCredit.balance(userId), credit.creditsPer1000Vnd(),
+                credit.minimumTopUpVnd(), credit.maximumTopUpVnd());
+    }
+
     /**
      * Handles payOS webhook IPN callback.
      * Enforces AC-13.2, AC-13.3 (idempotency), AC-13.5 (signature & amount validation), AC-13.6 (cancelled/failed).
@@ -156,7 +220,8 @@ public class SubscriptionService {
         if (!"VND".equals(payload.data().get("currency"))
                 || !(payload.data().get("code") instanceof String signedCode) || signedCode.isBlank()) throw new AppException(ErrorCode.PAYMENT_SIGNATURE_INVALID);
         settlement.settle(String.valueOf(orderCode), amount,
-                payload.isPaymentSuccess() ? PaymentStatus.PAID : PaymentStatus.CANCELLED);
+                payload.isPaymentSuccess() ? PaymentStatus.PAID : PaymentStatus.CANCELLED,
+                payload.getTransactionAtUtc());
     }
 
     /**
@@ -170,7 +235,7 @@ public class SubscriptionService {
                 userId, SubscriptionStatus.ACTIVE);
 
         if (activeSubOpt.isEmpty()) {
-            return MySubscriptionResponse.free();
+            return freeSubscription();
         }
 
         SubscriptionEntity sub = activeSubOpt.get();
@@ -182,28 +247,13 @@ public class SubscriptionService {
             sub.setUpdatedAt(now);
             subscriptionRepository.save(sub);
             log.info("Subscription for user {} expired at {}. Reverting to FREE.", userId, sub.getEndsAt());
-            return MySubscriptionResponse.free();
+            return freeSubscription();
         }
 
         // Match the AI guard's starts_at <= now < ends_at window without cancelling a future period.
-        if (!sub.isActiveAt(now)) return MySubscriptionResponse.free();
+        if (!sub.isActiveAt(now)) return freeSubscription();
 
-        // AC-13.7: Display paid plan and expiration date
-        List<String> unlockedFeatures = (sub.getTier() == SubscriptionTier.PRO)
-                ? List.of(
-                        "AI Chatbot hỗ trợ ẩm thực chay",
-                        "Gợi ý món theo nguyên liệu sẵn có",
-                        "AI hỗ trợ soạn bài viết và công thức",
-                        "AI gợi ý biến tấu món chay sáng tạo",
-                        "AI lập thực đơn tuần 7 ngày",
-                        "AI lập thực đơn theo dinh dưỡng cá nhân"
-                )
-                : List.of(
-                        "AI Chatbot hỗ trợ ẩm thực chay",
-                        "Gợi ý món theo nguyên liệu sẵn có",
-                        "AI lập thực đơn tuần 7 ngày",
-                        "AI lập thực đơn theo dinh dưỡng cá nhân"
-                );
+        List<String> unlockedFeatures = planFeatures(sub.getTier().name(), sub.getTokenQuota());
 
         return new MySubscriptionResponse(
                 sub.getTier().name(),
@@ -213,6 +263,17 @@ public class SubscriptionService {
                 sub.getEndsAt(),
                 unlockedFeatures
         );
+    }
+
+    private MySubscriptionResponse freeSubscription() {
+        return new MySubscriptionResponse("FREE", "ACTIVE", true, null, null,
+                planFeatures("FREE", null));
+    }
+
+    private List<String> planFeatures(String tier, Long quotaSnapshot) {
+        var configuration = aiConfiguration.findConfiguration();
+        long quota = quotaSnapshot == null ? aiConfiguration.currentFreeQuota(clock.instant()) : quotaSnapshot;
+        return features(configuration, tier, quota);
     }
 
     @Transactional(readOnly = true)
@@ -234,11 +295,15 @@ public class SubscriptionService {
                         tx.getStatus().name(),
                         tx.getCreatedAt(),
                         tx.getPaidAt(),
-                        tx.getAmountVnd() == SubscriptionTier.PRO.priceVnd() ? "PRO"
-                                : tx.getAmountVnd() == SubscriptionTier.PLUS.priceVnd() ? "PLUS" : null,
+                        tx.getProductType() == PaymentTransactionEntity.ProductType.AI_CREDIT ? null
+                                : tx.getSubscriptionTier() != null ? tx.getSubscriptionTier().name()
+                                : tx.getAmountVnd() == 99_000 ? "PRO"
+                                : tx.getAmountVnd() == 49_000 ? "PLUS" : null,
                         tx.getStatus() == PaymentStatus.PAID && tx.getSubscriptionId() != null
                                 && purchasedSubscriptions.containsKey(tx.getSubscriptionId())
-                                ? purchasedSubscriptions.get(tx.getSubscriptionId()).getEndsAt() : null
+                                ? purchasedSubscriptions.get(tx.getSubscriptionId()).getEndsAt() : null,
+                        tx.getProductType(), tx.getCreditAmountSnapshot(), tx.getExpiresAt(),
+                        tx.getCreditsPer1000VndSnapshot()
                 ))
                 .toList();
     }
