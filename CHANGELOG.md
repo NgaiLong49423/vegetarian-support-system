@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-11-02 — Migrate Business AI Flows to Google ADK (Gate G5)
 
-**Status:** Committed — PENDING_HASH.
+**Status:** Committed — `3f52906b`.
 
 **Scope:** Unify all business generation and classification AI capabilities under the Google ADK Java Runtime without adding a secondary orchestration engine or microservice.
 
