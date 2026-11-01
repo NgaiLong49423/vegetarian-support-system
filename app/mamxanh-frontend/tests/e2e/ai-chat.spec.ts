@@ -343,3 +343,167 @@ test('recipe detail opens the same chat with recipe title and ID context', async
   await expect(page.getByText('Bài viết hướng dẫn kho đậu hũ.')).toBeVisible();
   expect(chatRequest).toMatchObject({ contextType: 'RECIPE', recipeId: 42 });
 });
+
+test('G3 ADK pilot UI handles Shopping List consent, preview, confirmation, truthful steps, and consent revoke', async ({ page }) => {
+  await signInAsMember(page, 'CUSTOMER');
+  const requests: Array<Record<string, unknown>> = [];
+  const sessionId = '44444444-4444-4444-8444-444444444444';
+  const confirmationId = '55555555-5555-4555-8555-555555555555';
+
+  await page.route('**/api/v1/recipes/ai/chat', async (route) => {
+    const body = route.request().postDataJSON() as Record<string, unknown>;
+    requests.push(body);
+    expect(typeof body.clientRequestId).toBe('string');
+    expect(body.clientRequestId).toMatch(/^[a-f0-9-]{36}$/i);
+
+    if (requests.length === 1) {
+      await route.fulfill({
+        json: {
+          contextType: 'GENERAL',
+          recipeId: null,
+          answer: 'Để xử lý yêu cầu về danh sách mua sắm, vui lòng xác nhận cho phép Mâm Xanh gửi nội dung yêu cầu liên quan tới Google Gemini.',
+          sessionId,
+          executionMode: 'CONFIRM',
+          engine: 'ADK_SHOPPING_PILOT',
+          runStatus: 'AWAITING_CONSENT',
+          knowledgeRevision: 'g3-pilot-1',
+          steps: [],
+          consentRequest: {
+            recipient: 'Google Gemini',
+            scopes: [
+              { category: 'SHOPPING_LIST', purpose: 'AI_CHAT' },
+              { category: 'SHOPPING_LIST', purpose: 'SHOPPING_LIST_READ' },
+              { category: 'SHOPPING_LIST', purpose: 'SHOPPING_LIST_WRITE' },
+            ],
+          },
+          sources: [],
+        },
+      });
+      return;
+    }
+
+    if (requests.length === 2) {
+      await route.fulfill({
+        json: {
+          contextType: 'GENERAL',
+          recipeId: null,
+          answer: 'Mình đã chuẩn bị tạo danh sách mua sắm rỗng "Đi chợ cuối tuần". Vui lòng kiểm tra tên danh sách và nhấn Xác nhận thay đổi.',
+          sessionId,
+          executionMode: 'CONFIRM',
+          engine: 'ADK_SHOPPING_PILOT',
+          runStatus: 'AWAITING_CONFIRMATION',
+          knowledgeRevision: 'g3-pilot-1',
+          steps: [
+            { sequence: 1, tool: 'search_business_knowledge', status: 'SUCCEEDED', summary: 'Đã tra cứu hướng dẫn nội bộ G3 (hybrid).' },
+            { sequence: 2, tool: 'get_business_knowledge', status: 'SUCCEEDED', summary: 'Đã đọc tài liệu hướng dẫn shopping-create@2.0.0.' },
+            {
+              sequence: 3,
+              tool: 'create_shopping_list',
+              status: 'AWAITING_CONFIRMATION',
+              summary: 'Cần xác nhận trước khi tạo danh sách mua sắm rỗng "Đi chợ cuối tuần".',
+              result: { preview: { name: 'Đi chợ cuối tuần' } },
+            },
+          ],
+          pendingConfirmation: {
+            confirmationId,
+            summary: 'Tạo danh sách mua sắm rỗng "Đi chợ cuối tuần"',
+            proposedListName: 'Đi chợ cuối tuần',
+          },
+          sources: [{ id: 'shopping-create', title: 'Tạo danh sách mua sắm rỗng và đọc lại kết quả (G3)', version: '2.0.0' }],
+        },
+      });
+      return;
+    }
+
+    if (requests.length === 3) {
+      await route.fulfill({
+        json: {
+          contextType: 'GENERAL',
+          recipeId: null,
+          answer: 'Đã tạo danh sách mua sắm rỗng "Đi chợ cuối tuần" (ID #1001) và đọc lại từ hệ thống: danh sách #1001 ("Đi chợ cuối tuần") hiện có 0 mục.',
+          sessionId,
+          executionMode: 'CONFIRM',
+          engine: 'ADK_SHOPPING_PILOT',
+          runStatus: 'COMPLETED',
+          knowledgeRevision: 'g3-pilot-1',
+          steps: [
+            {
+              sequence: 1,
+              tool: 'create_shopping_list',
+              status: 'SUCCEEDED',
+              summary: 'Đã tạo danh sách mua sắm rỗng "Đi chợ cuối tuần" (ID #1001).',
+              result: { id: 1001, name: 'Đi chợ cuối tuần', itemCount: 0, status: 'SUCCEEDED' },
+            },
+            {
+              sequence: 2,
+              tool: 'get_shopping_list',
+              status: 'SUCCEEDED',
+              summary: 'Đã đọc lại danh sách mua sắm "Đi chợ cuối tuần" (ID #1001, 0 mục).',
+              result: { id: 1001, name: 'Đi chợ cuối tuần', itemCount: 0 },
+            },
+          ],
+          sources: [{ id: 'shopping-create', title: 'Tạo danh sách mua sắm rỗng và đọc lại kết quả (G3)', version: '2.0.0' }],
+        },
+      });
+      return;
+    }
+
+    await route.fulfill({
+      json: {
+        contextType: 'GENERAL',
+        recipeId: null,
+        answer: 'Đã thu hồi đồng ý sử dụng dữ liệu danh sách mua sắm, hủy thao tác đang chờ và xóa ngữ cảnh danh sách mua sắm khỏi phiên.',
+        sessionId,
+        executionMode: 'CONFIRM',
+        engine: 'ADK_SHOPPING_PILOT',
+        runStatus: 'CONSENT_REVOKED',
+        knowledgeRevision: 'g3-pilot-1',
+        steps: [],
+        sources: [],
+      },
+    });
+  });
+
+  await page.goto('/trang-chu');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Hãy tạo danh sách mua sắm rỗng tên là Đi chợ cuối tuần');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+
+  await expect(page.getByText('Cho phép dùng dữ liệu cá nhân?')).toBeVisible();
+  await expect(page.getByText('danh sách mua sắm (nội dung yêu cầu, tên, ID và kết quả danh sách — mục đích tìm hướng dẫn và điều phối)')).toBeVisible();
+  await page.getByRole('button', { name: 'Đồng ý và tiếp tục' }).click();
+
+  await expect(page.getByText('Xem lại trước khi thực hiện')).toBeVisible();
+  await expect(page.getByText('Tên danh sách dự kiến: “Đi chợ cuối tuần”')).toBeVisible();
+  await expect(page.getByText('Danh sách mua sắm · thử nghiệm').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Xác nhận thay đổi' }).click();
+
+  await expect(page.getByText('Đã tạo danh sách mua sắm rỗng "Đi chợ cuối tuần" (ID #1001) và đọc lại từ hệ thống', { exact: false })).toBeVisible();
+  await expect(page.getByText(/^1\. Tạo danh sách mua sắm/).last()).toBeVisible();
+  await expect(page.getByText(/^2\. Đọc lại danh sách mua sắm/).last()).toBeVisible();
+
+  await page.getByRole('button', { name: 'Thu hồi đồng ý dữ liệu' }).last().click();
+  await expect(page.getByText('Đã thu hồi đồng ý sử dụng dữ liệu danh sách mua sắm', { exact: false })).toBeVisible();
+
+  expect(requests).toHaveLength(4);
+  expect(requests[1].consentDecision).toMatchObject({ action: 'GRANT' });
+  expect(requests[2]).toMatchObject({ confirmationId, confirmationDecision: 'APPROVE' });
+  expect(requests[3].consentDecision).toMatchObject({ action: 'REVOKE' });
+});
+
+test('G3 chat disconnect or failure does not auto-retry create request', async ({ page }) => {
+  await signInAsMember(page, 'CUSTOMER');
+  let postAttempts = 0;
+  await page.route('**/api/v1/recipes/ai/chat', async (route) => {
+    postAttempts += 1;
+    await route.abort('failed');
+  });
+
+  await page.goto('/trang-chu');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Hãy tạo danh sách mua sắm rỗng tên là Bữa trưa thanh đạm');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+
+  await expect(page.getByRole('dialog').getByRole('alert')).toContainText('Dịch vụ trả lời đang gặp sự cố');
+  expect(postAttempts).toBe(1);
+});

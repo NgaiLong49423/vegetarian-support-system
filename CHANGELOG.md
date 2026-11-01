@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.143.0
+> **Version:** v2.143.2
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-11-01
 > **Status:** Active
@@ -9,9 +9,32 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-11-01 — Add Opt-In ADK Shopping List Chat Pilot
+
+**Status:** Committed — `67eacd04`.
+
+**Scope:** Connect local Member chat to native ADK, G3 hybrid knowledge and existing Shopping List services, preserving default routing.
+
+### Added
+
+- Add shared Customer/Expert Shopping List consent, QA previews, native confirmation, AUTO guards and real-ID create/read sequencing.
+- Add call-start accounting snapshots, transactional quota-to-Credit completion, exact system-absorbed Credit migration V39 and a cumulative live-evaluation budget guard.
+- Add native fault/authorization tests, SQL accounting/ownership tests and isolated real-stack live/browser scenarios.
+
+### Changed
+
+- Extend chat metadata and legacy-compatible request identifiers; show source versions, proposed names and Backend step results, with a 35-second HTTP deadline.
+- Add a separate G3 corpus/index revision using embedding-2/768, preserving G2.
+- Clarify exhausted-budget checks before writes and Shopping List consent, including query embeddings.
+
+### Fixed
+
+- Preserve sources across clarification/cancellation, reject forged history and stale/foreign actions, and prevent duplicate creates or incorrect read-back IDs.
+- Preserve committed create results on later failure and roll back usage with Credit when accounting persistence fails.
+
 ## 2026-11-01 — Implement AI Agent Knowledge Base and Behavioral Policies
 
-**Status:** Committed — c87a3c8b.
+**Status:** Committed — 900d000f.
 
 **Scope:** Packaged business knowledge base, core behavioral policies, and dynamic classpath prompt loader for Mâm Xanh AI Agent.
 

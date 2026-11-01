@@ -20,6 +20,7 @@ public final class HybridKnowledgeRetriever implements AutoCloseable {
     private final KnowledgeCatalog catalog;
     private final KnowledgeIndex index;
     private final Embedder embedder;
+    private final java.util.function.Consumer<String> embeddingGuard;
     private final Clock clock;
     private Instant expires;
     private boolean closed;
@@ -27,7 +28,15 @@ public final class HybridKnowledgeRetriever implements AutoCloseable {
     private final List<Map<String, Long>> terms;
 
     public HybridKnowledgeRetriever(KnowledgeCatalog catalog, KnowledgeIndex index, Embedder embedder, Clock clock) {
-        this.catalog = catalog; this.embedder = embedder; this.clock = clock;
+        this(catalog, index, embedder, query -> { }, clock);
+    }
+
+    public HybridKnowledgeRetriever(KnowledgeCatalog catalog, KnowledgeIndex index, Embedder embedder,
+            java.util.function.Consumer<String> embeddingGuard, Clock clock) {
+        this.catalog = catalog;
+        this.embedder = embedder;
+        this.embeddingGuard = embeddingGuard == null ? query -> { } : embeddingGuard;
+        this.clock = clock;
         KnowledgeIndex valid = null;
         try { if (index != null) valid = index.validate(catalog,
                 embedder == null ? index.config() : embedder.configuration().orElse(index.config())); }
@@ -47,6 +56,7 @@ public final class HybridKnowledgeRetriever implements AutoCloseable {
             Cached cached = cache.get(key);
             List<Double> vector;
             if (cached == null) {
+                embeddingGuard.accept(query);
                 vector = KnowledgeIndex.normalize(embedder.embed(query, "", true), index.config().dimension());
                 if (cache.size() >= 128) cache.clear();
                 cache.put(key, new Cached(vector, expires));
@@ -57,6 +67,8 @@ public final class HybridKnowledgeRetriever implements AutoCloseable {
             var scores = new HashMap<String, Double>();
             addRrf(scores, keyword); addRrf(scores, semantic);
             return result(sorted(scores), "hybrid", "OK");
+        } catch (SecurityException unconsented) {
+            throw unconsented;
         } catch (RuntimeException unavailable) {
             return result(keyword, "keyword_degraded", "EMBEDDING_UNAVAILABLE");
         }
@@ -109,6 +121,11 @@ public final class HybridKnowledgeRetriever implements AutoCloseable {
         return new Result(hits.isEmpty() && !status.equals("keyword_degraded") ? "no_match" : status, reason, List.copyOf(hits));
     }
     public synchronized KnowledgeCatalog.Document get(String id) { checkSession(); return catalog.document(id); }
+    /** Called only after the owning Backend session has validated activity and ownership. */
+    public synchronized void touch() {
+        checkSession();
+        expires = clock.instant().plus(Duration.ofMinutes(30));
+    }
     private void checkSession() {
         if (closed || !expires.isAfter(clock.instant())) { cache.clear(); throw new IllegalStateException("Knowledge session expired"); }
     }

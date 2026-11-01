@@ -43,6 +43,8 @@
 --                   + V35__add_user_preferred_ai_model.sql
 --                   + V36__ai_credit_wallet_ledger.sql
 --                   + V37__admin_ai_entitlement_audit.sql — AI package gift history
+--                   + V38__ai_credit_top_up_orders.sql
+--                   + V39__ai_credit_ledger_absorbed_credits.sql
 --                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
@@ -1402,5 +1404,43 @@ CREATE TABLE AI_CREDIT_CONFIGURATION (
 INSERT INTO AI_CREDIT_CONFIGURATION
     (configuration_id, credits_per_1000_vnd, credits_per_1000_overage_tokens, minimum_top_up_vnd, maximum_top_up_vnd)
 VALUES (1, 1000, 400, 10000, 500000);
+
+GO
+
+
+CREATE TABLE AI_CREDIT_WALLET (
+    user_id BIGINT NOT NULL,
+    balance DECIMAL(38,9) NOT NULL CONSTRAINT DF_AI_CREDIT_WALLET_balance DEFAULT 0,
+    updated_at DATETIME2(7) NOT NULL CONSTRAINT DF_AI_CREDIT_WALLET_updated_at DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT PK_AI_CREDIT_WALLET PRIMARY KEY (user_id),
+    CONSTRAINT FK_AI_CREDIT_WALLET_USER FOREIGN KEY (user_id) REFERENCES [USER](user_id),
+    CONSTRAINT CK_AI_CREDIT_WALLET_nonnegative CHECK (balance >= 0)
+);
+
+CREATE TABLE AI_CREDIT_LEDGER (
+    transaction_id BIGINT IDENTITY(1,1) NOT NULL,
+    user_id BIGINT NOT NULL,
+    transaction_type VARCHAR(20) NOT NULL,
+    reference_id NVARCHAR(100) NOT NULL,
+    credit_delta DECIMAL(38,9) NOT NULL,
+    balance_after DECIMAL(38,9) NOT NULL,
+    overage_tokens BIGINT NULL,
+    credits_per_1000_tokens BIGINT NULL,
+    system_absorbed_tokens BIGINT NULL,
+    system_absorbed_credits DECIMAL(38,9) NULL,
+    granted_by_user_id BIGINT NULL,
+    reason NVARCHAR(500) NULL,
+    created_at DATETIME2(7) NOT NULL CONSTRAINT DF_AI_CREDIT_LEDGER_created_at DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT PK_AI_CREDIT_LEDGER PRIMARY KEY (transaction_id),
+    CONSTRAINT FK_AI_CREDIT_LEDGER_USER FOREIGN KEY (user_id) REFERENCES [USER](user_id),
+    CONSTRAINT FK_AI_CREDIT_LEDGER_GRANTOR FOREIGN KEY (granted_by_user_id) REFERENCES [USER](user_id),
+    CONSTRAINT UQ_AI_CREDIT_LEDGER_reference UNIQUE (transaction_type, reference_id),
+    CONSTRAINT CK_AI_CREDIT_LEDGER_type CHECK (transaction_type IN ('TOP_UP','ADMIN_GRANT','OVERAGE')),
+    CONSTRAINT CK_AI_CREDIT_LEDGER_balance CHECK (balance_after >= 0),
+    CONSTRAINT CK_AI_CREDIT_LEDGER_absorbed_credits CHECK (
+        system_absorbed_credits IS NULL OR system_absorbed_credits >= 0)
+);
+
+CREATE INDEX IX_AI_CREDIT_LEDGER_user_created ON AI_CREDIT_LEDGER(user_id, created_at DESC, transaction_id DESC);
 
 GO

@@ -1,6 +1,6 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.59.0
+> **Version:** v2.60.0
 > **Created:** 2026-09-14
 > **Last Updated:** 2026-11-01
 > **Status:** Active
@@ -3992,7 +3992,7 @@ Trang này là cách duyệt trực tiếp từ điển nguyên liệu hiện c�
   - AC-63.1: Guest được tối đa 20.000 token mỗi phiên, đồng thời giữ rate limit hiện hành; hết quota bị chặn và được mời đăng ký.
   - AC-63.2: Quota khởi đầu Free 50.000/tháng, Plus 300.000/tháng, Pro 600.000/tháng; paid cycle bắt đầu lúc kích hoạt/gia hạn, Free có chu kỳ tháng riêng; quota tháng không cộng dồn.
   - AC-63.3: Token từ mọi lần gọi model phục vụ người dùng thành công được cộng đúng một lần; lỗi provider không trừ ngân sách người dùng. Indexing và query embedding cho knowledge retrieval là chi phí vận hành hệ thống, không cộng vào usage/quota/Credit người dùng; operational usage được theo dõi riêng theo BR-03/04.
-  - AC-63.4: Hết quota và không đủ Credit thì dừng trước lần gọi model kế tiếp, báo trạng thái từng bước và yêu cầu bổ sung ngân sách để tiếp tục.
+  - AC-63.4: Hết cả quota và Credit thì dừng trước lần gọi model kế tiếp và business write chưa bắt đầu, kể cả model vừa trả yêu cầu ghi. Báo từng bước, giữ bước đã commit; pending write phải được duyệt lại sau khi bổ sung ngân sách.
   - AC-63.5: Member có trang xem chính xác gói, token đã dùng/còn lại, ngày reset, Credit balance và mức Credit đã dùng; không lộ dữ liệu tài khoản khác.
   - AC-63.6: Response rỗng, sai cấu trúc hoặc bị chặn khiến Backend không thể sử dụng được là lượt lỗi và không trừ quota/Credit; từ chối hợp lệ về nội dung là kết quả sử dụng được. Backend vẫn tính lượt thành công đã xác minh dù client đã ngắt kết nối. Nếu metadata token thiếu/không hợp lệ, vẫn trả response nhưng đánh dấu usage chưa ghi nhận, không ước lượng hoặc trừ ngân sách.
   - AC-63.7: Lượt bắt đầu trước reset/nâng gói được ghi vào chu kỳ đã xác định lúc bắt đầu dù hoàn tất sau đó. Chi tiết mỗi lượt được giữ 90 ngày sau khi chu kỳ kết thúc; lịch sử giao dịch Credit được giữ trong thời gian tài khoản tồn tại.
@@ -4054,7 +4054,7 @@ Trang này là cách duyệt trực tiếp từ điển nguyên liệu hiện c�
   - AC-66.3: Đăng Recipe Post và xóa vĩnh viễn luôn yêu cầu xác nhận rõ, bất kể mode; backend vẫn kiểm tra quyền và business validation.
   - AC-66.4: Form hiện có chỉ được ghi đè trường cần thiết theo yêu cầu rõ; UI báo các trường đã thay đổi.
   - AC-66.5: AI chỉ mở trang mua gói/nạp và hướng dẫn trang bảo mật tài khoản; không tự thanh toán, không nhập bí mật.
-  - AC-66.6: Personal data chỉ gửi tới Gemini sau consent; consent có hiệu lực trong hội thoại đến hết session/thu hồi và xin lại khi đổi loại dữ liệu, mục đích hoặc bên nhận.
+  - AC-66.6: Personal data chỉ gửi tới Gemini sau consent; consent có hiệu lực trong hội thoại đến hết session/thu hồi và xin lại khi đổi loại dữ liệu, mục đích hoặc bên nhận. Scope Shopping List bao gồm nội dung yêu cầu liên quan, tên, ID và kết quả; mục đích tìm hướng dẫn/điều phối, bên nhận Google Gemini, áp dụng cả trước query embedding có dữ liệu này. Consent tách khỏi confirmation ghi. Thu hồi chặn các lần gửi/bước ghi tiếp theo, hủy pending và loại context nhạy cảm khỏi session.
   - AC-66.7: Tác vụ nhiều bước lỗi hoặc hết ngân sách thì dừng, giữ bước thành công, báo từng bước và hỏi trước khi tiếp tục.
   - AC-66.8: Model thay thế sau lỗi chỉ được dùng sau khi người dùng đồng ý; model phải được phép theo gói.
   - AC-66.9: Không cung cấp công cụ Admin cho AI Assistant; mọi thao tác thực tế tuân theo RBAC, ownership, validation và backend result.

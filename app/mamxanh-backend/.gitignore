@@ -1,5 +1,6 @@
 HELP.md
 target/
+.g3-evaluation/
 data/ai-telemetry/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/

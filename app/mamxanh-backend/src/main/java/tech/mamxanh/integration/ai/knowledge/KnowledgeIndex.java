@@ -59,7 +59,15 @@ public record KnowledgeIndex(int schema, String revision, String indexRevision, 
         return value;
     }
     public static Optional<KnowledgeIndex> packaged(KnowledgeCatalog catalog, Config expected) {
-        try (var input = KnowledgeIndex.class.getResourceAsStream("/ai-knowledge/index.json")) {
+        return packaged("/ai-knowledge/index.json", catalog, expected);
+    }
+
+    public static Optional<KnowledgeIndex> packagedG3(KnowledgeCatalog catalog, Config expected) {
+        return packaged("/ai-knowledge/g3/index.json", catalog, expected);
+    }
+
+    public static Optional<KnowledgeIndex> packaged(String resourcePath, KnowledgeCatalog catalog, Config expected) {
+        try (var input = KnowledgeIndex.class.getResourceAsStream(resourcePath)) {
             if (input == null) return Optional.empty();
             return Optional.of(new ObjectMapper().readValue(input.readAllBytes(), KnowledgeIndex.class).validate(catalog, expected));
         } catch (Exception invalid) { return Optional.empty(); }

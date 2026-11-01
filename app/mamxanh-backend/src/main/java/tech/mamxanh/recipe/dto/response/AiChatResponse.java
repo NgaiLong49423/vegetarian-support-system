@@ -25,17 +25,34 @@ public record AiChatResponse(ContextType contextType,
         List<AssistantStep> steps,
         ConsentRequest consentRequest,
         PendingConfirmation pendingConfirmation,
-        List<Source> sources) {
+        List<Source> sources,
+        @Schema(description = "Active chat engine for this session (LEGACY_ASSISTANT or ADK_SHOPPING_PILOT).") String engine,
+        @Schema(description = "Overall run status (COMPLETED, AWAITING_CONSENT, AWAITING_INPUT, AWAITING_CONFIRMATION, PARTIAL_FAILURE, REJECTED, FAILED).") String runStatus,
+        @Schema(description = "Session inactivity expiration timestamp.") Instant sessionExpiresAt,
+        @Schema(description = "Knowledge catalog/index revision used by the pilot.") String knowledgeRevision) {
 
     public AiChatResponse(ContextType contextType, Long recipeId, String answer, List<RecipeRecommendation> recommendations) {
         this(contextType, recipeId, answer, recommendations, null, null, ExecutionMode.CONFIRM,
-                null, List.of(), null, null, List.of());
+                null, List.of(), null, null, List.of(), "LEGACY_ASSISTANT", "COMPLETED", null, null);
     }
 
     public AiChatResponse(ContextType contextType, Long recipeId, String answer,
             List<RecipeRecommendation> recommendations, String workflowUrl) {
         this(contextType, recipeId, answer, recommendations, workflowUrl, null, ExecutionMode.CONFIRM,
-                null, List.of(), null, null, List.of());
+                null, List.of(), null, null, List.of(), "LEGACY_ASSISTANT", "COMPLETED", null, null);
+    }
+
+    public AiChatResponse(ContextType contextType, Long recipeId, String answer,
+            List<RecipeRecommendation> recommendations, String workflowUrl, UUID sessionId,
+            ExecutionMode executionMode, UUID runId, List<AssistantStep> steps,
+            ConsentRequest consentRequest, PendingConfirmation pendingConfirmation, List<Source> sources) {
+        this(contextType, recipeId, answer, recommendations, workflowUrl, sessionId, executionMode,
+                runId, steps, consentRequest, pendingConfirmation, sources,
+                "LEGACY_ASSISTANT",
+                consentRequest != null ? "AWAITING_CONSENT"
+                        : pendingConfirmation != null ? "AWAITING_CONFIRMATION"
+                        : steps != null && steps.stream().anyMatch(s -> "FAILED".equals(s.status())) ? "FAILED" : "COMPLETED",
+                null, null);
     }
 
     @Override
@@ -50,7 +67,18 @@ public record AiChatResponse(ContextType contextType,
     public record ConsentRequest(List<ConsentScope> scopes, String recipient) { }
 
     public record PendingConfirmation(UUID confirmationId, String summary, Instant expiresAt,
-            boolean requiresExplicitConfirmation) { }
+            boolean requiresExplicitConfirmation,
+            @Schema(description = "Preview of the normalized Shopping List name pending confirmation.") String proposedListName) {
+        public PendingConfirmation(UUID confirmationId, String summary, Instant expiresAt,
+                boolean requiresExplicitConfirmation) {
+            this(confirmationId, summary, expiresAt, requiresExplicitConfirmation, null);
+        }
+    }
 
-    public record Source(String type, String id, String title, String excerpt, String uri) { }
+    public record Source(String type, String id, String title, String excerpt, String uri,
+            @Schema(description = "Version of the registered knowledge source, when applicable.") String version) {
+        public Source(String type, String id, String title, String excerpt, String uri) {
+            this(type, id, title, excerpt, uri, null);
+        }
+    }
 }
