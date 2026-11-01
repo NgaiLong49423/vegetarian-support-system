@@ -45,6 +45,8 @@ class AiTelemetryIntegrationTest extends AbstractIntegrationTest {
     private String guest;
 
     @BeforeEach void fixture() {
+        when(ai.classifyChatScope(anyString(), anyString())).thenReturn(
+                new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 1, 1, 2));
         clock.advance(Duration.between(clock.instant(), Instant.parse("2026-10-23T03:00:00Z")));
         guest = UUID.randomUUID().toString();
         String email = "fr11-" + guest + "@example.invalid";
@@ -137,11 +139,11 @@ class AiTelemetryIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.answer").value("Chao ban"));
         awaitCount(1);
         assertThat(output.getAll()).doesNotContain("FR11 private question marker", "Chao ban", "private provider failure");
-        assertThat(jdbc.queryForObject("SELECT anonymous_session_id FROM AI_USAGE_TELEMETRY WHERE anonymous_session_id=?",String.class,guest)).isEqualTo(guest);
+        assertThat(jdbc.queryForObject("SELECT TOP 1 anonymous_session_id FROM AI_USAGE_TELEMETRY WHERE anonymous_session_id=?",String.class,guest)).isEqualTo(guest);
         when(ai.answerChat(anyString(),anyString())).thenThrow(new GeminiAiClient.AiProviderException("private provider failure"));
         mockMvc.perform(post("/api/v1/recipes/ai/chat").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isServiceUnavailable());
-        assertThat(count()).isEqualTo(1);
+        awaitCount(3);
         assertThat(output.getAll()).doesNotContain("FR11 private question marker", "Chao ban", "private provider failure");
     }
 

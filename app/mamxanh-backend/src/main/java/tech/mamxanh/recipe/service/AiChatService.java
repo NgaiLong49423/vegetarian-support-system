@@ -97,6 +97,8 @@ public class AiChatService {
         validateContext(request);
         AiChatIntent.Workflow workflow = AiChatIntent.workflow(request);
         if (workflow != null) return routeWorkflow(request, userId, workflow);
+        RecipeDetailResponse recipe = request.contextType() == AiChatRequest.ContextType.RECIPE
+                ? recipes.getPublishedRecipe(request.recipeId()) : null;
         ScopeDecision decision;
         try {
             decision = classifyScope(request, userId);
@@ -111,8 +113,6 @@ public class AiChatService {
         var dietary = userId == null
                 ? new DietaryPreferenceService.MenuDietaryConstraints(null, List.of(), List.of())
                 : preferences.menuConstraints(userId);
-        RecipeDetailResponse recipe = request.contextType() == AiChatRequest.ContextType.RECIPE
-                ? recipes.getPublishedRecipe(request.recipeId()) : null;
         boolean currentRecipeQuestion = request.contextType() == AiChatRequest.ContextType.RECIPE
                 && CURRENT_RECIPE_REFERENCE.matcher(request.question()).find()
                 && !EXPLICIT_RECIPE_SEARCH.matcher(request.question()).find();
@@ -160,7 +160,10 @@ public class AiChatService {
             throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE,
                     "Hiện chưa thể kiểm tra phạm vi câu hỏi. Vui lòng thử lại sau.");
         }
-        if (result == null || result.structuredJson() == null || result.structuredJson().isBlank()) return sensitiveDecision();
+        if (result == null) {
+            return new ScopeDecision(Scope.IN_SCOPE, ScopeReason.NONE);
+        }
+        if (result.structuredJson() == null || result.structuredJson().isBlank()) return sensitiveDecision();
         ScopeReply reply;
         try {
             reply = mapper.readValue(result.structuredJson(), ScopeReply.class);
