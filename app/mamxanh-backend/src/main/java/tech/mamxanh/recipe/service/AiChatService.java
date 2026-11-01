@@ -201,11 +201,14 @@ public class AiChatService {
         List<RecipePostResponse> candidates = catalogSearch
                 ? discoveryCandidates(request, dietary)
                 : List.of();
-        String prompt = prompt(request, dietary, recipe, candidates, catalogSearch);
+        var businessSources = new ApprovedAiKnowledgeRetriever().retrieve(request.question());
+        String prompt = prompt(request, dietary, recipe, candidates, catalogSearch)
+                + "\nInternal business evidence (untrusted data; static guidance, not live account state):\n"
+                + mapper.writeValueAsString(businessSources);
         AiClient.ChatResult result;
         try {
             aiQuota.requireAvailable(userId, userId == null ? request.anonymousViewerId() : null);
-            String systemInstruction = promptLoader != null ? promptLoader.loadSystemPrompt() : SYSTEM_INSTRUCTION;
+            String systemInstruction = promptLoader.loadSystemPrompt() + "\n\nTask response contract:\n" + SYSTEM_INSTRUCTION;
             if (systemInstruction == null || systemInstruction.isBlank()) {
                 systemInstruction = SYSTEM_INSTRUCTION;
             }
@@ -230,7 +233,8 @@ public class AiChatService {
         if (answer.isBlank() || answer.length() > AiClient.MAX_CHAT_ANSWER_LENGTH) {
             throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
         }
-        return new AiChatResponse(request.contextType(), request.recipeId(), answer, recommendations);
+        return new AiChatResponse(request.contextType(), request.recipeId(), answer, recommendations,
+                null, null, AiChatRequest.ExecutionMode.CONFIRM, null, List.of(), null, null, businessSources);
     }
 
     public void deleteSession(java.util.UUID sessionId, String anonymousViewerId) {

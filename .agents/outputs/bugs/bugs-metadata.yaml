@@ -1,11 +1,11 @@
 # Đồng bộ develop: BUG-067–069 của FR-10 chuyển thành BUG-082–084, giữ bản ghi develop ở mã gốc.
 schema_version: 1
-last_updated: 2026-10-31
+last_updated: 2026-11-01
 # BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
 # BUG-066 được cấp khi đồng bộ PR #161 ngày 2026-10-25 vì BUG-065 đã được dùng cho lỗi OpenAPI.
 # BUG-078–080 đã được cấp trên nhánh feature/17-ai-usage-telemetry, tránh cấp trùng khi tích hợp.
-next_id: 93
+next_id: 95
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -15,6 +15,15 @@ status_definitions:
 # Đồng bộ PR #194: mã gốc FR-10 → mã sau tích hợp: BUG-054 → BUG-070, BUG-055 → BUG-071, BUG-056 → BUG-072, BUG-057 → BUG-073, BUG-058 → BUG-074, BUG-059 → BUG-075, BUG-060 → BUG-076, BUG-066 → BUG-077.
 # Bản ghi BUG-060 của FR-11 tại 79394340 trùng lỗi privacy đã hợp nhất dưới BUG-076; giữ BUG-060 của develop.
 bugs:
+  - id: BUG-094
+    title: Chatbox hiển thị Markdown của AI dưới dạng văn bản thuần
+    status: RESOLVED
+    severity: Medium
+    area: Frontend/AI Chatbox/Hiển thị phản hồi
+    file: .agents/outputs/bugs/BUG-094.md
+    created: 2026-11-01
+    updated: 2026-11-01
+    related_issue: Unknown
   - id: BUG-092
     title: Telemetry từ chối model Gemini 3.5 Flash-Lite hợp lệ
     status: RESOLVED
@@ -32,7 +41,8 @@ bugs:
     file: .agents/outputs/bugs/BUG-091.md
     created: 2026-10-31
     updated: 2026-10-31
-    related_issue: Unknown  - id: BUG-090
+    related_issue: Unknown
+  - id: BUG-090
     title: Dữ liệu demo tạo gói Pro với quota token bằng 0
     status: RESOLVED
     severity: Medium

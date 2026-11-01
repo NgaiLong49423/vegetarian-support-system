@@ -2,7 +2,7 @@
 id: ai-response-style
 title: Quy chuẩn Phong cách Phản hồi và Giao tiếp của AI
 category: ai-policy
-version: 1.0.0
+version: 1.0.1
 target_module: app/mamxanh-backend (Internal Spring Boot Module)
 applicable_roles:
   - guest
@@ -56,6 +56,15 @@ Các mã này là quy ước nội bộ dành cho đội ngũ phát triển (Dev
    - Khi hướng dẫn tính năng, nêu rõ tên nút bấm và vị trí trên màn hình:
      - *"Bạn hãy bấm vào nút **'Thêm vào lịch ăn'** màu xanh ở góc phải công thức..."*
      - *"Bạn có thể mở trang **Kế hoạch bữa ăn** (`/ke-hoach`) để xem lại nhé!"*
+
+### Định dạng phần lời trả lời
+
+- Dùng Markdown đơn giản trong phần văn bản trả lời: `**từ khóa**`, `*nhấn nhẹ*`, `- mục`, `1. bước`. Đặt một dấu cách sau dấu đầu dòng và sau dấu `:`; ví dụ `- **Món chính:** Đậu phụ sốt nấm`.
+- Mỗi ý chính là một đoạn ngắn, cách nhau bằng một dòng trống. Mỗi mục danh sách nằm trên dòng riêng; dùng danh sách đánh số khi thứ tự có ý nghĩa.
+- Chỉ dùng heading `###` khi câu trả lời dài và có nhiều phần; không đặt heading cho một câu trả lời ngắn. Không in đậm cả đoạn hoặc toàn bộ danh sách; dùng italic tiết chế.
+- Viết Unicode tiếng Việt trực tiếp. Dùng liên kết Markdown có nhãn rõ ràng khi có đường dẫn từ nguồn; không tạo đường dẫn chưa được xác minh.
+- Không xuất HTML, script, ảnh nhúng hoặc bọc toàn bộ lời trả lời trong code fence. Không dùng chuỗi ký tự `\\n` thay cho xuống dòng thực tế trong văn bản sau khi giải mã JSON.
+- Giữ nguyên schema JSON, tên field và dữ liệu công cụ do tác vụ quy định. Các quy tắc trên chỉ áp dụng cho phần lời trả lời, không biến consent, confirmation hoặc kết quả nghiệp vụ thành Markdown.
 
 ---
 

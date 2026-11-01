@@ -32,6 +32,52 @@ public record KnowledgeCatalog(String revision, List<Document> documents, List<C
         return packaged("/ai-knowledge/g3/");
     }
 
+    /** Adapt the published business catalog to the existing bounded retrieval engine. */
+    public static KnowledgeCatalog business() {
+        var mapper = new ObjectMapper();
+        var manifest = mapper.readTree(businessResource("catalog.json"));
+        String version = manifest.path("version").asText();
+        if (version.isBlank()) throw new IllegalArgumentException("Missing business catalog version");
+        var entries = new ArrayList<Entry>();
+        var content = new HashMap<String, String>();
+        for (var node : manifest.path("documents")) {
+            String id = node.path("id").asText();
+            String path = node.path("resourcePath").asText();
+            if (!path.matches("knowledge-base/[a-z-]+/[a-z-]+\\.md"))
+                throw new IllegalArgumentException("Invalid business resource path");
+            String file = id + ".md";
+            if (content.putIfAbsent(file, tech.mamxanh.integration.ai.AiPromptLoader.stripFrontMatter(
+                    businessResource(path.substring("knowledge-base/".length())))) != null)
+                throw new IllegalArgumentException("Duplicate business knowledge ID");
+            entries.add(new Entry(id, node.path("title").asText(), file, version, "PILOT", true,
+                    List.of(path), List.of()));
+        }
+        if (entries.isEmpty() || entries.size() != manifest.path("totalDocuments").asInt())
+            throw new IllegalArgumentException("Business catalog count mismatch");
+        content.put("catalog.json", mapper.writeValueAsString(new Manifest("business-" + version, entries)));
+        return load(content::get);
+    }
+
+    /** Keep execution playbooks alongside business help without silently reusing stale vectors. */
+    public static KnowledgeCatalog agent() {
+        var pilot = packagedG3();
+        var business = business();
+        var docs = new ArrayList<>(pilot.documents());
+        docs.addAll(business.documents());
+        var chunks = new ArrayList<>(pilot.chunks());
+        chunks.addAll(business.chunks());
+        if (docs.stream().map(d -> d.metadata().id()).distinct().count() != docs.size())
+            throw new IllegalArgumentException("Duplicate agent knowledge ID");
+        return new KnowledgeCatalog(pilot.revision() + "+" + business.revision(), docs, chunks);
+    }
+
+    private static String businessResource(String path) {
+        try (var stream = KnowledgeCatalog.class.getResourceAsStream("/knowledge-base/" + path)) {
+            if (stream == null) throw new IllegalArgumentException("Missing business resource");
+            return new String(stream.readNBytes(100_001), StandardCharsets.UTF_8);
+        } catch (IOException e) { throw new IllegalStateException("Cannot read business resource", e); }
+    }
+
     public static KnowledgeCatalog packaged(String resourcePrefix) {
         String normalizedPrefix = resourcePrefix.endsWith("/") ? resourcePrefix : resourcePrefix + "/";
         return load(path -> {

@@ -84,7 +84,7 @@ class AdkShoppingPilotServiceTest {
         sessionStore = new AiAssistantSessionStore(clock, Duration.ofMinutes(30));
         mapper = new ObjectMapper();
         events = mock(ApplicationEventPublisher.class);
-        g3Catalog = KnowledgeCatalog.packagedG3();
+        g3Catalog = KnowledgeCatalog.agent();
         budgetAvailable = new AtomicBoolean(true);
 
         when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(7L, Role.CUSTOMER));
@@ -160,7 +160,7 @@ class AdkShoppingPilotServiceTest {
         assertThat(staged.pendingConfirmation()).isNotNull();
         assertThat(staged.pendingConfirmation().proposedListName()).isEqualTo("Đi chợ cuối tuần");
         assertThat(staged.sources()).extracting(s -> s.id()).contains("shopping-create");
-        assertThat(staged.knowledgeRevision()).isEqualTo("g3-pilot-2");
+        assertThat(staged.knowledgeRevision()).isEqualTo(g3Catalog.revision());
         verify(shoppingLists, never()).createEmpty(any());
 
         // 3. Approve confirmation -> ADK resumes create_shopping_list -> receives id=901 -> calls get_shopping_list(901) -> COMPLETED
@@ -651,6 +651,66 @@ class AdkShoppingPilotServiceTest {
         var response=service.execute(pilotRequest(null,UUID.randomUUID(),"Đọc danh sách ID #901",ExecutionMode.AUTO,grantShoppingConsent(),null,null));
         assertThat(response.answer()).contains("901","Rau củ").doesNotContain("Đã xóa");
         verify(shoppingLists,never()).createEmpty(any());
+    }
+
+    @Test
+    void nativeAgentReadsBusinessKnowledgeThenFetchesCurrentOwnedList() {
+        when(shoppingLists.get(901L)).thenReturn(emptyList(901L, "Rau củ hôm nay"));
+        var llm = new ScriptedLlm(r -> {
+            var names = functionResponseNames(r);
+            if (names.isEmpty()) return functionCall("search_business_knowledge", "search-help",
+                    Map.of("query", "Tạo và quản lý danh sách đi chợ"));
+            if (!names.contains("get_business_knowledge")) return functionCall("get_business_knowledge", "read-help",
+                    Map.of("knowledgeId", "shopping-list-overview"));
+            if (!names.contains("get_shopping_list")) return functionCall("get_shopping_list", "read-live", Map.of("listId", 901L));
+            assertThat(r.config().orElseThrow().systemInstruction().orElseThrow().toString())
+                    .contains("BEHAVIORAL POLICIES", "Runtime capability restrictions");
+            assertThat(r.contents().toString()).contains("Rau củ hôm nay");
+            return textResponse("Danh sách hiện tại là Rau củ hôm nay (#901), theo kết quả Backend.");
+        });
+        try (var service = createPilotService(llm)) {
+            var result = service.execute(pilotRequest(null, UUID.randomUUID(),
+                    "Hướng dẫn danh sách đi chợ rồi đọc danh sách ID #901", ExecutionMode.QA,
+                    grantShoppingConsent(), null, null));
+            assertThat(result.sources()).extracting(s -> s.id()).contains("shopping-list-overview");
+            assertThat(result.steps()).extracting(s -> s.tool())
+                    .contains("search_business_knowledge", "get_business_knowledge", "get_shopping_list");
+            verify(shoppingLists).get(901L);
+            verify(shoppingLists, never()).createEmpty(any());
+        }
+    }
+
+    @Test
+    void nativeAgentUsesExistingRegistryForCurrentPublicRecipes() {
+        var registry = mock(AiAssistantToolRegistry.class);
+        when(registry.execute("search_public_recipes", Map.of("query", "đậu hũ")))
+                .thenReturn(new AiAssistantToolRegistry.ToolResult("SUCCEEDED", "Đã tra cứu công thức hiện tại.",
+                        List.of(Map.of("id", 812L,"title","Đậu hũ mới hôm nay")), List.of()));
+        var llm = new ScriptedLlm(r -> {
+            if (!functionResponseNames(r).contains("search_public_recipes"))
+                return functionCall("search_public_recipes","public-search",Map.of("query","đậu hũ"));
+            assertThat(r.contents().toString()).contains("Đậu hũ mới hôm nay", "812");
+            return textResponse("Công thức hiện có: Đậu hũ mới hôm nay (#812).");
+        });
+        try (var service = createPilotService(llm)) {
+            service.bindPublicData(registry);
+            var response = service.execute(pilotRequest(null,UUID.randomUUID(),"Tìm công thức đậu hũ hiện có",
+                    ExecutionMode.QA,null,null,null));
+            assertThat(response.steps()).extracting(s -> s.tool()).contains("search_public_recipes");
+            verify(registry).execute("search_public_recipes",Map.of("query","đậu hũ"));
+            verify(shoppingLists,never()).createEmpty(any());
+        }
+    }
+
+    @Test
+    void runnerInitializationFailureReturnsControlledResultWithoutBusinessWrite() {
+        try (var service = new AdkShoppingPilotService(users,shoppingLists,aiQuota,chatSettings,sessionStore,
+                mapper,events,clock,g3Catalog,null,model -> {throw new IllegalArgumentException("Unpriced model");},null,true)) {
+            var result = service.execute(pilotRequest(null,UUID.randomUUID(),"Tạo danh sách Rau củ",
+                    ExecutionMode.AUTO,grantShoppingConsent(),null,null));
+            assertThat(result.runStatus()).isEqualTo("FAILED");
+            verify(shoppingLists,never()).createEmpty(any());
+        }
     }
 
     private static ShoppingListResponse emptyList(long id, String name) {

@@ -10,6 +10,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("AI System Instructions and Behavioral Policy Loader Tests")
 class AiPromptLoaderTest {
+    @Test
+    void formattingGuidanceIsLoadedWithoutChangingStructuredResponseContracts() {
+        String prompt = new AiPromptLoader().loadSystemPrompt();
+        assertThat(prompt).contains("Định dạng phần lời trả lời", "dòng trống", "Không xuất HTML",
+                "Giữ nguyên schema JSON", "consent, confirmation");
+    }
+
 
     private AiPromptLoader loader;
 

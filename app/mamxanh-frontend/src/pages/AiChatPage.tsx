@@ -27,6 +27,7 @@ import {
 } from "lucide-react"
 
 import { useAuth } from "../components/AuthContext"
+import { AiMessageContent } from "../components/AiMessageContent"
 
 import { useAiChat } from "../components/AiChatContext"
 
@@ -779,7 +780,9 @@ export function AiChatPage() {
                 <p className="mb-1 text-[11px] font-bold opacity-75">
                   {message.speaker === "USER" ? "Bạn" : "AI"}
                 </p>
-                <p className="whitespace-pre-wrap">{message.content}</p>
+                {message.speaker === "ASSISTANT"
+                  ? <AiMessageContent content={message.content} />
+                  : <p className="whitespace-pre-wrap [overflow-wrap:anywhere]">{message.content}</p>}
                 {message.steps?.length ? (
                   <div className="mt-3 space-y-2" aria-label="Các bước AI đã xử lý">
                     {message.steps.map((step) => {

@@ -16,6 +16,7 @@ public final class PilotLiveBudget implements GeminiEmbeddingClient.Observer {
     public static final String PRICING_DATE="2026-11-01";
     private static final Object PROCESS_BUDGET_LOCK=new Object();
     private final Path path;
+    private final int embeddingCeiling;
     private final ObjectMapper json=new ObjectMapper();
     public record State(double reservedUpperUsd,int embeddingAttempts,int generationAttempts,String pricingVerifiedOn) {
         public State {
@@ -23,8 +24,13 @@ public final class PilotLiveBudget implements GeminiEmbeddingClient.Observer {
                 throw new IllegalArgumentException("Invalid G3 budget ledger");
         }
     }
-    public PilotLiveBudget(Path path) {this.path=path.toAbsolutePath();}
-    public static PilotLiveBudget configured(String path) {return path==null||path.isBlank()?null:new PilotLiveBudget(Path.of(path));}
+    public PilotLiveBudget(Path path) { this(path, 150); }
+    public PilotLiveBudget(Path path, int embeddingCeiling) {
+        if (embeddingCeiling < 1 || embeddingCeiling > 2000) throw new IllegalArgumentException("Invalid embedding ceiling");
+        this.path=path.toAbsolutePath(); this.embeddingCeiling=embeddingCeiling;
+    }
+    // The combined corpus has hundreds of paragraph chunks; the USD ceiling remains authoritative.
+    public static PilotLiveBudget configured(String path) {return path==null||path.isBlank()?null:new PilotLiveBudget(Path.of(path),2000);}
     private synchronized void reserve(double dollars, boolean generation) {
         synchronized(PROCESS_BUDGET_LOCK) {
         if(!LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")).toString().equals(PRICING_DATE))
@@ -39,16 +45,19 @@ public final class PilotLiveBudget implements GeminiEmbeddingClient.Observer {
                 var next=new State(previous.reservedUpperUsd()+dollars,previous.embeddingAttempts()+(generation?0:1),previous.generationAttempts()+(generation?1:0),PRICING_DATE);
                 // The authorized focused validation batch was preflighted against the existing spend.
                 // State's USD ceiling remains authoritative for every call, including failed attempts.
-                if(next.embeddingAttempts()>150||next.generationAttempts()>140) throw new IllegalStateException("G3 evaluation call ceiling reached");
+                if(next.embeddingAttempts()>embeddingCeiling||next.generationAttempts()>140) throw new IllegalStateException("Evaluation call ceiling reached");
                 Path temporary=Files.createTempFile(path.getParent(),"g3-budget-",".tmp");
                 try {Files.writeString(temporary,json.writeValueAsString(next));Files.move(temporary,path,StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING);}
                 finally {Files.deleteIfExists(temporary);}
             }
-        } catch(java.io.IOException e) {throw new IllegalStateException("G3 operational budget unavailable",e);}
+        } catch(java.io.IOException e) {
+            org.slf4j.LoggerFactory.getLogger(PilotLiveBudget.class).warn("Operational budget storage failed category={}",e.getClass().getSimpleName());
+            throw new IllegalStateException("G3 operational budget unavailable",e);
+        }
         }
     }
     public void generation(int bytes) {
-        if(bytes<0||bytes>48000) throw new IllegalArgumentException("G3 model input cap exceeded");
+        if(bytes<0||bytes>128000) throw new IllegalArgumentException("Model input cap exceeded");
         reserve((bytes*2*.75+1024*3.75)/1_000_000,true);
     }
     public void beforeCall(KnowledgeIndex.Config config,int bytes) {

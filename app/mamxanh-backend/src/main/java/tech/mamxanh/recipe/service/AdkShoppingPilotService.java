@@ -102,6 +102,10 @@ public class AdkShoppingPilotService implements AutoCloseable {
     private final LlmFactory llmFactory;
     private final HybridKnowledgeRetriever.Embedder embedder;
     private volatile boolean pilotEnabled;
+    private AiAssistantToolRegistry publicData;
+
+    @Autowired
+    void bindPublicData(AiAssistantToolRegistry registry) { this.publicData = registry; }
 
     private final Map<UUID, PilotSessionState> pilotSessions = new ConcurrentHashMap<>();
 
@@ -125,10 +129,10 @@ public class AdkShoppingPilotService implements AutoCloseable {
                 mapper,
                 events,
                 clock,
-                KnowledgeCatalog.packagedG3(),
-                loadOptionalG3Index(mapper, KnowledgeCatalog.packagedG3()),
+                KnowledgeCatalog.agent(),
+                loadOptionalG3Index(mapper, KnowledgeCatalog.agent()),
                 defaultLlmFactory(configuredApiKey, tech.mamxanh.integration.ai.adk.PilotLiveBudget.configured(budgetFile)),
-                defaultEmbedder(configuredApiKey, loadOptionalG3Index(mapper, KnowledgeCatalog.packagedG3()), tech.mamxanh.integration.ai.adk.PilotLiveBudget.configured(budgetFile)),
+                defaultEmbedder(configuredApiKey, loadOptionalG3Index(mapper, KnowledgeCatalog.agent()), tech.mamxanh.integration.ai.adk.PilotLiveBudget.configured(budgetFile)),
                 pilotEnabled);
     }
 
@@ -328,6 +332,7 @@ public class AdkShoppingPilotService implements AutoCloseable {
                 .filter(turn -> turn.speaker() == AiChatRequest.Speaker.USER && turn.content() != null)
                 .map(AiChatRequest.Turn::content)
                 .reduce("", (a, b) -> a + " " + b));
+        state.shoppingContext |= requiresShoppingConsent(combinedUserText);
 
         ConsentCategory otherPersonalCategory = AiAssistantExecutionService.personalCategory(combinedUserText);
         List<ConsentScope> missingScopes = new ArrayList<>();
@@ -337,7 +342,7 @@ public class AdkShoppingPilotService implements AutoCloseable {
                 missingScopes.add(personalScope);
             }
         }
-        { // Every pilot prompt can contain list data; obtain consent before the first provider call.
+        if (state.shoppingContext) { // Public help does not require Shopping List data consent.
             for (ConsentScope scope : SHOPPING_CONSENT_SCOPES) {
                 if (!activeConsents.contains(scope)) {
                     missingScopes.add(scope);
@@ -477,7 +482,14 @@ public class AdkShoppingPilotService implements AutoCloseable {
             ExecutionMode mode, Set<ConsentScope> activeConsents, Content inputContent,
             boolean approvalResume, String approvedNormalizedName) {
         String resolvedModel = resolveModel(userId);
-        state.ensureRunner(resolvedModel, activeConsents);
+        try {
+            state.ensureRunner(resolvedModel, activeConsents);
+        } catch (RuntimeException unavailable) {
+            state.invalidatePendingAndCloseRunner();
+            return buildResponse(request, handle.id(), mode, "FAILED", handle.expiresAt(),
+                    List.of(), List.of(), null, null,
+                    "Không thể khởi tạo AI với model hoặc cấu hình hiện tại. Chưa thực hiện thao tác nghiệp vụ; vui lòng kiểm tra cấu hình. Không tự đổi model.");
+        }
         AdkShoppingPilotTools tools = state.tools;
         tools.beginTurn(userId, mode, request.question(), request.history(), approvalResume, approvedNormalizedName);
 
@@ -648,7 +660,8 @@ public class AdkShoppingPilotService implements AutoCloseable {
             }
         }
 
-        LOG.warn("G3 ADK pilot run failed session={} cause={}", handle.id(), root.getClass().getSimpleName());
+        LOG.warn("G3 ADK pilot run failed session={} cause={} location={}", handle.id(), root.getClass().getSimpleName(),
+                root.getStackTrace().length == 0 ? "unknown" : root.getStackTrace()[0]);
         state.invalidatePendingAndCloseRunner();
         List<AssistantStep> steps = new ArrayList<>(tools.steps());
         if (steps.isEmpty()) {
@@ -791,7 +804,7 @@ public class AdkShoppingPilotService implements AutoCloseable {
     }
 
     private static Throwable unwrap(Throwable error) {
-        for (int depth = 0; error != null && error.getCause() != null && depth < 10; depth++) {
+        for (int depth = 0; error != null && error.getCause() != null && depth < 32; depth++) {
             if (error instanceof AppException
                     || error instanceof AdkShoppingPilotTools.BudgetExhaustedBeforeWriteException
                     || error instanceof SecurityException) {
@@ -808,7 +821,7 @@ public class AdkShoppingPilotService implements AutoCloseable {
     }
 
     private static KnowledgeIndex loadOptionalG3Index(ObjectMapper mapper, KnowledgeCatalog catalog) {
-        try (var stream = AdkShoppingPilotService.class.getResourceAsStream("/ai-knowledge/g3/index.json")) {
+        try (var stream = AdkShoppingPilotService.class.getResourceAsStream("/ai-knowledge/agent-index.json")) {
             if (stream == null) return null;
             KnowledgeIndex index = mapper.readValue(stream.readAllBytes(), KnowledgeIndex.class);
             return index.validate(catalog, index.config());
@@ -879,6 +892,7 @@ public class AdkShoppingPilotService implements AutoCloseable {
         private final List<AiChatRequest.Turn> trustedTurns = new ArrayList<>();
         private volatile Instant expiresAt;
         private volatile boolean consentRevoked;
+        private volatile boolean shoppingContext;
         private volatile PilotPendingConfirmation pendingConfirmation;
         private HybridKnowledgeRetriever retriever;
         private AdkShoppingPilotTools tools;
@@ -912,13 +926,14 @@ public class AdkShoppingPilotService implements AutoCloseable {
                     },
                     clock);
             this.tools = new AdkShoppingPilotTools(retriever, shoppingLists, aiQuota, mapper);
+            this.tools.bindPublicData(publicData);
             AdkModelGateway.Policy basePolicy = new tech.mamxanh.integration.ai.adk.MemberAccountingPolicy(users, aiQuota, events);
             AdkModelGateway.Policy guardedPolicy = new AdkModelGateway.Policy() {
                 @Override
                 public Object beforeCall(AdkModelGateway.Call call) {
                     users.requireActiveMember();
                     Set<ConsentScope> latest=sessionStore.open(sessionId,owner,ENGINE).consentScopes();
-                    if(!pilotEnabled || consentRevoked || !latest.containsAll(SHOPPING_CONSENT_SCOPES)) throw new SecurityException("Consent required or pilot disabled");
+                    if(!pilotEnabled || consentRevoked || (shoppingContext && !latest.containsAll(SHOPPING_CONSENT_SCOPES))) throw new SecurityException("Consent required or pilot disabled");
                     if(!Objects.equals(resolveModel(userId),call.model())) throw new SecurityException("Model selection changed; start a new run");
                     return basePolicy.beforeCall(call);
                 }
@@ -937,18 +952,21 @@ public class AdkShoppingPilotService implements AutoCloseable {
                     throw new SecurityException("Shopping List consent required");
                 }
             };
-            List<AdkSpikeSession.Tool> adkTools = List.of(
+            List<AdkSpikeSession.Tool> adkTools = new ArrayList<>(List.of(
                     new AdkSpikeSession.Tool(FunctionTool.create(tools, "search_business_knowledge"), readGuard),
                     new AdkSpikeSession.Tool(FunctionTool.create(tools, "get_business_knowledge"), readGuard),
                     new AdkSpikeSession.Tool(FunctionTool.create(tools, "create_shopping_list"), shoppingGuard),
-                    new AdkSpikeSession.Tool(FunctionTool.create(tools, "get_shopping_list"), shoppingGuard));
+                    new AdkSpikeSession.Tool(FunctionTool.create(tools, "get_shopping_list"), shoppingGuard)));
+            if (publicData != null) adkTools.add(new AdkSpikeSession.Tool(FunctionTool.create(tools,"search_public_recipes"), readGuard));
             this.adkSession = new AdkSpikeSession(
                     memberAuth,
                     gateway,
                     adkTools,
                     clock,
                     Duration.ofSeconds(30),
-                    AdkShoppingPilotTools.INSTRUCTION,
+                    new tech.mamxanh.integration.ai.AiPromptLoader().loadSystemPrompt()
+                            + "\n\nRuntime capability restrictions (these narrow the general policies):\n"
+                            + AdkShoppingPilotTools.INSTRUCTION,
                     1024);
             this.boundModelId = modelId;
         }

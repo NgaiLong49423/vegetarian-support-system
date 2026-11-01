@@ -33,6 +33,26 @@ public class ApprovedAiKnowledgeRetriever {
                     "docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-66"));
 
     public List<Source> retrieve(String query) {
+        if (query != null && !query.isBlank() && query.length() <= 1000) {
+            try (var retriever = new tech.mamxanh.integration.ai.knowledge.HybridKnowledgeRetriever(
+                    BUSINESS, null, null, java.time.Clock.systemUTC())) {
+                var queryTerms = terms(query);
+                var hits = retriever.search(query).hits().stream().filter(hit -> {
+                    var evidenceTerms = terms(hit.title() + " " + hit.excerpt());
+                    long overlap = queryTerms.stream().filter(evidenceTerms::contains).count();
+                    var ordered = WORDS.matcher(fold(query)).results().map(java.util.regex.MatchResult::group).toList();
+                    String evidence = String.join(" ", WORDS.matcher(fold(hit.title() + " " + hit.excerpt()))
+                            .results().map(java.util.regex.MatchResult::group).toList());
+                    boolean phrase = java.util.stream.IntStream.range(1, ordered.size())
+                            .anyMatch(i -> evidence.contains(ordered.get(i-1) + " " + ordered.get(i)));
+                    return phrase && overlap >= Math.max(2, Math.ceil(queryTerms.size() * .6));
+                }).toList();
+                if (!hits.isEmpty()) return hits.stream().map(hit -> new Source("APPROVED_DOCUMENT",
+                        hit.knowledgeId(), hit.title(),
+                        "[keyword_degraded; derived business guidance, not current account data] " + hit.excerpt(),
+                        hit.sources().getFirst(), hit.version())).toList();
+            }
+        }
         Set<String> terms = terms(query);
         if (terms.isEmpty()) return List.of();
         List<Scored> matches = new ArrayList<>();
@@ -46,14 +66,21 @@ public class ApprovedAiKnowledgeRetriever {
                         item.chunk.text, item.chunk.uri)).toList();
     }
 
+    private static final tech.mamxanh.integration.ai.knowledge.KnowledgeCatalog BUSINESS =
+            tech.mamxanh.integration.ai.knowledge.KnowledgeCatalog.business();
+
     private static Set<String> terms(String value) {
         if (value == null || value.isBlank()) return Set.of();
-        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}+", "").toLowerCase(Locale.ROOT).replace('đ', 'd');
+        String normalized = fold(value);
         var matcher = WORDS.matcher(normalized);
         java.util.HashSet<String> terms = new java.util.HashSet<>();
         while (matcher.find()) terms.add(matcher.group());
         return Set.copyOf(terms);
+    }
+
+    private static String fold(String value) {
+        return Normalizer.normalize(value, Normalizer.Form.NFD).replaceAll("\\p{M}+", "")
+                .toLowerCase(Locale.ROOT).replace('đ', 'd');
     }
 
     private record Chunk(String id, String title, String text, String uri) { }
