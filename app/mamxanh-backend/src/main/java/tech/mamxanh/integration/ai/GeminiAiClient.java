@@ -332,5 +332,19 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
         }
         public FailureKind kind() { return kind; }
         public Integer httpStatus() { return httpStatus; }
+
+        /** Safe diagnostic: never log provider messages, request payloads, URLs or credentials. */
+        public String diagnostic() {
+            if (getCause() instanceof com.google.genai.errors.ApiException api) return "HTTP " + api.code();
+            if (httpStatus != null) return "HTTP " + httpStatus;
+            if (getCause() == null) return "invalid-response-or-configuration";
+            Throwable cause = getCause();
+            StringBuilder names = new StringBuilder(cause.getClass().getSimpleName());
+            for (int i = 0; i < 5 && cause.getCause() != null && cause.getCause() != cause; i++) {
+                cause = cause.getCause();
+                names.append('/').append(cause.getClass().getSimpleName());
+            }
+            return names.toString();
+        }
     }
 }

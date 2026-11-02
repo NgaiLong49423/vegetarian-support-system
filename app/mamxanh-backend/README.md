@@ -7,6 +7,12 @@
 
 # Backend Workspace
 
+## Guest Chatbot — FR-02
+
+Guest dùng chung `POST /api/v1/recipes/ai/chat` với Member, ở ngữ cảnh chung hoặc Recipe Post công khai. Backend giới hạn 3 lượt gọi/ngày cho mỗi định danh/peer IP, tự động reset vào 00:00 (giờ Việt Nam, Asia/Ho_Chi_Minh), trả `429` cùng `Retry-After` khi vượt ngưỡng. Không đọc hồ sơ cá nhân cho Guest. Token telemetry Guest dùng user ID null, không lưu raw prompt. Chat có timeout Gemini riêng 10 giây, không đổi timeout các workflow AI khác.
+
+Định danh từ cookie first-party của Frontend đi qua header `X-Guest-Chat-Id` hoặc trường `anonymousViewerId`; CORS allowlist mở header này cho endpoint chat. Bộ đếm trong bộ nhớ thuộc một process; restart xóa bộ đếm. Xem [API Guide, mục 16](../../docs/api/API.md#16-chatbot-hỏi-đáp-theo-ngữ-cảnh--fr-02-và-fr-51) để biết chi tiết.
+
 ### Giám sát giao dịch gói tài khoản
 
 - Phần giám sát được người dùng giao trực tiếp ngày 29/10/2026, chưa có Issue riêng. API Admin nằm trong module `subscription`, đọc các bảng thanh toán/đăng ký hiện có; không thêm bảng hoặc thay đổi entitlement.
