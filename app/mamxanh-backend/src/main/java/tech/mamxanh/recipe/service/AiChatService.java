@@ -92,6 +92,10 @@ public class AiChatService {
         this.entitlements = entitlements;
     }
 
+    public AiChatResponse answer(AiChatRequest request, String anonymousId, String remoteAddress) {
+        return answer(request);
+    }
+
     public AiChatResponse answer(AiChatRequest request) {
         Long userId = users.findAuthenticatedUserId().isPresent() ? users.requireActiveMember().id() : null;
         validateContext(request);

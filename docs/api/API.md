@@ -453,7 +453,9 @@ Generated `/v3/api-docs` là hợp đồng runtime chi tiết cho hai endpoint d
 - Mục tiêu chỉ điều hướng lựa chọn món, không làm thay đổi mục tiêu số FR-35, không tự suy ra thâm hụt/thặng dư năng lượng và không đảm bảo kết quả sức khỏe. Dữ liệu câu trả lời tuần không được lưu/tái sử dụng. Không gửi số đo nhân trắc học hoặc mục tiêu cá nhân chi tiết vào telemetry; không ghi prompt hay câu trả lời cá nhân vào log.
 - Nếu chưa xác nhận trạng thái dinh dưỡng, API trả `403 NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED`; nếu người dùng đã xác nhận không đủ điều kiện, trả `403 NUTRITION_ELIGIBILITY_INELIGIBLE`. Hồ sơ nhân trắc học chưa lưu trả `409 NUTRITION_PROFILE_REQUIRED`.
 
-## 16. Chatbot hỏi đáp theo ngữ cảnh — FR-51
+## 16. Chatbot hỏi đáp theo ngữ cảnh — FR-02 và FR-51
+
+`POST /api/v1/recipes/ai/chat` cho phép Guest không cần đăng nhập và Member đang hoạt động dùng Bearer token. Guest chịu giới hạn tối đa 3 request/ngày và 60 request/peer IP, tự động reset vào 00:00 (giờ Việt Nam, Asia/Ho_Chi_Minh). Vượt ngưỡng trả về `429 AI_GUEST_RATE_LIMITED` cùng `Retry-After` (thời gian tính bằng giây tới 00:00 ngày mới).
 
 `POST /api/v1/recipes/ai/chat` phục vụ cả Guest và Member đang hoạt động trên cùng một chatbot. Member gửi Bearer token; Guest gửi thêm `anonymousViewerId` dạng UUID lấy từ session cookie cùng origin Frontend (`mamxanh.recipe-viewer`, dùng chung định danh ẩn danh hiện có của FR-58). Không dùng cookie xác thực hoặc bật credentials xuyên origin. Endpoint nhận `contextType` (`GENERAL` hoặc `RECIPE`), `question` (tối đa 1.000 ký tự), tối đa 8 lượt `history` gần nhất (`speaker`: `USER` tối đa 1.000 ký tự, `ASSISTANT` tối đa 8.000 ký tự), và `recipeId` khi dùng ngữ cảnh `RECIPE`. Câu trả lời được Backend kiểm tra tối đa 8.000 ký tự trước khi trả thành công, để Frontend gửi lại đầy đủ ở lượt tiếp theo mà không cắt mất nội dung. Giới hạn này do Backend thực thi, không phụ thuộc provider có tuân thủ length constraint của schema hay không. `GENERAL` không nhận `recipeId`; `RECIPE` bắt buộc có ID dương.
 

@@ -1,11 +1,12 @@
 # Đồng bộ develop: BUG-067–069 của FR-10 chuyển thành BUG-082–084, giữ bản ghi develop ở mã gốc.
 schema_version: 1
-last_updated: 2026-10-29
+last_updated: 2026-10-30
 # BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
 # BUG-066 được cấp khi đồng bộ PR #161 ngày 2026-10-25 vì BUG-065 đã được dùng cho lỗi OpenAPI.
 # BUG-078–080 đã được cấp trên nhánh feature/17-ai-usage-telemetry, tránh cấp trùng khi tích hợp.
-next_id: 86
+# BUG-086 được cấp khi đồng bộ FR-02 timeout bug sang develop (trước đây là BUG-070 trên feature/10).
+next_id: 87
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -15,6 +16,15 @@ status_definitions:
 # Đồng bộ PR #194: mã gốc FR-10 → mã sau tích hợp: BUG-054 → BUG-070, BUG-055 → BUG-071, BUG-056 → BUG-072, BUG-057 → BUG-073, BUG-058 → BUG-074, BUG-059 → BUG-075, BUG-060 → BUG-076, BUG-066 → BUG-077.
 # Bản ghi BUG-060 của FR-11 tại 79394340 trùng lỗi privacy đã hợp nhất dưới BUG-076; giữ BUG-060 của develop.
 bugs:
+  - id: BUG-086
+    title: Chatbot dùng timeout Gemini chung 60 giây vượt giới hạn 10 giây
+    status: RESOLVED
+    severity: Unknown
+    area: Backend/AI/Chatbot
+    file: .agents/outputs/bugs/BUG-086.md
+    created: 2026-10-24
+    updated: 2026-10-24
+    related_issue: 10
   - id: BUG-085
     title: Thông báo nâng gói AI chưa chỉ rõ gói tối thiểu
     status: RESOLVED
