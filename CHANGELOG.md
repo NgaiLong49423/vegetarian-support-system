@@ -9,6 +9,22 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-30 — Enforce AI Pro Entitlement in Recipe Assistant Modal
+
+**Status:** Committed — `b6a999ad9951135c1bc8dd636a29803e67abb7e8`.
+
+**Scope:** Restrict AI ingredient analysis and recipe draft generation in the Recipe Assistant modal to active PRO subscriptions, aligning with FR-10.
+
+### Added
+
+- Add E2E regression check in `recipe-ai-assistance.spec.ts` asserting that an Expert with a Free plan has the analysis button disabled with an upgrade prompt to `/goi-ai`.
+
+### Changed
+
+- Guard `AiRecipeAssistantModal` analysis and recipe application with active PRO check, displaying an upgrade banner and locked button for non-PRO accounts.
+- Fetch current subscription in `CreateRecipe` to propagate `isPro` status into the modal while preserving develop's original trigger button design.
+- Align portion quantity input layout by fixing the unit code abbreviation container width so all input boxes line up cleanly.
+
 ## 2026-10-30 — Limit Guest AI Chat to 3 Daily Requests with Midnight Reset
 
 **Status:** Committed — 1c4b4eee.
