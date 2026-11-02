@@ -14,6 +14,7 @@ import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.Map;
+import java.util.UUID;
 
 /** FR-10 Guest prerequisite: rolling minute limits for cookie and peer IP independently.
  * Bounded, process-local state for the current single Backend; never stores prompts or raw IPs.
@@ -21,10 +22,12 @@ import java.util.Map;
  */
 @Service
 public class GuestChatRateLimiter {
+    public static final String ID_HEADER = "X-Guest-Chat-Id";
     private static final Duration WINDOW = Duration.ofMinutes(1);
     private static final int LIMIT = 10;
     private static final int MAX_BUCKETS = 20_000;
     private final Map<String, ArrayDeque<Instant>> buckets = new HashMap<>();
+    private final String salt = UUID.randomUUID().toString();
     private final Clock clock;
 
     public GuestChatRateLimiter(Clock clock) { this.clock = clock; }
@@ -59,10 +62,12 @@ public class GuestChatRateLimiter {
         buckets.computeIfAbsent(ip, key -> new ArrayDeque<>()).addLast(now);
     }
 
-    private static String key(String prefix, String value) {
+    public synchronized void reset() { buckets.clear(); }
+
+    private String key(String prefix, String value) {
         try {
             return prefix + HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-                    .digest(value.getBytes(StandardCharsets.UTF_8)));
+                    .digest((salt + value).getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException exception) {
             throw new IllegalStateException("SHA-256 is unavailable", exception);
         }

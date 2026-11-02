@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -61,12 +62,26 @@ public class AiChatController {
     @ApiResponse(responseCode = "404", description = "The recipe does not exist or is not public.")
     @ApiResponse(responseCode = "502", description = "Gemini returned an incomplete or invalid answer.")
     @ApiResponse(responseCode = "503", description = "Gemini is unavailable or timed out.")
-    public AiChatResponse answer(@Valid @RequestBody AiChatRequest request, Authentication authentication,
+    public ResponseEntity<AiChatResponse> answer(
+            @Valid @RequestBody AiChatRequest request,
+            Authentication authentication,
             HttpServletRequest httpRequest) {
+        AiChatRequest effectiveRequest = request;
         if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
-            guestRateLimiter.check(request.anonymousViewerId(), httpRequest.getRemoteAddr());
+            String guestHeader = httpRequest.getHeader(GuestChatRateLimiter.ID_HEADER);
+            String guestId = (guestHeader != null && !guestHeader.isBlank())
+                    ? guestHeader.strip()
+                    : (request.anonymousViewerId() != null && !request.anonymousViewerId().isBlank()
+                            ? request.anonymousViewerId().strip()
+                            : null);
+            guestRateLimiter.check(guestId, httpRequest.getRemoteAddr());
+            // Rate limiting, quota, and temporary-session ownership must use the same Guest identity.
+            effectiveRequest = new AiChatRequest(request.contextType(), request.recipeId(), request.question(),
+                    request.history(), guestId, request.sessionId(), request.executionMode(),
+                    request.consentDecision(), request.confirmationId(), request.confirmationDecision(),
+                    request.clientRequestId(), request.controlAction());
         }
-        return service.answer(request);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(service.answer(effectiveRequest));
     }
 
     @DeleteMapping("/sessions/{sessionId}")

@@ -30,6 +30,18 @@ class GeminiAiClientTest {
     }
 
     @Test
+    void diagnosticsContainOnlyErrorTypesOrStatusAndNeverProviderMessages() {
+        assertThat(new GeminiAiClient.AiProviderException("private prompt").diagnostic())
+                .isEqualTo("invalid-response-or-configuration");
+        assertThat(new GeminiAiClient.AiProviderException("private prompt",
+                new com.google.genai.errors.ApiException(503, "private status", "private message")).diagnostic())
+                .isEqualTo("HTTP 503");
+        assertThat(new GeminiAiClient.AiProviderException("private prompt",
+                new RuntimeException("private message", new java.net.SocketTimeoutException("private URL"))).diagnostic())
+                .isEqualTo("RuntimeException/SocketTimeoutException");
+    }
+
+    @Test
     void sharedGeminiClientUsesTheNfrBoundedProviderTimeout() {
         assertThat(GeminiAiClient.DEFAULT_TIMEOUT_MILLIS).isEqualTo(9_000);
     }

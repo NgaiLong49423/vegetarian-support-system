@@ -1,5 +1,5 @@
 import { aiRequiredTier, aiUpgradeMessage, type AiPaidTier } from "../lib/aiUpgrade"
-import { Fragment, useEffect, useRef, useState, type ReactNode } from "react"
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react"
 
 import { Link, useSearchParams } from "react-router-dom"
 
@@ -338,6 +338,17 @@ function WeekContents({
   const pending = useRef(false)
 
   const returnFocus = useRef<HTMLElement | null>(null)
+  const focusRestorePending = useRef(false)
+
+  useLayoutEffect(() => {
+    if (!focusRestorePending.current || busy || picker || removal || moving || nutrition) return
+
+    focusRestorePending.current = false
+    const trigger = returnFocus.current
+    if (trigger?.isConnected && !trigger.matches(":disabled")) trigger.focus()
+    if (!trigger || document.activeElement !== trigger)
+      document.querySelector<HTMLElement>("h1")?.focus()
+  }, [busy, picker, removal, moving, nutrition])
 
   useEffect(() => {
     alive.current = true
@@ -376,19 +387,8 @@ function WeekContents({
   }, [week, retry])
 
   function restoreDialogFocus() {
-    requestAnimationFrame(() => {
-      if (!alive.current) return
-
-      const target = returnFocus.current
-
-      if (target?.isConnected && target.getClientRects().length > 0) {
-        target.focus()
-
-        if (document.activeElement === target) return
-      }
-
-      document.querySelector<HTMLElement>("h1")?.focus()
-    })
+    // Restore only after React has removed the dialog and updated the day's entries.
+    focusRestorePending.current = true
   }
 
   function closeDialog() {

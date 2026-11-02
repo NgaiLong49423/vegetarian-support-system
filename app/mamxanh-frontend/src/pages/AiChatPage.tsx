@@ -25,7 +25,6 @@ import {
   UserRound,
   X,
 } from "lucide-react"
-
 import { useAuth } from "../components/AuthContext"
 import { AiMessageContent } from "../components/AiMessageContent"
 import { AiHumanInputCard } from "../components/AiHumanInputCard"
@@ -35,7 +34,7 @@ import { useAiChat } from "../components/AiChatContext"
 import { recipesApi, type AiChatRequest, type AiExecutionMode } from "../api/recipes"
 import { subscriptionApi, type AiChatSettingsResponse } from "../api/subscription"
 
-import { asApiError } from "../lib/apiClient"
+import { ApiError, asApiError } from "../lib/apiClient"
 import { anonymousRecipeViewer } from "../lib/recipeViewer"
 import {
   clearAiChatSession,
@@ -59,15 +58,35 @@ function trustedWorkflowUrl(value: string | null | undefined): string | null {
     : null
 }
 
+function formatResetDateTime(timestamp: number): string {
+  if (!timestamp) return ''
+  const date = new Date(timestamp)
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = date.getFullYear()
+  return `${hours}:${minutes} ngày ${day}/${month}/${year}`
+}
+
+function chatGuestViewer(): string {
+  try {
+    return anonymousRecipeViewer()
+  } catch {
+    throw new ApiError("Vui lòng cho phép cookie của trang để dùng Chatbot.", 400, "GUEST_CHAT_COOKIE_REQUIRED")
+  }
+}
+
 export function AiChatPage() {
   const navigate = useNavigate()
   const { account, isAuthenticated } = useAuth()
 
   const { isOpen, recipeId, recipeTitle, recipeArticle, closeChat, startNewChat } =
     useAiChat()
-  const ownerKey = isAuthenticated && account?.id != null
-    ? `member-${account.id}`
-    : `guest-${anonymousRecipeViewer()}`
+  let ownerKey = isAuthenticated && account?.id != null ? `member-${account.id}` : "guest-cookie-unavailable"
+  if (!isAuthenticated) {
+    try { ownerKey = `guest-${chatGuestViewer()}` } catch { /* Show cookie guidance on send. */ }
+  }
 
   const hasRecipeContext = recipeId !== null
   const requestVersion = useRef(0)
@@ -85,13 +104,13 @@ export function AiChatPage() {
   const [hydratedOwnerKey, setHydratedOwnerKey] = useState<string | null>(null)
 
   const [question, setQuestion] = useState("")
-
   const [loading, setLoading] = useState(false)
-
   const [error, setError] = useState("")
   const [upgradeTier, setUpgradeTier] = useState<AiPaidTier>("PLUS")
   const [errorAction, setErrorAction] = useState<"plans" | "login" | null>(null)
   const [retryQuestion, setRetryQuestion] = useState("")
+  const [retryAt, setRetryAt] = useState(0)
+  const [retrySeconds, setRetrySeconds] = useState(0)
   const [chatSettings, setChatSettings] = useState<AiChatSettingsResponse | null>(null)
   const [settingsLoading, setSettingsLoading] = useState(false)
   const [settingsError, setSettingsError] = useState("")
@@ -105,7 +124,6 @@ export function AiChatPage() {
   const sequenceRef = useRef(0)
 
   const [windowSize, setWindowSize] = useState({ width: 420, height: 620 })
-
   const resizeStart = useRef<{
     x: number
     y: number
@@ -137,6 +155,8 @@ export function AiChatPage() {
     setError("")
     setErrorAction(null)
     setRetryQuestion("")
+    setRetryAt(0)
+    setRetrySeconds(0)
     setHydratedOwnerKey(ownerKey)
   }, [ownerKey])
 
@@ -164,41 +184,30 @@ export function AiChatPage() {
 
   const chatWindowStyle = {
     width: `min(${windowSize.width}px, calc(100vw - 1rem))`,
-
     height: `min(${windowSize.height}px, calc(100dvh - 1rem))`,
   }
 
   function startResize(event: PointerEvent<HTMLButtonElement>) {
     event.preventDefault()
-
     event.currentTarget.setPointerCapture(event.pointerId)
-
     resizeStart.current = {
       x: event.clientX,
-
       y: event.clientY,
-
       width: windowSize.width,
-
       height: windowSize.height,
     }
   }
 
   function resizeWindow(event: PointerEvent<HTMLButtonElement>) {
     const start = resizeStart.current
-
     if (!start) return
-
     const maxWidth = Math.max(320, window.innerWidth - 40)
-
     const maxHeight = Math.max(360, window.innerHeight - 40)
-
     setWindowSize({
       width: Math.min(
         maxWidth,
         Math.max(320, start.width + start.x - event.clientX),
       ),
-
       height: Math.min(
         maxHeight,
         Math.max(360, start.height + start.y - event.clientY),
@@ -212,19 +221,15 @@ export function AiChatPage() {
 
   function resizeWithKeyboard(event: KeyboardEvent<HTMLButtonElement>) {
     const step = event.shiftKey ? 48 : 24
-
     if (
       !["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)
     )
       return
 
     event.preventDefault()
-
     setWindowSize((current) => {
       const maxWidth = Math.max(320, window.innerWidth - 40)
-
       const maxHeight = Math.max(360, window.innerHeight - 40)
-
       return {
         width: Math.min(
           maxWidth,
@@ -238,7 +243,6 @@ export function AiChatPage() {
                   : 0),
           ),
         ),
-
         height: Math.min(
           maxHeight,
           Math.max(
@@ -307,7 +311,9 @@ export function AiChatPage() {
     let active = true
     setSettingsLoading(true)
     setSettingsError("")
-    const anonymousViewerId = isAuthenticated ? undefined : anonymousRecipeViewer()
+    let anonymousViewerId: string | undefined
+    try { anonymousViewerId = isAuthenticated ? undefined : chatGuestViewer() }
+    catch (cause) { setSettingsError(asApiError(cause).message); setSettingsLoading(false); return }
     subscriptionApi.getChatSettings(anonymousViewerId)
       .then((settings) => { if (active) setChatSettings(settings) })
       .catch((cause) => { if (active) setSettingsError(asApiError(cause).message) })
@@ -336,6 +342,15 @@ export function AiChatPage() {
       document.removeEventListener("keydown", onKeyDown)
     }
   }, [modelMenuOpen, modeMenuOpen])
+
+  useEffect(() => {
+    if (!retryAt) return
+    const tick = () =>
+      setRetrySeconds(Math.max(0, Math.ceil((retryAt - Date.now()) / 1000)))
+    tick()
+    const timer = window.setInterval(tick, 1000)
+    return () => window.clearInterval(timer)
+  }, [retryAt])
 
   if (!isOpen) return null
 
@@ -395,8 +410,8 @@ export function AiChatPage() {
     continuation: Pick<AiChatRequest, "consentDecision" | "confirmationId" | "confirmationDecision"> = {},
   ) {
     const normalized = questionText.trim()
+    if (!normalized || loading || retrySeconds > 0) return
 
-    if (!normalized || loading) return
     const version = requestVersion.current
     const clientRequestId = globalThis.crypto.randomUUID()
     activeRequest.current = clientRequestId
@@ -412,7 +427,6 @@ export function AiChatPage() {
         : { ...message, pendingConfirmation: null, consentRequest: null }))
     }
     setLoading(true)
-
     setError("")
     setErrorAction(null)
     setRetryQuestion(normalized)
@@ -423,12 +437,12 @@ export function AiChatPage() {
     sequenceRef.current = currentId + 1
 
     setSequence(currentId)
-
-    if (addQuestion)
+    if (addQuestion) {
       setMessages((current) => [
         ...current,
         { id: currentId, speaker: "USER", content: normalized, sensitive },
       ])
+    }
 
     try {
       const response = await recipesApi.chat({
@@ -438,18 +452,16 @@ export function AiChatPage() {
         ...(sessionId ? { sessionId } : {}),
         ...continuation,
         ...(!isAuthenticated
-          ? { anonymousViewerId: anonymousRecipeViewer() }
+          ? { anonymousViewerId: chatGuestViewer() }
           : {}),
         ...(hasRecipeContext ? { recipeId } : {}),
-
         question: normalized,
-
         history: previous
           .filter((message) => !message.displayOnly)
           .slice(-8)
           .map(({ speaker, content, recommendations }) => ({
             speaker,
-            content,
+            content: content.slice(0, 4000),
             ...(speaker === "ASSISTANT" && recommendations?.length
               ? {
                   recommendedRecipeIds: recommendations
@@ -472,9 +484,7 @@ export function AiChatPage() {
         })),
         {
           id: currentId + 1,
-
           speaker: "ASSISTANT",
-
           content: response.answer,
           sensitive: revoked ? false : sensitive,
 
@@ -498,7 +508,6 @@ export function AiChatPage() {
       }
 
       setSequence(currentId + 1)
-
       setRetryQuestion("")
       void subscriptionApi.getChatSettings(isAuthenticated ? undefined : anonymousRecipeViewer())
         .then(setChatSettings)
@@ -506,10 +515,14 @@ export function AiChatPage() {
       return true
     } catch (cause) {
       if (version !== requestVersion.current) return
-      if (version !== requestVersion.current) return
       if (isAuthenticated && sensitive) setRecoveryRequest(clientRequestId)
       else pendingAiChatRequest(ownerKey, null)
       const apiError = asApiError(cause)
+      if (apiError.code === "AI_GUEST_RATE_LIMITED" && apiError.retryAfter) {
+        const wait = Math.ceil(apiError.retryAfter ?? 60)
+        setRetryAt(Date.now() + wait * 1000)
+        setRetrySeconds(wait)
+      }
       setUpgradeTier(aiRequiredTier(apiError, "PLUS"))
       setErrorAction(
         apiError.code === "AI_SUBSCRIPTION_REQUIRED"
@@ -554,27 +567,28 @@ export function AiChatPage() {
           : apiError.code === "AI_TOKEN_QUOTA_EXCEEDED" && !isAuthenticated
           ? "Bạn đã dùng hết 20.000 token dùng thử trong phiên này. Đăng ký tài khoản để tiếp tục sử dụng AI."
           : apiError.status === 429
-          ? "Bạn đã gửi nhiều câu hỏi trong thời gian ngắn. Hãy thử lại sau; bạn cũng có thể đăng ký tài khoản để tiếp tục."
-          : apiError.status === 0
+          ? "Bạn đã gửi nhiều câu hỏi trong thời gian ngắn. Thử lại sau; bạn cũng có thể đăng ký tài khoản để tiếp tục."
+          : apiError.status === 0 ||
+              ((apiError.code === "AI_PROVIDER_UNAVAILABLE" || apiError.code === "AI_RESPONSE_INVALID") &&
+                apiError.message === "Yêu cầu không thành công. Vui lòng thử lại.")
             ? "Dịch vụ trả lời đang gặp sự cố. Vui lòng thử lại sau."
             : apiError.message,
       )
     } finally {
-      if (version === requestVersion.current) setLoading(false)
+      if (version === requestVersion.current) {
+        setLoading(false)
+      }
     }
   }
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-
     const normalized = question.trim()
 
     if (!normalized || hasUnresolvedAssistantAction) return
 
     const previous = messages
-
     setQuestion("")
-
     void send(normalized, previous, true)
   }
 
@@ -815,11 +829,8 @@ export function AiChatPage() {
                 <div className="mt-5 flex flex-wrap justify-center gap-2">
                   {[
                     "Công thức này gồm những nguyên liệu nào?",
-
                     "Hướng dẫn mình từng bước chế biến món này.",
-
                     "Có thể thay nguyên liệu nào?",
-
                     "Công thức này nấu trong bao lâu?",
                   ].map((suggestion) => (
                     <button
@@ -862,6 +873,7 @@ export function AiChatPage() {
                 </div>
               </div>
             ))}
+
           {messages.map((message) => (
             <div
               key={message.id}
@@ -1026,6 +1038,7 @@ export function AiChatPage() {
               )}
             </div>
           ))}
+
           {loading && (
             <p
               role="status"
@@ -1035,20 +1048,26 @@ export function AiChatPage() {
               Đang trả lời…
             </p>
           )}
+
           {error && (
             <div
               role="alert"
               className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-900"
             >
-              {error}
+              <p>{error}</p>
+              {retryAt > 0 && retrySeconds > 0 && (
+                <p className="mt-1 font-medium text-red-800">
+                  Lượt hỏi mới sẽ được mở lại vào {formatResetDateTime(retryAt)}.
+                </p>
+              )}
               {retryQuestion && (
                 <button
                   type="button"
                   onClick={() =>
                     void send(retryQuestion, messages.slice(0, -1), false)
                   }
-                  disabled={loading}
-                  className="ml-2 font-bold underline"
+                  disabled={loading || retrySeconds > 0}
+                  className="mt-2 inline-block font-bold underline disabled:opacity-50"
                 >
                   Thử lại
                 </button>
@@ -1078,6 +1097,21 @@ export function AiChatPage() {
               )}
             </div>
           )}
+
+          {!isAuthenticated &&
+            (messages.some((message) => message.speaker === "ASSISTANT") ||
+              Boolean(error)) && (
+              <p className="rounded-xl bg-brand-50 p-3 text-sm text-ink-soft">
+                <Link
+                  to="/dang-ky"
+                  className="font-bold text-brand-700 underline"
+                >
+                  Đăng ký tài khoản
+                </Link>{" "}
+                để lưu công thức và quản lý thực đơn của bạn. Hội thoại AI không
+                được lưu theo tài khoản.
+              </p>
+            )}
         </div>
 
         {humanInputMessage ? (

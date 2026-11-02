@@ -185,3 +185,28 @@ test('expert can use AI Recipe Assistant modal to generate and apply a complete 
   await expect(page.getByText('Trợ lý AI đồng hành cùng Chuyên gia ẩm thực')).toHaveCount(0);
   await expect(page.getByLabel('Tên món *')).toHaveValue('Xào cà chua với trứng');
 });
+
+test('expert on Free plan can use local recipe assistant analysis', async ({ page }) => {
+  await seedDemoSession(page, 'EXPERT');
+  await page.route('**/api/v1/recipes/form-options', (route) => route.fulfill({ json: options }));
+  await page.route('**/api/v1/subscriptions/my-subscription', (route) => route.fulfill({
+    json: {
+      tier: 'FREE',
+      status: 'ACTIVE',
+      active: true,
+      startsAt: null,
+      endsAt: null,
+      unlockedFeatures: ['AI Chatbot hỗ trợ ẩm thực chay', 'Gợi ý món theo nguyên liệu sẵn có'],
+    },
+  }));
+
+  await page.goto('/dang-cong-thuc');
+  const triggerBtn = page.getByRole('button', { name: 'Soạn với Trợ lý AI' });
+  await triggerBtn.click();
+
+  await expect(page.getByText('Trợ lý AI đồng hành cùng Chuyên gia ẩm thực')).toBeVisible();
+  const analysisBtn = page.getByRole('button', { name: 'Phân tích nguyên liệu & gợi ý định lượng' });
+  await expect(analysisBtn).toBeEnabled();
+  await analysisBtn.click();
+  await expect(page.getByText('Công thức đề xuất')).toBeVisible();
+});

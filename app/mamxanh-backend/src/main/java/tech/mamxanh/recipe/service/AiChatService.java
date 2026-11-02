@@ -150,6 +150,10 @@ public class AiChatService {
         this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, null);
     }
 
+    public AiChatResponse answer(AiChatRequest request, String anonymousId, String remoteAddress) {
+        return answer(request);
+    }
+
     public AiChatResponse answer(AiChatRequest request) {
         if (request.controlAction() != null && adkShoppingPilot != null) return adkShoppingPilot.cancel(request);
         if (shouldRouteToG3Pilot(request)) {
@@ -176,6 +180,8 @@ public class AiChatService {
         validateContext(request);
         AiChatIntent.Workflow workflow = AiChatIntent.workflow(request);
         if (workflow != null) return routeWorkflow(request, userId, workflow);
+        RecipeDetailResponse recipe = request.contextType() == AiChatRequest.ContextType.RECIPE
+                ? recipes.getPublishedRecipe(request.recipeId()) : null;
         String modelId = chatSettings == null ? null
                 : chatSettings.resolve(userId, userId == null ? request.anonymousViewerId() : null);
         ScopeDecision decision;
@@ -191,8 +197,6 @@ public class AiChatService {
         if (decision.scope() != Scope.IN_SCOPE) return scopeResponse(request, decision);
         // Legacy callers do not carry purpose-bound consent; never read profile data for a Gemini prompt here.
         var dietary = new DietaryPreferenceService.MenuDietaryConstraints(null, List.of(), List.of());
-        RecipeDetailResponse recipe = request.contextType() == AiChatRequest.ContextType.RECIPE
-                ? recipes.getPublishedRecipe(request.recipeId()) : null;
         boolean currentRecipeQuestion = request.contextType() == AiChatRequest.ContextType.RECIPE
                 && CURRENT_RECIPE_REFERENCE.matcher(request.question()).find()
                 && !EXPLICIT_RECIPE_SEARCH.matcher(request.question()).find();
