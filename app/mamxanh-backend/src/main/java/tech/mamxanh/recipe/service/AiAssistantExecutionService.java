@@ -27,7 +27,11 @@ import java.time.Clock;
 import java.util.*;
 import java.util.regex.Pattern;
 
-/** Executes allowlisted tools with bounded session state and server-side confirmation. */
+/**
+ * @deprecated Legacy JSON plan-then-execute coordinator superseded by Google ADK Agentic Loop in {@link AdkAssistantEngine}.
+ * Kept for fallback routing during dual-run.
+ */
+@Deprecated
 @Service
 public class AiAssistantExecutionService {
     private static final Logger LOG = LoggerFactory.getLogger(AiAssistantExecutionService.class);

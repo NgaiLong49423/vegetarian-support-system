@@ -7,7 +7,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
-/** Local routing only: never asks the provider to decide whether a paid operation is allowed. */
+/**
+ * @deprecated Legacy regex-based workflow classifier superseded by Google ADK native tool routing in {@link AdkAssistantEngine}.
+ */
+@Deprecated(forRemoval = true)
 final class AiChatIntent {
     private AiChatIntent() { }
 
