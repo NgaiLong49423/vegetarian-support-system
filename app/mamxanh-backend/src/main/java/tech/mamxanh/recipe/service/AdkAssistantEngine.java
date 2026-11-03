@@ -109,6 +109,8 @@ public class AdkAssistantEngine implements AutoCloseable {
     private final ApplicationEventPublisher events;
     private final Clock clock;
     private final LlmFactory llmFactory;
+    private final ExecutionTruthfulnessVerifier verifier;
+    private final AiAssistantExecutionJournal journal;
     private final Map<UUID, EngineSessionState> engineSessions = new ConcurrentHashMap<>();
 
     @Autowired
@@ -126,6 +128,8 @@ public class AdkAssistantEngine implements AutoCloseable {
             ApplicationEventPublisher events,
             Clock clock,
             @Autowired(required = false) LlmFactory llmFactory,
+            @Autowired(required = false) ExecutionTruthfulnessVerifier verifier,
+            @Autowired(required = false) AiAssistantExecutionJournal journal,
             @Value("${GEMINI_API_KEY:}") String configuredApiKey) {
         this.users = users;
         this.aiQuota = aiQuota;
@@ -140,6 +144,8 @@ public class AdkAssistantEngine implements AutoCloseable {
         this.events = events;
         this.clock = clock != null ? clock : Clock.systemUTC();
         this.llmFactory = llmFactory != null ? llmFactory : createDefaultLlmFactory(configuredApiKey);
+        this.verifier = verifier != null ? verifier : new ExecutionTruthfulnessVerifier();
+        this.journal = journal != null ? journal : new AiAssistantExecutionJournal(null, null);
     }
 
     public AdkAssistantEngine(
@@ -156,7 +162,25 @@ public class AdkAssistantEngine implements AutoCloseable {
             Clock clock,
             LlmFactory llmFactory,
             String configuredApiKey) {
-        this(users, aiQuota, chatSettings, sessionStore, toolRegistry, null, knowledge, promptLoader, aiClient, mapper, events, clock, llmFactory, configuredApiKey);
+        this(users, aiQuota, chatSettings, sessionStore, toolRegistry, null, knowledge, promptLoader, aiClient, mapper, events, clock, llmFactory, null, null, configuredApiKey);
+    }
+
+    public AdkAssistantEngine(
+            CurrentUserService users,
+            AiTokenQuotaService aiQuota,
+            AiChatSettingsService chatSettings,
+            AiAssistantSessionStore sessionStore,
+            AiAssistantToolRegistry toolRegistry,
+            AdkDomainTools domainTools,
+            ApprovedAiKnowledgeRetriever knowledge,
+            AiPromptLoader promptLoader,
+            AiClient aiClient,
+            ObjectMapper mapper,
+            ApplicationEventPublisher events,
+            Clock clock,
+            LlmFactory llmFactory,
+            String configuredApiKey) {
+        this(users, aiQuota, chatSettings, sessionStore, toolRegistry, domainTools, knowledge, promptLoader, aiClient, mapper, events, clock, llmFactory, null, null, configuredApiKey);
     }
 
     public AiChatResponse execute(AiChatRequest request) {
@@ -280,7 +304,10 @@ public class AdkAssistantEngine implements AutoCloseable {
         AtomicReference<PendingConfirmation> stagedConfirmation = new AtomicReference<>();
 
         try {
-            state.ensureRunner(resolvedModel, auth, mode, activeConsents, steps, sources, stagedConfirmation);
+            String role = userId == null ? "GUEST" : auth.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "");
+            state.currentTurn.set(new EngineSessionState.TurnContext(
+                    auth, mode, activeConsents, steps, sources, stagedConfirmation, request.clientRequestId()));
+            state.ensureRunner(resolvedModel, role);
         } catch (RuntimeException unavailable) {
             LOG.warn("Failed to initialize ADK runner: {}", unavailable.getMessage());
             return buildResponse(request, sessionHandle.id(), mode, "FAILED", List.of(), List.of(), null, null,
@@ -313,7 +340,7 @@ public class AdkAssistantEngine implements AutoCloseable {
             state.pendingConfirmation = pending;
             return buildResponse(request, sessionHandle.id(), mode, "AWAITING_CONFIRMATION",
                     steps, sources, null, pending,
-                    "Mình đã chuẩn bị thao tác \"" + pending.proposedListName() + "\". Bạn vui lòng kiểm tra và bấm Xác nhận để hoàn tất.");
+                    verifier != null ? verifier.verify("Mình đã chuẩn bị thao tác \"" + pending.proposedListName() + "\". Bạn vui lòng kiểm tra và bấm Xác nhận để hoàn tất.", mode, steps, pending) : "Mình đã chuẩn bị thao tác \"" + pending.proposedListName() + "\". Bạn vui lòng kiểm tra và bấm Xác nhận để hoàn tất.");
         }
 
         // Extract Gemini final natural language answer from the event stream
@@ -334,7 +361,8 @@ public class AdkAssistantEngine implements AutoCloseable {
             }
         }
 
-        return buildResponse(request, sessionHandle.id(), mode, "COMPLETED", steps, sources, null, null, answer);
+        String verifiedAnswer = verifier != null ? verifier.verify(answer, mode, steps, null) : answer;
+        return buildResponse(request, sessionHandle.id(), mode, "COMPLETED", steps, sources, null, null, verifiedAnswer);
     }
 
     private AiChatResponse handleConfirmationDecision(
@@ -358,13 +386,23 @@ public class AdkAssistantEngine implements AutoCloseable {
         sessionStore.takePending(sessionHandle.id(), owner, request.confirmationId());
 
         if (request.confirmationDecision() == ConfirmationDecision.REJECT) {
+            if (journal != null) {
+                long ownerId = userId != null ? userId : 0L;
+                UUID effectiveRequestId = request.clientRequestId() != null ? request.clientRequestId() : sessionHandle.id();
+                journal.cancel(ownerId, effectiveRequestId, pending.proposedListName());
+            }
             return buildResponse(request, sessionHandle.id(), mode, "COMPLETED",
                     List.of(), List.of(), null, null, "Đã hủy thao tác theo yêu cầu của bạn.");
         }
 
         // Execute the confirmed tool directly on backend
         int stepIndex = 1;
-        AiAssistantToolRegistry.ToolResult toolResult = toolRegistry.execute(
+        long ownerId = userId != null ? userId : 0L;
+        UUID effectiveRequestId = request.clientRequestId() != null ? request.clientRequestId() : sessionHandle.id();
+        String actionId = pending.proposedListName();
+        AiAssistantToolRegistry.ToolResult toolResult = journal != null
+                ? journal.executeWithJournal(ownerId, effectiveRequestId, actionId, pending.proposedListName(), () -> toolRegistry.execute(pending.proposedListName(), Map.of()))
+                : toolRegistry.execute(
                 pending.proposedListName(),
                 Map.of());
 
@@ -614,6 +652,16 @@ public class AdkAssistantEngine implements AutoCloseable {
         private InMemoryRunner runner;
         private String adkSessionId;
         private String boundModelId;
+        private record TurnContext(
+                Authentication callerAuth,
+                ExecutionMode mode,
+                Set<ConsentScope> activeConsents,
+                List<AssistantStep> steps,
+                List<Source> sources,
+                AtomicReference<PendingConfirmation> stagedConfirmation,
+                UUID clientRequestId
+        ) {}
+        private final AtomicReference<TurnContext> currentTurn = new AtomicReference<>();
 
         private EngineSessionState(UUID sessionId, Long userId, String owner, Authentication auth, Instant expiresAt) {
             this.sessionId = sessionId;
@@ -623,26 +671,18 @@ public class AdkAssistantEngine implements AutoCloseable {
             this.expiresAt = expiresAt;
         }
 
-        private synchronized void ensureRunner(
-                String modelId,
-                Authentication callerAuth,
-                ExecutionMode mode,
-                Set<ConsentScope> activeConsents,
-                List<AssistantStep> steps,
-                List<Source> sources,
-                AtomicReference<PendingConfirmation> stagedConfirmation) {
-
+                private synchronized void ensureRunner(String modelId, String role) {
             if (runner != null && Objects.equals(boundModelId, modelId)) {
                 return;
             }
 
             closeRunnerOnly();
 
-            String role = userId == null ? "GUEST" : callerAuth.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "");
             List<AiAssistantToolRegistry.ToolDefinition> definitions = toolRegistry.definitionsFor(role);
 
-            List<BaseTool> adkTools = definitions.stream().map(def -> (BaseTool) new ScopedAssistantTool(
-                    def, callerAuth, mode, activeConsents, steps, sources, stagedConfirmation)).toList();
+            List<BaseTool> adkTools = definitions.stream()
+                    .map(def -> (BaseTool) new ScopedAssistantTool(def, this))
+                    .toList();
 
             MemberAccountingPolicy policy = new MemberAccountingPolicy(users, aiQuota, events);
             AdkModelGateway gateway = new AdkModelGateway(llmFactory.create(modelId), policy, clock);
@@ -688,29 +728,14 @@ public class AdkAssistantEngine implements AutoCloseable {
 
     private final class ScopedAssistantTool extends BaseTool {
         private final AiAssistantToolRegistry.ToolDefinition definition;
-        private final Authentication auth;
-        private final ExecutionMode mode;
-        private final Set<ConsentScope> activeConsents;
-        private final List<AssistantStep> steps;
-        private final List<Source> sources;
-        private final AtomicReference<PendingConfirmation> stagedConfirmation;
+        private final EngineSessionState sessionState;
 
         private ScopedAssistantTool(
                 AiAssistantToolRegistry.ToolDefinition definition,
-                Authentication auth,
-                ExecutionMode mode,
-                Set<ConsentScope> activeConsents,
-                List<AssistantStep> steps,
-                List<Source> sources,
-                AtomicReference<PendingConfirmation> stagedConfirmation) {
+                EngineSessionState sessionState) {
             super(definition.name(), definition.description());
             this.definition = definition;
-            this.auth = auth;
-            this.mode = mode;
-            this.activeConsents = activeConsents;
-            this.steps = steps;
-            this.sources = sources;
-            this.stagedConfirmation = stagedConfirmation;
+            this.sessionState = sessionState;
         }
 
         @Override
@@ -730,39 +755,74 @@ public class AdkAssistantEngine implements AutoCloseable {
 
         @Override
         public Single<Map<String, Object>> runAsync(Map<String, Object> args, ToolContext context) {
-            return Single.fromCallable(() -> asCaller(() -> {
+            EngineSessionState.TurnContext turn = sessionState.currentTurn.get();
+            if (turn == null) {
+                return Single.just(Map.of("status", "ERROR", "message", "Mất ngữ cảnh phiên làm việc."));
+            }
+
+            return Single.fromCallable(() -> asCaller(turn.callerAuth(), () -> {
                 // Check Consent
                 if (!definition.consentCategories().isEmpty()) {
                     for (ConsentCategory cat : definition.consentCategories()) {
                         ConsentScope reqScope = new ConsentScope(cat, definition.write() ? ConsentPurpose.SHOPPING_LIST_WRITE : ConsentPurpose.AI_CHAT);
-                        if (!activeConsents.contains(reqScope)) {
+                        if (!turn.activeConsents().contains(reqScope)) {
                             return Map.of("status", "CONSENT_REQUIRED", "message", "Thao tác cần có sự đồng ý cho phạm vi: " + cat.name());
                         }
                     }
                 }
 
+                // Check QA mode for write actions
+                if (turn.mode() == ExecutionMode.QA && definition.write()) {
+                    int stepIndex = turn.steps().size() + 1;
+                    String msg = "Chế độ QA không ghi dữ liệu. Hãy chọn CONFIRM hoặc AUTO cho yêu cầu này.";
+                    Map<String, Object> preview = Map.of("preview", args != null ? args : Map.of());
+                    turn.steps().add(new AssistantStep(stepIndex, definition.name(), "SKIPPED_MODE", msg, preview));
+                    return Map.of(
+                            "status", "SKIPPED_MODE",
+                            "message", msg,
+                            "preview", preview);
+                }
+
                 // Check CONFIRM mode staging for write actions
-                if (mode == ExecutionMode.CONFIRM && definition.write()) {
+                if (turn.mode() == ExecutionMode.CONFIRM && definition.write()) {
                     UUID planId = UUID.randomUUID();
+                    int stepIndex = turn.steps().size() + 1;
+                    String summary = "Cần xác nhận trước khi thay đổi dữ liệu.";
                     PendingConfirmation pending = new PendingConfirmation(
                             planId,
                             definition.description(),
                             clock.instant().plus(Duration.ofMinutes(5)),
                             true,
                             definition.name());
-                    stagedConfirmation.set(pending);
+                    turn.stagedConfirmation().set(pending);
+                    Map<String, Object> preview = Map.of("preview", args != null ? args : Map.of());
+                    turn.steps().add(new AssistantStep(stepIndex, definition.name(), "AWAITING_CONFIRMATION", summary, preview));
                     return Map.of(
                             "status", "AWAITING_CONFIRMATION",
                             "confirmationId", planId.toString(),
                             "message", "Thao tác cần người dùng xác nhận trước khi thực hiện.");
                 }
 
-                // Execute tool via registry
-                int stepIndex = steps.size() + 1;
-                AiAssistantToolRegistry.ToolResult result = toolRegistry.execute(definition.name(), args);
+                // Execute tool via registry (wrapped in journal for write operations)
+                int stepIndex = turn.steps().size() + 1;
+                String actionId = definition.name() + "_" + stepIndex;
+                long ownerId = sessionState.userId != null ? sessionState.userId : 0L;
+                UUID effectiveRequestId = turn.clientRequestId() != null ? turn.clientRequestId() : sessionState.sessionId;
+
+                AiAssistantToolRegistry.ToolResult result;
+                if (definition.write() && journal != null) {
+                    result = journal.executeWithJournal(
+                            ownerId,
+                            effectiveRequestId,
+                            actionId,
+                            definition.name(),
+                            () -> toolRegistry.execute(definition.name(), args));
+                } else {
+                    result = toolRegistry.execute(definition.name(), args);
+                }
 
                 if (result.sources() != null) {
-                    sources.addAll(result.sources());
+                    turn.sources().addAll(result.sources());
                 }
 
                 Map<String, Object> resultMap = new LinkedHashMap<>();
@@ -772,15 +832,15 @@ public class AdkAssistantEngine implements AutoCloseable {
                     resultMap.put("data", result.result());
                 }
 
-                steps.add(new AssistantStep(stepIndex, definition.name(), result.status(), result.summary(), resultMap));
+                turn.steps().add(new AssistantStep(stepIndex, definition.name(), result.status(), result.summary(), resultMap));
                 return resultMap;
             }));
         }
 
-        private <T> T asCaller(Callable<T> action) throws Exception {
+        private <T> T asCaller(Authentication callerAuth, Callable<T> action) throws Exception {
             var prev = SecurityContextHolder.getContext();
             var ctx = SecurityContextHolder.createEmptyContext();
-            ctx.setAuthentication(auth);
+            ctx.setAuthentication(callerAuth);
             SecurityContextHolder.setContext(ctx);
             try {
                 return action.call();

@@ -29,6 +29,8 @@
     <properties>
         <java.version>21</java.version>
         <google-adk.version>1.13.0</google-adk.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
     <dependencies>
         <!-- G1: opt-in runner; no Spring bean or public endpoint is registered. -->
