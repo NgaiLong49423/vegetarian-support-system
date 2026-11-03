@@ -215,18 +215,14 @@ public class AdkAiClient implements AiClient, AutoCloseable {
             String text = result.text();
             var usage = result.usage();
             if (text == null || text.isBlank()) {
-                LOG.warn("ADK chat scope response incomplete; returning fail-closed classification");
-                return new ChatResult(null,
-                        "{\"decisionId\":\"MX_CHAT_SENSITIVE\",\"reasonId\":\"OTHER_HIGH_RISK\"}",
-                        usage.promptTokens(), usage.responseTokens(), usage.totalTokens(), usage);
+                throw AiProviderException.invalidResponse("ADK chat scope response is incomplete");
             }
             return new ChatResult(null, text.strip(), usage.promptTokens(), usage.responseTokens(), usage.totalTokens(), usage);
+        } catch (AiProviderException e) {
+            throw e;
         } catch (Exception e) {
-            LOG.warn("ADK chat scope classification failed: {}", e.getMessage());
-            var emptyUsage = new AiTokenUsage(modelId != null ? modelId : taskRunner.model(), "STANDARD", null, null, null, null, null, null);
-            return new ChatResult(null,
-                    "{\"decisionId\":\"MX_CHAT_SENSITIVE\",\"reasonId\":\"OTHER_HIGH_RISK\"}",
-                    null, null, null, emptyUsage);
+            LOG.warn("ADK chat scope classification failed category={}", e.getClass().getSimpleName());
+            throw new AiProviderException("ADK chat scope classification failed", e);
         }
     }
 

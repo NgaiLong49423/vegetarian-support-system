@@ -23,6 +23,45 @@ import tools.jackson.databind.json.JsonMapper;
 
 class AiAssistantExecutionServiceTest {
     @Test
+    void classificationDistinguishesOffTopicMedicalAndUnavailable() {
+        var users = mock(CurrentUserService.class);
+        var ai = mock(AiClient.class);
+        var settings = mock(AiChatSettingsService.class);
+        var quota = mock(AiTokenQuotaService.class);
+        when(users.findAuthenticatedUserId()).thenReturn(Optional.empty());
+        when(ai.classifyChatScope(anyString(), anyString()))
+                .thenReturn(new AiClient.ChatResult(null,
+                        "{\"decisionId\":\"MX_CHAT_OFF_TOPIC\",\"reasonId\":\"NONE\"}", 1, 1, 2))
+                .thenReturn(new AiClient.ChatResult(null,
+                        "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 1, 1, 2))
+                .thenReturn(new AiClient.ChatResult(null,
+                        "{\"decisionId\":\"MX_CHAT_SENSITIVE\",\"reasonId\":\"MEDICAL_RISK\"}", 1, 1, 2))
+                .thenThrow(tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException.invalidResponse("empty"));
+        when(ai.planAssistantTools(anyString(), anyString())).thenReturn(new AiClient.ChatResult(null,
+                "{\"answer\":\"Mâm Xanh hỗ trợ tìm công thức chay.\",\"toolCalls\":[]}", 1, 1, 2));
+        var service = new AiAssistantExecutionService(users, ai, settings, quota,
+                new AiAssistantSessionStore(Clock.systemUTC(), java.time.Duration.ofMinutes(30)),
+                mock(AiAssistantToolRegistry.class), new ApprovedAiKnowledgeRetriever(), new JsonMapper(),
+                mock(ApplicationEventPublisher.class), Clock.systemUTC());
+
+        var chemistry = service.execute(chatRequest("NaCl + H2O ra gì"));
+        var features = service.execute(chatRequest("Hệ thống này làm cái gì?"));
+        var medical = service.execute(chatRequest("Tôi bị bệnh gì?"));
+        var unavailable = service.execute(chatRequest("Cách nấu đậu phụ?"));
+
+        assertThat(chemistry.answer()).contains("chỉ hỗ trợ ẩm thực chay").doesNotContain("bác sĩ");
+        assertThat(features.answer()).contains("hỗ trợ tìm công thức chay");
+        assertThat(medical.answer()).contains("bác sĩ");
+        assertThat(unavailable.answer()).contains("chưa thể kiểm tra phạm vi").doesNotContain("bác sĩ");
+        verify(ai, times(1)).planAssistantTools(anyString(), anyString());
+    }
+
+    private static AiChatRequest chatRequest(String question) {
+        return new AiChatRequest(AiChatRequest.ContextType.GENERAL, null, question, List.of(),
+                "a01f3d0d-ec2e-40da-8517-1b18479c7ef7", null, ExecutionMode.CONFIRM, null, null, null);
+    }
+
+    @Test
     void failedNavigationDoesNotReturnTheModelsSuccessClaim() {
         var users = mock(CurrentUserService.class);
         var ai = mock(AiClient.class);

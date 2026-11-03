@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -111,14 +112,13 @@ class AdkAiClientTest {
     }
 
     @Test
-    void classifyChatScopeFailClosedOnEmptyResult() {
+    void classifyChatScopeReportsEmptyResultAsUnavailable() {
         AiTokenUsage usage = new AiTokenUsage("gemini-3.8-flash", "STANDARD", 10, 10, 20, 0, 0, 0);
         when(taskRunner.executeTaskWithResult(any(), any(), eq("CHAT_SCOPE"), any(), any(), any(), anyInt(), any()))
                 .thenReturn(new SingleStepResult("", usage));
 
-        var result = primaryClient.classifyChatScope("gemini-3.8-flash", "Instruction", "Hỏi bệnh lý");
-
-        assertThat(result.structuredJson()).contains("MX_CHAT_SENSITIVE", "OTHER_HIGH_RISK");
+        assertThatThrownBy(() -> primaryClient.classifyChatScope("gemini-3.8-flash", "Instruction", "Hỏi bệnh lý"))
+                .isInstanceOf(GeminiAiClient.AiProviderException.class);
     }
 
     @Test

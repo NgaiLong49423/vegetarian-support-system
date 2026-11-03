@@ -170,7 +170,32 @@
                     <environmentVariables>
                         <ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS>false</ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS>
                     </environmentVariables>
+                    <excludes>
+                        <exclude>**/*IntegrationTest.java</exclude>
+                        <exclude>**/MamXanhApplicationTests.java</exclude>
+                    </excludes>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <environmentVariables>
+                        <ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS>false</ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS>
+                    </environmentVariables>
+                    <includes>
+                        <include>**/*IntegrationTest.java</include>
+                        <include>**/MamXanhApplicationTests.java</include>
+                    </includes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

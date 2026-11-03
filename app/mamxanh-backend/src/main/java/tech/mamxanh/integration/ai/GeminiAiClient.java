@@ -139,12 +139,8 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
             String text = response.text();
             var usage = tokenUsage(response, modelId);
             if (!"STOP".equals(finishReason) || text == null || text.isBlank()) {
-                // Provider safety filters can suppress a classifier response for high-risk text.
-                // Fail closed into the Backend's prepared warning instead of surfacing a 502.
-                LOG.warn("Gemini chat scope response incomplete; returning fail-closed classification finishReason={}", finishReason);
-                return new ChatResult(null,
-                        "{\"decisionId\":\"MX_CHAT_SENSITIVE\",\"reasonId\":\"OTHER_HIGH_RISK\"}",
-                        usage.promptTokens(), usage.responseTokens(), usage.totalTokens(), usage);
+                LOG.warn("Gemini chat scope response incomplete finishReason={}", finishReason);
+                throw AiProviderException.invalidResponse("Gemini chat scope response is incomplete");
             }
             return new ChatResult(null, text.strip(), usage.promptTokens(), usage.responseTokens(), usage.totalTokens(), usage);
         });
