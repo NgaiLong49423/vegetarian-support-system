@@ -101,6 +101,7 @@ public class AdkAssistantEngine implements AutoCloseable {
     private final AiChatSettingsService chatSettings;
     private final AiAssistantSessionStore sessionStore;
     private final AiAssistantToolRegistry toolRegistry;
+    private final AdkDomainTools domainTools;
     private final ApprovedAiKnowledgeRetriever knowledge;
     private final AiPromptLoader promptLoader;
     private final AiClient aiClient;
@@ -117,6 +118,7 @@ public class AdkAssistantEngine implements AutoCloseable {
             AiChatSettingsService chatSettings,
             AiAssistantSessionStore sessionStore,
             AiAssistantToolRegistry toolRegistry,
+            @Autowired(required = false) AdkDomainTools domainTools,
             ApprovedAiKnowledgeRetriever knowledge,
             @Autowired(required = false) AiPromptLoader promptLoader,
             AiClient aiClient,
@@ -130,6 +132,7 @@ public class AdkAssistantEngine implements AutoCloseable {
         this.chatSettings = chatSettings;
         this.sessionStore = sessionStore;
         this.toolRegistry = toolRegistry;
+        this.domainTools = domainTools;
         this.knowledge = knowledge;
         this.promptLoader = promptLoader != null ? promptLoader : new AiPromptLoader();
         this.aiClient = aiClient;
@@ -137,6 +140,23 @@ public class AdkAssistantEngine implements AutoCloseable {
         this.events = events;
         this.clock = clock != null ? clock : Clock.systemUTC();
         this.llmFactory = llmFactory != null ? llmFactory : createDefaultLlmFactory(configuredApiKey);
+    }
+
+    public AdkAssistantEngine(
+            CurrentUserService users,
+            AiTokenQuotaService aiQuota,
+            AiChatSettingsService chatSettings,
+            AiAssistantSessionStore sessionStore,
+            AiAssistantToolRegistry toolRegistry,
+            ApprovedAiKnowledgeRetriever knowledge,
+            AiPromptLoader promptLoader,
+            AiClient aiClient,
+            ObjectMapper mapper,
+            ApplicationEventPublisher events,
+            Clock clock,
+            LlmFactory llmFactory,
+            String configuredApiKey) {
+        this(users, aiQuota, chatSettings, sessionStore, toolRegistry, null, knowledge, promptLoader, aiClient, mapper, events, clock, llmFactory, configuredApiKey);
     }
 
     public AiChatResponse execute(AiChatRequest request) {
@@ -688,6 +708,12 @@ public class AdkAssistantEngine implements AutoCloseable {
 
         @Override
         public Optional<FunctionDeclaration> declaration() {
+            if (domainTools != null) {
+                var decl = domainTools.getDeclaration(definition.name());
+                if (decl != null) {
+                    return Optional.of(decl);
+                }
+            }
             return Optional.of(FunctionDeclaration.builder()
                     .name(definition.name())
                     .description(definition.description())

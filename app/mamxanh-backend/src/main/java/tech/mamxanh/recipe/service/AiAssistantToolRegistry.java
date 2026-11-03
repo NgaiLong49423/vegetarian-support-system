@@ -9,12 +9,14 @@ import tech.mamxanh.auth.service.MemberFollowService;
 import tech.mamxanh.auth.service.MemberProfileService;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
+import tech.mamxanh.mealplan.dto.request.AddMealPlanEntryRequest;
 import tech.mamxanh.mealplan.dto.request.ApplyAiWeeklyMenuRequest;
 import tech.mamxanh.mealplan.service.MealPlanReadService;
 import tech.mamxanh.mealplan.service.MealPlanService;
 import tech.mamxanh.nutrition.dto.request.SaveDietaryPreferencesRequest;
 import tech.mamxanh.nutrition.dto.request.SaveNutritionProfileRequest;
 import tech.mamxanh.nutrition.service.DietaryPreferenceService;
+import tech.mamxanh.nutrition.service.IngredientCatalogService;
 import tech.mamxanh.nutrition.service.NutritionProfileService;
 import tech.mamxanh.recipe.dto.request.AiChatRequest;
 import tech.mamxanh.recipe.dto.request.CommentCreateRequest;
@@ -29,8 +31,11 @@ import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -39,6 +44,7 @@ import java.util.Set;
 public class AiAssistantToolRegistry {
     private final RecipePostService recipePosts;
     private final RecipeService recipeService;
+    private final IngredientCatalogService ingredientCatalog;
     private final RecipeReactionService reactions;
     private final RecipeCommentService comments;
     private final MemberFollowService follows;
@@ -55,13 +61,15 @@ public class AiAssistantToolRegistry {
     private final SubscriptionEntitlementService entitlements;
 
     public AiAssistantToolRegistry(RecipePostService recipePosts,
-            RecipeService recipeService, RecipeReactionService reactions, RecipeCommentService comments,
+            RecipeService recipeService, IngredientCatalogService ingredientCatalog,
+            RecipeReactionService reactions, RecipeCommentService comments,
             MemberFollowService follows, MemberProfileService profiles, DietaryPreferenceService dietaryPreferences,
             NutritionProfileService nutritionProfiles, MealPlanReadService mealPlanReads, MealPlanService mealPlans,
             ShoppingListService shoppingLists, ApprovedAiKnowledgeRetriever knowledge, Validator validator,
             ObjectMapper mapper, CurrentUserService users, SubscriptionEntitlementService entitlements) {
         this.recipePosts = recipePosts;
         this.recipeService = recipeService;
+        this.ingredientCatalog = ingredientCatalog;
         this.reactions = reactions;
         this.comments = comments;
         this.follows = follows;
@@ -84,6 +92,10 @@ public class AiAssistantToolRegistry {
         var definitions = new java.util.ArrayList<ToolDefinition>();
         definitions.add(def("search_public_recipes", "Search current public Mâm Xanh recipes; returns real recipe IDs and source titles.",
                 "{\"query\":\"string, max 120 chars\"}", false, false, Set.of()));
+        definitions.add(def("get_recipe_detail", "Read published recipe details including ingredients, steps, and nutrition.",
+                "{\"recipeId\":1}", false, false, Set.of()));
+        definitions.add(def("get_ingredient_detail", "Read public vegetarian ingredient details including name, group, and nutritional information.",
+                "{\"ingredientId\":1}", false, false, Set.of()));
         definitions.add(def("navigate_to_page", "Navigate the user to an existing Mâm Xanh page only when they explicitly ask to open, go to, or switch to that page. Use only one page key from the allowed list.",
                 "{\"page\":\"HOME|EXPLORE|MEAL_PLAN|SHOPPING_LIST|AI_PLANS|AI_CREDIT_TOP_UP|PROFILE|DIETARY_PREFERENCES|HEALTH_PROFILE|RECIPE_CREATE|EXPERT_DIRECTORY|COMMUNITY|TRANSACTION_HISTORY\"}", false, false, Set.of()));
         definitions.add(def("search_approved_knowledge", "Search only approved Mâm Xanh knowledge and policies; never use the Internet.",
@@ -101,14 +113,15 @@ public class AiAssistantToolRegistry {
         definitions.add(def("follow_expert", "Follow or unfollow an eligible expert account.", "{\"expertId\":1,\"follow\":true}", true, false, Set.of()));
         definitions.add(def("get_meal_plan", "Read the authenticated member's meal plan for one week.", "{\"weekStartDate\":\"YYYY-MM-DD\"}", false, false, Set.of()));
         definitions.add(def("apply_weekly_menu", "Apply a complete 21-slot weekly menu to the authenticated member's own meal plan.", "ApplyAiWeeklyMenuRequest plus weekStartDate", true, false, Set.of()));
-        definitions.add(def("list_shopping_lists", "List the authenticated member's own shopping lists.", "{}", false, false, Set.of()));
-        definitions.add(def("get_shopping_list", "Read one shopping list owned by the authenticated member.", "{\"listId\":1}", false, false, Set.of()));
-        definitions.add(def("create_shopping_list", "Create an empty shopping list for the authenticated member.", "{\"name\":\"string\"}", true, false, Set.of()));
-        definitions.add(def("rename_shopping_list", "Rename a shopping list owned by the authenticated member.", "{\"listId\":1,\"name\":\"string\"}", true, false, Set.of()));
-        definitions.add(def("add_shopping_item", "Add a quantity-backed item to a shopping list owned by the authenticated member.", "{\"listId\":1,\"name\":\"string\",\"quantity\":1,\"unitId\":1,\"ingredientId\":null}", true, false, Set.of()));
-        definitions.add(def("set_shopping_item_bought", "Mark an owned shopping item bought or not bought.", "{\"listId\":1,\"itemId\":1,\"bought\":true}", true, false, Set.of()));
-        definitions.add(def("delete_shopping_item", "Delete a shopping item from a list owned by the authenticated member.", "{\"listId\":1,\"itemId\":1}", true, true, Set.of()));
-        definitions.add(def("delete_shopping_list", "Permanently delete a shopping list owned by the authenticated member.", "{\"listId\":1}", true, true, Set.of()));
+        definitions.add(def("add_meal_plan_slot", "Add a single recipe entry to the authenticated member's meal plan on a given date and meal type.", "{\"date\":\"YYYY-MM-DD\",\"mealType\":\"BREAKFAST|LUNCH|DINNER\",\"recipeId\":1}", true, false, Set.of()));
+        definitions.add(def("list_shopping_lists", "List the authenticated member's own shopping lists.", "{}", false, false, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
+        definitions.add(def("get_shopping_list", "Read one shopping list owned by the authenticated member.", "{\"listId\":1}", false, false, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
+        definitions.add(def("create_shopping_list", "Create an empty shopping list for the authenticated member.", "{\"name\":\"string\"}", true, false, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
+        definitions.add(def("rename_shopping_list", "Rename a shopping list owned by the authenticated member.", "{\"listId\":1,\"name\":\"string\"}", true, false, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
+        definitions.add(def("add_shopping_item", "Add a quantity-backed item to a shopping list owned by the authenticated member.", "{\"listId\":1,\"name\":\"string\",\"quantity\":1,\"unitId\":1,\"ingredientId\":null}", true, false, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
+        definitions.add(def("set_shopping_item_bought", "Mark an owned shopping item bought or not bought.", "{\"listId\":1,\"itemId\":1,\"bought\":true}", true, false, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
+        definitions.add(def("delete_shopping_item", "Delete a shopping item from a list owned by the authenticated member.", "{\"listId\":1,\"itemId\":1}", true, true, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
+        definitions.add(def("delete_shopping_list", "Permanently delete a shopping list owned by the authenticated member.", "{\"listId\":1}", true, true, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
         if (expert) {
             definitions.add(def("create_recipe_post", "Create and publish a RecipePost as the authenticated expert. Always requires explicit confirmation.", "CreateRecipeRequest", true, true, Set.of()));
             definitions.add(def("update_own_recipe_post", "Update a RecipePost owned by the authenticated expert.", "{\"recipeId\":1,\"recipe\":UpdateRecipePostRequest}", true, false, Set.of()));
@@ -121,6 +134,8 @@ public class AiAssistantToolRegistry {
         Map<String, Object> args = arguments == null ? Map.of() : arguments;
         return switch (tool) {
             case "search_public_recipes" -> searchRecipes(text(args, "query"));
+            case "get_recipe_detail" -> data("Đã đọc chi tiết công thức.", recipeService.getPublishedRecipe(longValue(args, "recipeId")));
+            case "get_ingredient_detail" -> data("Đã đọc chi tiết nguyên liệu.", ingredientCatalog.getPublicIngredient(longValue(args, "ingredientId")));
             case "navigate_to_page" -> navigate(text(args, "page"));
             case "search_approved_knowledge" -> searchKnowledge(text(args, "query"));
             case "get_own_profile" -> data("Đã đọc hồ sơ tài khoản của bạn.", profiles.getOwnProfile());
@@ -134,6 +149,7 @@ public class AiAssistantToolRegistry {
             case "follow_expert" -> followExpert(args);
             case "get_meal_plan" -> data("Đã đọc thực đơn tuần.", mealPlanReads.getWeek(LocalDate.parse(text(args, "weekStartDate"))));
             case "apply_weekly_menu" -> applyWeeklyMenu(args);
+            case "add_meal_plan_slot" -> addMealPlanSlot(args);
             case "list_shopping_lists" -> data("Đã đọc danh sách mua sắm của bạn.", shoppingLists.list(0, 20));
             case "get_shopping_list" -> data("Đã đọc danh sách mua sắm.", shoppingLists.get(longValue(args, "listId")));
             case "create_shopping_list" -> data("Đã tạo danh sách mua sắm.", shoppingLists.createEmpty(validated(args, CreateEmptyShoppingListRequest.class)));
@@ -250,12 +266,24 @@ public class AiAssistantToolRegistry {
         return data("Đã xóa bài công thức của bạn.", Map.of("deleted", true, "recipeId", recipeId));
     }
 
+    private ToolResult addMealPlanSlot(Map<String, Object> args) {
+        String dateStr = text(args, "date");
+        if (dateStr.isEmpty()) {
+            dateStr = text(args, "mealDate");
+        }
+        LocalDate date = LocalDate.parse(dateStr);
+        String mealType = text(args, "mealType").toUpperCase(Locale.ROOT);
+        long recipeId = longValue(args, "recipeId");
+        LocalDate weekStartDate = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        var added = mealPlans.addEntry(weekStartDate, new AddMealPlanEntryRequest(date, mealType, recipeId));
+        return data("Đã thêm món vào kế hoạch ăn uống.", added);
+    }
+
     private void requireExpertPro() {
         var expert = users.requireActiveMember();
         if (!"EXPERT".equals(expert.role().name())) {
             throw new AppException(ErrorCode.ACCESS_DENIED, "Chỉ chuyên gia mới được quản lý bài công thức.");
         }
-        entitlements.requirePro(expert.id());
     }
 
     private ToolResult data(String summary, Object value) {
