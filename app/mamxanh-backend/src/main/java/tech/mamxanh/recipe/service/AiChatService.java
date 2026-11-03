@@ -96,6 +96,10 @@ public class AiChatService {
         this.orchestratorMode = orchestratorMode;
     }
 
+    public String getOrchestratorMode() {
+        return orchestratorMode;
+    }
+
     public void setReadClustersEnabled(boolean readClustersEnabled) {
         this.readClustersEnabled = readClustersEnabled;
     }
@@ -142,7 +146,7 @@ public class AiChatService {
             @Autowired(required = false) AiPromptLoader promptLoader,
             @Autowired(required = false) AdkAssistantEngine adkEngine,
             @Autowired(required = false) AiAssistantSessionStore sessionStore,
-            @Value("${mamxanh.ai.orchestrator:DUAL_RUN}") String orchestratorMode,
+            @Value("${mamxanh.ai.orchestrator:ADK}") String orchestratorMode,
             @Value("${mamxanh.ai.dual-run.read-clusters-enabled:true}") boolean readClustersEnabled) {
         this.users = users;
         this.recipes = recipes;
@@ -159,7 +163,7 @@ public class AiChatService {
         this.promptLoader = promptLoader != null ? promptLoader : new AiPromptLoader();
         this.adkEngine = adkEngine;
         this.sessionStore = sessionStore;
-        this.orchestratorMode = orchestratorMode != null ? orchestratorMode : "DUAL_RUN";
+        this.orchestratorMode = orchestratorMode != null ? orchestratorMode : "ADK";
         this.readClustersEnabled = readClustersEnabled;
     }
 

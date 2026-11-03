@@ -252,4 +252,16 @@ class AiChatServiceDualRunTest {
         verify(adkEngine).execute(request);
         verify(assistantExecution, never()).execute(any());
     }
+
+    @Test
+    @DisplayName("Default constructor cutover defaults to ADK orchestrator mode")
+    void defaultOrchestratorModeIsAdk() {
+        var defaultService = new AiChatService(
+                users, recipes, recipePosts, preferences, ai, mapper, events,
+                Clock.systemUTC(), entitlements, aiQuota, chatSettings,
+                assistantExecution, adkShoppingPilot, new AiPromptLoader(),
+                adkEngine, sessionStore, null, true
+        );
+        assertThat(defaultService.getOrchestratorMode()).isEqualTo("ADK");
+    }
 }
