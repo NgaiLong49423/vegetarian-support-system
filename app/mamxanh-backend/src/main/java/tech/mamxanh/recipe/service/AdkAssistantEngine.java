@@ -455,6 +455,13 @@ public class AdkAssistantEngine implements AutoCloseable {
                 List.of(), List.of(), null, null, "Đã dừng lượt chạy theo yêu cầu của bạn.");
     }
 
+    public boolean ownsSession(UUID sessionId, String owner) {
+        if (sessionId == null) return false;
+        return sessionStore.peekEngine(sessionId, owner)
+                .map(AiAssistantSessionStore.ENGINE_ADK::equals)
+                .orElse(false);
+    }
+
     public void deleteSession(UUID sessionId, String anonymousViewerId) {
         if (sessionId == null) return;
         Long userId = users.findAuthenticatedUserId().isPresent() ? users.requireActiveMember().id() : null;
