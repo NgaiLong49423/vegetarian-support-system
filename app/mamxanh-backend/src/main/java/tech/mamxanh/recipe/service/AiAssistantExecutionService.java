@@ -244,8 +244,9 @@ public class AiAssistantExecutionService {
         String model = settings.resolve(userId, userId == null ? request.anonymousViewerId() : null);
         try {
             String latest = mapper.writeValueAsString(Map.of("contextType", request.contextType(), "question", request.question()));
-            AiClient.ChatResult result = model == null ? ai.classifyChatScope(CLASSIFIER, latest)
-                    : ai.classifyChatScope(model, CLASSIFIER, latest);
+            String classifierPrompt = promptLoader != null ? promptLoader.loadClassifierPrompt() : CLASSIFIER;
+            AiClient.ChatResult result = model == null ? ai.classifyChatScope(classifierPrompt, latest)
+                    : ai.classifyChatScope(model, classifierPrompt, latest);
             if (result == null || result.structuredJson() == null || result.structuredJson().isBlank()) {
                 return response(request, sessionId, mode, List.of(), List.of(), null, null, CLASSIFICATION_UNAVAILABLE_ANSWER);
             }
