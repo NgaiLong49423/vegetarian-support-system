@@ -31,7 +31,7 @@ import java.util.Map;
 public class AdkAiClient implements AiClient, AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(AdkAiClient.class);
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(10);
-    private static final Duration CHAT_SCOPE_TIMEOUT = Duration.ofSeconds(6);
+    private static final Duration CHAT_SCOPE_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration CHAT_ANSWER_TIMEOUT = Duration.ofSeconds(7);
 
     private final AdkSingleStepTaskRunner taskRunner;
@@ -221,7 +221,7 @@ public class AdkAiClient implements AiClient, AutoCloseable {
         } catch (AiProviderException e) {
             throw e;
         } catch (Exception e) {
-            LOG.warn("ADK chat scope classification failed category={}", e.getClass().getSimpleName());
+            LOG.warn("ADK chat scope classification failed category={}: {}", e.getClass().getSimpleName(), e.getMessage());
             throw new AiProviderException("ADK chat scope classification failed", e);
         }
     }

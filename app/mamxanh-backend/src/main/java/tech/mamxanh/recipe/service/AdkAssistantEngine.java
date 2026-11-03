@@ -471,9 +471,12 @@ public class AdkAssistantEngine implements AutoCloseable {
             }
             return buildResponse(request, sessionId, mode, "COMPLETED", List.of(), List.of(), null, null, answer);
         } catch (AiProviderException exception) {
-            LOG.warn("AI request classification failed category={} status={}", exception.kind(), exception.httpStatus());
+            LOG.warn("AI request classification failed category={} status={} message={}: {}",
+                    exception.kind(), exception.httpStatus(), exception.getMessage(),
+                    exception.getCause() != null ? exception.getCause().getMessage() : "no cause");
             return buildResponse(request, sessionId, mode, "FAILED", List.of(), List.of(), null, null, CLASSIFICATION_UNAVAILABLE_ANSWER);
         } catch (JacksonException exception) {
+            LOG.warn("AI classification JSON parsing failed: {}", exception.getMessage());
             return buildResponse(request, sessionId, mode, "FAILED", List.of(), List.of(), null, null, CLASSIFICATION_UNAVAILABLE_ANSWER);
         }
     }
