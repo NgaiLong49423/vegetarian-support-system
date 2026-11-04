@@ -1,12 +1,12 @@
 # Đồng bộ develop: BUG-067–069 của FR-10 chuyển thành BUG-082–084, giữ bản ghi develop ở mã gốc.
 schema_version: 1
-last_updated: 2026-11-02
+last_updated: 2026-11-03
 # BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
 # BUG-066 được cấp khi đồng bộ PR #161 ngày 2026-10-25 vì BUG-065 đã được dùng cho lỗi OpenAPI.
 # BUG-078–080 đã được cấp trên nhánh feature/17-ai-usage-telemetry, tránh cấp trùng khi tích hợp.
 # Đồng bộ PR #227: bản ghi quyền FR-21 của nhánh feature đổi BUG-086 → BUG-095; BUG-086 trên develop được giữ nguyên.
-next_id: 96
+next_id: 98
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -16,6 +16,24 @@ status_definitions:
 # Đồng bộ PR #194: mã gốc FR-10 → mã sau tích hợp: BUG-054 → BUG-070, BUG-055 → BUG-071, BUG-056 → BUG-072, BUG-057 → BUG-073, BUG-058 → BUG-074, BUG-059 → BUG-075, BUG-060 → BUG-076, BUG-066 → BUG-077.
 # Bản ghi BUG-060 của FR-11 tại 79394340 trùng lỗi privacy đã hợp nhất dưới BUG-076; giữ BUG-060 của develop.
 bugs:
+  - id: BUG-097
+    title: Bài live tạo index G3 không khởi tạo ngân sách và giới hạn thiếu embedding
+    status: RESOLVED
+    severity: Medium
+    area: Backend/AI/Live Evaluation/Knowledge Index
+    file: .agents/outputs/bugs/BUG-097.md
+    created: 2026-11-03
+    updated: 2026-11-03
+    related_issue: Unknown
+  - id: BUG-096
+    title: Thời hạn liên kết đặt lại mật khẩu trong kho tri thức không chính xác
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Knowledge Base/Tài khoản/Khôi phục mật khẩu
+    file: .agents/outputs/bugs/BUG-096.md
+    created: 2026-11-03
+    updated: 2026-11-03
+    related_issue: Unknown
   - id: BUG-086
     title: Chatbot dùng timeout Gemini chung 60 giây vượt giới hạn 10 giây
     status: RESOLVED

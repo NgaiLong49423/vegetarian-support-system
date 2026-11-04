@@ -74,7 +74,11 @@ import static org.mockito.Mockito.when;
  */
 @EnabledIfEnvironmentVariable(named = "MAMXANH_G3_LIVE", matches = "true")
 class G3LiveEvaluationTest {
+    private static final String PRICING_VERIFIED_ON = "2026-11-03";
     private static final String MODEL_ID = AiTokenUsage.MODEL;
+    private static final Set<String> REEMBEDDED_DOCUMENT_IDS = Set.of(
+            "password-recovery", "assistant-scope", "execution-confirmation",
+            "session-consent-budget", "shopping-create", "shopping-read");
     private static final KnowledgeIndex.Config EMBEDDING_CONFIG =
             new KnowledgeIndex.Config("gemini-embedding-2", 768, "search-prefix-v1");
 
@@ -110,7 +114,8 @@ class G3LiveEvaluationTest {
         G3BudgetLedger budget = new G3BudgetLedger(Path.of(".g3-evaluation"), json);
         String phase = System.getProperty("g3.phase", "full");
         if ("index-only".equals(phase)) {
-            budget.preflight(0, 90, 24_000);
+            // Index every catalog chunk plus enough calls for the complete calibration/holdout query set.
+            budget.preflight(0, catalog.chunks().size() + 20, 24_000);
         } else if ("conversations-only".equals(phase)) {
             budget.preflight(95, 40, 24_000);
         } else {
@@ -149,7 +154,19 @@ class G3LiveEvaluationTest {
         List<EvalQuery> holdout = queries.stream().filter(q -> "holdout".equals(q.split())).toList();
 
         Map<String, List<Double>> chunkVectors = new LinkedHashMap<>();
+        KnowledgeIndex previousIndex = null;
+        if (Files.exists(publishedIndexPath)) {
+            previousIndex = json.readValue(Files.readString(publishedIndexPath), KnowledgeIndex.class);
+        }
         for (var chunk : catalog.chunks()) {
+            if (previousIndex != null
+                    && previousIndex.config().equals(EMBEDDING_CONFIG)
+                    && !REEMBEDDED_DOCUMENT_IDS.contains(chunk.documentId())
+                    && previousIndex.vectors().containsKey(chunk.id())) {
+                // These documents were not edited in this corpus update, so their vectors remain valid.
+                chunkVectors.put(chunk.id(), previousIndex.vectors().get(chunk.id()));
+                continue;
+            }
             String title = catalog.document(chunk.documentId()).metadata().title();
             chunkVectors.put(chunk.id(), embedder.embed(chunk.text(), title, false));
         }
@@ -539,8 +556,16 @@ class G3LiveEvaluationTest {
         G3BudgetLedger(Path dir, ObjectMapper json) throws IOException {
             this.dir = dir;
             this.json = json;
-            if(!java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toString().equals("2026-11-01")) throw new IllegalStateException("Reverify G3 prices before live calls");
+            if(!java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toString().equals(PRICING_VERIFIED_ON)) throw new IllegalStateException("Reverify G3 prices before live calls");
             Files.createDirectories(dir);
+            Path ledgerPath = dir.resolve("budget.json");
+            if (!Files.exists(ledgerPath)) {
+                try {
+                    Files.writeString(ledgerPath, json.writeValueAsString(new State(0.0, 0, 0, PRICING_VERIFIED_ON)), StandardOpenOption.CREATE_NEW);
+                } catch (java.nio.file.FileAlreadyExistsException concurrentCreate) {
+                    // Another authorized runner created the cumulative ledger first.
+                }
+            }
         }
 
         void preflight(int generationCalls, int embeddingCalls, int inputBytes) throws IOException {
@@ -553,6 +578,9 @@ class G3LiveEvaluationTest {
             Path ledgerPath = dir.resolve("budget.json");
             if (Files.exists(ledgerPath)) {
                 State existing = json.readValue(Files.readString(ledgerPath), State.class);
+                if (!PRICING_VERIFIED_ON.equals(existing.pricingVerifiedOn())) {
+                    throw new IllegalStateException("Reverify pricing before continuing the G3 ledger");
+                }
                 if (existing.reservedUpperUsd() + batchUpper > HARD_CAP_USD) {
                     throw new IllegalStateException("Existing G3 spend + batch bound exceeds $5.00 USD ceiling");
                 }
@@ -574,7 +602,7 @@ class G3LiveEvaluationTest {
                         current.reservedUpperUsd() + usdAmount,
                         current.embeddingAttempts() + (generation ? 0 : 1),
                         current.generationAttempts() + (generation ? 1 : 0),
-                        "2026-11-01");
+                        PRICING_VERIFIED_ON);
                 if (next.reservedUpperUsd() > HARD_CAP_USD
                         || next.generationAttempts() > batchGenerationEnd
                         || next.embeddingAttempts() > batchEmbeddingEnd) {
@@ -656,7 +684,7 @@ class G3LiveEvaluationTest {
             Path ledgerPath = dir.resolve("budget.json");
             State finalState = Files.exists(ledgerPath)
                     ? json.readValue(Files.readString(ledgerPath), State.class)
-                    : new State(0.0, 0, 0, "2026-11-01");
+                    : new State(0.0, 0, 0, PRICING_VERIFIED_ON);
             double actualProviderEstimatedUsd =
                     (totalPromptTokens * 0.75 + (totalReportedTokens - totalPromptTokens) * 3.75
                             + totalEmbeddingProviderTokens * 0.20) / 1_000_000.0;

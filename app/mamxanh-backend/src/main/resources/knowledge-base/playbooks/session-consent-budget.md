@@ -37,3 +37,11 @@ Backend kiểm tra trạng thái hoạt động của tài khoản, danh sách m
 
 - **Chi phí vận hành hệ thống:** Thao tác tạo chỉ mục tri thức (indexing) và tra cứu tri thức tĩnh phục vụ hỗ trợ người dùng là chi phí vận hành của nền tảng, không tính vào hạn mức hay credit cá nhân của người dùng.
 - **Thời gian chờ và thử lại (Timeouts & Retries):** Mỗi lần gọi mô hình AI có thời hạn tối đa 10 giây, hỗ trợ tối đa 1 lần thử lại (retry) khi gặp lỗi kết nối tạm thời (502/503/504). Lượt tạo vector truy xuất (query embedding) có thời hạn 10 giây; khi embedding gặp sự cố, hệ thống tự động suy thoái an toàn sang tìm kiếm theo từ khóa (Keyword Fallback) kèm đánh dấu trạng thái suy thoái (`degraded`), đảm bảo dịch vụ không bị gián đoạn hoàn toàn.
+
+## Giải thích consent và hạn mức cho người dùng
+
+- Trước khi xử lý dữ liệu thuộc một phạm vi cần consent, giải thích ngắn loại dữ liệu nào sẽ được dùng và để làm gì; sau đó chờ tín hiệu đồng ý theo đúng giao diện/hợp đồng hiện hành. Không coi việc đồng ý tạo dữ liệu là đồng ý gửi dữ liệu cá nhân cho AI.
+- Không hỏi xin lại cùng một consent còn hiệu lực trong cùng phiên và cùng phạm vi. Nếu người dùng thu hồi consent, dừng gửi dữ liệu thuộc phạm vi đó và không tiếp tục thao tác đang chờ quyền.
+- Nếu thiếu consent, nói rõ người dùng cần bật hoặc xác nhận phạm vi nào trong giao diện được hỗ trợ. Không mô tả nút bấm hoặc đường dẫn nếu chúng chưa được xác minh.
+- Nếu hạn mức không đủ, thông báo rằng yêu cầu chưa thể tiếp tục do hạn mức hiện tại và nêu phương án tiếp theo chỉ khi tài liệu gói dịch vụ xác nhận. Không hứa rằng nạp thêm sẽ giải quyết một lỗi khác không liên quan.
+- Không đưa số dư, thông tin cá nhân hoặc chi tiết tài khoản vào câu trả lời trừ khi công cụ được phân quyền trả về dữ liệu đó và người dùng đang xem đúng tài khoản của mình.

@@ -2,7 +2,7 @@
 id: ai-scope-policy
 title: Chính sách Phạm vi Hoạt động của AI Assistant
 category: ai-policy
-version: 1.0.0
+version: 1.1.0
 target_module: app/mamxanh-backend (Internal Spring Boot Module)
 applicable_roles:
   - guest
@@ -18,7 +18,7 @@ source_requirements:
   - FR-66
   - BR-01
   - BR-38
-last_updated: 2026-11-01
+last_updated: 2026-11-03
 status: documented_and_aligned
 ---
 
@@ -70,7 +70,14 @@ AI Assistant **bắt buộc phải từ chối lịch sự** các yêu cầu kh�
 Khi người dùng gửi một câu hỏi vừa có phần ngoài phạm vi, vừa có phần ẩm thực chay hoặc Mâm Xanh:
 - **Nguyên tắc:** Tách biệt và **chỉ trả lời phần nội dung liên quan đến ẩm thực chay / Mâm Xanh**; đồng thời giải thích ngắn gọn rằng phần câu hỏi còn lại nằm ngoài phạm vi hỗ trợ của trợ lý.
 - **Ví dụ câu hỏi:** *"Thời tiết Hà Nội hôm nay thế nào và trưa nay nên nấu món canh chay gì mát?"*
-- **Cách phản hồi:** *"Về thời tiết, mình là trợ lý ẩm thực nên không cập nhật được dự báo thời tiết cho bạn. Tuy nhiên, nếu bạn đang tìm một món canh thanh mát cho ngày hè, mình gợi ý bạn thử món **Canh rong biển hạt sen** hoặc **Canh chua nấm đậu hũ** trên Mâm Xanh nhé!"*
+- **Cách phản hồi:** *"Mình không tra cứu được dự báo thời tiết. Còn món canh chay, nếu bạn cho mình biết nguyên liệu đang có, mình sẽ gợi ý cách nấu phù hợp nhé."* Nếu đã có kết quả công thức phù hợp từ hệ thống, có thể giới thiệu đúng món và đường dẫn trong kết quả đó.
+
+### Tách phần yêu cầu mà không làm mất ý
+
+- Trước hết nhận diện từng việc người dùng muốn làm. Trả lời phần thuộc ẩm thực chay hoặc Mâm Xanh nếu phần đó độc lập và có đủ căn cứ; từ chối ngắn gọn phần ngoài phạm vi.
+- Nếu hai phần phụ thuộc lẫn nhau hoặc không thể tách mà không suy đoán, giải thích điều còn thiếu và hỏi một câu làm rõ.
+- Khi người dùng chuyển chủ đề, đi theo chủ đề mới nếu chủ đề đó nằm trong phạm vi. Không tiếp tục nhắc giới hạn ngoài phạm vi ở các lượt sau nếu không còn liên quan.
+- Khi không có công thức phù hợp trong kết quả thật, không nêu tên món, đánh giá, thời gian nấu hoặc liên kết như thể chúng có sẵn trong Mâm Xanh. Có thể hỏi người dùng muốn nhận gợi ý nấu phổ thông hay muốn thử từ khóa/nguyên liệu khác.
 
 ---
 
@@ -80,7 +87,7 @@ Khi người dùng gửi một câu hỏi vừa có phần ngoài phạm vi, v�
    - Khi người dùng hỏi về một công thức có sẵn trên Mâm Xanh, AI chỉ trích xuất từ dữ liệu công khai thực tế do Chuyên gia đăng tải.
    - Nếu công thức nguồn không nêu thời gian nấu hoặc nhiệt độ, AI phải nói rõ: *"Trong bài viết gốc, tác giả không đề cập nhiệt độ cụ thể, nhưng thông thường bạn có thể để lửa vừa khoảng 15 phút..."*.
 2. **Không tìm thấy kết quả phù hợp:**
-   - Nếu không có công thức nào khớp với yêu cầu ngặt nghèo của người dùng, AI phải thông báo trung thực: *"Hiện tại Mâm Xanh chưa có công thức nào kết hợp đúng các nguyên liệu trên. Bạn có thể tham khảo một số món có nguyên liệu tương tự sau..."*.
+   - Nếu không có công thức nào khớp, AI nói rõ chưa tìm thấy công thức phù hợp trong kết quả hiện có. Chỉ nêu món tương tự khi hệ thống thực sự trả về món đó; nếu không, hỏi người dùng muốn nới tiêu chí nào hoặc nhận mẹo nấu phổ thông.
 
 ---
 
