@@ -3,6 +3,7 @@ package tech.mamxanh.recipe.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import tech.mamxanh.auth.service.CurrentUserService;
@@ -86,19 +87,35 @@ public class AiChatService {
     private final AiAssistantExecutionService assistantExecution;
     private final AdkShoppingPilotService adkShoppingPilot;
     private final AiPromptLoader promptLoader;
+    private final AdkAssistantEngine adkEngine;
+    private final AiAssistantSessionStore sessionStore;
+    private String orchestratorMode = "DUAL_RUN";
+    private boolean readClustersEnabled = true;
+
+    public void setOrchestratorMode(String orchestratorMode) {
+        this.orchestratorMode = orchestratorMode;
+    }
+
+    public String getOrchestratorMode() {
+        return orchestratorMode;
+    }
+
+    public void setReadClustersEnabled(boolean readClustersEnabled) {
+        this.readClustersEnabled = readClustersEnabled;
+    }
 
     public AiChatService(CurrentUserService users, RecipeService recipes,
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
             ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
             AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings) {
-        this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, chatSettings, null, null, null);
+        this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, chatSettings, null, null, null, null, null, "DUAL_RUN", true);
     }
 
     public AiChatService(CurrentUserService users, RecipeService recipes,
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
             ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
             AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings, AiAssistantExecutionService assistantExecution) {
-        this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, chatSettings, assistantExecution, null, null);
+        this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, chatSettings, assistantExecution, null, null, null, null, "DUAL_RUN", true);
     }
 
     public AiChatService(CurrentUserService users, RecipeService recipes,
@@ -107,7 +124,7 @@ public class AiChatService {
             AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings,
             AiAssistantExecutionService assistantExecution,
             AiPromptLoader promptLoader) {
-        this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, chatSettings, assistantExecution, null, promptLoader);
+        this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, chatSettings, assistantExecution, null, promptLoader, null, null, "DUAL_RUN", true);
     }
 
     public AiChatService(CurrentUserService users, RecipeService recipes,
@@ -116,7 +133,7 @@ public class AiChatService {
             AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings,
             AiAssistantExecutionService assistantExecution,
             AdkShoppingPilotService adkShoppingPilot) {
-        this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, chatSettings, assistantExecution, adkShoppingPilot, null);
+        this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, chatSettings, assistantExecution, adkShoppingPilot, null, null, null, "DUAL_RUN", true);
     }
 
     @Autowired
@@ -126,7 +143,11 @@ public class AiChatService {
             AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings,
             @Autowired(required = false) AiAssistantExecutionService assistantExecution,
             @Autowired(required = false) AdkShoppingPilotService adkShoppingPilot,
-            @Autowired(required = false) AiPromptLoader promptLoader) {
+            @Autowired(required = false) AiPromptLoader promptLoader,
+            @Autowired(required = false) AdkAssistantEngine adkEngine,
+            @Autowired(required = false) AiAssistantSessionStore sessionStore,
+            @Value("${mamxanh.ai.orchestrator:ADK}") String orchestratorMode,
+            @Value("${mamxanh.ai.dual-run.read-clusters-enabled:true}") boolean readClustersEnabled) {
         this.users = users;
         this.recipes = recipes;
         this.recipePosts = recipePosts;
@@ -140,6 +161,23 @@ public class AiChatService {
         this.assistantExecution = assistantExecution;
         this.adkShoppingPilot = adkShoppingPilot;
         this.promptLoader = promptLoader != null ? promptLoader : new AiPromptLoader();
+        this.adkEngine = adkEngine;
+        this.sessionStore = sessionStore;
+        this.orchestratorMode = orchestratorMode != null ? orchestratorMode : "ADK";
+        this.readClustersEnabled = readClustersEnabled;
+    }
+
+    public AiChatService(CurrentUserService users, RecipeService recipes,
+            RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
+            ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
+            AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings,
+            AiAssistantExecutionService assistantExecution,
+            AdkShoppingPilotService adkShoppingPilot,
+            AiPromptLoader promptLoader,
+            AdkAssistantEngine adkEngine,
+            AiAssistantSessionStore sessionStore) {
+        this(users, recipes, recipePosts, preferences, ai, mapper, events, clock, entitlements, aiQuota, chatSettings,
+                assistantExecution, adkShoppingPilot, promptLoader, adkEngine, sessionStore, "DUAL_RUN", true);
     }
 
     /** Compatibility constructor used by focused orchestration tests. */
@@ -155,15 +193,80 @@ public class AiChatService {
     }
 
     public AiChatResponse answer(AiChatRequest request) {
-        if (request.controlAction() != null && adkShoppingPilot != null) return adkShoppingPilot.cancel(request);
+        Long userId = users.findAuthenticatedUserId().map(id -> users.requireActiveMember().id()).orElse(null);
+        String owner = userId == null ? "guest:" + request.anonymousViewerId() : "user:" + userId;
+
+        // Preflight sanity and resource validation
+        if (request.controlAction() == null) {
+            validateContext(request);
+        }
+
+        // 1. Control actions (Cancel / Stop)
+        if (request.controlAction() != null) {
+            if (adkEngine != null && request.sessionId() != null && adkEngine.ownsSession(request.sessionId(), owner)) {
+                return adkEngine.cancel(request);
+            }
+            if (adkShoppingPilot != null) {
+                return adkShoppingPilot.cancel(request);
+            }
+        }
+
+        // 2. Full ADK cutover mode
+        if ("ADK".equalsIgnoreCase(orchestratorMode) && adkEngine != null) {
+            if (adkShoppingPilot != null && request.sessionId() != null && adkShoppingPilot.ownsSession(request.sessionId(), owner)) {
+                return adkShoppingPilot.execute(request);
+            }
+            return adkEngine.execute(request);
+        }
+
+        // 3. Existing Session routing: session affinity takes precedence in DUAL_RUN
+        if (request.sessionId() != null) {
+            if (adkEngine != null && adkEngine.ownsSession(request.sessionId(), owner)) {
+                return adkEngine.execute(request);
+            }
+            if (adkShoppingPilot != null && adkShoppingPilot.ownsSession(request.sessionId(), owner)) {
+                return adkShoppingPilot.execute(request);
+            }
+            if (assistantExecution != null) {
+                return assistantExecution.execute(request);
+            }
+        }
+
+        // 4. Forced Legacy mode
+        if ("LEGACY".equalsIgnoreCase(orchestratorMode)) {
+            return executeLegacy(request, userId);
+        }
+
+        // 5. Dual-Run Mode (Default in Phase 5)
+        // Check if request targets an un-migrated write cluster (Shopping list pilot, or confirmation/consent for writes)
         if (shouldRouteToG3Pilot(request)) {
             return adkShoppingPilot.execute(request);
         }
-        if (assistantExecution != null && (request.sessionId() != null || request.executionMode() != null
-                || request.consentDecision() != null || request.confirmationId() != null
-                || request.confirmationDecision() != null)) {
+        if (isUnmigratedWriteRequest(request) && assistantExecution != null) {
             return assistantExecution.execute(request);
         }
+
+        // Read clusters: Cụm 1 (Q&A/Knowledge), Cụm 2 (Recipe search/detail), Cụm 3 (Navigation)
+        if (readClustersEnabled && adkEngine != null) {
+            return adkEngine.execute(request);
+        }
+
+        return executeLegacy(request, userId);
+    }
+
+    private boolean isUnmigratedWriteRequest(AiChatRequest request) {
+        if (request.confirmationId() != null || request.confirmationDecision() != null || request.consentDecision() != null) {
+            return true;
+        }
+        String q = request.question();
+        if (q == null) return false;
+        String normalized = java.text.Normalizer.normalize(q, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(java.util.Locale.ROOT);
+        return normalized.matches(".*\\b(tao|lap|them|xoa|sua|cap nhat|doi|luu)\\b.*\\b(danh sach|thuc don|ke hoach|ho so|so thich|dinh duong|mon an)\\b.*");
+    }
+
+    private AiChatResponse executeLegacy(AiChatRequest request, Long userId) {
         String inputText = request.question() + " " + (request.history() == null ? "" : request.history().stream()
                 .filter(turn -> turn.speaker() == AiChatRequest.Speaker.USER).map(AiChatRequest.Turn::content)
                 .collect(java.util.stream.Collectors.joining(" ")));
@@ -176,7 +279,6 @@ public class AiChatService {
                             detectedCategory, AiChatRequest.ConsentPurpose.AI_CHAT)), "Google Gemini"),
                     null, List.of());
         }
-        Long userId = users.findAuthenticatedUserId().isPresent() ? users.requireActiveMember().id() : null;
         validateContext(request);
         AiChatIntent.Workflow workflow = AiChatIntent.workflow(request);
         if (workflow != null) return routeWorkflow(request, userId, workflow);
@@ -243,7 +345,13 @@ public class AiChatService {
     }
 
     public void deleteSession(java.util.UUID sessionId, String anonymousViewerId) {
-        if (adkShoppingPilot != null) {
+        if (sessionId == null) return;
+        Long userId = users.findAuthenticatedUserId().map(id -> users.requireActiveMember().id()).orElse(null);
+        String owner = userId == null ? "guest:" + anonymousViewerId : "user:" + userId;
+
+        if (adkEngine != null && adkEngine.ownsSession(sessionId, owner)) {
+            adkEngine.deleteSession(sessionId, anonymousViewerId);
+        } else if (adkShoppingPilot != null && adkShoppingPilot.ownsSession(sessionId, owner)) {
             adkShoppingPilot.deleteSession(sessionId, anonymousViewerId);
         } else if (assistantExecution != null) {
             assistantExecution.deleteSession(sessionId, anonymousViewerId);
@@ -254,6 +362,7 @@ public class AiChatService {
         if (adkShoppingPilot == null) return false;
         Long userId = users.findAuthenticatedUserId().map(id -> users.requireActiveMember().id()).orElse(null);
         String owner = userId == null ? "guest:" + request.anonymousViewerId() : "user:" + userId;
+
         if (request.sessionId() != null) {
             return adkShoppingPilot.ownsSession(request.sessionId(), owner);
         }

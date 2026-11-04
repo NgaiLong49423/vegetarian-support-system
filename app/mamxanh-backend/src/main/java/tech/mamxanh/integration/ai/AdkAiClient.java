@@ -31,7 +31,7 @@ import java.util.Map;
 public class AdkAiClient implements AiClient, AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(AdkAiClient.class);
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(10);
-    private static final Duration CHAT_SCOPE_TIMEOUT = Duration.ofSeconds(6);
+    private static final Duration CHAT_SCOPE_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration CHAT_ANSWER_TIMEOUT = Duration.ofSeconds(7);
 
     private final AdkSingleStepTaskRunner taskRunner;
@@ -210,23 +210,19 @@ public class AdkAiClient implements AiClient, AutoCloseable {
         try {
             var result = taskRunner.executeTaskWithResult(
                     currentAuth(), modelId, "CHAT_SCOPE", systemInstruction, prompt,
-                    schema, 128, CHAT_SCOPE_TIMEOUT);
+                    schema, 1024, CHAT_SCOPE_TIMEOUT);
 
             String text = result.text();
             var usage = result.usage();
             if (text == null || text.isBlank()) {
-                LOG.warn("ADK chat scope response incomplete; returning fail-closed classification");
-                return new ChatResult(null,
-                        "{\"decisionId\":\"MX_CHAT_SENSITIVE\",\"reasonId\":\"OTHER_HIGH_RISK\"}",
-                        usage.promptTokens(), usage.responseTokens(), usage.totalTokens(), usage);
+                throw AiProviderException.invalidResponse("ADK chat scope response is incomplete");
             }
             return new ChatResult(null, text.strip(), usage.promptTokens(), usage.responseTokens(), usage.totalTokens(), usage);
+        } catch (AiProviderException e) {
+            throw e;
         } catch (Exception e) {
-            LOG.warn("ADK chat scope classification failed: {}", e.getMessage());
-            var emptyUsage = new AiTokenUsage(modelId != null ? modelId : taskRunner.model(), "STANDARD", null, null, null, null, null, null);
-            return new ChatResult(null,
-                    "{\"decisionId\":\"MX_CHAT_SENSITIVE\",\"reasonId\":\"OTHER_HIGH_RISK\"}",
-                    null, null, null, emptyUsage);
+            LOG.warn("ADK chat scope classification failed category={}: {}", e.getClass().getSimpleName(), e.getMessage());
+            throw new AiProviderException("ADK chat scope classification failed", e);
         }
     }
 

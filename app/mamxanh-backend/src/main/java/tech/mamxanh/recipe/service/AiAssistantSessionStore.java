@@ -28,6 +28,7 @@ public class AiAssistantSessionStore {
 
     public static final String ENGINE_LEGACY = "LEGACY_ASSISTANT";
     public static final String ENGINE_G3_PILOT = "ADK_SHOPPING_PILOT";
+    public static final String ENGINE_ADK = "ADK_ASSISTANT";
 
     public synchronized SessionHandle open(UUID requestedId, String owner) {
         return open(requestedId, owner, ENGINE_LEGACY);

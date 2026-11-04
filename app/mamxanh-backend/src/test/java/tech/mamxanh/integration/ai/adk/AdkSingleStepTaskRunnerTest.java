@@ -34,6 +34,7 @@ class AdkSingleStepTaskRunnerTest {
     @AfterEach
     void cleanup() {
         SecurityContextHolder.clearContext();
+        System.clearProperty("ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS");
     }
 
     @Test
@@ -69,6 +70,35 @@ class AdkSingleStepTaskRunnerTest {
 
         assertThat(model.requests).isEmpty();
         assertThat(accounting.onUsableResponseInvocations.get()).isZero();
+    }
+
+    @Test
+    void executeTaskRejectsWhenTracingSpanContentCaptureIsExplicitlyTrue() {
+        System.setProperty("ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS", "true");
+        var accounting = new TestPolicy();
+        var model = new TestModel(req -> textResponse("{}"));
+        var gateway = new AdkModelGateway(model, accounting, CLOCK);
+        var runner = new AdkSingleStepTaskRunner(gateway, CLOCK);
+        Authentication caller = userAuth("101", "ROLE_CUSTOMER");
+
+        assertThatThrownBy(() -> runner.executeTask(caller, "task", "Instruction", "Prompt",
+                null, 512, Duration.ofSeconds(5)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Disable ADK message-content tracing");
+    }
+
+    @Test
+    void executeTaskStripsMarkdownCodeFencesFromStructuredOutput() {
+        var accounting = new TestPolicy();
+        var model = new TestModel(req -> textResponse("```json\n{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}\n```"));
+        var gateway = new AdkModelGateway(model, accounting, CLOCK);
+        var runner = new AdkSingleStepTaskRunner(gateway, CLOCK);
+        Authentication caller = userAuth("101", "ROLE_CUSTOMER");
+
+        String result = runner.executeTask(caller, "scope_task", "Instruction", "Hỏi món ăn",
+                null, 128, Duration.ofSeconds(5));
+
+        assertThat(result).isEqualTo("{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}");
     }
 
     private static Authentication userAuth(String userId, String role) {

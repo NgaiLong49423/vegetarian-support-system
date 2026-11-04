@@ -9,6 +9,8 @@ import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponseUsageMetadata;
 import com.google.genai.types.Part;
 import com.google.genai.types.Schema;
+import com.google.genai.types.ThinkingConfig;
+import com.google.genai.types.ThinkingLevel;
 import io.reactivex.rxjava3.core.Flowable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +65,14 @@ public final class AdkSingleStepTaskRunner {
         Objects.requireNonNull(promptText, "promptText");
         Duration effectiveTimeout = timeout != null ? timeout : DEFAULT_TIMEOUT;
 
-        if (!"false".equalsIgnoreCase(System.getenv("ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS"))) {
+        String spanCapture = System.getProperty("ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS");
+        if (spanCapture == null || spanCapture.isBlank()) {
+            spanCapture = System.getenv("ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS");
+        }
+        if (spanCapture == null || spanCapture.isBlank()) {
+            spanCapture = "false";
+        }
+        if ("true".equalsIgnoreCase(spanCapture)) {
             throw new IllegalStateException("Disable ADK message-content tracing before constructing the runner");
         }
 
@@ -78,6 +87,10 @@ public final class AdkSingleStepTaskRunner {
             configBuilder.responseMimeType("application/json").responseSchema(responseSchema);
         } else {
             configBuilder.responseMimeType("application/json");
+        }
+
+        if ("CHAT_SCOPE".equals(taskName)) {
+            configBuilder.thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build());
         }
 
         AtomicReference<String> activeRun = new AtomicReference<>();
@@ -130,6 +143,34 @@ public final class AdkSingleStepTaskRunner {
                     .filter(Objects::nonNull)
                     .reduce("", (a, b) -> a + b)
                     .strip();
+
+            if (text.isBlank()) {
+                for (int i = events.size() - 1; i >= 0; i--) {
+                    Event event = events.get(i);
+                    if (event.content().isPresent()) {
+                        Content content = event.content().get();
+                        if (content.parts().isPresent()) {
+                            for (Part part : content.parts().get()) {
+                                if (part.text().isPresent() && !part.text().get().isBlank()) {
+                                    text = part.text().get().strip();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (!text.isBlank()) break;
+                }
+            }
+
+            if (text.startsWith("```json")) {
+                text = text.substring(7);
+            } else if (text.startsWith("```")) {
+                text = text.substring(3);
+            }
+            if (text.endsWith("```")) {
+                text = text.substring(0, text.length() - 3);
+            }
+            text = text.strip();
 
             GenerateContentResponseUsageMetadata usageMetadata = events.stream()
                     .map(Event::usageMetadata)

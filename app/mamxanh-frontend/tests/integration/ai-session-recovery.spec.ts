@@ -12,7 +12,7 @@ const backend = process.env.MAMXANX_E2E_BACKEND_URL ?? 'http://localhost:18084/a
 const project = 'mamxanh-g4';
 function compose(args: string[]) {
   return execFileSync('docker', ['compose', '-p', project, '--env-file', path.join(root, 'app/mamxanh-backend/.env'),
-    '-f', path.join(root, 'docker-compose.yml'), '-f', path.join(root, 'app/mamxanh-frontend/tests/integration/g4-compose.override.yml'), ...args],
+    '-f', path.join(root, 'docker-compose.yml'), '-f', path.join(root, 'app/mamxanh-frontend/tests/integration/ai-test-compose.override.yml'), ...args],
     { cwd: root, encoding: 'utf8', timeout: 120_000, env: { ...process.env, MAMXANH_SQL_PORT: '12434', MAMXANH_BACKEND_PORT: '18084', MAMXANH_FRONTEND_PORT: '15174' } });
 }
 function sql(query: string) {

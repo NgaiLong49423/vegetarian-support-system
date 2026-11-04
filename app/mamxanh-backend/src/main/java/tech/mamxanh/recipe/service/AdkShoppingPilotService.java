@@ -72,6 +72,7 @@ import java.util.regex.Pattern;
  * Enforces session engine pinning, Shopping List consent, Execution Mode (QA/CONFIRM/AUTO),
  * single-transaction D3 accounting, clientRequestId idempotency, and partial-failure preservation.
  */
+@Deprecated
 @Service
 public class AdkShoppingPilotService implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(AdkShoppingPilotService.class);

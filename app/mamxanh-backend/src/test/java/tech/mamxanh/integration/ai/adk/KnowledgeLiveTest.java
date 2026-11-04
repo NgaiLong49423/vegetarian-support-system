@@ -32,7 +32,7 @@ class KnowledgeLiveTest {
         }
     }
     @Test void benchmarkLockIndexThenEvaluateNativeAgent() throws Exception {
-        var budget=new G2Budget();
+        var budget=new AiBudgetEvaluationHelper();
         String phase=System.getProperty("g2.phase","full");
         if(phase.equals("diagnostic")) budget.preflight(6,3);
         else if(phase.equals("validation")) budget.preflight(70,30,16000);
@@ -121,7 +121,7 @@ class KnowledgeLiveTest {
         }
         return new double[]{hybridRecall,hybridMrr};
     }
-    private void evaluateAgents(Client client,G2Budget budget,KnowledgeIndex index,GeminiEmbeddingClient embedder,List<Case> holdout) throws Exception {
+    private void evaluateAgents(Client client,AiBudgetEvaluationHelper budget,KnowledgeIndex index,GeminiEmbeddingClient embedder,List<Case> holdout) throws Exception {
         var chosen=new ArrayList<Case>();
         for (var doc:catalog.documents()) chosen.addAll(holdout.stream()
                 .filter(c->c.category().equals("supported")&&c.expectedSources().contains(doc.metadata().id())).limit(2).toList());

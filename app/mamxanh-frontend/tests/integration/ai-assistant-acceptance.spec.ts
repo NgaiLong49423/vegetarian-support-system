@@ -131,7 +131,7 @@ test.use({
   },
 });
 
-test.describe('E2E Acceptance AI G0-G4 Suite', () => {
+test.describe('E2E Acceptance AI Assistant Suite', () => {
   test.setTimeout(450_000); // 7.5 mins total
 
   const marker = randomUUID().slice(0, 8);
@@ -551,5 +551,12 @@ test.describe('E2E Acceptance AI G0-G4 Suite', () => {
       recordBug('TC-G4-10', 'Lộ thông tin nội bộ trên giao diện', 'CRITICAL', 'CAP-25', 'Quét nội dung DOM chatbox', 'Không chứa stack trace/secrets', 'Phát hiện chuỗi nhạy cảm', e.message);
       testResults.push({ id: 'TC-G4-10', cap: 'CAP-25', title: 'An toàn hiển thị', status: 'FAIL', note: e.message });
     }
+
+    const failedTests = testResults.filter(r => r.status === 'FAIL');
+    expect(failedTests, `Có ${failedTests.length} kịch bản kiểm thử E2E thất bại:
+` +
+      failedTests.map(f => `- ${f.id} (${f.title}): ${f.note}`).join('
+')
+    ).toHaveLength(0);
   });
 });

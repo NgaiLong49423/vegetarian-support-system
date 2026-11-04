@@ -7,6 +7,10 @@
 
 # Database Workspace
 
+## Migration V41 — Journal đa tác vụ bền vững cho AI Assistant
+
+`V41__ai_assistant_action_journal.sql` bổ sung bảng `AI_ASSISTANT_ACTION_JOURNAL` với khóa chính `(owner_id, client_request_id, action_id)` để hỗ trợ journal bền vững cho toàn bộ các công cụ ghi của AI Assistant. Lưu trữ `tool_name`, hash tham số, trạng thái (`RESERVED`, `WRITING`, `SUCCEEDED`, `FAILED`, `CANCELLED`, `INDETERMINATE`), kết quả JSON và thông báo lỗi. Domain write và cập nhật `SUCCEEDED` cùng chia sẻ một transaction duy nhất để bảo đảm atomicity; hỗ trợ chống ghi trùng đồng thời, timeout sau DB commit và phục hồi phiên an toàn khi backend khởi động lại. `database/schema.sql` đồng bộ DDL; diagrams giữ nguyên.
+
 ## Migration V40 — Journal tối thiểu cho G4 Shopping List
 
 `V40__ai_shopping_execution_journal.sql` thêm `AI_ASSISTANT_EXECUTION`, PK `(owner_id, client_request_id)`, FK owner tới USER. Chỉ lưu session/request identity, hash tên đã chuẩn hóa, trạng thái, result ID và timestamps/expiry 7 ngày; không có FK business result để tránh thay đổi lifecycle Shopping List. Không lưu transcript/consent/tên danh sách. Người dùng đã duyệt bảng và phạm vi này trong yêu cầu triển khai G4.

@@ -21,7 +21,7 @@ import tools.jackson.databind.ObjectMapper;
 @EnabledIfEnvironmentVariable(named="MAMXANH_G2_LIVE",matches="true")
 class KnowledgeSafetyLiveTest {
     @Test void bothMemberActorsRejectRetrievedInstructionsAndHaveNoWriteOrInternetTools() throws Exception {
-        var budget=new G2Budget();budget.preflight(12,0,16000);
+        var budget=new AiBudgetEvaluationHelper();budget.preflight(12,0,16000);
         var json=new ObjectMapper();var base=KnowledgeCatalog.packaged();
         var entry=base.documents().getFirst().metadata();
         var manifest=new KnowledgeCatalog.Manifest("hostile-fixture",List.of(entry));
