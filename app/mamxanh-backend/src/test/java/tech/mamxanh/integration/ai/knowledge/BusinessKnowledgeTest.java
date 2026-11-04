@@ -40,6 +40,14 @@ class BusinessKnowledgeTest {
     }
 
     @Test
+    void passwordRecoveryKnowledgeUsesTheVerifiedResetLinkLifetime() {
+        var document = KnowledgeCatalog.business().document("password-recovery");
+        assertThat(document.metadata().version()).isEqualTo("1.0.1");
+        assertThat(document.content()).contains("có hiệu lực 15 phút");
+        assertThat(document.content()).doesNotContain("15-30 phút");
+    }
+
+    @Test
     void retrievesRelevantSourcesAndRejectsArbitraryPaths() {
         try (var retrieval = new HybridKnowledgeRetriever(KnowledgeCatalog.agent(), null, null, Clock.systemUTC())) {
             var result = retrieval.search("Quên mật khẩu và khôi phục tài khoản");

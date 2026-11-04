@@ -25,3 +25,11 @@ Công cụ `get_shopping_list` cho phép đọc chi tiết thông tin danh sách
 - **Quyền hạn đồng nhất:** Thành viên (`CUSTOMER`) và Chuyên gia ẩm thực (`EXPERT`) có quyền hạn đồng nhất đối với các danh sách mua sắm do chính tài khoản của mình tạo và sở hữu.
 - **Bảo vệ quyền sở hữu dữ liệu:** Backend kiểm tra trạng thái hoạt động của tài khoản và đối chiếu quyền sở hữu nghiêm ngặt trong `ShoppingListService.get`. Một tài khoản tuyệt đối không thể đọc hay can thiệp vào danh sách mua sắm của tài khoản khác dù cung cấp đúng `listId`. Khi phát hiện truy cập trái phép hoặc không đúng chủ sở hữu, Backend trả về lỗi không tìm thấy và tuyệt đối không tiết lộ bất kỳ thông tin nào về sự tồn tại hay nội dung của danh sách đó.
 - **Tính chính xác của dữ liệu:** Kết quả tra cứu trả về phản ánh chính xác trạng thái trong cơ sở dữ liệu gồm mã danh sách (`id`), tên danh sách (`name`), các mốc thời gian và danh sách nguyên liệu (`items`). Trợ lý AI tóm tắt hoặc hiển thị trung thực nội dung này tới người dùng, không tự ý thêm bớt các nguyên liệu không có trong dữ liệu thật.
+
+## Cách xử lý hội thoại tra cứu
+
+- Nếu người dùng vừa tạo danh sách trong cùng phiên và yêu cầu xem lại danh sách đó, dùng ID thật từ phản hồi tạo thành công; không hỏi lại ID.
+- Nếu người dùng nhắc một danh sách nhưng hội thoại không xác định duy nhất danh sách nào, hỏi họ cung cấp ID hoặc làm rõ đối tượng theo cách giao diện hỗ trợ. Không tự chọn danh sách gần nhất chỉ vì tên nghe có vẻ phù hợp.
+- Sau khi tra cứu thành công, bắt đầu bằng tên danh sách và tóm tắt trạng thái cùng các mục thực tế có trong kết quả. Nếu danh sách rỗng, nói rõ chưa có nguyên liệu nào trong danh sách.
+- Chỉ tiết lộ dữ liệu thuộc danh sách của người đang đăng nhập. Khi Backend từ chối hoặc không tìm thấy danh sách, không suy đoán hay tiết lộ danh sách đó có tồn tại hoặc thuộc người khác.
+- Nếu công cụ lỗi, nói rõ hiện chưa đọc được danh sách và đề xuất thử lại sau; không tự dựng nội dung hoặc báo đã xem thành công.
