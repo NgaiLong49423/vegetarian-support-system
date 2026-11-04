@@ -258,7 +258,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
     void submitReset();
   };
   const fieldClass =
-    'mt-1 w-full rounded-xl border border-slate-700/80 bg-[#0c0e14]/80 px-3.5 py-2 sm:py-2.5 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-amber-400 focus:bg-[#0c0e14] focus:ring-2 focus:ring-amber-400/20';
+    'mt-1 min-h-11 w-full rounded-xl border border-slate-700/80 bg-[#0c0e14]/80 px-3.5 py-2.5 text-base sm:text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-amber-400 focus:bg-[#0c0e14] focus:ring-2 focus:ring-amber-400/20';
   const error = (field: string) =>
     errors[field] && (
       <p id={`${field}-error`} className="mt-1 text-xs font-medium text-rose-400">
@@ -292,10 +292,30 @@ export function AuthPage({ mode }: { mode: Mode }) {
 
       <header
         className={`relative z-10 flex h-14 w-full shrink-0 items-center justify-between px-5 sm:px-8 transition-opacity duration-500 ${
-          isLampOn ? 'opacity-100' : 'opacity-30'
+          isLampOn ? 'opacity-100' : 'opacity-95 lg:opacity-30'
         }`}
       >
         <Logo />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-label="Công tắc đèn nền"
+            aria-pressed={isLampOn}
+            onClick={() => setIsLampOn((prev) => !prev)}
+            className={`inline-flex min-h-9 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold backdrop-blur-md transition-all lg:hidden ${
+              isLampOn
+                ? 'border-amber-400/45 bg-amber-400/15 text-amber-200'
+                : 'border-slate-700/80 bg-[#161922]/90 text-slate-300'
+            }`}
+          >
+            <span
+              aria-hidden="true"
+              className={`h-2 w-2 rounded-full transition-colors ${
+                isLampOn ? 'bg-amber-400 shadow-[0_0_8px_#fbbf24]' : 'bg-slate-500'
+              }`}
+            />
+            {isLampOn ? 'Đèn bật' : 'Đèn tắt'}
+          </button>
         <Link
           to="/"
           aria-label="Về trang chủ"
@@ -304,6 +324,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
           <ArrowLeft className="h-4 w-4" />
           <span className="hidden sm:inline">Về trang chủ</span>
         </Link>
+        </div>
       </header>
 
       <main className="relative z-10 flex flex-1 min-h-0 w-full items-start overflow-y-auto px-4 py-2 sm:px-6">

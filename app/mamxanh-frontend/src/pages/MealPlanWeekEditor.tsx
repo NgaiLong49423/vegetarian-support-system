@@ -241,7 +241,7 @@ export function MealPlanWeekEditor() {
             >
               Về tuần hiện tại
             </Button>
-            <div className="mt-5 flex gap-2 border-b border-brand-100" role="tablist" aria-label="Chế độ Lịch ăn">
+            <div className="mobile-scroll-x mt-5 flex flex-nowrap gap-1 border-b border-brand-100 sm:gap-2" role="tablist" aria-label="Chế độ Lịch ăn">
               <button
                 type="button"
                 role="tab"
@@ -271,14 +271,14 @@ export function MealPlanWeekEditor() {
             />
           ) : (
             <div>
-              <div className="mb-5 flex flex-wrap gap-2 border-b border-brand-100" role="tablist" aria-label="Cách chọn thực đơn">
-                <button id="ai-mode-ingredients" type="button" role="tab" aria-controls="ai-mode-panel" aria-selected={aiMode === "ingredients"} onClick={() => setAiMode("ingredients")} className={`border-b-2 px-3 py-2 text-sm font-semibold ${aiMode === "ingredients" ? "border-brand-600 text-brand-800" : "border-transparent text-ink-muted hover:text-ink"}`}>
+              <div className="mobile-scroll-x mb-5 flex flex-nowrap gap-1 border-b border-brand-100 sm:flex-wrap sm:gap-2" role="tablist" aria-label="Cách chọn thực đơn">
+                <button id="ai-mode-ingredients" type="button" role="tab" aria-controls="ai-mode-panel" aria-selected={aiMode === "ingredients"} onClick={() => setAiMode("ingredients")} className={`shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-semibold ${aiMode === "ingredients" ? "border-brand-600 text-brand-800" : "border-transparent text-ink-muted hover:text-ink"}`}>
                   Món theo nguyên liệu
                 </button>
-                <button id="ai-mode-recipe-week" type="button" role="tab" aria-controls="ai-mode-panel" aria-selected={aiMode === "recipe-week"} onClick={() => setAiMode("recipe-week")} className={`border-b-2 px-3 py-2 text-sm font-semibold ${aiMode === "recipe-week" ? "border-brand-600 text-brand-800" : "border-transparent text-ink-muted hover:text-ink"}`}>
+                <button id="ai-mode-recipe-week" type="button" role="tab" aria-controls="ai-mode-panel" aria-selected={aiMode === "recipe-week"} onClick={() => setAiMode("recipe-week")} className={`shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-semibold ${aiMode === "recipe-week" ? "border-brand-600 text-brand-800" : "border-transparent text-ink-muted hover:text-ink"}`}>
                   Thực đơn tuần
                 </button>
-                <button id="ai-mode-nutrition-week" type="button" role="tab" aria-controls="ai-mode-panel" aria-selected={aiMode === "nutrition-week"} onClick={() => setAiMode("nutrition-week")} className={`border-b-2 px-3 py-2 text-sm font-semibold ${aiMode === "nutrition-week" ? "border-brand-600 text-brand-800" : "border-transparent text-ink-muted hover:text-ink"}`}>
+                <button id="ai-mode-nutrition-week" type="button" role="tab" aria-controls="ai-mode-panel" aria-selected={aiMode === "nutrition-week"} onClick={() => setAiMode("nutrition-week")} className={`shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-semibold ${aiMode === "nutrition-week" ? "border-brand-600 text-brand-800" : "border-transparent text-ink-muted hover:text-ink"}`}>
                   Theo nhu cầu dinh dưỡng
                 </button>
               </div>

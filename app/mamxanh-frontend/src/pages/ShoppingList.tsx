@@ -927,8 +927,8 @@ function ShoppingWorkspace() {
                       onClick={() => setTab(value)}
                       className={`rounded-lg px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-brand-400 ${
                         tab === value
-                          ? "bg-raised font-semibold text-black"
-                          : "text-black"
+                          ? "bg-raised font-semibold text-ink shadow-2xs"
+                          : "text-ink-soft hover:bg-raised/60 hover:text-ink"
                       }`}
                     >
                       {label} ({counts[value]})
@@ -949,7 +949,7 @@ function ShoppingWorkspace() {
                     <summary aria-label="Thao tác khác" className="flex h-9 cursor-pointer list-none items-center gap-2 rounded-full border border-brand-200 px-3 text-sm font-semibold text-ink-soft hover:border-brand-400 focus-visible:outline-2 focus-visible:outline-brand-400">
                       <MoreHorizontal className="h-4 w-4" /> Thao tác khác
                     </summary>
-                    <div className="absolute right-0 z-20 mt-2 flex min-w-52 flex-col gap-1 rounded-xl border border-brand-100 bg-paper p-2 shadow-lg">
+                    <div className="absolute right-0 z-20 mt-2 flex min-w-52 max-w-[calc(100vw-2rem)] flex-col gap-1 rounded-xl border border-brand-100 bg-paper p-2 shadow-lg">
                       <Button variant="ghost" size="sm" className="justify-start" disabled={busy} onClick={() => openDialog(() => { setNameDraft(list.name); setNameEditor(true) })}><Pencil className="h-4 w-4" />Đổi tên</Button>
                       <Button variant="ghost" size="sm" className="justify-start text-red-700 hover:bg-red-50" disabled={busy} onClick={() => openDialog(() => setListRemoval(true))}><Trash2 className="h-4 w-4" />Xóa danh sách</Button>
                       {counts.done > 0 && <Button variant="ghost" size="sm" className="justify-start" disabled={busy} onClick={() => openDialog(() => setRemoval("bought"))}><Trash2 className="h-4 w-4" />Xóa {counts.done} mục đã mua</Button>}

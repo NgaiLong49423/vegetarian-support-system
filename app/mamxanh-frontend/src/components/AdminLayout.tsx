@@ -111,17 +111,44 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     );
   }
 
+  const mobileQuickTabs = [
+    {
+      to: '/admin',
+      label: 'Tổng quan',
+      ariaLabel: 'Quản trị Bảng điều khiển',
+      icon: LayoutDashboard,
+      active: pathname === '/admin' || pathname === '/admin/tong-quan',
+    },
+    {
+      to: '/quan-tri/danh-muc',
+      label: 'Nguyên liệu',
+      ariaLabel: 'Quản trị Nguyên liệu',
+      icon: Boxes,
+      active: pathname.startsWith('/quan-tri/danh-muc'),
+    },
+    {
+      to: '/admin/bao-cao',
+      label: 'Báo cáo',
+      ariaLabel: 'Quản trị Báo cáo',
+      icon: ShieldAlert,
+      active: pathname.startsWith('/admin/bao-cao'),
+    },
+    {
+      to: '/admin/giao-dich',
+      label: 'Giao dịch',
+      ariaLabel: 'Quản trị Giao dịch',
+      icon: CreditCard,
+      active: pathname.startsWith('/admin/giao-dich'),
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-cream text-ink lg:grid lg:grid-cols-[280px_minmax(0,1fr)] items-start">
-      {/* =========================================================================
-          Desktop & Mobile Sidebar
-      ========================================================================= */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col bg-[#112d24] text-white transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-full lg:self-start lg:translate-x-0 lg:overflow-hidden ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 max-w-[88vw] flex-col bg-[#112d24] text-white transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-full lg:max-w-none lg:self-start lg:translate-x-0 lg:overflow-hidden ${
           mobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        {/* Brand Header */}
         <div className="flex h-16 items-center justify-between border-b border-white/10 px-5">
           <Link
             to="/admin"
@@ -147,7 +174,6 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           </button>
         </div>
 
-        {/* Navigation Groups */}
         <nav aria-label="Điều hướng quản trị" className="flex-1 space-y-6 overflow-y-auto px-4 py-5 scrollbar-thin">
           {adminNavigationGroups.map((group) => (
             <div key={group.title}>
@@ -184,7 +210,6 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             </div>
           ))}
 
-          {/* Quick link to public user website */}
           <div className="border-t border-white/10 pt-4">
             <Link
               to="/trang-chu"
@@ -197,7 +222,6 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           </div>
         </nav>
 
-        {/* Admin Account & Sign out card */}
         <div className="border-t border-white/10 p-4">
           <div className="flex items-center gap-3 rounded-xl bg-white/[0.08] p-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 font-bold text-[#112d24]">
@@ -224,7 +248,6 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      {/* Backdrop for mobile sidebar */}
       {mobileDrawerOpen && (
         <div
           role="presentation"
@@ -233,18 +256,14 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         />
       )}
 
-      {/* =========================================================================
-          Main Content Frame
-      ========================================================================= */}
-      <div className="flex min-h-screen min-w-0 flex-col">
-        {/* Top Navbar */}
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-brand-100 bg-paper/95 px-4 backdrop-blur-md sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
+      <div className="flex min-h-screen min-w-0 flex-col pb-[calc(4.25rem+env(safe-area-inset-bottom))] lg:pb-0">
+        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-brand-100 bg-paper/95 px-3.5 backdrop-blur-md sm:h-16 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
             <button
               type="button"
               onClick={() => setMobileDrawerOpen(true)}
               aria-label="Mở menu quản trị"
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-brand-200 bg-paper text-ink-soft hover:bg-raised lg:hidden"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-brand-200 bg-paper text-ink-soft hover:bg-raised lg:hidden"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -258,8 +277,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Theme Toggle Button */}
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <button
               type="button"
               aria-label={theme === 'light' ? 'Chuyển sang chế độ tối' : 'Chuyển sang chế độ sáng'}
@@ -270,23 +288,58 @@ export function AdminLayout({ children }: { children: ReactNode }) {
               {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
             </button>
 
-            {/* Administrator Status Badge */}
-            <div className="flex items-center gap-1.5 rounded-full border border-leaf-200 bg-leaf-50 px-3 py-1.5 text-xs font-bold text-leaf-800">
+            <div className="flex items-center gap-1.5 rounded-full border border-leaf-200 bg-leaf-50 px-2.5 py-1.5 text-xs font-bold text-leaf-800 sm:px-3">
               <ShieldCheck className="h-4 w-4 text-leaf-700" />
               <span className="hidden sm:inline">Administrator</span>
             </div>
           </div>
         </header>
 
-        {/* Content Area */}
-        <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 sm:py-7 lg:px-8">
+        <main className="min-w-0 flex-1 px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
           {children}
         </main>
 
-        {/* Admin Footer */}
         <footer className="border-t border-brand-100 bg-paper/60 px-4 py-4 text-center text-xs text-ink-muted sm:px-6 lg:px-8 lg:text-left">
           Mầm Xanh · Trung tâm điều phối và quản trị hệ thống chay
         </footer>
+
+        <nav
+          aria-label="Thanh tác vụ quản trị di động"
+          className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-20 border-t border-brand-100 bg-paper/95 backdrop-blur-xl lg:hidden"
+        >
+          <div className="mx-auto grid max-w-lg grid-cols-5 items-stretch px-1.5 pt-1 pb-1">
+            {mobileQuickTabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <Link
+                  key={tab.to}
+                  to={tab.to}
+                  aria-label={tab.ariaLabel}
+                  aria-current={tab.active ? 'page' : undefined}
+                  className={`flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1 text-[11px] transition-colors active:scale-95 ${
+                    tab.active ? 'font-bold text-brand-600' : 'font-medium text-ink-muted hover:text-ink'
+                  }`}
+                >
+                  <span className={`flex h-7 w-10 items-center justify-center rounded-2xl ${tab.active ? 'bg-brand-600/15 text-brand-600' : ''}`}>
+                    <Icon className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  <span className="max-w-full truncate leading-tight">{tab.label}</span>
+                </Link>
+              );
+            })}
+            <button
+              type="button"
+              aria-label="Mở danh mục quản trị"
+              onClick={() => setMobileDrawerOpen(true)}
+              className="flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1 text-[11px] font-medium text-ink-muted transition-colors hover:text-ink active:scale-95"
+            >
+              <span className="flex h-7 w-10 items-center justify-center rounded-2xl">
+                <Menu className="h-4 w-4" aria-hidden="true" />
+              </span>
+              <span className="max-w-full truncate leading-tight">Thêm</span>
+            </button>
+          </div>
+        </nav>
       </div>
     </div>
   );

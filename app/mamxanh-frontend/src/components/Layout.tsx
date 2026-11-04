@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState, type ReactNode } from "react"
 import { useLocation } from "react-router-dom"
 import { AppHeader } from "./AppHeader"
 import { AppFooter } from "./AppFooter"
+import { MobileBottomNav } from "./MobileBottomNav"
 import {
   AiChatContext,
   type AiChatContextValue,
@@ -63,10 +64,11 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <AiChatContext.Provider value={chatContext}>
-      <div className="food-app flex min-h-screen flex-col bg-cream">
+      <div className="food-app flex min-h-screen flex-col bg-cream pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0">
         <AppHeader />
-        <main className="flex-1">{children}</main>
+        <main className="min-w-0 flex-1">{children}</main>
         <AppFooter />
+        <MobileBottomNav />
         <AiChatPage />
       </div>
     </AiChatContext.Provider>

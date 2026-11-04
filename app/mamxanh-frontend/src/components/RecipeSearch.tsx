@@ -243,10 +243,10 @@ type RecipeSearch = ReturnType<typeof useRecipeSearch>;
 
 export function SortControls({ search }: { search: RecipeSearch }) {
   const { filters, updateFilter } = search;
-  return <div className="flex flex-wrap items-center gap-2">
+  return <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
     <label className="sr-only" htmlFor="recipe-sort">Sắp xếp công thức</label>
     <span className="hidden items-center gap-1.5 text-xs font-medium text-ink-muted sm:inline-flex"><ArrowDownUp className="h-3.5 w-3.5" />Sắp xếp</span>
-    <select id="recipe-sort" aria-label="Sắp xếp theo" value={filters.sort} onChange={(event) => updateFilter('sort', event.target.value as SortMode)} className="rounded-xl border border-brand-100 bg-paper px-3 py-2 text-sm text-ink outline-none focus-visible:ring-4 focus-visible:ring-brand-100">
+    <select id="recipe-sort" aria-label="Sắp xếp theo" value={filters.sort} onChange={(event) => updateFilter('sort', event.target.value as SortMode)} className="min-h-10 flex-1 rounded-xl border border-brand-100 bg-paper px-3 py-2 text-sm text-ink outline-none focus-visible:ring-4 focus-visible:ring-brand-100 sm:flex-initial">
       {sortOptions.map((item) => <option key={item.code} value={item.code}>{item.label}</option>)}
     </select>
     {filters.sort === 'MOST_VIEWED' && <select aria-label="Khung thời gian lượt xem" value={filters.viewPeriod} onChange={(event) => updateFilter('viewPeriod', event.target.value as ViewPeriod)} className="rounded-xl border border-brand-100 bg-paper px-3 py-2 text-sm text-ink outline-none focus-visible:ring-4 focus-visible:ring-brand-100">

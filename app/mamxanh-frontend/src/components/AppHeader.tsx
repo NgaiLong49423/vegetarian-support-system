@@ -381,7 +381,7 @@ export function AppHeader() {
   return (
     <>
       <header className="sticky top-0 z-30 border-b border-header-border bg-header/95 backdrop-blur-md shadow-2xs transition-colors">
-        <div className="mx-auto flex h-16 max-w-[1344px] items-center gap-3 px-4 sm:gap-5 sm:px-6">
+        <div className="mx-auto flex h-14 max-w-[1344px] items-center gap-2.5 px-3.5 sm:h-16 sm:gap-5 sm:px-6">
           <button
             type="button"
             aria-label="Menu"
@@ -535,7 +535,7 @@ export function AppHeader() {
               type="button"
               aria-label="Tìm kiếm"
               onClick={() => navigate("/kham-pha")}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-paper 2xl:hidden"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted hover:bg-paper 2xl:hidden"
             >
               <Search className="h-4 w-4" />
             </button>
@@ -552,7 +552,7 @@ export function AppHeader() {
                   : "Chuyển sang chế độ sáng"
               }
               onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-paper hover:text-brand-600 transition-colors"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted hover:bg-paper hover:text-brand-600 transition-colors"
             >
               {theme === "light" ? (
                 <Moon className="h-4 w-4" aria-hidden="true" />
@@ -563,10 +563,10 @@ export function AppHeader() {
             {role === "EXPERT" && (
               <Link
                 to="/dang-cong-thuc"
-                className="hidden items-center gap-1.5 rounded-full bg-brand-600 px-3 py-2 text-xs font-semibold text-on-brand hover:bg-brand-500 sm:inline-flex"
+                aria-label="Đăng công thức" className="inline-flex items-center gap-1.5 rounded-full bg-brand-600 px-2.5 py-2 text-xs font-semibold text-on-brand hover:bg-brand-500 sm:px-3"
               >
                 <Plus className="h-3.5 w-3.5" />
-                Đăng công thức
+                <span className="hidden sm:inline">Đăng công thức</span>
               </Link>
             )}
             {isAuthenticated ? (
@@ -590,7 +590,7 @@ export function AppHeader() {
                   <nav
                     id="account-navigation"
                     aria-label="Điều hướng tài khoản"
-                    className="absolute right-0 top-full mt-3 w-64 rounded-xl border border-brand-100 bg-paper p-2 shadow-2xl shadow-black/40"
+                    className="absolute right-0 top-full mt-3 w-64 max-w-[calc(100vw-1.5rem)] rounded-xl border border-brand-100 bg-paper p-2 shadow-2xl shadow-black/40"
                   >
                     <div className="mb-1 border-b border-brand-100 px-3 py-2">
                       <p className="text-sm font-semibold text-ink">
@@ -671,6 +671,27 @@ export function AppHeader() {
             aria-label="Menu chính"
             className="drawer-nav-menu flex-1 space-y-1 overflow-y-auto p-3"
           >
+            <form
+              onSubmit={(event) => {
+                event.preventDefault()
+                setDrawerOpen(false)
+                navigate(
+                  `/kham-pha${
+                    query.trim() ? `?q=${encodeURIComponent(query.trim())}` : ""
+                  }`,
+                )
+              }}
+              className="mb-2 flex items-center gap-2 rounded-xl border border-brand-200 bg-paper px-3 py-2 md:hidden"
+            >
+              <Search className="h-4 w-4 shrink-0 text-brand-600" aria-hidden="true" />
+              <input
+                aria-label="Tìm công thức trong menu"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Tìm món chay hoặc nguyên liệu..."
+                className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink-muted"
+              />
+            </form>
             {navigation.map((item) =>
               item.to === "/kham-pha" ? (
                 <div key={item.to}>
@@ -835,7 +856,7 @@ export function AppHeader() {
           type="button"
           onClick={() => openChat()}
           aria-label="Mở khung chat hỗ trợ AI"
-          className="fixed bottom-5 right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-brand-600 text-on-brand shadow-lg shadow-brand-900/25 transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-500 hover:shadow-xl hover:scale-105 active:translate-y-0 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+          className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-brand-600 text-on-brand shadow-lg shadow-brand-900/25 transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-500 hover:shadow-xl hover:scale-105 active:translate-y-0 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 md:bottom-5 md:right-5"
         >
           <MessageCircle className="h-6 w-6" aria-hidden="true" strokeWidth={2.2} />
         </button>

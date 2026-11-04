@@ -594,7 +594,7 @@ export function AdminTransactionsPage() {
           setDetail(null)
         }}
         aria-labelledby="transaction-title"
-        className="fixed inset-0 m-auto max-h-[85dvh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto rounded-2xl border border-brand-200 bg-paper p-5 text-ink shadow-xl backdrop:bg-black/50 sm:p-6"
+        className="mobile-sheet-enter fixed inset-x-0 bottom-0 top-auto m-0 max-h-[88dvh] w-full max-w-none overflow-y-auto rounded-t-3xl border-t border-brand-200 bg-paper p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] text-ink shadow-xl backdrop:bg-black/50 sm:inset-0 sm:m-auto sm:max-h-[85dvh] sm:w-[calc(100%-2rem)] sm:max-w-2xl sm:rounded-2xl sm:border sm:p-6"
       >
         <div className="flex items-center justify-between gap-3">
           <h2 id="transaction-title" className="text-lg font-extrabold">
