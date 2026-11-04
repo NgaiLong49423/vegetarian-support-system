@@ -8,7 +8,7 @@ import tools.jackson.databind.ObjectMapper;
 import tech.mamxanh.integration.ai.knowledge.*;
 
 /** Persistent conservative upper bounds, not provider invoices or user quota reservations. */
-final class G2Budget implements GeminiEmbeddingClient.Observer {
+final class AiBudgetEvaluationHelper implements GeminiEmbeddingClient.Observer {
     private final Path directory = Path.of("target/g2");
     private final ObjectMapper json = new ObjectMapper();
     private int batchGenerationEnd=70;
@@ -20,7 +20,7 @@ final class G2Budget implements GeminiEmbeddingClient.Observer {
                 throw new IllegalArgumentException("Invalid cumulative G2 budget ledger");
         }
     }
-    G2Budget() throws Exception {
+    AiBudgetEvaluationHelper() throws Exception {
         if (!LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).equals(LocalDate.of(2026,11,1)))
             throw new IllegalStateException("Reverify official pricing and update budget bounds before a later live batch");
         Files.createDirectories(directory);

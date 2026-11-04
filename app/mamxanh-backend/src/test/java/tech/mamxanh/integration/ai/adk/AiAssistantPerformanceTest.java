@@ -25,7 +25,7 @@ import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class G6BenchmarkTest {
+class AiAssistantPerformanceTest {
 
     @Test
     @DisplayName("BENCHMARK 1: Đo lường Cold-start vs Warm-start của AiPromptLoader")

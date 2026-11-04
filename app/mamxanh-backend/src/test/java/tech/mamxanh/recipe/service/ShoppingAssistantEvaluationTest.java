@@ -73,7 +73,7 @@ import static org.mockito.Mockito.when;
  *    QA/CONFIRM/AUTO modes, tracking the cumulative G3 budget ledger (.g3-evaluation/budget.json) capped under $5.00 USD.
  */
 @EnabledIfEnvironmentVariable(named = "MAMXANH_G3_LIVE", matches = "true")
-class G3LiveEvaluationTest {
+class ShoppingAssistantEvaluationTest {
     private static final String MODEL_ID = AiTokenUsage.MODEL;
     private static final KnowledgeIndex.Config EMBEDDING_CONFIG =
             new KnowledgeIndex.Config("gemini-embedding-2", 768, "search-prefix-v1");

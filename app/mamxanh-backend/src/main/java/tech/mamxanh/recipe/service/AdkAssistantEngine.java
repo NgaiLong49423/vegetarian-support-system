@@ -18,6 +18,8 @@ import com.google.genai.types.HttpOptions;
 import com.google.genai.types.HttpRetryOptions;
 import com.google.genai.types.Part;
 import com.google.genai.types.Schema;
+import com.google.genai.types.ThinkingConfig;
+import com.google.genai.types.ThinkingLevel;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
@@ -221,6 +223,7 @@ public class AdkAssistantEngine implements AutoCloseable {
                 state.consentRevoked = true;
                 sessionStore.discardPending(sessionId, owner);
                 state.pendingConfirmation = null;
+            state.serverPendingAction = null;
                 return buildResponse(request, sessionId, request.executionMode(), "CONSENT_REVOKED",
                         List.of(), List.of(), null, null,
                         "Đã thu hồi sự đồng ý dữ liệu; những lượt tiếp theo sẽ không gửi dữ liệu này tới Google Gemini.");
@@ -239,6 +242,7 @@ public class AdkAssistantEngine implements AutoCloseable {
         if (state.pendingConfirmation != null) {
             sessionStore.discardPending(sessionId, owner);
             state.pendingConfirmation = null;
+            state.serverPendingAction = null;
         }
 
         // 3. Check Personal Data Consent requirements
@@ -374,22 +378,54 @@ public class AdkAssistantEngine implements AutoCloseable {
             EngineSessionState state,
             ExecutionMode mode) {
 
+        AiAssistantSessionStore.PendingPlan storePlan = sessionStore.takePending(sessionHandle.id(), owner, request.confirmationId());
+        ServerPendingAction pendingAction = state.serverPendingAction;
         PendingConfirmation pending = state.pendingConfirmation;
+
         if (request.confirmationId() == null || request.confirmationDecision() == null
-                || pending == null || !pending.confirmationId().equals(request.confirmationId())) {
+                || (pendingAction == null && storePlan == null)
+                || (pendingAction != null && !pendingAction.confirmationId().equals(request.confirmationId()))
+                || (pendingAction != null && clock.instant().isAfter(pendingAction.expiresAt()))
+                || (storePlan != null && !storePlan.id().equals(request.confirmationId()))) {
             sessionStore.discardPending(sessionHandle.id(), owner);
             state.pendingConfirmation = null;
+            state.serverPendingAction = null;
             throw new AppException(ErrorCode.VALIDATION_FAILED, "Yêu cầu xác nhận không hợp lệ hoặc đã hết hạn.");
         }
 
         state.pendingConfirmation = null;
-        sessionStore.takePending(sessionHandle.id(), owner, request.confirmationId());
+        state.serverPendingAction = null;
+
+        String toolName;
+        Map<String, Object> arguments;
+        String actionId;
+        long ownerId;
+        UUID effectiveRequestId;
+
+        if (pendingAction != null) {
+            toolName = pendingAction.toolName();
+            arguments = pendingAction.immutableArguments();
+            actionId = pendingAction.actionId();
+            ownerId = pendingAction.userId() != null ? pendingAction.userId() : (userId != null ? userId : 0L);
+            effectiveRequestId = pendingAction.clientRequestId() != null ? pendingAction.clientRequestId() : (request.clientRequestId() != null ? request.clientRequestId() : sessionHandle.id());
+        } else {
+            var act = storePlan.actions().get(0);
+            toolName = act.tool();
+            arguments = act.arguments();
+            actionId = toolName + "_1";
+            ownerId = userId != null ? userId : 0L;
+            effectiveRequestId = request.clientRequestId() != null ? request.clientRequestId() : sessionHandle.id();
+        }
+
+        if (arguments == null) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "Tham số của thao tác cần xác nhận không tồn tại.");
+        }
 
         if (request.confirmationDecision() == ConfirmationDecision.REJECT) {
             if (journal != null) {
-                long ownerId = userId != null ? userId : 0L;
-                UUID effectiveRequestId = request.clientRequestId() != null ? request.clientRequestId() : sessionHandle.id();
-                journal.cancel(ownerId, effectiveRequestId, pending.proposedListName());
+
+
+                journal.cancel(ownerId, effectiveRequestId, actionId);
             }
             return buildResponse(request, sessionHandle.id(), mode, "COMPLETED",
                     List.of(), List.of(), null, null, "Đã hủy thao tác theo yêu cầu của bạn.");
@@ -397,14 +433,14 @@ public class AdkAssistantEngine implements AutoCloseable {
 
         // Execute the confirmed tool directly on backend
         int stepIndex = 1;
-        long ownerId = userId != null ? userId : 0L;
-        UUID effectiveRequestId = request.clientRequestId() != null ? request.clientRequestId() : sessionHandle.id();
-        String actionId = pending.proposedListName();
+
+
+        // actionId already initialized above
         AiAssistantToolRegistry.ToolResult toolResult = journal != null
-                ? journal.executeWithJournal(ownerId, effectiveRequestId, actionId, pending.proposedListName(), () -> toolRegistry.execute(pending.proposedListName(), Map.of()))
-                : toolRegistry.execute(
-                pending.proposedListName(),
-                Map.of());
+                ? journal.executeWithJournal(ownerId, effectiveRequestId, actionId, toolName, () -> toolRegistry.execute(toolName, arguments))
+                : toolRegistry.execute(toolName, arguments);
+
+
 
         List<AssistantStep> steps = new ArrayList<>();
         Map<String, Object> resultMap = new LinkedHashMap<>();
@@ -413,19 +449,19 @@ public class AdkAssistantEngine implements AutoCloseable {
         if (toolResult.result() != null) {
             resultMap.put("data", toolResult.result());
         }
-        steps.add(new AssistantStep(stepIndex, pending.proposedListName(), toolResult.status(), toolResult.summary(), resultMap));
+        steps.add(new AssistantStep(stepIndex, toolName, toolResult.status(), toolResult.summary(), resultMap));
         List<Source> sources = toolResult.sources() != null ? new ArrayList<>(toolResult.sources()) : new ArrayList<>();
 
         // Deliver tool result to ADK runner so Gemini can formulate grounded natural language answer
         Content toolResultContent = Content.fromParts(Part.builder()
                 .functionResponse(FunctionResponse.builder()
-                        .name(pending.proposedListName())
+                        .name(toolName)
                         .response(resultMap)
                         .build())
                 .build());
 
-        return runAdkTurn(request, userId, owner, auth, sessionHandle, state, ExecutionMode.AUTO,
-                sessionHandle.consentScopes(), toolResultContent, true, pending.proposedListName(), steps, sources);
+        return runAdkTurn(request, userId, owner, auth, sessionHandle, state, ExecutionMode.QA,
+                sessionHandle.consentScopes(), toolResultContent, true, toolName, steps, sources);
     }
 
     private AiChatResponse classify(AiChatRequest request, UUID sessionId, ExecutionMode mode, Long userId) {
@@ -491,6 +527,7 @@ public class AdkAssistantEngine implements AutoCloseable {
         EngineSessionState state = engineSessions.get(request.sessionId());
         if (state != null) {
             state.pendingConfirmation = null;
+            state.serverPendingAction = null;
         }
         return buildResponse(request, request.sessionId(), request.executionMode(), "STOPPED",
                 List.of(), List.of(), null, null, "Đã dừng lượt chạy theo yêu cầu của bạn.");
@@ -643,6 +680,20 @@ public class AdkAssistantEngine implements AutoCloseable {
         };
     }
 
+    public record ServerPendingAction(
+            UUID confirmationId,
+            String toolName,
+            String actionId,
+            Map<String, Object> immutableArguments,
+            String argumentsJson,
+            Long userId,
+            String owner,
+            UUID sessionId,
+            UUID clientRequestId,
+            Instant expiresAt,
+            ExecutionMode originalMode
+    ) { }
+
     private final class EngineSessionState implements AutoCloseable {
         private final UUID sessionId;
         private final Long userId;
@@ -652,6 +703,7 @@ public class AdkAssistantEngine implements AutoCloseable {
         private volatile Instant expiresAt;
         private volatile boolean consentRevoked;
         private volatile PendingConfirmation pendingConfirmation;
+        private volatile ServerPendingAction serverPendingAction;
         private InMemoryRunner runner;
         private String adkSessionId;
         private String boundModelId;
@@ -697,7 +749,11 @@ public class AdkAssistantEngine implements AutoCloseable {
                     .description("Mâm Xanh Unified AI Assistant")
                     .instruction(instructions)
                     .model(gateway)
-                    .generateContentConfig(GenerateContentConfig.builder().maxOutputTokens(2048).candidateCount(1).build())
+                    .generateContentConfig(GenerateContentConfig.builder()
+                            .maxOutputTokens(2048)
+                            .candidateCount(1)
+                            .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build())
+                            .build())
                     .beforeModelCallback((context, req) -> {
                         if (req.build().contents().toString().getBytes(StandardCharsets.UTF_8).length > MAX_CONTEXT_BYTES) {
                             return Maybe.error(new IllegalStateException("Model context exceeds byte budget (64 KB)"));
@@ -788,13 +844,42 @@ public class AdkAssistantEngine implements AutoCloseable {
 
                 // Check CONFIRM mode staging for write actions
                 if (turn.mode() == ExecutionMode.CONFIRM && definition.write()) {
-                    UUID planId = UUID.randomUUID();
                     int stepIndex = turn.steps().size() + 1;
+                    String actionId = definition.name() + "_" + stepIndex;
                     String summary = "Cần xác nhận trước khi thay đổi dữ liệu.";
+                    Map<String, Object> immutableArgs = args != null ? Collections.unmodifiableMap(new LinkedHashMap<>(args)) : Map.of();
+                    String argsJson = "";
+                    try {
+                        argsJson = mapper.writeValueAsString(immutableArgs);
+                    } catch (Exception ignored) {
+                    }
+                    long ownerId = sessionState.userId != null ? sessionState.userId : 0L;
+                    UUID effectiveRequestId = turn.clientRequestId() != null ? turn.clientRequestId() : sessionState.sessionId;
+
+                    AiAssistantSessionStore.PendingPlan storePlan = sessionStore.createPending(
+                            sessionState.sessionId,
+                            sessionState.owner,
+                            List.of(new AiAssistantSessionStore.PendingAction(definition.name(), immutableArgs, true)),
+                            true);
+                    UUID planId = storePlan.id();
+
+                    ServerPendingAction serverAction = new ServerPendingAction(
+                            planId,
+                            definition.name(),
+                            actionId,
+                            immutableArgs,
+                            argsJson,
+                            ownerId,
+                            sessionState.owner,
+                            sessionState.sessionId,
+                            effectiveRequestId,
+                            storePlan.expiresAt(),
+                            turn.mode());
+                    sessionState.serverPendingAction = serverAction;
                     PendingConfirmation pending = new PendingConfirmation(
                             planId,
                             definition.description(),
-                            clock.instant().plus(Duration.ofMinutes(5)),
+                            storePlan.expiresAt(),
                             true,
                             definition.name());
                     turn.stagedConfirmation().set(pending);

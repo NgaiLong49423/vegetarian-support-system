@@ -210,7 +210,7 @@ public class AdkAiClient implements AiClient, AutoCloseable {
         try {
             var result = taskRunner.executeTaskWithResult(
                     currentAuth(), modelId, "CHAT_SCOPE", systemInstruction, prompt,
-                    schema, 128, CHAT_SCOPE_TIMEOUT);
+                    schema, 1024, CHAT_SCOPE_TIMEOUT);
 
             String text = result.text();
             var usage = result.usage();

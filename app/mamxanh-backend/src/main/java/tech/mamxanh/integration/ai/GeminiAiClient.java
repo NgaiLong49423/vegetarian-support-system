@@ -129,7 +129,7 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                 .responseMimeType("application/json")
                 .responseSchema(schema)
                 .candidateCount(1)
-                .maxOutputTokens(128)
+                .maxOutputTokens(1024)
                 .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build())
                 .build();
         return request("CHAT_SCOPE", "Gemini chat scope classification failed", CHAT_SCOPE_TIMEOUT_MS, () -> {

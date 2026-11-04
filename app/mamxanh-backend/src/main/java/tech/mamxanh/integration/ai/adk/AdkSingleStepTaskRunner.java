@@ -9,6 +9,8 @@ import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponseUsageMetadata;
 import com.google.genai.types.Part;
 import com.google.genai.types.Schema;
+import com.google.genai.types.ThinkingConfig;
+import com.google.genai.types.ThinkingLevel;
 import io.reactivex.rxjava3.core.Flowable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,6 +87,10 @@ public final class AdkSingleStepTaskRunner {
             configBuilder.responseMimeType("application/json").responseSchema(responseSchema);
         } else {
             configBuilder.responseMimeType("application/json");
+        }
+
+        if ("CHAT_SCOPE".equals(taskName)) {
+            configBuilder.thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build());
         }
 
         AtomicReference<String> activeRun = new AtomicReference<>();

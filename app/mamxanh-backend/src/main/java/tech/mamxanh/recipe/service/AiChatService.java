@@ -196,6 +196,11 @@ public class AiChatService {
         Long userId = users.findAuthenticatedUserId().map(id -> users.requireActiveMember().id()).orElse(null);
         String owner = userId == null ? "guest:" + request.anonymousViewerId() : "user:" + userId;
 
+        // Preflight sanity and resource validation
+        if (request.controlAction() == null) {
+            validateContext(request);
+        }
+
         // 1. Control actions (Cancel / Stop)
         if (request.controlAction() != null) {
             if (adkEngine != null && request.sessionId() != null && adkEngine.ownsSession(request.sessionId(), owner)) {
@@ -206,7 +211,15 @@ public class AiChatService {
             }
         }
 
-        // 2. Existing Session routing: session affinity takes precedence
+        // 2. Full ADK cutover mode
+        if ("ADK".equalsIgnoreCase(orchestratorMode) && adkEngine != null) {
+            if (adkShoppingPilot != null && request.sessionId() != null && adkShoppingPilot.ownsSession(request.sessionId(), owner)) {
+                return adkShoppingPilot.execute(request);
+            }
+            return adkEngine.execute(request);
+        }
+
+        // 3. Existing Session routing: session affinity takes precedence in DUAL_RUN
         if (request.sessionId() != null) {
             if (adkEngine != null && adkEngine.ownsSession(request.sessionId(), owner)) {
                 return adkEngine.execute(request);
@@ -217,11 +230,6 @@ public class AiChatService {
             if (assistantExecution != null) {
                 return assistantExecution.execute(request);
             }
-        }
-
-        // 3. Full ADK cutover mode
-        if ("ADK".equalsIgnoreCase(orchestratorMode) && adkEngine != null) {
-            return adkEngine.execute(request);
         }
 
         // 4. Forced Legacy mode
@@ -354,6 +362,7 @@ public class AiChatService {
         if (adkShoppingPilot == null) return false;
         Long userId = users.findAuthenticatedUserId().map(id -> users.requireActiveMember().id()).orElse(null);
         String owner = userId == null ? "guest:" + request.anonymousViewerId() : "user:" + userId;
+
         if (request.sessionId() != null) {
             return adkShoppingPilot.ownsSession(request.sessionId(), owner);
         }

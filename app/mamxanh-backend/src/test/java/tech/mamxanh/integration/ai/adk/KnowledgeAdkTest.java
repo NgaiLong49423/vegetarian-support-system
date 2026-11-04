@@ -13,8 +13,8 @@ import tools.jackson.databind.ObjectMapper;
 class KnowledgeAdkTest {
     @org.junit.jupiter.api.Test void malformedBudgetLedgerCannotBypassTheCostCeiling() {
         for(double value:List.of(Double.NaN,Double.POSITIVE_INFINITY,-1.0,5.01))
-            assertThatThrownBy(()->new G2Budget.State(value,0,0)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(()->new G2Budget.State(0,-1,0)).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(()->new AiBudgetEvaluationHelper.State(value,0,0)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(()->new AiBudgetEvaluationHelper.State(0,-1,0)).isInstanceOf(IllegalArgumentException.class);
     }
     @ParameterizedTest @ValueSource(strings={"CUSTOMER","EXPERT"})
     void nativeSearchReadRetainsPolicyWhenMarkdownContainsInjection(String role) {
