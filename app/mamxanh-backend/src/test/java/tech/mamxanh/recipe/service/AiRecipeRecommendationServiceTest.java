@@ -149,7 +149,7 @@ class AiRecipeRecommendationServiceTest {
         when(recipes.searchPublished("", 0, 50)).thenReturn(new RecipePostService.RecipePageResponse(
                 List.of(recipe(1, "VEGAN", 1L), recipe(2, "VEGAN", 1L), recipe(3, "VEGAN", 1L)), 0, 50, 3, 1));
         when(ai.recommendRecipes(anyString(), anyList(), eq(5)))
-                .thenThrow(new tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException("unavailable"));
+                .thenThrow(new tech.mamxanh.integration.ai.AiProviderException("unavailable"));
         assertThatThrownBy(() -> service.recommend(List.of(1L)))
                 .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_PROVIDER_UNAVAILABLE);
         verifyNoInteractions(events);

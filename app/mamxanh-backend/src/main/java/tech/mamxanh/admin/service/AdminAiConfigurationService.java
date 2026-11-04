@@ -14,8 +14,7 @@ import tech.mamxanh.admin.dto.AdminAiConfigurationUpdateRequest.ModelUpdate;
 import tech.mamxanh.admin.dto.AdminAiConfigurationUpdateRequest.PlanUpdate;
 import tech.mamxanh.admin.event.AiConfigurationEmailEvent;
 import tech.mamxanh.common.exception.ApiException;
-import tech.mamxanh.integration.ai.GeminiAiClient;
-import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
+import tech.mamxanh.integration.ai.AiProviderException;
 import tech.mamxanh.notification.service.NotificationService;
 import tech.mamxanh.subscription.entity.AiConfigurationSnapshot;
 import tech.mamxanh.subscription.entity.AiConfigurationSnapshot.Credit;
@@ -41,17 +40,17 @@ public class AdminAiConfigurationService {
             .withZone(BUSINESS_ZONE);
 
     private final AiConfigurationRepository configurations;
-    private final GeminiAiClient gemini;
+    private final GeminiModelValidator modelValidator;
     private final NotificationService notifications;
     private final ApplicationEventPublisher events;
     private final TransactionTemplate transactions;
     private final Clock clock;
 
-    public AdminAiConfigurationService(AiConfigurationRepository configurations, GeminiAiClient gemini,
+    public AdminAiConfigurationService(AiConfigurationRepository configurations, GeminiModelValidator modelValidator,
             NotificationService notifications, ApplicationEventPublisher events,
             PlatformTransactionManager transactionManager, Clock clock) {
         this.configurations = configurations;
-        this.gemini = gemini;
+        this.modelValidator = modelValidator;
         this.notifications = notifications;
         this.events = events;
         this.transactions = new TransactionTemplate(transactionManager);
@@ -96,7 +95,7 @@ public class AdminAiConfigurationService {
 
     private void verifyNewModel(String modelId) {
         try {
-            if (!gemini.verifyModel(modelId)) {
+            if (!modelValidator.verifyModel(modelId)) {
                 throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "AI_MODEL_NOT_AVAILABLE",
                         "Gemini model này không hỗ trợ tạo nội dung cho AI Assistant.");
             }

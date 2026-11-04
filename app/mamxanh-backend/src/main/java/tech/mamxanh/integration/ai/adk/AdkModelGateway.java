@@ -8,20 +8,25 @@ import com.google.genai.errors.ApiException;
 import com.google.genai.types.FinishReason;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import tech.mamxanh.integration.ai.AiTokenUsage;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 
 /** G1 model boundary. No bean: production accounting must implement Policy before cutover. */
 public final class AdkModelGateway extends BaseLlm {
+    private static final Logger LOG = LoggerFactory.getLogger(AdkModelGateway.class);
     public static final Duration CALL_TIMEOUT = Duration.ofSeconds(10);
     private final BaseLlm delegate;
     private final Policy policy;
@@ -29,6 +34,7 @@ public final class AdkModelGateway extends BaseLlm {
     private final Duration timeout;
     private final Authentication authentication;
     private final BooleanSupplier runAllowed;
+    private final AtomicInteger callSequence = new AtomicInteger();
 
     public AdkModelGateway(BaseLlm delegate, Policy policy, Clock clock) {
         this(delegate, policy, clock, CALL_TIMEOUT);
@@ -63,7 +69,14 @@ public final class AdkModelGateway extends BaseLlm {
     @Override
     public Flowable<LlmResponse> generateContent(LlmRequest request, boolean stream) {
         if (stream) return Flowable.error(new UnsupportedOperationException("G1 uses non-streaming calls"));
+        long startedNanos = System.nanoTime();
+        UUID traceId = UUID.randomUUID();
+        int ordinal = callSequence.incrementAndGet();
+        AtomicInteger attempts = new AtomicInteger();
+        int contextBytes = request.contents().toString().getBytes(StandardCharsets.UTF_8).length;
+        int toolCount = request.tools().size();
         return Flowable.defer(() -> {
+            attempts.incrementAndGet();
             if (!runAllowed.getAsBoolean()) return Flowable.error(new IllegalStateException("Run stopped"));
             if (request.model().isPresent() && !model().equals(request.model().get())) {
                 return Flowable.error(new IllegalArgumentException("Model selection mismatch"));
@@ -83,7 +96,23 @@ public final class AdkModelGateway extends BaseLlm {
         }).retry((attempt, failure) -> attempt == 1 && failure instanceof RetryableProviderFailure)
                 .onErrorResumeNext(failure -> Flowable.error(failure instanceof RetryableProviderFailure
                         ? failure.getCause() : failure))
-                .subscribeOn(Schedulers.io()).timeout(timeout.toMillis(), TimeUnit.MILLISECONDS);
+                .subscribeOn(Schedulers.io()).timeout(timeout.toMillis(), TimeUnit.MILLISECONDS)
+                .doOnNext(response -> LOG.info("ADK model call completed traceId={} ordinal={} model={} elapsedMs={} attempts={} contextBytes={} toolCount={}",
+                        traceId, ordinal, model(), elapsedMillis(startedNanos), attempts.get(), contextBytes, toolCount))
+                .doOnError(failure -> LOG.warn("ADK model call failed traceId={} ordinal={} model={} elapsedMs={} attempts={} contextBytes={} toolCount={} cause={}",
+                        traceId, ordinal, model(), elapsedMillis(startedNanos), attempts.get(), contextBytes, toolCount, failureKind(failure)));
+    }
+
+    private static long elapsedMillis(long startedNanos) {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos);
+    }
+
+    private static String failureKind(Throwable failure) {
+        for (int depth = 0; failure != null && depth < 8; depth++, failure = failure.getCause()) {
+            if (failure instanceof java.util.concurrent.TimeoutException) return "TIMEOUT";
+            if (failure instanceof ApiException api) return "HTTP_" + api.code();
+        }
+        return "OTHER";
     }
 
     private static boolean isTransientProviderFailure(Throwable failure) {

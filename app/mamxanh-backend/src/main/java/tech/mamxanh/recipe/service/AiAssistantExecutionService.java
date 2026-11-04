@@ -11,7 +11,7 @@ import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.integration.ai.AiClient;
 import tech.mamxanh.integration.ai.AiPromptLoader;
 import tech.mamxanh.integration.ai.AiUsageEvent;
-import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
+import tech.mamxanh.integration.ai.AiProviderException;
 import tech.mamxanh.recipe.dto.request.AiChatRequest;
 import tech.mamxanh.recipe.dto.request.AiChatRequest.ConsentCategory;
 import tech.mamxanh.recipe.dto.request.AiChatRequest.ConsentPurpose;

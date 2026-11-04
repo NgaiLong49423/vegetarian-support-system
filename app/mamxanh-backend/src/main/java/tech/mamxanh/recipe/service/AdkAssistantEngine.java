@@ -41,7 +41,7 @@ import tech.mamxanh.integration.ai.AiClient;
 import tech.mamxanh.integration.ai.AiPromptLoader;
 import tech.mamxanh.integration.ai.AiTokenUsage;
 import tech.mamxanh.integration.ai.AiUsageEvent;
-import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
+import tech.mamxanh.integration.ai.AiProviderException;
 import tech.mamxanh.integration.ai.adk.AdkModelGateway;
 import tech.mamxanh.integration.ai.adk.MemberAccountingPolicy;
 import tech.mamxanh.recipe.dto.request.AiChatRequest;
@@ -261,7 +261,10 @@ public class AdkAssistantEngine implements AutoCloseable {
         }
 
         // 4. Preflight Scope Classification (FR-51 / BR-09 / BR-41)
+        long classificationStarted = System.nanoTime();
         AiChatResponse refusal = classify(request, sessionId, mode, userId);
+        LOG.info("ADK chat classification sessionId={} elapsedMs={} outcome={}", sessionId,
+                elapsedMillis(classificationStarted), refusal == null ? "IN_SCOPE" : refusal.runStatus());
         if (refusal != null) {
             return refusal;
         }
@@ -302,7 +305,7 @@ public class AdkAssistantEngine implements AutoCloseable {
             List<AssistantStep> initialSteps,
             List<Source> initialSources) {
 
-        String resolvedModel = resolveModel(userId);
+        String resolvedModel = resolveModel(userId, request.anonymousViewerId());
         List<AssistantStep> steps = initialSteps != null ? initialSteps : new ArrayList<>();
         List<Source> sources = initialSources != null ? initialSources : new ArrayList<>();
         AtomicReference<PendingConfirmation> stagedConfirmation = new AtomicReference<>();
@@ -323,6 +326,7 @@ public class AdkAssistantEngine implements AutoCloseable {
                     "Phiên trợ lý đang xử lý một lượt chạy khác. Vui lòng đợi lượt hiện tại hoàn tất.");
         }
 
+        long runStarted = System.nanoTime();
         List<Event> emittedEvents;
         try {
             emittedEvents = state.runner.runAsync(owner, state.adkSessionId, inputContent,
@@ -331,12 +335,16 @@ public class AdkAssistantEngine implements AutoCloseable {
                             .flatMap(ignored -> Flowable.error(new java.util.concurrent.TimeoutException("Run deadline exceeded"))))
                     .toList().blockingGet();
         } catch (RuntimeException failure) {
-            LOG.warn("ADK turn execution failed: {}", failure.getMessage());
+            LOG.warn("ADK turn execution failed sessionId={} elapsedMs={} toolSteps={} cause={}",
+                    sessionHandle.id(), elapsedMillis(runStarted), steps.size(),
+                    isTimeout(failure) ? "TIMEOUT" : failure.getClass().getSimpleName());
             state.busy.set(false);
             return handleRunFailure(request, sessionHandle.id(), mode, steps, sources, failure);
         } finally {
             state.busy.set(false);
         }
+        LOG.info("ADK turn completed sessionId={} elapsedMs={} toolSteps={}",
+                sessionHandle.id(), elapsedMillis(runStarted), steps.size());
 
         // Check if a tool staged a confirmation in CONFIRM mode
         PendingConfirmation pending = stagedConfirmation.get();
@@ -354,14 +362,6 @@ public class AdkAssistantEngine implements AutoCloseable {
                 answer = steps.getLast().summary() != null ? steps.getLast().summary() : "Thao tác đã được thực hiện thành công.";
             } else {
                 answer = "Mình đã xử lý yêu cầu của bạn.";
-            }
-        }
-
-        // Grounding with knowledge base if no tools were invoked
-        if (steps.isEmpty()) {
-            List<Source> retrievedSources = knowledge.retrieve(request.question());
-            if (!retrievedSources.isEmpty()) {
-                sources.addAll(retrievedSources);
             }
         }
 
@@ -568,8 +568,8 @@ public class AdkAssistantEngine implements AutoCloseable {
         });
     }
 
-    private String resolveModel(Long userId) {
-        String resolved = chatSettings.resolve(userId, null);
+    private String resolveModel(Long userId, String anonymousViewerId) {
+        String resolved = chatSettings.resolve(userId, userId == null ? anonymousViewerId : null);
         return resolved == null || resolved.isBlank() ? AiTokenUsage.MODEL : resolved;
     }
 
@@ -653,12 +653,23 @@ public class AdkAssistantEngine implements AutoCloseable {
             List<AssistantStep> steps,
             List<Source> sources,
             Throwable failure) {
-        if (failure instanceof java.util.concurrent.TimeoutException) {
+        if (isTimeout(failure)) {
             return buildResponse(request, sessionId, mode, "TIMEOUT", steps, sources, null, null,
-                    "Yêu cầu xử lý quá thời gian quy định (30 giây). Vui lòng thử lại với câu hỏi ngắn gọn hơn.");
+                    "Lượt trả lời AI đã vượt thời gian chờ. Bạn có thể thử lại sau ít phút.");
         }
         return buildResponse(request, sessionId, mode, "FAILED", steps, sources, null, null,
                 "Dịch vụ AI đang gặp sự cố khi xử lý lượt chạy. Vui lòng thử lại sau.");
+    }
+
+    private static boolean isTimeout(Throwable failure) {
+        for (int depth = 0; failure != null && depth < 8; depth++, failure = failure.getCause()) {
+            if (failure instanceof java.util.concurrent.TimeoutException) return true;
+        }
+        return false;
+    }
+
+    private static long elapsedMillis(long startedNanos) {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos);
     }
 
     private static LlmFactory createDefaultLlmFactory(String configuredApiKey) {
@@ -819,7 +830,8 @@ public class AdkAssistantEngine implements AutoCloseable {
                 return Single.just(Map.of("status", "ERROR", "message", "Mất ngữ cảnh phiên làm việc."));
             }
 
-            return Single.fromCallable(() -> asCaller(turn.callerAuth(), () -> {
+            long toolStarted = System.nanoTime();
+            return Single.<Map<String, Object>>fromCallable(() -> asCaller(turn.callerAuth(), () -> {
                 // Check Consent
                 if (!definition.consentCategories().isEmpty()) {
                     for (ConsentCategory cat : definition.consentCategories()) {
@@ -922,7 +934,11 @@ public class AdkAssistantEngine implements AutoCloseable {
 
                 turn.steps().add(new AssistantStep(stepIndex, definition.name(), result.status(), result.summary(), resultMap));
                 return resultMap;
-            }));
+            })).doOnSuccess(result -> LOG.info("ADK tool completed sessionId={} tool={} elapsedMs={} status={}",
+                    sessionState.sessionId, definition.name(), elapsedMillis(toolStarted), result.get("status")))
+                    .doOnError(failure -> LOG.warn("ADK tool failed sessionId={} tool={} elapsedMs={} cause={}",
+                            sessionState.sessionId, definition.name(), elapsedMillis(toolStarted),
+                            failure.getClass().getSimpleName()));
         }
 
         private <T> T asCaller(Authentication callerAuth, Callable<T> action) throws Exception {

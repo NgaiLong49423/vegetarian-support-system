@@ -102,7 +102,7 @@ class MealPlanNutritionAiServiceTest {
     void mapsProviderAndNullResponsesToApplicationErrorsWithoutUsageEvents() {
         arrangeCandidate();
         when(ai.analyzeNutritionRecommendations(anyString(), anyList(), eq(3)))
-                .thenThrow(new tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException("offline"));
+                .thenThrow(new tech.mamxanh.integration.ai.AiProviderException("offline"));
         assertThatThrownBy(() -> service.recommend(MONDAY, 101L))
                 .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_PROVIDER_UNAVAILABLE);
         verifyNoInteractions(events);

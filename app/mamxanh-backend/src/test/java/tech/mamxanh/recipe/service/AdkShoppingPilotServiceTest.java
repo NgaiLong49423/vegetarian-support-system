@@ -647,7 +647,7 @@ class AdkShoppingPilotServiceTest {
         assertThat(completed.runStatus()).isEqualTo("COMPLETED");
         assertThat(completed.sources()).extracting(s->s.id()).contains("shopping-create");
         assertThat(completed.sources()).filteredOn(s -> s.id().equals("shopping-create"))
-                .allSatisfy(source -> assertThat(source.version()).isEqualTo("2.0.0"));
+                .allSatisfy(source -> assertThat(source.version()).isEqualTo("2.1.0"));
     }
 
     @Test void cancellationKeepsTheSourcesActuallyReadForThePendingPreview() {

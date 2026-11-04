@@ -35,8 +35,9 @@ import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.config.*;
 import tech.mamxanh.common.exception.*;
 import tech.mamxanh.integration.ai.AiClient;
-import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
 import tech.mamxanh.nutrition.service.DietaryPreferenceService;
+import tech.mamxanh.recipe.dto.request.AiChatRequest;
+import tech.mamxanh.recipe.dto.response.AiChatResponse;
 import tech.mamxanh.recipe.dto.response.RecipeDetailResponse;
 import tech.mamxanh.recipe.service.*;
 
@@ -59,6 +60,7 @@ class GuestAiChatControllerTest {
     @MockitoBean RecipePostService posts;
     @MockitoBean DietaryPreferenceService preferences;
     @MockitoBean AiClient ai;
+    @MockitoBean AdkAssistantEngine adkEngine;
     @MockitoBean JwtDecoder jwtDecoder;
     @MockitoBean AccountStatusJwtAuthenticationConverter jwtAuthenticationConverter;
     @MockitoBean tech.mamxanh.subscription.service.SubscriptionEntitlementService entitlements;
@@ -72,9 +74,14 @@ class GuestAiChatControllerTest {
     void setup() {
         limiter.reset();
         ((MutableClock) clock).advance(Duration.ofDays(1));
-        when(ai.classifyChatScope(anyString(), anyString())).thenReturn(
-                new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 1, 1, 2));
-        when(ai.answerChat(anyString(), anyString())).thenReturn(new AiClient.ChatResult("Nấu nhỏ lửa.", 1, 2, 3));
+        when(adkEngine.execute(any())).thenAnswer(inv -> {
+            AiChatRequest req = inv.getArgument(0);
+            if (req != null) {
+                aiQuota.requireAvailable(null, req.anonymousViewerId());
+                return new AiChatResponse(req.contextType(), req.recipeId(), "Nấu nhỏ lửa.", List.of());
+            }
+            return new AiChatResponse(AiChatRequest.ContextType.GENERAL, null, "Nấu nhỏ lửa.", List.of());
+        });
     }
 
     @Test
@@ -82,13 +89,20 @@ class GuestAiChatControllerTest {
         mvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
                 .andExpect(jsonPath("$.answer").value("Nấu nhỏ lửa."));
+
+        when(adkEngine.execute(argThat(r -> r != null && r.contextType() == AiChatRequest.ContextType.RECIPE))).thenAnswer(inv -> {
+            AiChatRequest req = inv.getArgument(0);
+            aiQuota.requireAvailable(null, req.anonymousViewerId());
+            return new AiChatResponse(req.contextType(), req.recipeId(), "Nấu nhỏ lửa.", List.of());
+        });
+
         when(recipes.getPublishedRecipe(19L)).thenReturn(new RecipeDetailResponse(
                 19L, "Canh rau", "Mô tả", "Nấu trong 10 phút", "SOUP", "Món canh", "VEGAN", "Thuần chay",
                 "EASY", "Dễ", 2, 5, 10, null, null, null, List.of(), true, List.of(), null, null, List.of()));
         mvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"contextType\":\"RECIPE\",\"recipeId\":19,\"question\":\"Nấu bao lâu?\",\"anonymousViewerId\":\"" + GUEST_ID + "\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.recipeId").value(19));
-        verify(ai).answerChat(anyString(), contains("Canh rau"));
+        verify(adkEngine, atLeastOnce()).execute(any());
         verifyNoInteractions(preferences);
     }
 
@@ -110,7 +124,7 @@ class GuestAiChatControllerTest {
                 .andExpect(status().isTooManyRequests()).andExpect(header().exists("Retry-After"))
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
                 .andExpect(jsonPath("$.code").value("AI_GUEST_RATE_LIMITED"));
-        verify(ai, times(10)).answerChat(anyString(), anyString());
+        verify(adkEngine, times(10)).execute(any());
         ((MutableClock) clock).advance(Duration.ofMinutes(1));
         mvc.perform(post(URL).header("X-Guest-Chat-Id", id).contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isOk());
@@ -127,15 +141,16 @@ class GuestAiChatControllerTest {
         mvc.perform(post(URL).header("X-Guest-Chat-Id", UUID.randomUUID().toString())
                         .header("X-Forwarded-For", "198.51.100.1").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isTooManyRequests());
-        verifyNoInteractions(ai);
+        verifyNoInteractions(adkEngine);
     }
 
     @Test
     void providerFailureAndInvalidOutputHaveFriendlyProblemResponses() throws Exception {
-        when(ai.answerChat(anyString(), anyString())).thenThrow(new AiProviderException("timeout"));
+        when(adkEngine.execute(any()))
+                .thenThrow(new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE))
+                .thenThrow(new AppException(ErrorCode.AI_RESPONSE_INVALID));
         mvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isServiceUnavailable()).andExpect(jsonPath("$.code").value("AI_PROVIDER_UNAVAILABLE"));
-        doReturn(null).when(ai).answerChat(anyString(), anyString());
         mvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isBadGateway()).andExpect(jsonPath("$.code").value("AI_RESPONSE_INVALID"));
     }
@@ -168,7 +183,7 @@ class GuestAiChatControllerTest {
         mvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"contextType\":\"RECIPE\",\"recipeId\":999,\"question\":\"Cách nấu?\",\"anonymousViewerId\":\"" + GUEST_ID + "\"}"))
                 .andExpect(status().isNotFound());
-        verifyNoInteractions(ai);
+        verifyNoInteractions(adkEngine);
     }
 
     @Test
@@ -182,7 +197,7 @@ class GuestAiChatControllerTest {
         when(users.requireActiveMember()).thenThrow(new AppException(ErrorCode.ACCESS_DENIED));
         mvc.perform(post(URL).with(user("7").roles("ADMIN")).contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isForbidden());
-        verifyNoInteractions(ai);
+        verifyNoInteractions(adkEngine);
     }
 
     @Test

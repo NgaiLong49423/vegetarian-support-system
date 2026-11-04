@@ -19,7 +19,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import tech.mamxanh.AbstractIntegrationTest;
 import tech.mamxanh.integration.ai.AiClient;
-import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
+import tech.mamxanh.integration.ai.AiProviderException;
 import tech.mamxanh.recipe.repository.RelatedRecipeRepository;
 
 class RelatedRecipeIntegrationTest extends AbstractIntegrationTest {

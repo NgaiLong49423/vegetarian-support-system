@@ -144,8 +144,8 @@ class AiTelemetryIntegrationTest extends AbstractIntegrationTest {
         awaitCount(2); // scope classification and answer are separate successful Gemini calls.
         assertThat(output.getAll()).doesNotContain("Hướng dẫn nấu canh chua chay FR11 marker", "Chao ban", "private provider failure");
         assertThat(jdbc.queryForObject("SELECT COUNT(DISTINCT anonymous_session_id) FROM AI_USAGE_TELEMETRY WHERE anonymous_session_id=?",Integer.class,guest)).isEqualTo(1);
-        when(ai.answerChat(anyString(),anyString())).thenThrow(new GeminiAiClient.AiProviderException("private provider failure"));
-        when(ai.answerChat(anyString(),anyString(),anyString())).thenThrow(new GeminiAiClient.AiProviderException("private provider failure"));
+        when(ai.answerChat(anyString(),anyString())).thenThrow(new AiProviderException("private provider failure"));
+        when(ai.answerChat(anyString(),anyString(),anyString())).thenThrow(new AiProviderException("private provider failure"));
         mockMvc.perform(post("/api/v1/recipes/ai/chat").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isServiceUnavailable());
         assertThat(count()).isEqualTo(3); // the failed answer still follows a successful recorded classification.

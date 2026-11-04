@@ -21,7 +21,7 @@ import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.integration.ai.AiClient;
 import tech.mamxanh.integration.ai.AiUsageEvent;
-import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
+import tech.mamxanh.integration.ai.AiProviderException;
 import tech.mamxanh.recipe.dto.response.RecipePostResponse;
 import tech.mamxanh.recipe.repository.RelatedRecipeRepository;
 import tech.mamxanh.subscription.service.SubscriptionEntitlementService;

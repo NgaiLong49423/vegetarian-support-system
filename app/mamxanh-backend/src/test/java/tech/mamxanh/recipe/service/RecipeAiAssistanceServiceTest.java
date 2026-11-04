@@ -23,7 +23,7 @@ import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ApiException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.integration.ai.AiClient;
-import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
+import tech.mamxanh.integration.ai.AiProviderException;
 import tech.mamxanh.nutrition.dto.response.IngredientResponse;
 import tech.mamxanh.nutrition.service.IngredientCatalogLookupService;
 import tech.mamxanh.recipe.dto.request.RecipeAiAssistanceRequest;

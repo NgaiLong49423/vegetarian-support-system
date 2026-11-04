@@ -163,7 +163,7 @@ public final class AdkSpikeSession implements AutoCloseable {
 
     public int storedEventCount() {
         return runner.sessionService().getSession(runner.appName(), owner.getName(), sessionId, Optional.empty())
-                .blockingGet().events().size();
+                .blockingGet().immutableEvents().size();
     }
 
     @Override

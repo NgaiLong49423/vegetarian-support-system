@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -105,6 +106,8 @@ class AdkAssistantEngineTest {
 
     @Test
     void pureConversationalQueryReturnsGroundedAnswerWithoutToolCalls() {
+        when(knowledge.retrieve(anyString())).thenReturn(List.of(
+                new AiChatResponse.Source("DOMAIN_KNOWLEDGE", "unrelated", "Hướng dẫn khác", "", null)));
         ScriptedLlm llm = new ScriptedLlm(request -> textResponse("Chào bạn! Hôm nay bạn muốn nấu món chay gì?"));
         var engine = createEngine(llm);
 
@@ -117,7 +120,26 @@ class AdkAssistantEngineTest {
         assertThat(response.answer()).isEqualTo("Chào bạn! Hôm nay bạn muốn nấu món chay gì?");
         assertThat(response.runStatus()).isEqualTo("COMPLETED");
         assertThat(response.steps()).isEmpty();
+        assertThat(response.sources()).isEmpty();
         assertThat(llm.requests).hasSize(1);
+    }
+
+    @Test
+    void wrappedModelTimeoutIsReportedAsTimeoutInsteadOfGenericFailure() {
+        ScriptedLlm llm = new ScriptedLlm(request -> {
+            throw new RuntimeException(new java.util.concurrent.TimeoutException("The source did not signal an event for 10000 milliseconds"));
+        });
+        var engine = createEngine(llm);
+        AiChatRequest request = new AiChatRequest(ContextType.GENERAL, null,
+                "Giải thích cách thay trứng trong bánh thuần chay", List.of(), null, null,
+                ExecutionMode.CONFIRM, null, null, null, UUID.randomUUID());
+
+        AiChatResponse response = engine.execute(request);
+
+        assertThat(response.runStatus()).isEqualTo("TIMEOUT");
+        assertThat(response.answer()).contains("vượt thời gian chờ");
+        assertThat(response.answer()).doesNotContain("30 giây");
+        assertThat(response.steps()).isEmpty();
     }
 
     @Test
@@ -303,6 +325,46 @@ class AdkAssistantEngineTest {
                         .totalTokenCount(150)
                         .build())
                 .build();
+    }
+
+    @Test
+    void deterministicRagRetrievesExpertRegistrationDocumentAndGroundsResponse() {
+        when(toolRegistry.definitionsFor("CUSTOMER")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("get_business_knowledge", "Lấy tài liệu tri thức nghiệp vụ", "{}", false, false, Set.of())));
+
+        when(toolRegistry.execute(eq("get_business_knowledge"), any())).thenReturn(
+                new AiAssistantToolRegistry.ToolResult("SUCCEEDED", "Đã đọc tài liệu đăng ký chuyên gia dinh dưỡng",
+                        Map.of("id", "expert-registration", "title", "Hướng dẫn đăng ký Chuyên gia dinh dưỡng"),
+                        List.of(new AiChatResponse.Source("DOMAIN_KNOWLEDGE", "expert-registration",
+                                "Hướng dẫn đăng ký Chuyên gia dinh dưỡng",
+                                "Để đăng ký làm chuyên gia dinh dưỡng trên Mâm Xanh, bạn cần nộp hồ sơ bằng cấp và chứng chỉ chuyên môn.", "1.0.0"))));
+
+        ScriptedLlm llm = new ScriptedLlm(request -> {
+            List<String> fnResponses = functionResponseNames(request);
+            if (fnResponses.isEmpty()) {
+                return functionCall("get_business_knowledge", "call-rag-expert-1", Map.of("knowledgeId", "expert-registration"));
+            }
+            return textResponse("Để đăng ký làm chuyên gia dinh dưỡng trên Mâm Xanh, bạn cần nộp hồ sơ chuyên môn và chứng chỉ hành nghề để ban quản trị phê duyệt.");
+        });
+
+        var engine = createEngine(llm);
+
+        AiChatRequest request = new AiChatRequest(ContextType.GENERAL, null,
+                "Làm thế nào để đăng ký làm chuyên gia dinh dưỡng trên Mâm Xanh?",
+                List.of(), null, null, ExecutionMode.AUTO, null, null, null, UUID.randomUUID());
+
+        AiChatResponse response = engine.execute(request);
+
+        assertThat(response).isNotNull();
+        assertThat(response.runStatus()).isEqualTo("COMPLETED");
+        assertThat(response.answer()).contains("chuyên gia dinh dưỡng");
+        assertThat(response.steps()).hasSize(1);
+        assertThat(response.steps().getFirst().tool()).isEqualTo("get_business_knowledge");
+        assertThat(response.steps().getFirst().status()).isEqualTo("SUCCEEDED");
+        assertThat(response.sources()).hasSize(1);
+        assertThat(response.sources().getFirst().id()).isEqualTo("expert-registration");
+        assertThat(response.sources().getFirst().title()).isEqualTo("Hướng dẫn đăng ký Chuyên gia dinh dưỡng");
+        assertThat(llm.requests).hasSize(2);
     }
 
     static LlmResponse textResponse(String text) {
