@@ -1,13 +1,34 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.147.0
+> **Version:** v2.148.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-11-02
+> **Last Updated:** 2026-11-04
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-11-04 — Persist AI Action Journal and Standardize Test Suites
+
+**Status:** Committed — `79b7a0d8`.
+
+**Scope:** Add persistent SQL Server action journal for multi-action idempotency, recover interrupted actions on startup, add Tier 2 integration tests for all 28 domain tools, and standardize assistant test suite naming.
+
+### Added
+
+- Add `V41__ai_assistant_action_journal.sql` migration creating `AI_ASSISTANT_ACTION_JOURNAL` with atomic state transitions and expiry indexing.
+- Add `AiAssistantToolIntegrationTest` covering input mapping, validation, and domain service delegation for all 28 domain tools.
+- Add automated compose management and health checking to `run-ai-e2e.ps1`.
+
+### Changed
+
+- Transition `AiAssistantExecutionJournal` from in-memory fallback to persistent JDBC table storage with startup recovery for abandoned reservations.
+- Standardize test filenames and fixtures across backend and frontend away from legacy G-gate prefixes to semantic identifiers.
+
+### Fixed
+
+- Prevent unhandled timeout errors on chat scope classification by configuring low thinking level and adequate token limits.
 
 ## 2026-11-02 — Correct G5 Token Accounting and FR-21 Access ([PR #226](https://github.com/NgaiLong49423/vegetarian-support-system/pull/226))
 
