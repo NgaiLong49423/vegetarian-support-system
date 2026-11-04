@@ -17,7 +17,7 @@ public record AiChatRequest(
         @Min(1) @Schema(description = "Required for RECIPE context and omitted for GENERAL context.") Long recipeId,
         @NotBlank @Size(max = 1000) @Schema(maxLength = 1000) String question,
         @Size(max = 8) @Schema(description = "Most recent conversation turns, up to eight items, kept only for this request.")
-        List<@Valid Turn> history,
+        List<@NotNull @Valid Turn> history,
         @Pattern(regexp = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
         @Schema(description = "Session-cookie UUID required for Guest rate limiting; ignored for authenticated Members.")
         String anonymousViewerId) {

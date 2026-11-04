@@ -71,7 +71,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.POST, PUBLIC_POST_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.POST, PUBLIC_PAYMENT_POST_ENDPOINTS).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/recipes/*/views").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/recipes/*/views", "/api/v1/recipes/ai/chat").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/recipes/mine").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/recipes/*/manage").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/recipes/*/related").permitAll()

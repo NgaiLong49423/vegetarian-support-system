@@ -1,14 +1,16 @@
 package tech.mamxanh.recipe.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.security.core.Authentication;
+import jakarta.validation.Valid;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -50,11 +52,19 @@ public class AiChatController {
     @ApiResponse(responseCode = "404", description = "The recipe does not exist or is not public.")
     @ApiResponse(responseCode = "502", description = "Gemini returned an incomplete or invalid answer.")
     @ApiResponse(responseCode = "503", description = "Gemini is unavailable or timed out.")
-    public AiChatResponse answer(@Valid @RequestBody AiChatRequest request, Authentication authentication,
+    public ResponseEntity<AiChatResponse> answer(
+            @Valid @RequestBody AiChatRequest request,
+            Authentication authentication,
             HttpServletRequest httpRequest) {
         if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
-            guestRateLimiter.check(request.anonymousViewerId(), httpRequest.getRemoteAddr());
+            String guestHeader = httpRequest.getHeader(GuestChatRateLimiter.ID_HEADER);
+            String guestId = (guestHeader != null && !guestHeader.isBlank())
+                    ? guestHeader.strip()
+                    : (request.anonymousViewerId() != null && !request.anonymousViewerId().isBlank()
+                            ? request.anonymousViewerId().strip()
+                            : null);
+            guestRateLimiter.check(guestId, httpRequest.getRemoteAddr());
         }
-        return service.answer(request);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(service.answer(request));
     }
 }

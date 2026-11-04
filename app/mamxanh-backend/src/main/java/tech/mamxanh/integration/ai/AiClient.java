@@ -3,6 +3,7 @@ package tech.mamxanh.integration.ai;
 import java.util.List;
 
 public interface AiClient {
+    /** Maximum number of characters allowed in an AI chat answer (and stored assistant turn). */
     int MAX_CHAT_ANSWER_LENGTH = 8_000;
     String generateRecipeText(String prompt, List<Long> enteredIngredientIds);
 
@@ -13,6 +14,9 @@ public interface AiClient {
     RecommendationResult recommendRecipes(String prompt, List<Long> allowedRecipeIds, int limit);
 
     RecommendationResult analyzeNutritionRecommendations(String prompt, List<Long> allowedRecipeIds, int limit);
+
+    /** Classifies the latest chat request without generating a user-facing answer. */
+    ChatResult classifyChatScope(String systemInstruction, String prompt);
 
     ChatResult answerChat(String systemInstruction, String prompt);
     /** Selects an ordered sequence; IDs may repeat when the caller explicitly permits it. */

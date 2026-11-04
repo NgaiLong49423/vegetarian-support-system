@@ -35,6 +35,10 @@ public class CorsConfig {
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        CorsConfiguration guestChat = new CorsConfiguration(configuration);
+        guestChat.setAllowedHeaders(new java.util.ArrayList<>(configuration.getAllowedHeaders()));
+        guestChat.addAllowedHeader("X-Guest-Chat-Id");
+        source.registerCorsConfiguration("/api/v1/recipes/ai/chat", guestChat);
         source.registerCorsConfiguration("/api/**", configuration);
         return source;
     }

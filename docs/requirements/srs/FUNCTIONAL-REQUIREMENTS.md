@@ -1,6 +1,6 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.46.0
+> **Version:** v2.47.0
 > **Created:** 2026-09-14
 > **Last Updated:** 2026-10-30
 > **Status:** Active
@@ -3392,6 +3392,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
     - Dữ liệu đo lường kỹ thuật (telemetry) do provider trả về chỉ dùng để đối soát chi phí vận hành và lưu trữ tối đa 90 ngày; tuyệt đối không lưu trữ raw prompt (BR-04, FR-11).
   - Thời gian phản hồi: đáp ứng [NFR-03](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03).
 - **Ranh giới an toàn, nguồn dữ liệu và toàn vẹn hệ thống (Safety & Source Boundaries):**
+  - *Giới hạn phạm vi và nội dung nhạy cảm:* Trước khi sinh câu trả lời, Gemini phân loại riêng tin nhắn mới và trả JSON gồm `decisionId` cùng `reasonId`. Backend chỉ chấp nhận các mã định danh `MX_CHAT_OK`, `MX_CHAT_OFF_TOPIC`, `MX_CHAT_SENSITIVE`; chỉ `MX_CHAT_OK` được gọi bước sinh câu trả lời. Hai mã còn lại được Backend chuyển thành câu trả lời chuẩn bị sẵn; `reasonId` nội bộ phân biệt y tế rủi ro cao, tự hại/gây hại, khai thác tình dục, bạo lực/vũ khí, hoạt động phi pháp/xâm phạm riêng tư, prompt injection, spam/phá hoại và nhóm rủi ro khác. Rủi ro cao có ưu tiên khi tin nhắn mới đồng thời chứa nội dung trong phạm vi. Nếu provider chặn hoặc classifier không trả mã hợp lệ, Backend fail-closed bằng cảnh báo/response dự phòng và không gọi bước sinh câu trả lời.
   - *Ranh giới y tế tuyệt đối:* Chatbot không phải chuyên gia y tế, không đưa ra chẩn đoán bệnh lý hay phác đồ ăn uống điều trị y khoa (SRS 3.15, BR-09, BR-41). Mọi thông tin chỉ mang tính tham khảo tổng quát.
   - *Tính tham khảo của BMI & Calorie:* Chỉ số BMI và mức phân bổ calorie chỉ là thông tin ước tính hỗ trợ tham khảo trong hồ sơ dinh dưỡng rộng hơn (BR-39, BR-41), không phải chỉ định lâm sàng.
   - *Tôn trọng trường phái ăn chay và giới hạn của người dùng:* AI Chatbot phải tuân thủ nghiêm ngặt trường phái ăn chay (`dietaryType`: Vegan, Lacto-Vegetarian, Ovo-Vegetarian, Lacto-Ovo Vegetarian) của bài công thức đang xem hoặc của người dùng yêu cầu/khai báo, cùng các giới hạn kiêng kỵ và dị ứng (`allergiesAndRestrictions`); tuyệt đối không gợi ý các nguyên liệu vi phạm `dietaryType` tương ứng.
@@ -3494,6 +3495,14 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - *Given* người dùng hỏi tìm/gợi ý công thức mà không yêu cầu viết mới hoặc biến tấu,
   - *When* Gemini phản hồi,
   - *Then* chatbot ưu tiên bài công thức công khai; nội dung công thức mới hoặc biến tấu chỉ xuất hiện khi người dùng yêu cầu rõ, được gắn nhãn là nội dung AI và chỉ tồn tại trong hội thoại, không lưu, đăng hoặc sửa Recipe Post.
+- **AC-51.11 (Thông báo câu hỏi ngoài phạm vi trước khi sinh câu trả lời):**
+  - *Given* Guest hoặc Member gửi câu hỏi không có liên quan thực chất đến ẩm thực chay, công thức, nguyên liệu, chế biến hoặc tính năng Mâm Xanh,
+  - *When* Backend phân loại yêu cầu là `MX_CHAT_OFF_TOPIC`,
+  - *Then* hệ thống trả thông báo rõ phạm vi hỗ trợ, không gọi bước sinh câu trả lời, không trả thẻ công thức và giữ nguyên cấu trúc response của Chatbot.
+- **AC-51.12 (Ưu tiên cảnh báo nội dung rủi ro trong yêu cầu hỗn hợp):**
+  - *Given* câu hỏi chứa cả nội dung ăn chay/Mâm Xanh và dấu hiệu yêu cầu nhạy cảm hoặc phá hoại,
+  - *When* Backend phân loại yêu cầu,
+  - *Then* hệ thống chọn `MX_CHAT_SENSITIVE`, trả cảnh báo theo `reasonId` và không gọi bước sinh câu trả lời; nếu câu hỏi chỉ trộn nội dung trong phạm vi với chủ đề vô hại ngoài phạm vi, Chatbot chỉ trả lời phần trong phạm vi và nêu rõ giới hạn.
 
 ---
 

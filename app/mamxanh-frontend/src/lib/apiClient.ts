@@ -1,6 +1,6 @@
 import axios, { isAxiosError } from 'axios';
 import { clearSession, loadSession } from './authStorage';
-import { toProblem, toProblemAsync } from './problem';
+import { toProblem, toProblemAsync, retryAfterSeconds } from './problem';
 
 /** Base URL of the Mâm Xanh REST API (docs/api/API.md). Set VITE_API_BASE_URL per environment. */
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api/v1';
@@ -20,7 +20,14 @@ export function setAccessTokenProvider(provider: AccessTokenProvider | null): vo
 export interface ApiFieldError { field: string; message: string }
 
 export class ApiError extends Error {
-  constructor(message: string, readonly status: number, readonly code?: string, readonly errors: ApiFieldError[] = [], readonly requiredTier?: 'PLUS' | 'PRO') {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code?: string,
+    readonly errors: ApiFieldError[] = [],
+    readonly requiredTier?: 'PLUS' | 'PRO',
+    readonly retryAfter?: number
+  ) {
     super(message);
     this.name = 'ApiError';
   }
@@ -73,14 +80,31 @@ apiClient.interceptors.response.use(undefined, (error: unknown) => {
 
 export function asApiError(error: unknown): ApiError {
   if (error instanceof ApiError) return error;
+  if (error instanceof Error && !axios.isAxiosError(error)) {
+    return new ApiError(error.message, 400);
+  }
   const problem = toProblem(error);
-  if (problem) return new ApiError(problem.detail || 'Yêu cầu không thành công. Vui lòng thử lại.', problem.status, problem.code, problem.errors ?? [], problem.requiredTier === 'PLUS' || problem.requiredTier === 'PRO' ? problem.requiredTier : undefined);
+  if (problem) return new ApiError(
+    problem.detail || 'Yêu cầu không thành công. Vui lòng thử lại.',
+    problem.status,
+    problem.code,
+    problem.errors ?? [],
+    problem.requiredTier === 'PLUS' || problem.requiredTier === 'PRO' ? problem.requiredTier : undefined,
+    retryAfterSeconds(error) ?? undefined
+  );
   return new ApiError('Không thể kết nối dịch vụ. Vui lòng thử lại.', axios.isAxiosError(error) ? error.response?.status ?? 0 : 0);
 }
 
 export async function asApiErrorAsync(error: unknown): Promise<ApiError> {
   if (error instanceof ApiError) return error;
   const problem = await toProblemAsync(error);
-  if (problem) return new ApiError(problem.detail || 'Yêu cầu không thành công. Vui lòng thử lại.', problem.status, problem.code, problem.errors ?? [], problem.requiredTier === 'PLUS' || problem.requiredTier === 'PRO' ? problem.requiredTier : undefined);
+  if (problem) return new ApiError(
+    problem.detail || 'Yêu cầu không thành công. Vui lòng thử lại.',
+    problem.status,
+    problem.code,
+    problem.errors ?? [],
+    problem.requiredTier === 'PLUS' || problem.requiredTier === 'PRO' ? problem.requiredTier : undefined,
+    retryAfterSeconds(error) ?? undefined
+  );
   return new ApiError('Không thể kết nối dịch vụ. Vui lòng thử lại.', axios.isAxiosError(error) ? error.response?.status ?? 0 : 0);
 }
