@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Configuration;
 import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.integration.ai.AiTokenUsage;
 import tech.mamxanh.integration.ai.AiTurnDeadline;
-import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
+import tech.mamxanh.integration.ai.AiProviderException;
 import tech.mamxanh.subscription.service.AiTokenQuotaService;
 
 import java.time.Clock;

@@ -6,9 +6,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.security.core.context.SecurityContextHolder;
+import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.integration.ai.adk.AdkSingleStepTaskRunner;
 import tech.mamxanh.integration.ai.adk.AdkSingleStepTaskRunner.SingleStepResult;
-import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.subscription.service.AiChatSettingsService;
 
 import java.util.List;
@@ -21,7 +21,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class AdkAiClientTest {
@@ -30,24 +29,19 @@ class AdkAiClientTest {
     private AdkSingleStepTaskRunner taskRunner;
 
     @Mock
-    private GeminiAiClient fallbackClient;
-
-    @Mock
     private CurrentUserService users;
 
     @Mock
     private AiChatSettingsService chatSettings;
 
     private AutoCloseable mocks;
-    private AdkAiClient primaryClient;
-    private AdkAiClient fallbackModeClient;
+    private AdkAiClient client;
 
     @BeforeEach
     void setUp() {
         mocks = MockitoAnnotations.openMocks(this);
         when(taskRunner.model()).thenReturn("gemini-3.8-flash");
-        primaryClient = new AdkAiClient(taskRunner, fallbackClient, "ADK_PRIMARY");
-        fallbackModeClient = new AdkAiClient(taskRunner, fallbackClient, "LEGACY_FALLBACK");
+        client = new AdkAiClient(taskRunner, users, chatSettings);
     }
 
     @AfterEach
@@ -57,18 +51,28 @@ class AdkAiClientTest {
     }
 
     @Test
-    void generateRecipeContentRoutesToAdkRunnerWhenPrimary() {
+    void generateRecipeContentRoutesToAdkRunner() {
         AiTokenUsage usage = new AiTokenUsage("gemini-3.8-flash", "STANDARD", 100, 200, 300, 0, 0, 0);
         when(taskRunner.executeTaskWithResult(any(), any(), eq("RECIPE_TEXT"), any(), any(), any(), anyInt(), any()))
                 .thenReturn(new SingleStepResult("{\"description\":\"Món chay ngon\",\"steps\":[]}", usage));
 
-        var result = primaryClient.generateRecipeContent("Nấu món đậu phụ", List.of(1L, 2L));
+        var result = client.generateRecipeContent("Nấu món đậu phụ", List.of(1L, 2L));
 
         assertThat(result.json()).isEqualTo("{\"description\":\"Món chay ngon\",\"steps\":[]}");
         assertThat(result.promptTokens()).isEqualTo(100);
         assertThat(result.responseTokens()).isEqualTo(200);
         assertThat(result.totalTokens()).isEqualTo(300);
-        verifyNoInteractions(fallbackClient);
+    }
+
+    @Test
+    void generateRecipeTextDelegatesToGenerateRecipeContent() {
+        AiTokenUsage usage = new AiTokenUsage("gemini-3.8-flash", "STANDARD", 100, 200, 300, 0, 0, 0);
+        when(taskRunner.executeTaskWithResult(any(), any(), eq("RECIPE_TEXT"), any(), any(), any(), anyInt(), any()))
+                .thenReturn(new SingleStepResult("{\"description\":\"Đậu phụ chiên sả\",\"steps\":[]}", usage));
+
+        String json = client.generateRecipeText("Nấu đậu phụ", List.of(1L));
+
+        assertThat(json).isEqualTo("{\"description\":\"Đậu phụ chiên sả\",\"steps\":[]}");
     }
 
     @Test
@@ -80,24 +84,10 @@ class AdkAiClientTest {
                 any(), any(), any(), anyInt(), any()))
                 .thenReturn(new SingleStepResult("{\"description\":\"Món chay\",\"steps\":[]}", usage));
 
-        var client = new AdkAiClient(taskRunner, fallbackClient, "ADK_PRIMARY", users, chatSettings);
         var result = client.generateRecipeContent("Nấu đậu phụ", List.of(1L));
 
         assertThat(result.usage().model()).isEqualTo("gemini-3.5-flash-lite");
         verify(chatSettings).resolve(7L, null);
-        verifyNoInteractions(fallbackClient);
-    }
-
-    @Test
-    void generateRecipeContentDelegatesToFallbackWhenConfigured() {
-        AiClient.RecommendationResult expected = new AiClient.RecommendationResult("{\"description\":\"Legacy\"}", 10, 20, 30);
-        when(fallbackClient.generateRecipeContent(any(), any())).thenReturn(expected);
-
-        var result = fallbackModeClient.generateRecipeContent("Prompt", List.of(1L));
-
-        assertThat(result).isSameAs(expected);
-        verify(fallbackClient).generateRecipeContent("Prompt", List.of(1L));
-        verifyNoInteractions(taskRunner);
     }
 
     @Test
@@ -106,7 +96,7 @@ class AdkAiClientTest {
         when(taskRunner.executeTaskWithResult(any(), any(), eq("RECOMMENDATIONS"), any(), any(), any(), anyInt(), any()))
                 .thenReturn(new SingleStepResult("{\"recipeIds\":[10, 20]}", usage));
 
-        var result = primaryClient.recommendRecipes("Gợi ý món", List.of(10L, 20L, 30L), 2);
+        var result = client.recommendRecipes("Gợi ý món", List.of(10L, 20L, 30L), 2);
 
         assertThat(result.json()).isEqualTo("{\"recipeIds\":[10, 20]}");
         assertThat(result.totalTokens()).isEqualTo(100);
@@ -118,11 +108,11 @@ class AdkAiClientTest {
         when(taskRunner.executeTaskWithResult(any(), any(), eq("CHAT_SCOPE"), any(), any(), any(), anyInt(), any()))
                 .thenReturn(new SingleStepResult("", usage));
 
-        assertThatThrownBy(() -> primaryClient.classifyChatScope("gemini-3.8-flash", "Instruction", "Hỏi bệnh lý",
+        assertThatThrownBy(() -> client.classifyChatScope("gemini-3.8-flash", "Instruction", "Hỏi bệnh lý",
                 Duration.ofSeconds(3)))
-                .isInstanceOf(GeminiAiClient.AiProviderException.class);
-        verify(taskRunner).executeTaskWithResult(any(), eq("gemini-3.8-flash"), eq("CHAT_SCOPE"), any(), any(), any(),
-                eq(1024), eq(Duration.ofSeconds(3)));
+                .isInstanceOf(AiProviderException.class);
+        verify(taskRunner).executeTaskWithResult(any(), eq("gemini-3.8-flash"), eq("CHAT_SCOPE"), any(), any(),
+                any(), eq(1024), eq(Duration.ofSeconds(3)));
     }
 
     @Test
@@ -131,11 +121,9 @@ class AdkAiClientTest {
         when(taskRunner.executeTaskWithResult(any(), any(), eq("CHAT"), any(), any(), any(), anyInt(), any()))
                 .thenReturn(new SingleStepResult("{\"action\":\"NONE\",\"answer\":\"Nấu súp lơ\",\"recommendations\":[]}", usage));
 
-        var result = primaryClient.answerChat("gemini-3.8-flash", "Instruction", "Nấu canh súp lơ thế nào?");
+        var result = client.answerChat("gemini-3.8-flash", "Instruction", "Nấu canh súp lơ thế nào?");
 
         assertThat(result.structuredJson()).contains("Nấu súp lơ");
         assertThat(result.totalTokens()).isEqualTo(200);
-        verify(taskRunner).executeTaskWithResult(any(), eq("gemini-3.8-flash"), eq("CHAT"), any(), any(), any(),
-                eq(2048), eq(AiTurnDeadline.OPERATIONAL_MODEL_CALL));
     }
 }

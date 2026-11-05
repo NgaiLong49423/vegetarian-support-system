@@ -44,17 +44,17 @@ public record KnowledgeCatalog(String revision, List<Document> documents, List<C
     public static KnowledgeCatalog packaged() {
         var mapper = new ObjectMapper();
         var manifest = mapper.readTree(businessResource("catalog.json"));
-        String revision = manifest.path("revision").asText();
+        String revision = manifest.path("revision").asString();
         if (revision == null || revision.isBlank()) {
-            revision = "kb-v" + manifest.path("version").asText() + "-20261101";
+            revision = "kb-v" + manifest.path("version").asString("") + "-20261101";
         }
-        String version = manifest.path("version").asText();
+        String version = manifest.path("version").asString("");
         if (version.isBlank()) throw new IllegalArgumentException("Missing catalog version");
         var entries = new ArrayList<Entry>();
         var content = new HashMap<String, String>();
         for (var node : manifest.path("documents")) {
-            String id = node.path("id").asText();
-            String path = node.path("resourcePath").asText();
+            String id = node.path("id").asString();
+            String path = node.path("resourcePath").asString();
             if (!path.matches("knowledge-base/[a-z-]+/[a-z-]+\\.md"))
                 throw new IllegalArgumentException("Invalid resource path: " + path);
             String file = id + ".md";
@@ -64,25 +64,26 @@ public record KnowledgeCatalog(String revision, List<Document> documents, List<C
 
             List<String> sources = new ArrayList<>();
             if (node.has("sources") && node.get("sources").isArray()) {
-                node.get("sources").forEach(s -> sources.add(s.asText()));
+                node.get("sources").forEach(s -> sources.add(s.asString()));
             } else {
                 sources.add(path);
             }
             List<String> tools = new ArrayList<>();
             if (node.has("tools") && node.get("tools").isArray()) {
-                node.get("tools").forEach(t -> tools.add(t.asText()));
+                node.get("tools").forEach(t -> tools.add(t.asString()));
             }
-            String retrievalPolicy = node.path("retrievalPolicy").asText("BOTH");
+            String retrievalPolicy = node.path("retrievalPolicy").asString("BOTH");
             List<String> accessScopes = new ArrayList<>();
             if (node.has("accessScopes") && node.get("accessScopes").isArray()) {
-                node.get("accessScopes").forEach(a -> accessScopes.add(a.asText()));
+                node.get("accessScopes").forEach(a -> accessScopes.add(a.asString()));
             } else {
                 accessScopes.addAll(List.of("CUSTOMER", "EXPERT"));
             }
-            String status = node.path("status").asText("APPROVED");
-            String docVersion = node.has("version") && !node.get("version").asText().isBlank() ? node.get("version").asText() : version;
+            String status = node.path("status").asString("APPROVED");
+            String docVersion = node.has("version") && node.get("version").asString() != null && !node.get("version").asString().isBlank()
+                    ? node.get("version").asString() : version;
             boolean enabled = node.has("enabled") ? node.get("enabled").asBoolean() : node.path("enabledForPilot").asBoolean(true);
-            entries.add(new Entry(id, node.path("title").asText(), file, docVersion, status, enabled,
+            entries.add(new Entry(id, node.path("title").asString(), file, docVersion, status, enabled,
                     sources, tools, retrievalPolicy, accessScopes));
         }
         if (entries.isEmpty() || entries.size() != manifest.path("totalDocuments").asInt())

@@ -9,7 +9,7 @@ import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.integration.ai.AiClient;
 import tech.mamxanh.integration.ai.AiUsageEvent;
-import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
+import tech.mamxanh.integration.ai.AiProviderException;
 import tech.mamxanh.nutrition.dto.response.DietaryPreferencesResponse;
 import tech.mamxanh.nutrition.service.DietaryPreferenceService;
 import tech.mamxanh.recipe.dto.response.AiRecipeRecommendationResponse;

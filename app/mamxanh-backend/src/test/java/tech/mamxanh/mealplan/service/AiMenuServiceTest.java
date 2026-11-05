@@ -256,7 +256,7 @@ class AiMenuServiceTest {
     void providerFailureIsNotRecordedButMalformedSuccessfulResponseStillCountsUsage() {
         prepareCandidates();
         when(ai.recommendRecipes(any(), anyList(), eq(2)))
-                .thenThrow(new tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException("unavailable"));
+                .thenThrow(new tech.mamxanh.integration.ai.AiProviderException("unavailable"));
         assertThatThrownBy(() -> service.createPreview(new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null)))
                 .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_PROVIDER_UNAVAILABLE);
         verifyNoInteractions(events);

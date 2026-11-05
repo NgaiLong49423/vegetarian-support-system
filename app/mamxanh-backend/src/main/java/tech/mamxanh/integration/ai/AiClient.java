@@ -6,15 +6,17 @@ import java.time.Duration;
 public interface AiClient {
     /** Maximum number of characters allowed in an AI chat answer (and stored assistant turn). */
     int MAX_CHAT_ANSWER_LENGTH = 8_000;
+
     /**
      * @deprecated Use {@link #generateRecipeContent(String, List)} instead to capture full token telemetry.
      */
     @Deprecated(since = "G5", forRemoval = false)
-    String generateRecipeText(String prompt, List<Long> enteredIngredientIds);
-
-    default RecommendationResult generateRecipeContent(String prompt, List<Long> enteredIngredientIds) {
-        return new RecommendationResult(generateRecipeText(prompt, enteredIngredientIds), null, null, null);
+    default String generateRecipeText(String prompt, List<Long> enteredIngredientIds) {
+        RecommendationResult result = generateRecipeContent(prompt, enteredIngredientIds);
+        return result != null ? result.json() : null;
     }
+
+    RecommendationResult generateRecipeContent(String prompt, List<Long> enteredIngredientIds);
 
     RecommendationResult recommendRecipes(String prompt, List<Long> allowedRecipeIds, int limit);
 

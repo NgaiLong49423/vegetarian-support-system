@@ -110,7 +110,7 @@ class RecipeAiAssistanceIntegrationTest extends AbstractIntegrationTest {
     @Test
     void incompleteProviderOutputIs502AndDoesNotSaveARecipe() throws Exception {
         when(aiClient.generateRecipeContent(anyString(), anyList())).thenThrow(
-                tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException.invalidResponse("private incomplete output"));
+                tech.mamxanh.integration.ai.AiProviderException.invalidResponse("private incomplete output"));
         mockMvc.perform(post("/api/v1/recipes/ai-assistance").with(principal(proExpertId))
                         .contentType(MediaType.APPLICATION_JSON).content(request()))
                 .andExpect(status().isBadGateway())

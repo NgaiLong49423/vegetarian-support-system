@@ -30,6 +30,32 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Prevent streaming tokens from extending a model-call or assistant-turn deadline and prevent incomplete SSE output from appearing complete in the UI.
 - Reinforce the response-style requirement in the synthesized system prompt so Gemini receives an explicit instruction.
 
+## 2026-11-04 — Eliminate Legacy Gemini Components and Complete ADK Cutover
+
+**Status:** Committed — `df0a8622`.
+
+**Scope:** Remove deprecated Gemini legacy classes, eliminate compiler warnings, isolate ephemeral model validation, and transition chat routing exclusively to Google ADK.
+
+### Added
+
+- Add `AiProviderException` as an independent exception class preserving `FailureKind` and HTTP error code mappings across all AI services.
+- Add `GeminiModelValidator` with try-with-resources closing of ephemeral Google GenAI client during admin model verification.
+
+### Changed
+
+- Transition `AiChatService` routing completely to `AdkAssistantEngine`, preserving session affinity and shopping pilot G3 routing.
+- Standardize `AiClient` contract with abstract `generateRecipeContent` and non-recursive default `generateRecipeText`.
+- Modernize deprecated API calls in `AdkSpikeSession` (`immutableEvents()`) and `KnowledgeCatalog` (`asString()`).
+
+### Removed
+
+- Remove deprecated `AiChatIntent` and its associated tests.
+- Remove legacy `GeminiAiClient` and its associated tests.
+- Remove dead `executeLegacy` routing and legacy context records from `AiChatService`.
+
+### Fixed
+
+- Fix guest model resolution in `AdkAssistantEngine` by correctly forwarding `anonymousViewerId` to prevent validation errors on unauthenticated chat sessions.
 ## 2026-11-04 — Persist AI Action Journal and Standardize Test Suites
 
 **Status:** Committed — `79b7a0d8`.

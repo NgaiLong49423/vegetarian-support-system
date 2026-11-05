@@ -36,7 +36,7 @@ class AiAssistantExecutionServiceTest {
                         "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 1, 1, 2))
                 .thenReturn(new AiClient.ChatResult(null,
                         "{\"decisionId\":\"MX_CHAT_SENSITIVE\",\"reasonId\":\"MEDICAL_RISK\"}", 1, 1, 2))
-                .thenThrow(tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException.invalidResponse("empty"));
+                .thenThrow(tech.mamxanh.integration.ai.AiProviderException.invalidResponse("empty"));
         when(ai.planAssistantTools(anyString(), anyString())).thenReturn(new AiClient.ChatResult(null,
                 "{\"answer\":\"Mâm Xanh hỗ trợ tìm công thức chay.\",\"toolCalls\":[]}", 1, 1, 2));
         var service = new AiAssistantExecutionService(users, ai, settings, quota,

@@ -150,7 +150,7 @@ class AiChatServiceDualRunTest {
     }
 
     @Test
-    @DisplayName("Unmigrated write operation routes to assistantExecution in DUAL_RUN mode")
+    @DisplayName("Write operation routes to AdkAssistantEngine in unified ADK mode")
     void unmigratedWriteOperationRoutesToAssistantExecution() {
         when(users.findAuthenticatedUserId()).thenReturn(Optional.of(7L));
         when(users.requireActiveMember()).thenReturn(new CurrentUser(7L, Role.CUSTOMER));
@@ -164,13 +164,12 @@ class AiChatServiceDualRunTest {
         AiChatResponse expectedResponse = new AiChatResponse(
                 AiChatRequest.ContextType.GENERAL, null, "Đã lưu hồ sơ dinh dưỡng của bạn.", List.of()
         );
-        when(assistantExecution.execute(request)).thenReturn(expectedResponse);
+        when(adkEngine.execute(request)).thenReturn(expectedResponse);
 
         AiChatResponse response = service.answer(request);
 
         assertThat(response.answer()).isEqualTo("Đã lưu hồ sơ dinh dưỡng của bạn.");
-        verify(assistantExecution).execute(request);
-        verify(adkEngine, never()).execute(any());
+        verify(adkEngine).execute(request);
     }
 
     @Test
@@ -201,19 +200,12 @@ class AiChatServiceDualRunTest {
     }
 
     @Test
-    @DisplayName("Rollback to LEGACY mode disables ADK engine and falls back to legacy execution")
+    @DisplayName("Rollback configuration still safely executes via ADK engine when legacy is removed")
     void rollbackConfigurationRoutesToLegacy() {
         service.setOrchestratorMode("LEGACY");
 
         when(users.findAuthenticatedUserId()).thenReturn(Optional.of(7L));
         when(users.requireActiveMember()).thenReturn(new CurrentUser(7L, Role.CUSTOMER));
-        when(chatSettings.resolve(eq(7L), any())).thenReturn("gemini-2.5-flash");
-        when(ai.classifyChatScope(anyString(), anyString(), anyString())).thenReturn(
-                new AiClient.ChatResult("", "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 10, 10, 20)
-        );
-        when(ai.answerChat(anyString(), anyString(), anyString())).thenReturn(
-                new AiClient.ChatResult("{\"action\":\"ANSWER\",\"answer\":\"Phản hồi legacy.\",\"recommendations\":[]}", "{\"action\":\"ANSWER\",\"answer\":\"Phản hồi legacy.\",\"recommendations\":[]}", 20, 20, 40)
-        );
 
         AiChatRequest request = new AiChatRequest(
                 AiChatRequest.ContextType.GENERAL, null,
@@ -221,10 +213,15 @@ class AiChatServiceDualRunTest {
                 List.of(), null, null, null, null, null, null, null, null
         );
 
+        AiChatResponse expectedResponse = new AiChatResponse(
+                AiChatRequest.ContextType.GENERAL, null, "Phản hồi ADK.", List.of()
+        );
+        when(adkEngine.execute(request)).thenReturn(expectedResponse);
+
         AiChatResponse response = service.answer(request);
 
-        assertThat(response.answer()).isEqualTo("Phản hồi legacy.");
-        verify(adkEngine, never()).execute(any());
+        assertThat(response.answer()).isEqualTo("Phản hồi ADK.");
+        verify(adkEngine).execute(request);
     }
 
     @Test

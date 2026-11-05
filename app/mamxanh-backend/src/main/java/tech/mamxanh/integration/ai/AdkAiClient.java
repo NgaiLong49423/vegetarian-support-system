@@ -5,14 +5,12 @@ import com.google.genai.types.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ApiException;
-import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
 import tech.mamxanh.integration.ai.adk.AdkSingleStepTaskRunner;
 import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.subscription.service.AiChatSettingsService;
@@ -36,35 +34,21 @@ public class AdkAiClient implements AiClient, AutoCloseable {
 
     private final AdkSingleStepTaskRunner taskRunner;
     private final AiPromptLoader promptLoader;
-    private final GeminiAiClient fallbackClient;
-    private final String migrationMode;
     private final CurrentUserService users;
     private final AiChatSettingsService chatSettings;
 
     @Autowired
     public AdkAiClient(AdkSingleStepTaskRunner taskRunner,
-                       @Autowired(required = false) GeminiAiClient fallbackClient,
-                       @Value("${mamxanh.ai.migration.mode:ADK_PRIMARY}") String migrationMode,
                        CurrentUserService users,
                        AiChatSettingsService chatSettings) {
         this.taskRunner = taskRunner;
         this.promptLoader = new AiPromptLoader();
-        this.fallbackClient = fallbackClient;
-        this.migrationMode = migrationMode != null ? migrationMode : "ADK_PRIMARY";
         this.users = users;
         this.chatSettings = chatSettings;
     }
 
-    public AdkAiClient(AdkSingleStepTaskRunner taskRunner, GeminiAiClient fallbackClient, String migrationMode) {
-        this(taskRunner, fallbackClient, migrationMode, null, null);
-    }
-
-    public AdkAiClient(AdkSingleStepTaskRunner taskRunner, GeminiAiClient fallbackClient) {
-        this(taskRunner, fallbackClient, "ADK_PRIMARY");
-    }
-
-    private boolean isLegacyFallback() {
-        return "LEGACY_FALLBACK".equalsIgnoreCase(migrationMode) && fallbackClient != null;
+    public AdkAiClient(AdkSingleStepTaskRunner taskRunner) {
+        this(taskRunner, null, null);
     }
 
     private Authentication currentAuth() {
@@ -84,10 +68,6 @@ public class AdkAiClient implements AiClient, AutoCloseable {
 
     @Override
     public RecommendationResult generateRecipeContent(String prompt, List<Long> enteredIngredientIds) {
-        if (isLegacyFallback()) {
-            return fallbackClient.generateRecipeContent(prompt, enteredIngredientIds);
-        }
-
         Schema textSchema = Schema.builder().type(Type.Known.STRING).build();
         Schema ingredientIdsSchema = Schema.builder().type(Type.Known.ARRAY)
                 .items(Schema.builder().type(Type.Known.INTEGER)).build();
@@ -127,10 +107,6 @@ public class AdkAiClient implements AiClient, AutoCloseable {
 
     @Override
     public RecommendationResult recommendRecipeSequence(String prompt, List<Long> allowedRecipeIds, int slots) {
-        if (isLegacyFallback()) {
-            return fallbackClient.recommendRecipeSequence(prompt, allowedRecipeIds, slots);
-        }
-
         Schema schema = Schema.builder().type(Type.Known.OBJECT)
                 .properties(Map.of("recipeIds", Schema.builder().type(Type.Known.ARRAY)
                         .maxItems((long) slots).items(Schema.builder().type(Type.Known.INTEGER)).build()))
@@ -159,10 +135,6 @@ public class AdkAiClient implements AiClient, AutoCloseable {
 
     @Override
     public RecommendationResult analyzeNutritionRecommendations(String prompt, List<Long> allowedRecipeIds, int limit) {
-        if (isLegacyFallback()) {
-            return fallbackClient.analyzeNutritionRecommendations(prompt, allowedRecipeIds, limit);
-        }
-
         Schema schema = Schema.builder().type(Type.Known.OBJECT)
                 .properties(Map.of(
                         "analysis", Schema.builder().type(Type.Known.STRING).build(),
@@ -213,10 +185,6 @@ public class AdkAiClient implements AiClient, AutoCloseable {
         if (callTimeout.isZero() || callTimeout.isNegative()) {
             throw new AiProviderException("ADK chat scope classification deadline exceeded");
         }
-        if (isLegacyFallback()) {
-            return fallbackClient.classifyChatScope(modelId, systemInstruction, prompt, callTimeout);
-        }
-
         Schema schema = Schema.builder().type(Type.Known.OBJECT)
                 .properties(Map.of("decisionId", Schema.builder().type(Type.Known.STRING).build(),
                         "reasonId", Schema.builder().type(Type.Known.STRING).build()))
@@ -248,10 +216,6 @@ public class AdkAiClient implements AiClient, AutoCloseable {
 
     @Override
     public ChatResult answerChat(String modelId, String systemInstruction, String prompt) {
-        if (isLegacyFallback()) {
-            return fallbackClient.answerChat(modelId, systemInstruction, prompt);
-        }
-
         Schema recommendationSchema = Schema.builder().type(Type.Known.OBJECT)
                 .properties(Map.of("recipeId", Schema.builder().type(Type.Known.INTEGER).build(),
                         "reason", Schema.builder().type(Type.Known.STRING).build()))
@@ -292,10 +256,6 @@ public class AdkAiClient implements AiClient, AutoCloseable {
 
     @Override
     public ChatResult planAssistantTools(String modelId, String systemInstruction, String prompt) {
-        if (isLegacyFallback()) {
-            return fallbackClient.planAssistantTools(modelId, systemInstruction, prompt);
-        }
-
         Schema toolCallSchema = Schema.builder().type(Type.Known.OBJECT)
                 .properties(Map.of("name", Schema.builder().type(Type.Known.STRING).build(),
                         "arguments", Schema.builder().type(Type.Known.OBJECT)
@@ -335,8 +295,5 @@ public class AdkAiClient implements AiClient, AutoCloseable {
 
     @Override
     public void close() {
-        if (fallbackClient != null) {
-            fallbackClient.close();
-        }
     }
 }

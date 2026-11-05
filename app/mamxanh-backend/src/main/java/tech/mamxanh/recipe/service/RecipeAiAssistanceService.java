@@ -10,7 +10,7 @@ import tech.mamxanh.common.exception.ApiException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.integration.ai.AiClient;
 import tech.mamxanh.integration.ai.AiUsageEvent;
-import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
+import tech.mamxanh.integration.ai.AiProviderException;
 import tech.mamxanh.nutrition.dto.response.IngredientResponse;
 import tech.mamxanh.nutrition.service.IngredientCatalogLookupService;
 import tech.mamxanh.recipe.dto.request.RecipeAiAssistanceRequest;
@@ -70,7 +70,7 @@ public class RecipeAiAssistanceService {
             raw = result == null ? null : result.json();
         } catch (AiProviderException exception) {
             log.warn("Recipe AI provider is unavailable: {}", exception.getClass().getSimpleName());
-            if (exception.kind() == tech.mamxanh.integration.ai.GeminiAiClient.FailureKind.INVALID_RESPONSE) {
+            if (exception.kind() == tech.mamxanh.integration.ai.AiProviderException.FailureKind.INVALID_RESPONSE) {
                 throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
             }
             throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE);

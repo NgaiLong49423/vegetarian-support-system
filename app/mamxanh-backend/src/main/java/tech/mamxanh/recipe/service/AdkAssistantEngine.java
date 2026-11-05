@@ -46,8 +46,7 @@ import tech.mamxanh.integration.ai.AiTurnDeadline;
 import tech.mamxanh.integration.ai.AiPromptLoader;
 import tech.mamxanh.integration.ai.AiTokenUsage;
 import tech.mamxanh.integration.ai.AiUsageEvent;
-import tech.mamxanh.integration.ai.GeminiAiClient;
-import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
+import tech.mamxanh.integration.ai.AiProviderException;
 import tech.mamxanh.integration.ai.adk.AdkModelGateway;
 import tech.mamxanh.integration.ai.adk.MemberAccountingPolicy;
 import tech.mamxanh.integration.ai.adk.ModelThinkingPolicy;
@@ -595,7 +594,7 @@ public class AdkAssistantEngine implements AutoCloseable {
             LOG.warn("AI request classification failed category={} status={} message={}: {}",
                     exception.kind(), exception.httpStatus(), exception.getMessage(),
                     exception.getCause() != null ? exception.getCause().getMessage() : "no cause");
-            if (exception.kind() == GeminiAiClient.FailureKind.TIMEOUT || turnDeadline.remaining().isZero()) {
+            if (exception.kind() == AiProviderException.FailureKind.TIMEOUT || turnDeadline.remaining().isZero()) {
                 return handleRunFailure(request, sessionId, mode, List.of(), List.of(), exception);
             }
             return buildResponse(request, sessionId, mode, "FAILED", List.of(), List.of(), null, null, CLASSIFICATION_UNAVAILABLE_ANSWER);
@@ -1004,7 +1003,7 @@ public class AdkAssistantEngine implements AutoCloseable {
 
     private String resolveModel(Long userId, String anonymousViewerId) {
         try {
-            String resolved = chatSettings.resolve(userId, anonymousViewerId);
+            String resolved = chatSettings.resolve(userId, userId == null ? anonymousViewerId : null);
             return resolved == null || resolved.isBlank() ? AiTokenUsage.MODEL : resolved;
         } catch (Exception e) {
             return AiTokenUsage.MODEL;

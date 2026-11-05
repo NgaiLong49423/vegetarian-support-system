@@ -10,7 +10,6 @@ applicable_roles:
   - expert
 related_architecture_components:
   - tech.mamxanh.recipe.service.AiChatService
-  - tech.mamxanh.recipe.service.AiChatIntent
   - tech.mamxanh.recipe.service.AiAssistantExecutionService
 source_requirements:
   - FR-02
