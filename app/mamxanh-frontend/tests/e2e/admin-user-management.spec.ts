@@ -97,6 +97,36 @@ test('filters users by status using ThemedSelect', async ({ page }) => {
   await expect.poll(() => listRequests.some((url) => url.searchParams.get('status') === 'LOCKED')).toBe(true);
 });
 
+test('ThemedSelect supports mouse click open, keyboard navigation, Escape and click outside', async ({ page }) => {
+  await mockAccountApi(page);
+  await page.goto('/admin/nguoi-dung');
+
+  const select = page.getByRole('combobox', { name: 'Lọc vai trò' });
+
+  // 1. Mouse click opens dropdown popup
+  await select.dispatchEvent('mousedown');
+  const listbox = page.getByRole('listbox');
+  await expect(listbox).toBeVisible();
+
+  // 2. Escape closes dropdown
+  await page.keyboard.press('Escape');
+  await expect(listbox).toHaveCount(0);
+
+  // 3. ArrowDown opens dropdown
+  await select.dispatchEvent('keydown', { key: 'ArrowDown' });
+  await expect(listbox).toBeVisible();
+
+  // 4. Click option selects value
+  await listbox.getByRole('option', { name: 'Chuyên gia' }).click();
+  await expect(listbox).toHaveCount(0);
+
+  // 5. Enter opens dropdown, click outside closes
+  await select.dispatchEvent('keydown', { key: 'Enter' });
+  await expect(listbox).toBeVisible();
+  await page.mouse.click(10, 10);
+  await expect(listbox).toHaveCount(0);
+});
+
 test('role changes require a reason and update only from the API response', async ({ page }) => {
   const { writes } = await mockAccountApi(page);
   await page.goto('/admin/nguoi-dung');

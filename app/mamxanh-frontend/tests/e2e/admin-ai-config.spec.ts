@@ -43,6 +43,20 @@ test('overview renders all AI configuration cards and summary numbers', async ({
   const reloadButton = page.getByRole('button', { name: 'Tải lại' });
   await reloadButton.click();
   await expect.poll(() => loadCount).toBeGreaterThanOrEqual(2);
+
+  // Test overview card navigation
+  await page.getByRole('link', { name: /Gói và hạn mức token/ }).first().click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Gói và hạn mức token' })).toBeVisible();
+  await page.getByRole('link', { name: 'Tổng quan' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Cấu hình AI' })).toBeVisible();
+
+  await page.getByRole('link', { name: /Gemini model catalog/ }).first().click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Gemini model catalog' })).toBeVisible();
+  await page.getByRole('link', { name: 'Tổng quan' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Cấu hình AI' })).toBeVisible();
+
+  await page.getByRole('link', { name: /AI Credit và nạp tiền/ }).first().click();
+  await expect(page.getByRole('heading', { level: 1, name: 'AI Credit và nạp tiền' })).toBeVisible();
 });
 
 test('handles initial loading error and allows retry', async ({ page }) => {
@@ -147,6 +161,13 @@ test('edits models section, adds model, validates defaults, deletes model and sa
   // Delete the disabled model using trash button
   const deleteButtons = page.getByRole('button', { name: 'Xóa model khỏi cấu hình' });
   await deleteButtons.nth(2).click();
+
+  // Test validation when a tier has no default: uncheck enabled on model 0
+  const enabledCheckboxes = page.locator('input[type="checkbox"]').filter({ hasText: '' });
+  await enabledCheckboxes.first().uncheck();
+  await page.getByRole('button', { name: 'Lưu phần này' }).click();
+  await expect(page.getByRole('alert')).toContainText('cần có ít nhất một model đang bật');
+  await enabledCheckboxes.first().check();
 
   // Add new model
   await page.getByRole('button', { name: 'Thêm model' }).click();
