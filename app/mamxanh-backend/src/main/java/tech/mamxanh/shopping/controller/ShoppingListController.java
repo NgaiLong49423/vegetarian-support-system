@@ -1,15 +1,12 @@
 package tech.mamxanh.shopping.controller;
 
-import java.net.URI;
-import java.util.List;
-import java.util.UUID;
-import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.validation.Valid;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,10 +14,14 @@ import tech.mamxanh.common.config.OpenApiConfig;
 import tech.mamxanh.common.response.PageResponse;
 import tech.mamxanh.nutrition.dto.response.UnitResponse;
 import tech.mamxanh.shopping.dto.request.*;
-import tech.mamxanh.shopping.dto.response.ShoppingListResponse;
-import tech.mamxanh.shopping.service.ShoppingListService;
-import tech.mamxanh.shopping.service.ShoppingListCreationService;
 import tech.mamxanh.shopping.dto.response.ShoppingListCreationResponse;
+import tech.mamxanh.shopping.dto.response.ShoppingListResponse;
+import tech.mamxanh.shopping.service.ShoppingListCreationService;
+import tech.mamxanh.shopping.service.ShoppingListService;
+
+import java.net.URI;
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/shopping-lists")

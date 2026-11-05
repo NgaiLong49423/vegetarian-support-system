@@ -1,12 +1,13 @@
 package tech.mamxanh.shopping.entity;
 
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
 
 /** Original quantity/unit at add time; never refreshed from an edited source recipe. */
 @Entity @Table(name = "\"SHOPPING_RECIPE_CONTRIBUTION\"")

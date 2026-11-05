@@ -2,6 +2,7 @@ import { apiClient, asApiError } from '../lib/apiClient';
 
 export type AdminUserRole = 'CUSTOMER' | 'EXPERT' | 'ADMIN';
 export type AdminUserStatus = 'ACTIVE' | 'LOCKED';
+export type AdminAiTier = 'FREE' | 'PLUS' | 'PRO';
 
 export interface AdminUser {
   id: number;
@@ -15,13 +16,32 @@ export interface AdminUser {
 
 export interface AdminUserAudit {
   eventId: string;
-  action: 'STATUS_CHANGED' | 'ROLE_CHANGED' | 'ACCOUNT_LOCKED';
+  action: 'STATUS_CHANGED' | 'ROLE_CHANGED' | 'AI_PACKAGE_GIFTED' | 'AI_CREDIT_GRANTED' | 'ACCOUNT_LOCKED';
   oldValue: string;
   newValue: string;
   reason: string;
   administratorId: number | null;
   administratorName: string | null;
   occurredAt: string;
+  effectiveUntil: string | null;
+}
+
+export interface AdminAiPackageState {
+  userId: number;
+  oldTier: AdminAiTier;
+  newTier: AdminAiTier;
+  startsAt: string | null;
+  endsAt: string | null;
+  tokenQuota: number;
+  changed: boolean;
+  effectiveAt: string;
+}
+
+export interface AdminAiCreditGrant {
+  userId: number;
+  credits: number;
+  balance: number;
+  grantedAt: string;
 }
 
 export interface PageResponse<T> {
@@ -66,5 +86,20 @@ export async function updateAdminUserStatus(userId: number, accountStatus: Admin
 
 export async function updateAdminUserRole(userId: number, role: Exclude<AdminUserRole, 'ADMIN'>, reason: string) {
   try { return (await apiClient.patch<AdminUser>(`/admin/users/${userId}/role`, { role, reason })).data; }
+  catch (error) { throw asApiError(error); }
+}
+
+export async function getAdminAiTier(userId: number) {
+  try { return (await apiClient.get<AdminAiPackageState>(`/admin/ai-accounts/${userId}/tier`)).data; }
+  catch (error) { throw asApiError(error); }
+}
+
+export async function giftAdminAiPackage(userId: number, tier: AdminAiTier, reason: string) {
+  try { return (await apiClient.post<AdminAiPackageState>(`/admin/ai-accounts/${userId}/package-gifts`, { tier, reason })).data; }
+  catch (error) { throw asApiError(error); }
+}
+
+export async function grantAdminAiCredit(userId: number, credits: number, reason: string) {
+  try { return (await apiClient.post<AdminAiCreditGrant>(`/admin/ai-accounts/${userId}/credit-grants`, { credits, reason })).data; }
   catch (error) { throw asApiError(error); }
 }

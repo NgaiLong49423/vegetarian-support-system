@@ -1,5 +1,27 @@
 @import 'tailwindcss';
 
+/* Assistant prose only: keep consent/confirmation controls outside these selectors. */
+.ai-message-markdown { line-height: 1.75; }
+.ai-message-markdown p { margin-block: .65rem; }
+.ai-message-markdown > :first-child { margin-top: 0; }
+.ai-message-markdown > :last-child { margin-bottom: 0; }
+.ai-message-markdown :is(h1,h2,h3,h4,h5,h6) { margin-block: 1rem .4rem; font-weight: 700; line-height: 1.4; }
+.ai-message-markdown h1 { font-size: 1.2em; }
+.ai-message-markdown h2 { font-size: 1.1em; }
+.ai-message-markdown :is(h3,h4,h5,h6) { font-size: 1em; }
+.ai-message-markdown :is(ul,ol) { margin-block: .6rem; padding-inline-start: 1.5rem; }
+.ai-message-markdown ul { list-style-type: disc; }
+.ai-message-markdown ol { list-style-type: decimal; }
+.ai-message-markdown li { margin-block: .25rem; }
+.ai-message-markdown li > p { margin-block: .25rem; }
+.ai-message-markdown li > :is(ul,ol) { margin-block: .25rem; }
+.ai-message-markdown strong { font-weight: 700; }
+.ai-message-markdown em { font-style: italic; }
+.ai-message-markdown blockquote { border-inline-start: 3px solid var(--color-brand-200); padding-inline-start: .8rem; margin-block: .75rem; }
+.ai-message-markdown pre { max-width: 100%; overflow-x: auto; white-space: pre-wrap; padding: .75rem; margin-block: .75rem; border-radius: .5rem; background: var(--color-paper); }
+.ai-message-markdown code { font-size: .9em; white-space: break-spaces; }
+.ai-message-markdown hr { margin-block: 1rem; border-color: var(--color-brand-200); }
+
 @font-face {
   font-family: 'Plus Jakarta Sans';
   font-style: normal;

@@ -1,17 +1,18 @@
 package tech.mamxanh.admin.service;
 
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Component;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import jakarta.annotation.PreDestroy;
+import org.springframework.stereotype.Component;
 import tech.mamxanh.integration.ai.AiUsageEvent;
+
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
 
 /** Bounded background recording avoids nested-transaction connection starvation.
  * This executor is owned here, not a bean: Boot's existing email executor remains unchanged.

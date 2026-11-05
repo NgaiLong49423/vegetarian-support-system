@@ -1,13 +1,5 @@
 package tech.mamxanh.mealplan.service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.mamxanh.auth.service.CurrentUserService;
@@ -22,10 +14,18 @@ import tech.mamxanh.mealplan.entity.MealPlanEntryEntity;
 import tech.mamxanh.mealplan.repository.MealPlanEntryRepository;
 import tech.mamxanh.mealplan.repository.MealPlanRepository;
 import tech.mamxanh.nutrition.dto.response.NutritionProfileResponse;
-import tech.mamxanh.nutrition.entity.NutritionDailyValueEntity;
 import tech.mamxanh.nutrition.repository.NutritionDailyValueRepository;
 import tech.mamxanh.nutrition.service.NutritionProfileService;
 import tech.mamxanh.recipe.service.RecipeService;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class MealPlanNutritionService {

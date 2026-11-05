@@ -1,13 +1,14 @@
 package tech.mamxanh.subscription.repository;
 
 import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import tech.mamxanh.subscription.entity.PaymentTransactionEntity;
+
 import java.util.List;
 import java.util.Optional;
-import org.springframework.data.jpa.repository.JpaRepository;
-import tech.mamxanh.subscription.entity.PaymentTransactionEntity;
 
 public interface PaymentTransactionRepository extends JpaRepository<PaymentTransactionEntity, Long> {
 

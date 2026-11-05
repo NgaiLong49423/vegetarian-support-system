@@ -1,20 +1,19 @@
 package tech.mamxanh.auth.service;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import tech.mamxanh.auth.dto.response.ExpertDirectoryEntryResponse;
+import tech.mamxanh.auth.repository.MemberProfileRepository;
+import tech.mamxanh.auth.repository.UserFollowRepository;
+import tech.mamxanh.common.response.PageResponse;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import tech.mamxanh.auth.dto.response.ExpertDirectoryEntryResponse;
-import tech.mamxanh.auth.repository.MemberProfileRepository;
-import tech.mamxanh.auth.repository.UserFollowRepository;
-import tech.mamxanh.common.response.PageResponse;
 
 /** FR-61 public directory of active Experts. */
 @Service

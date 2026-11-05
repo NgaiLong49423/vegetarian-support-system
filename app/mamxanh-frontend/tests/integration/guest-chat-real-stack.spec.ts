@@ -3,15 +3,15 @@ import { expect, test } from '@playwright/test';
 
 const backend = process.env.MAMXANX_E2E_BACKEND_URL ?? 'http://localhost:8080/api/v1';
 
-test('FR-02: real Backend blocks the fourth Guest request before provider access and UI shows registration', async ({ page, context, request, baseURL }) => {
+test('FR-02: real Backend blocks the eleventh Guest request before provider access and UI shows registration', async ({ page, context, request, baseURL }) => {
   const id = randomUUID();
-  await context.addCookies([{ name: 'mamxanh.guest-chat', value: id, url: baseURL! }]);
+  await context.addCookies([{ name: 'mamxanh.recipe-viewer', value: id, url: baseURL! }]);
   // A missing public RecipePost is rejected by the real SQL query before calling Gemini.
   // Valid attempts still consume the technical rate window, including failed context lookups.
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 10; i++) {
     const response = await request.post(`${backend}/recipes/ai/chat`, {
       headers: { 'X-Guest-Chat-Id': id },
-      data: { contextType: 'RECIPE', recipeId: 9_000_000_000, question: 'Cách nấu?' },
+      data: { contextType: 'RECIPE', recipeId: 9_000_000_000, question: 'Cách nấu?', anonymousViewerId: id },
     });
     expect(response.status()).toBe(404);
   }
@@ -22,11 +22,11 @@ test('FR-02: real Backend blocks the fourth Guest request before provider access
   await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
   const response = await blocked;
   expect(response.status()).toBe(429);
-  expect(['AI_GUEST_RATE_LIMITED', 'GUEST_CHAT_RATE_LIMITED']).toContain((await response.json()).code);
+  expect((await response.json()).code).toBe('AI_GUEST_RATE_LIMITED');
   expect(Number(response.headers()['retry-after'])).toBeGreaterThan(0);
   await expect(page.getByRole('dialog').getByRole('alert')).toContainText('Thử lại sau');
   await expect(page.getByRole('dialog').getByRole('button', { name: 'Thử lại', exact: true })).toBeDisabled();
-  await expect(page.getByRole('link', { name: 'Đăng ký tài khoản', exact: true })).toHaveAttribute('href', '/dang-ky');
+  await expect(page.getByRole('dialog').getByRole('alert').getByRole('link', { name: 'Đăng ký', exact: true })).toHaveAttribute('href', '/dang-ky');
 });
 
 test('FR-02: live Guest uses general and public-recipe contexts', async ({ page, request }) => {
@@ -43,7 +43,7 @@ test('FR-02: live Guest uses general and public-recipe contexts', async ({ page,
   let response = await received;
   expect(response.status()).toBe(200);
   expect((await response.json()).answer.trim()).not.toBe('');
-  await expect(page.getByRole('link', { name: 'Đăng ký tài khoản', exact: true })).toBeVisible();
+  await expect(page.getByRole('dialog').getByRole('link', { name: 'Đăng ký', exact: true }).first()).toBeVisible();
   await page.getByRole('button', { name: 'Đóng khung chat' }).click();
   await page.goto(`/cong-thuc/id/${recipeId}`);
   await page.getByRole('button', { name: 'Hỏi AI về công thức này' }).click();

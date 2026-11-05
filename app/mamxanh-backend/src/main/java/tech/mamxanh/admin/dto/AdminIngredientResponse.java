@@ -1,8 +1,9 @@
 package tech.mamxanh.admin.dto;
 
-import java.time.LocalDate;
 import tech.mamxanh.nutrition.dto.response.IngredientNutritionResponse;
 import tech.mamxanh.nutrition.dto.response.IngredientResponse;
+
+import java.time.LocalDate;
 
 /** Administrator-only ingredient view with recipe usage impact. */
 public record AdminIngredientResponse(Long id, String name, String ingredientGroup, String sourceName,

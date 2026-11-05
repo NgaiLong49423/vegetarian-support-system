@@ -186,7 +186,7 @@ test('expert can use AI Recipe Assistant modal to generate and apply a complete 
   await expect(page.getByLabel('Tên món *')).toHaveValue('Xào cà chua với trứng');
 });
 
-test('expert on Free plan is blocked from using AI Recipe Assistant modal analysis', async ({ page }) => {
+test('expert on Free plan can use local recipe assistant analysis', async ({ page }) => {
   await seedDemoSession(page, 'EXPERT');
   await page.route('**/api/v1/recipes/form-options', (route) => route.fulfill({ json: options }));
   await page.route('**/api/v1/subscriptions/my-subscription', (route) => route.fulfill({
@@ -204,21 +204,9 @@ test('expert on Free plan is blocked from using AI Recipe Assistant modal analys
   const triggerBtn = page.getByRole('button', { name: 'Soạn với Trợ lý AI' });
   await triggerBtn.click();
 
-  // Modal opens
   await expect(page.getByText('Trợ lý AI đồng hành cùng Chuyên gia ẩm thực')).toBeVisible();
-
-  // PRO required warning banner is visible with link to /goi-ai
-  await expect(page.getByRole('alert')).toContainText('Tính năng Trợ lý AI yêu cầu gói AI PRO còn hiệu lực');
-  const upgradeLink = page.getByRole('link', { name: 'Nâng cấp lên gói AI PRO' });
-  await expect(upgradeLink).toBeVisible();
-  await expect(upgradeLink).toHaveAttribute('href', '/goi-ai');
-
-  // Analysis button is locked / disabled
-  const analysisBtn = page.getByRole('button', { name: 'Yêu cầu gói AI PRO để phân tích' });
-  await expect(analysisBtn).toBeVisible();
-  await expect(analysisBtn).toBeDisabled();
-
-  // Proposed recipe is not generated or displayed
-  await expect(page.getByText('Công thức đề xuất')).toHaveCount(0);
+  const analysisBtn = page.getByRole('button', { name: 'Phân tích nguyên liệu & gợi ý định lượng' });
+  await expect(analysisBtn).toBeEnabled();
+  await analysisBtn.click();
+  await expect(page.getByText('Công thức đề xuất')).toBeVisible();
 });
-

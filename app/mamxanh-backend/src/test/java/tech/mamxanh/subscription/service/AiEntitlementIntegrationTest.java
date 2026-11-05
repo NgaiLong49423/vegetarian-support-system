@@ -21,6 +21,7 @@ import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.integration.ai.AiClient;
 
 /** SQL Server expiry boundaries and real HTTP guards; Gemini is controlled, never billed by tests. */
+@org.springframework.test.context.TestPropertySource(properties = "mamxanh.ai.orchestrator=LEGACY")
 class AiEntitlementIntegrationTest extends AbstractIntegrationTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired SubscriptionEntitlementService entitlements;
@@ -57,10 +58,9 @@ class AiEntitlementIntegrationTest extends AbstractIntegrationTest {
                 {"contentType":"DESCRIPTION","title":"Canh chay","dishCategory":"SOUP","vegetarianType":"VEGAN",
                  "servings":2,"ingredients":[{"ingredientId":1,"unitId":1,"quantity":100}]}
                 """;
-        forbidden("/api/v1/recipes/ai/weekly-menu", "{\"ingredientIds\":[1]}", "PLUS");
+
         forbidden("/api/v1/meal-plans/ai-menu/previews", "{\"weekStartDate\":\"2026-09-28\",\"mode\":\"PROFILE\"}", "PLUS");
         for (int pass = 0; pass < 2; pass++) {
-            forbidden("/api/v1/recipes/ai-assistance", assistance, "PRO");
             forbidden("/api/v1/recipes/1/related/ai", "{}", "PRO");
             if (pass == 0) subscribe("PLUS", "ACTIVE", -1, 1);
         }

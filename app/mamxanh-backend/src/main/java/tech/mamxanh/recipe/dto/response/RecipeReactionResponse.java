@@ -1,8 +1,9 @@
 package tech.mamxanh.recipe.dto.response;
 
-import java.math.BigDecimal;
 import io.swagger.v3.oas.annotations.media.Schema;
 import tech.mamxanh.recipe.entity.RecipeReactionType;
+
+import java.math.BigDecimal;
 
 public record RecipeReactionResponse(
         long recipeId,

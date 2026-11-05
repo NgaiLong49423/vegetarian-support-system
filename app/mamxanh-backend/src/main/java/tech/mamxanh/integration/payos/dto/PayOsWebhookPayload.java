@@ -49,6 +49,10 @@ public record PayOsWebhookPayload(
         return String.valueOf(data.get("paymentLinkId"));
     }
 
+    public java.time.LocalDateTime getTransactionAtUtc() {
+        return data == null ? null : PayOsPaymentInfo.parseTransactionDateTime(data.get("transactionDateTime"));
+    }
+
     public String getCode() {
         if (data == null || !data.containsKey("code")) {
             return code;

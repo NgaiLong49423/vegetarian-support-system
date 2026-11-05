@@ -1,50 +1,12 @@
-import { useCallback, useMemo, useState, type ReactNode } from "react"
+import { type ReactNode } from "react"
 import { useLocation } from "react-router-dom"
 import { AppHeader } from "./AppHeader"
 import { AppFooter } from "./AppFooter"
 import { MobileBottomNav } from "./MobileBottomNav"
-import {
-  AiChatContext,
-  type AiChatContextValue,
-  type RecipeArticleContext,
-} from "./AiChatContext"
-import { AiChatPage } from "../pages/AiChatPage"
-
 import { AdminLayout } from "./AdminLayout"
 
 export function Layout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
-  const [chatOpen, setChatOpen] = useState(false)
-  const [chatRecipeId, setChatRecipeId] = useState<number | null>(null)
-  const [chatRecipeTitle, setChatRecipeTitle] = useState<string | null>(null)
-  const [chatRecipeArticle, setChatRecipeArticle] =
-    useState<RecipeArticleContext | null>(null)
-  const openChat = useCallback((recipe?: RecipeArticleContext) => {
-    setChatRecipeId(recipe?.recipeId ?? null)
-    setChatRecipeTitle(recipe?.title.trim() || null)
-    setChatRecipeArticle(recipe ?? null)
-    setChatOpen(true)
-  }, [])
-  const closeChat = useCallback(() => setChatOpen(false), [])
-  const chatContext = useMemo<AiChatContextValue>(
-    () => ({
-      isOpen: chatOpen,
-      recipeId: chatRecipeId,
-      recipeTitle: chatRecipeTitle,
-      recipeArticle: chatRecipeArticle,
-      openChat,
-      closeChat,
-    }),
-    [
-      chatOpen,
-      chatRecipeId,
-      chatRecipeTitle,
-      chatRecipeArticle,
-      openChat,
-      closeChat,
-    ],
-  )
-
   if (
     [
       "/dang-nhap",
@@ -63,15 +25,12 @@ export function Layout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AiChatContext.Provider value={chatContext}>
-      <div className="food-app flex min-h-screen flex-col bg-cream pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0">
-        <AppHeader />
-        <main className="min-w-0 flex-1">{children}</main>
-        <AppFooter />
-        <MobileBottomNav />
-        <AiChatPage />
-      </div>
-    </AiChatContext.Provider>
+    <div className="food-app flex min-h-screen flex-col bg-cream pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0">
+      <AppHeader />
+      <main className="min-w-0 flex-1">{children}</main>
+      <AppFooter />
+      <MobileBottomNav />
+    </div>
   )
 }
 

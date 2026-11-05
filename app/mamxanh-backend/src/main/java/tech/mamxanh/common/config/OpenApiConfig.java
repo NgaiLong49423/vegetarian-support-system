@@ -1,22 +1,15 @@
 package tech.mamxanh.common.config;
 
-import org.springdoc.core.customizers.OpenApiCustomizer;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.Operation;
-import io.swagger.v3.oas.models.media.ArraySchema;
-import io.swagger.v3.oas.models.media.Content;
-import io.swagger.v3.oas.models.media.IntegerSchema;
-import io.swagger.v3.oas.models.media.MediaType;
-import io.swagger.v3.oas.models.media.ObjectSchema;
-import io.swagger.v3.oas.models.media.Schema;
-import io.swagger.v3.oas.models.media.StringSchema;
+import io.swagger.v3.oas.models.media.*;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
+import org.springdoc.core.customizers.OpenApiCustomizer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * Security metadata of the generated OpenAPI ({@code /v3/api-docs}). Controllers whose endpoints
@@ -50,6 +43,12 @@ public class OpenApiConfig {
             var chat = openApi.getPaths().get("/api/v1/recipes/ai/chat");
             if (chat != null && chat.getPost() != null) {
                 chat.getPost().setSecurity(java.util.List.of(
+                        new io.swagger.v3.oas.models.security.SecurityRequirement(),
+                        new io.swagger.v3.oas.models.security.SecurityRequirement().addList(BEARER_AUTH)));
+            }
+            var chatSessions = openApi.getPaths().get("/api/v1/recipes/ai/chat/sessions/{sessionId}");
+            if (chatSessions != null && chatSessions.getDelete() != null) {
+                chatSessions.getDelete().setSecurity(java.util.List.of(
                         new io.swagger.v3.oas.models.security.SecurityRequirement(),
                         new io.swagger.v3.oas.models.security.SecurityRequirement().addList(BEARER_AUTH)));
             }

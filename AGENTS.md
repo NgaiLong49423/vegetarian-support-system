@@ -47,6 +47,7 @@ Do not recursively read the repository, all documentation, all skills, old logs 
 | Progress, owner, deadline or blocker | GitHub Issues and Projects, then linked PRs | CONTRIBUTING.md for status semantics; no local progress reports |
 | Documentation/file placement | docs/README.md; target document | Only the listed authority and affected links |
 | Agent routing/configuration | AGENTS.md; .agents/repo-contract.yml when needed | Selected skill or document-register entry |
+| Technical engineering principles | .agents/rules/AGENT-ENGINEERING-PRINCIPLES.md | Mandatory default technical criteria for all tasks across the repo: (1) Functionality & Stability → (2) Performance → (3) Maintainability → (4) Library/Framework First → (5) Pragmatic Testing & Basic Safety |
 
 Full paths for ADRs and supporting documents are registered in docs/README.md. The YAML contract is a machine-readable routing summary. Do not load it routinely when AGENTS.md already contains everything needed for the task. Read it when the selected skill or current task requires contract information not already available here.
 

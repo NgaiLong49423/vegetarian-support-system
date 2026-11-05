@@ -1,14 +1,5 @@
 package tech.mamxanh.shopping.service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.Clock;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,11 +7,7 @@ import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.recipe.service.RecipeService;
-import tech.mamxanh.shopping.dto.request.AddRecipeToShoppingListRequest;
-import tech.mamxanh.shopping.dto.request.CreateEmptyShoppingListRequest;
-import tech.mamxanh.shopping.dto.request.CreateShoppingItemRequest;
-import tech.mamxanh.shopping.dto.request.CreateShoppingListFromRecipeRequest;
-import tech.mamxanh.shopping.dto.request.ShoppingAggregationLine;
+import tech.mamxanh.shopping.dto.request.*;
 import tech.mamxanh.shopping.dto.response.ShoppingListCreationResponse;
 import tech.mamxanh.shopping.dto.response.ShoppingListCreationResponse.Warning;
 import tech.mamxanh.shopping.entity.ShoppingListEntity;
@@ -29,6 +16,12 @@ import tech.mamxanh.shopping.entity.ShoppingRecipeContributionEntity;
 import tech.mamxanh.shopping.repository.ShoppingListItemRepository;
 import tech.mamxanh.shopping.repository.ShoppingListRepository;
 import tech.mamxanh.shopping.repository.ShoppingRecipeContributionRepository;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.util.*;
 
 /** FR-53 AC-53.6: add one public Recipe Post to a selected owned checklist. */
 @Service

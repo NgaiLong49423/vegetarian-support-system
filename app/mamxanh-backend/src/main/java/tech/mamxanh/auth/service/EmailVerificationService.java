@@ -1,14 +1,8 @@
 package tech.mamxanh.auth.service;
 
-import java.time.Clock;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.Optional;
-
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import tech.mamxanh.auth.dto.response.MessageResponse;
 import tech.mamxanh.auth.entity.User;
 import tech.mamxanh.auth.repository.UserRepository;
@@ -17,6 +11,11 @@ import tech.mamxanh.auth.security.OneTimeTokenService;
 import tech.mamxanh.auth.security.OneTimeTokenService.IssuedToken;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 /** UC-03.2 verify email and UC-03.3 resend verification email (AC-03.4, AC-03.5). */
 @Service

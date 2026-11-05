@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import { Navigate, Route, Routes } from "react-router-dom"
 import { Layout } from "./Layout"
 import { AuthPage } from "../pages/Auth"
@@ -13,6 +14,7 @@ import { Community } from "../pages/Community"
 import { PostDetail } from "../pages/PostDetail"
 import { Profile } from "../pages/Profile"
 import { AiPlans } from "../pages/AiPlans"
+import { AiCreditTopUp } from "../pages/AiCreditTopUp"
 import { TransactionHistory } from "../pages/TransactionHistory"
 import { PaymentResult } from "../pages/PaymentResult"
 import { NutritionProfile } from "../pages/NutritionProfile"
@@ -27,16 +29,25 @@ import { ApiRecipeDetail } from "../pages/ApiRecipeDetail"
 import { ExpertRecipeProfile } from "../pages/ExpertRecipeProfile"
 import { MemberProfilePage } from "../pages/MemberProfilePage"
 import { ProfileSettingsPage } from "../pages/ProfileSettingsPage"
-import { AiChatPage } from "../pages/AiChatPage"
+import { useAiChat } from "./AiChatContext"
 import { AdminDashboard } from "../pages/AdminDashboard"
 import { AiTelemetryPage } from "../pages/AiTelemetryPage"
 import { AdminPendingModule } from "../pages/AdminPendingModule"
 import { AdminTransactionsPage } from "../pages/AdminTransactionsPage"
+import { AdminAiConfigurationPage } from "../pages/AdminAiConfigurationPage"
 import { AdminReportsPage } from "../pages/AdminReportsPage"
 import { ExpertDirectoryPage } from "../pages/ExpertDirectoryPage"
 import { IngredientDirectoryPage } from "../pages/IngredientDirectoryPage"
 import { IngredientDetailPage } from "../pages/IngredientDetailPage"
 import { ClickSpark } from "./ClickSpark"
+
+function OpenAiChatRoute() {
+  const { openChat } = useAiChat()
+
+  useEffect(() => openChat(), [openChat])
+
+  return <Navigate to="/trang-chu" replace />
+}
 
 export default function ApplicationRoutes() {
   return (
@@ -86,7 +97,7 @@ export default function ApplicationRoutes() {
               <Route path="/cong-thuc/:slug" element={<RecipeDetail />} />
               <Route path="/ke-hoach" element={<MealPlanner />} />
               <Route path="/goi-y-ai" element={<Navigate to="/ke-hoach?view=for-you" replace />} />
-              <Route path="/hoi-dap-ai" element={<AiChatPage />} />
+              <Route path="/hoi-dap-ai" element={<OpenAiChatRoute />} />
               <Route path="/di-cho" element={<ShoppingList />} />
               <Route path="/dinh-duong" element={<NutritionTracker />} />
               <Route path="/dang-cong-thuc" element={<CreateRecipe />} />
@@ -100,6 +111,7 @@ export default function ApplicationRoutes() {
                 element={<ExpertRecipeProfile />}
               />
               <Route path="/goi-ai" element={<AiPlans />} />
+              <Route path="/nap-ai-credit" element={<AiCreditTopUp />} />
               <Route path="/payment/success" element={<PaymentResult mode="success" />} />
               <Route path="/payment/cancel" element={<PaymentResult mode="cancel" />} />
               <Route path="/giao-dich" element={<TransactionHistory />} />
@@ -120,6 +132,10 @@ export default function ApplicationRoutes() {
               />
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/ai-telemetry" element={<AiTelemetryPage />} />
+              <Route path="/admin/ai-config" element={<AdminAiConfigurationPage key="overview" />} />
+              <Route path="/admin/ai-config/packages" element={<AdminAiConfigurationPage key="plans" section="plans" />} />
+              <Route path="/admin/ai-config/models" element={<AdminAiConfigurationPage key="models" section="models" />} />
+              <Route path="/admin/ai-config/credits" element={<AdminAiConfigurationPage key="credits" section="credit" />} />
               <Route path="/admin/tong-quan" element={<AdminDashboard />} />
               <Route
                 path="/admin/bao-cao"

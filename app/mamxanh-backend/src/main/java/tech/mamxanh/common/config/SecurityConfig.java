@@ -36,6 +36,8 @@ public class SecurityConfig {
             "/api/v1/auth/password-resets",
             "/api/v1/auth/password-resets/confirm",
             "/api/v1/recipes/ai/chat",
+            "/api/v1/recipes/ai/chat/stream",
+            "/api/v1/recipes/ai/chat/cancel",
     };
 
     private static final String[] PUBLIC_PAYMENT_POST_ENDPOINTS = {
@@ -44,6 +46,7 @@ public class SecurityConfig {
 
     private static final String[] PUBLIC_GET_ENDPOINTS = {
             "/api/v1/subscriptions/plans",
+            "/api/v1/ai/chat-settings",
     };
 
     private static final String[] API_DOCS_ENDPOINTS = {
@@ -70,6 +73,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.POST, PUBLIC_POST_ENDPOINTS).permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/recipes/ai/chat/sessions/*").permitAll()
                         .requestMatchers(HttpMethod.POST, PUBLIC_PAYMENT_POST_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/recipes/*/views", "/api/v1/recipes/ai/chat").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/recipes/mine").authenticated()

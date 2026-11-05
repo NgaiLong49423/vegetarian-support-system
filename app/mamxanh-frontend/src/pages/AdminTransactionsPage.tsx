@@ -36,6 +36,7 @@ const statuses: Record<TransactionState, string> = {
   FAILED: "Thất bại",
 
   CANCELLED: "Đã hủy",
+  NEEDS_RECONCILIATION: "Cần đối soát",
 }
 
 const currency = new Intl.NumberFormat("vi-VN", {
@@ -69,9 +70,7 @@ const input =
 function State({ value }: { value: TransactionState }) {
   return (
     <Badge
-      tone={
-        value === "PAID" ? "leaf" : value === "PENDING" ? "amber" : "neutral"
-      }
+            tone={value === "PAID" ? "leaf" : value === "PENDING" ? "amber" : value === "NEEDS_RECONCILIATION" ? "brand" : "neutral"}
     >
       {statuses[value]}
     </Badge>
@@ -402,7 +401,7 @@ export function AdminTransactionsPage() {
       )}
       {summary && report && (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {[
               [
                 "Doanh thu ghi nhận",
@@ -445,6 +444,14 @@ export function AdminTransactionsPage() {
               ],
 
               [
+                "Cần đối soát",
+
+                summary.needsReconciliation.toLocaleString("vi-VN"),
+
+                "Đã thanh toán sau hạn hoặc thiếu thời điểm xác minh",
+              ],
+
+              [
                 "Thất bại",
 
                 summary.failed.toLocaleString("vi-VN"),
@@ -484,7 +491,7 @@ export function AdminTransactionsPage() {
 
                       "Khách hàng",
 
-                      "Gói dịch vụ",
+                      "Sản phẩm",
 
                       "Số tiền",
 
@@ -524,7 +531,9 @@ export function AdminTransactionsPage() {
                         </p>
                       </td>
                       <td className="px-4 py-4">
-                        {tx.tier ? <Badge>{tx.tier}</Badge> : "Chưa xác định"}
+                        {tx.productType === "AI_CREDIT"
+                          ? <div><Badge>Nạp AI Credit · {tx.creditAmount?.toLocaleString("vi-VN", { maximumFractionDigits: 9 })}</Badge><p className="mt-1 text-xs text-ink-muted">{tx.creditsPer1000VndSnapshot?.toLocaleString("vi-VN")} Credit / 1.000đ</p></div>
+                          : tx.tier ? <Badge>{tx.tier}</Badge> : "Chưa xác định"}
                       </td>
                       <td className="whitespace-nowrap px-4 py-4 font-semibold text-ink">
                         {currency.format(tx.amountVnd)}
@@ -639,7 +648,9 @@ export function AdminTransactionsPage() {
 
                 ["Email", detail.customerEmail],
 
-                ["Gói đã mua", detail.tier ?? "Chưa xác định"],
+                ["Sản phẩm", detail.productType === "AI_CREDIT" ? `Nạp AI Credit · ${detail.creditAmount?.toLocaleString("vi-VN", { maximumFractionDigits: 9 })} Credit` : detail.tier ?? "Chưa xác định"],
+
+                ...(detail.productType === "AI_CREDIT" ? [["Tỷ lệ nạp", `${detail.creditsPer1000VndSnapshot?.toLocaleString("vi-VN")} Credit / 1.000đ`]] : []),
 
                 ["Số tiền", currency.format(detail.amountVnd)],
 
@@ -648,6 +659,8 @@ export function AdminTransactionsPage() {
                 ["Tạo lúc", time(detail.createdAt)],
 
                 ["Thanh toán lúc", time(detail.paidAt)],
+
+                ["Hết hạn đơn", time(detail.expiresAt)],
 
                 ["Mã đăng ký", detail.subscriptionId?.toString() ?? "Chưa có"],
 

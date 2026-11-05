@@ -1,8 +1,8 @@
 > **Document:** Repository Layout and Document Register  
 > **File:** `docs/README.md`  
-> **Version:** v4.3.0
+> **Version:** v4.4.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-15
+> **Last Updated:** 2026-11-03
 > **Status:** Active  
 
 # Repository Layout and Document Register
@@ -87,6 +87,7 @@ Only entries below are maintained documentation. Read entries by task, not as a 
 | decisions/002-five-member-team-operating-agreement.md | Team responsibilities and coordination | Team process |
 | decisions/WORKFLOW-SOURCES.md | Evidence behind workflow conventions | Reconsidering a workflow decision |
 | research/similar-products-benchmark.md | Dated external research, non-authoritative | Relevant product comparison |
+| research/ai-streaming-sse-evaluation.md | Technical architecture, feasibility, and trade-off evaluation for AI Assistant SSE Streaming; Active | Planning or implementing real-time streaming for AI chat |
 | diagrams/Activity/README.md | Activity diagram conventions | Creating/updating activity diagrams |
 | diagrams/UseCase/README.md | Use-case diagram conventions | Creating/updating use-case diagrams |
 | diagrams/ERD/README.md | ERD workspace guide and current data-model scope; see the guide for artifact-specific status | Creating/updating the data model |

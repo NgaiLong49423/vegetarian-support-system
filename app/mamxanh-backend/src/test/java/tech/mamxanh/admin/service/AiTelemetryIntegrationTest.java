@@ -31,6 +31,7 @@ import tech.mamxanh.integration.ai.*;
  * Only the external provider is controlled; no live Google billing is asserted.
  */
 @ExtendWith(OutputCaptureExtension.class)
+@org.springframework.test.context.TestPropertySource(properties = "mamxanh.ai.orchestrator=LEGACY")
 class AiTelemetryIntegrationTest extends AbstractIntegrationTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired AiTelemetryWriter writer;
@@ -45,8 +46,10 @@ class AiTelemetryIntegrationTest extends AbstractIntegrationTest {
     private String guest;
 
     @BeforeEach void fixture() {
-        when(ai.classifyChatScope(anyString(), anyString())).thenReturn(
-                new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 1, 1, 2));
+        var inScope = new AiClient.ChatResult(null,
+                "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 150, 10, 160);
+        when(ai.classifyChatScope(anyString(), anyString())).thenReturn(inScope);
+        when(ai.classifyChatScope(anyString(), anyString(), anyString())).thenReturn(inScope);
         clock.advance(Duration.between(clock.instant(), Instant.parse("2026-10-23T03:00:00Z")));
         guest = UUID.randomUUID().toString();
         String email = "fr11-" + guest + "@example.invalid";
@@ -95,7 +98,7 @@ class AiTelemetryIntegrationTest extends AbstractIntegrationTest {
         doThrow(new tech.mamxanh.common.exception.AppException(tech.mamxanh.common.exception.ErrorCode.AI_TELEMETRY_UNAVAILABLE))
                 .when(spool).store(any());
         mockMvc.perform(post("/api/v1/recipes/ai/chat").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"contextType\":\"GENERAL\",\"question\":\"Synthetic question\",\"anonymousViewerId\":\"" + guest + "\"}"))
+                        .content("{\"contextType\":\"GENERAL\",\"question\":\"Gợi ý món canh chua chay\",\"anonymousViewerId\":\"" + guest + "\"}"))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.code").value("AI_TELEMETRY_UNAVAILABLE"));
         assertThat(count()).isZero();
@@ -133,18 +136,21 @@ class AiTelemetryIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test void guestChatPersistsAnonymousMetadataAndProviderFailureDoesNotCreateSuccess(CapturedOutput output) throws Exception {
-        when(ai.answerChat(anyString(),anyString())).thenReturn(new AiClient.ChatResult("Chao ban",null,150,300,450,usage()));
-        String body = "{\"contextType\":\"GENERAL\",\"question\":\"FR11 private question marker\",\"anonymousViewerId\":\""+guest+"\"}";
+        var answer = new AiClient.ChatResult("Chao ban",null,150,300,450,usage());
+        when(ai.answerChat(anyString(),anyString())).thenReturn(answer);
+        when(ai.answerChat(anyString(),anyString(),anyString())).thenReturn(answer);
+        String body = "{\"contextType\":\"GENERAL\",\"question\":\"Hướng dẫn nấu canh chua chay FR11 marker\",\"anonymousViewerId\":\""+guest+"\"}";
         mockMvc.perform(post("/api/v1/recipes/ai/chat").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.answer").value("Chao ban"));
-        awaitCount(2);
-        assertThat(output.getAll()).doesNotContain("FR11 private question marker", "Chao ban", "private provider failure");
-        assertThat(jdbc.queryForObject("SELECT TOP 1 anonymous_session_id FROM AI_USAGE_TELEMETRY WHERE anonymous_session_id=?",String.class,guest)).isEqualTo(guest);
-        when(ai.answerChat(anyString(),anyString())).thenThrow(new GeminiAiClient.AiProviderException("private provider failure"));
+        awaitCount(2); // scope classification and answer are separate successful Gemini calls.
+        assertThat(output.getAll()).doesNotContain("Hướng dẫn nấu canh chua chay FR11 marker", "Chao ban", "private provider failure");
+        assertThat(jdbc.queryForObject("SELECT COUNT(DISTINCT anonymous_session_id) FROM AI_USAGE_TELEMETRY WHERE anonymous_session_id=?",Integer.class,guest)).isEqualTo(1);
+        when(ai.answerChat(anyString(),anyString())).thenThrow(new AiProviderException("private provider failure"));
+        when(ai.answerChat(anyString(),anyString(),anyString())).thenThrow(new AiProviderException("private provider failure"));
         mockMvc.perform(post("/api/v1/recipes/ai/chat").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isServiceUnavailable());
-        awaitCount(3);
-        assertThat(output.getAll()).doesNotContain("FR11 private question marker", "Chao ban", "private provider failure");
+        assertThat(count()).isEqualTo(3); // the failed answer still follows a successful recorded classification.
+        assertThat(output.getAll()).doesNotContain("Hướng dẫn nấu canh chua chay FR11 marker", "Chao ban", "private provider failure");
     }
 
     @Test void independentWriterWorksInsideReadOnlyAndSurvivesCallerRollback() throws Exception {

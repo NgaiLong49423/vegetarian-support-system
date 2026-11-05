@@ -7,7 +7,9 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
@@ -45,6 +47,7 @@ import tech.mamxanh.subscription.entity.SubscriptionStatus;
 import tech.mamxanh.subscription.entity.SubscriptionTier;
 import tech.mamxanh.subscription.repository.PaymentTransactionRepository;
 import tech.mamxanh.subscription.repository.SubscriptionRepository;
+import tech.mamxanh.subscription.repository.AiConfigurationRepository;
 
 @ExtendWith(MockitoExtension.class)
 class SubscriptionServiceTest {
@@ -63,6 +66,7 @@ class SubscriptionServiceTest {
 
     @Mock private PaymentSettlementService settlement;
     @Mock private PaymentOrderService orders;
+    @Mock private AiConfigurationRepository aiConfiguration;
 
     private Clock clock;
     private SubscriptionService subscriptionService;
@@ -77,8 +81,18 @@ class SubscriptionServiceTest {
                 paymentTransactionRepository,
                 userRepository,
                 payOsClient,
-                clock, settlement, orders
+                clock, settlement, orders, aiConfiguration
         );
+        lenient().when(aiConfiguration.findConfiguration()).thenReturn(new tech.mamxanh.subscription.entity.AiConfigurationSnapshot(
+                List.of(new tech.mamxanh.subscription.entity.AiConfigurationSnapshot.Plan("FREE", 0, 50_000, null, null),
+                        new tech.mamxanh.subscription.entity.AiConfigurationSnapshot.Plan("PLUS", 99_000, 300_000, null, null),
+                        new tech.mamxanh.subscription.entity.AiConfigurationSnapshot.Plan("PRO", 199_000, 600_000, null, null)),
+                List.of(new tech.mamxanh.subscription.entity.AiConfigurationSnapshot.Model("gemini-3.5-flash-lite", "Gemini Flash-Lite", true,
+                                true, true, true, false, true, false),
+                        new tech.mamxanh.subscription.entity.AiConfigurationSnapshot.Model("gemini-3.8-flash", "Gemini Flash", true,
+                                false, false, true, true, true, true)),
+                new tech.mamxanh.subscription.entity.AiConfigurationSnapshot.Credit(java.math.BigDecimal.valueOf(1000), 400, 10_000, 500_000)));
+        lenient().when(aiConfiguration.currentFreeQuota(any())).thenReturn(50_000L);
     }
 
     @Test
@@ -94,16 +108,17 @@ class SubscriptionServiceTest {
 
         PlanResponse plus = plans.get(1);
         assertThat(plus.tier()).isEqualTo("PLUS");
-        assertThat(plus.features()).contains("AI lập thực đơn tuần 7 ngày", "AI lập thực đơn theo dinh dưỡng cá nhân");
-        assertThat(plus.features()).noneMatch(feature -> feature.contains("soạn bài") || feature.contains("biến tấu"));
-        assertThat(plus.priceVnd()).isEqualTo(49_000);
-        assertThat(plus.billingPeriod()).contains("Tháng");
+        assertThat(plus.features()).anyMatch(feature -> feature.contains("300.000 token mỗi tháng"));
+        assertThat(plus.features()).anyMatch(feature -> feature.contains("Gemini Flash-Lite") && feature.contains("Gemini Flash"));
+        assertThat(plus.features()).noneMatch(feature -> feature.contains("Toàn bộ quyền lợi") || feature.contains("AI lập thực đơn"));
+        assertThat(plus.priceVnd()).isEqualTo(99_000);
+        assertThat(plus.billingPeriod()).containsIgnoringCase("tháng");
 
         PlanResponse pro = plans.get(2);
         assertThat(pro.tier()).isEqualTo("PRO");
-        assertThat(pro.features()).contains("Toàn bộ quyền lợi gói PLUS", "AI hỗ trợ soạn bài viết và công thức", "AI gợi ý biến tấu món chay sáng tạo");
-        assertThat(pro.priceVnd()).isEqualTo(99_000);
-        assertThat(pro.billingPeriod()).contains("Tháng");
+        assertThat(pro.features()).anyMatch(feature -> feature.contains("600.000 token mỗi tháng"));
+        assertThat(pro.priceVnd()).isEqualTo(199_000);
+        assertThat(pro.billingPeriod()).containsIgnoringCase("tháng");
 
         // Verify none contains trial, annual discount, or coupon
         for (PlanResponse p : plans) {
@@ -151,7 +166,8 @@ class SubscriptionServiceTest {
         assertThat(response.status()).isEqualTo("ACTIVE");
         assertThat(response.active()).isTrue();
         assertThat(response.startsAt()).isEqualTo(startsAt);
-        assertThat(response.unlockedFeatures()).contains("AI lập thực đơn tuần 7 ngày");
+        assertThat(response.unlockedFeatures()).contains("Hạn mức 600.000 token mỗi tháng", "Model Gemini: Gemini Flash-Lite, Gemini Flash (mặc định)")
+                .anyMatch(feature -> feature.contains("theo vai trò và quyền nghiệp vụ"));
     }
 
     @Test
@@ -165,7 +181,7 @@ class SubscriptionServiceTest {
         var response = subscriptionService.getMySubscription(1L);
 
         assertThat(response.tier()).isEqualTo("FREE");
-        assertThat(response.unlockedFeatures()).doesNotContain("AI lập thực đơn tuần 7 ngày");
+        assertThat(response.unlockedFeatures()).doesNotContain("Hạn mức 600.000 token mỗi tháng");
         assertThat(future.getStatus()).isEqualTo(SubscriptionStatus.ACTIVE);
         verify(subscriptionRepository, never()).save(any());
     }
@@ -192,18 +208,79 @@ class SubscriptionServiceTest {
 
         when(payOsClient.createPaymentLink(anyLong(), anyInt(), anyString()))
                 .thenReturn(new CreatePaymentLinkResponse("00", "success",
-                        new PayOsPaymentData(123456L, 49_000, "Nang cap PLUS", "https://pay.payos.vn/123", "qr_123", "plink_1", "PENDING"),
+                        new PayOsPaymentData(123456L, 99_000, "Nang cap PLUS", "https://pay.payos.vn/123", "qr_123", "plink_1", "PENDING"),
                         "sig_123"));
 
         CheckoutResponse response = subscriptionService.createCheckout(userId, SubscriptionTier.PLUS);
 
         assertThat(response).isNotNull();
-        assertThat(response.amountVnd()).isEqualTo(49_000);
+        assertThat(response.amountVnd()).isEqualTo(99_000);
         assertThat(response.tier()).isEqualTo("PLUS");
         assertThat(response.checkoutUrl()).isEqualTo("https://pay.payos.vn/123");
         var captured = ArgumentCaptor.forClass(PaymentTransactionEntity.class);
         verify(orders).create(captured.capture());
         assertThat(captured.getValue().getCreatedAt()).isEqualTo(LocalDateTime.ofInstant(FIXED_INSTANT, ZoneOffset.UTC));
+        assertThat(captured.getValue().getSubscriptionTier()).isEqualTo(SubscriptionTier.PLUS);
+        assertThat(captured.getValue().getTokenQuotaSnapshot()).isEqualTo(300_000L);
+    }
+
+    @Test
+    @DisplayName("AC-64.10: Credit checkout snapshots the conversion and 15-minute expiry")
+    void creditCheckoutCreatesPayOsOrderWithCurrentSnapshot() {
+        mockActiveUser(1L);
+        when(payOsClient.createPaymentLink(anyLong(), anyInt(), anyString(), anyInt()))
+                .thenReturn(new CreatePaymentLinkResponse("00", "success",
+                        new PayOsPaymentData(123456L, 10_000, "Nap AI Credit",
+                                "https://pay.payos.vn/123", "qr_123", "plink_1", "PENDING"), "sig_123"));
+
+        var response = subscriptionService.createCreditCheckout(1L, 10_000);
+
+        var now = LocalDateTime.ofInstant(FIXED_INSTANT, ZoneOffset.UTC);
+        assertThat(response.amountVnd()).isEqualTo(10_000);
+        assertThat(response.creditAmount()).isEqualByComparingTo("10000");
+        assertThat(response.creditsPer1000VndSnapshot()).isEqualByComparingTo("1000");
+        assertThat(response.expiresAt()).isEqualTo(now.plusMinutes(15));
+        assertThat(response.checkoutUrl()).isEqualTo("https://pay.payos.vn/123");
+
+        var captured = ArgumentCaptor.forClass(PaymentTransactionEntity.class);
+        verify(orders).create(captured.capture());
+        var order = captured.getValue();
+        assertThat(order.getProductType()).isEqualTo(PaymentTransactionEntity.ProductType.AI_CREDIT);
+        assertThat(order.getAmountVnd()).isEqualTo(10_000);
+        assertThat(order.getCreditAmountSnapshot()).isEqualByComparingTo("10000");
+        assertThat(order.getCreditsPer1000VndSnapshot()).isEqualByComparingTo("1000");
+        assertThat(order.getExpiresAt()).isEqualTo(now.plusMinutes(15));
+        verify(payOsClient).createPaymentLink(anyLong(), org.mockito.ArgumentMatchers.eq(10_000),
+                org.mockito.ArgumentMatchers.eq("Nap AI Credit"), anyInt());
+    }
+
+    @Test
+    @DisplayName("AC-64.1: Credit checkout rejects amounts outside the configured range")
+    void creditCheckoutRejectsAmountsBelowMinimumAndAboveMaximum() {
+        mockActiveUser(1L);
+
+        assertThatThrownBy(() -> subscriptionService.createCreditCheckout(1L, 9_999))
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.VALIDATION_FAILED);
+        assertThatThrownBy(() -> subscriptionService.createCreditCheckout(1L, 500_001))
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.VALIDATION_FAILED);
+
+        verifyNoInteractions(payOsClient, orders);
+    }
+
+    @Test
+    @DisplayName("AC-64.6: Failed payOS link creation marks the snapshotted top-up order failed")
+    void creditCheckoutMarksOrderFailedWhenPayOsRejectsLinkCreation() {
+        mockActiveUser(1L);
+        when(payOsClient.createPaymentLink(anyLong(), anyInt(), anyString(), anyInt())).thenReturn(null);
+
+        assertThatThrownBy(() -> subscriptionService.createCreditCheckout(1L, 10_000))
+                .isInstanceOf(AppException.class).hasMessageContaining("liên kết nạp AI Credit");
+
+        var captured = ArgumentCaptor.forClass(PaymentTransactionEntity.class);
+        verify(orders).create(captured.capture());
+        verify(orders).markFailed(captured.getValue().getOrderCode());
+        assertThat(captured.getValue().getStatus()).isEqualTo(PaymentStatus.PENDING);
+        assertThat(captured.getValue().getCreditAmountSnapshot()).isEqualByComparingTo("10000");
     }
 
     @Test
@@ -253,7 +330,7 @@ class SubscriptionServiceTest {
     }
 
     @Test
-    @DisplayName("AC-13.7: Should return PLUS features for active PLUS subscription")
+    @DisplayName("AC-13.7: Should return configured monthly benefits for active PLUS subscription")
     void shouldReturnPlusFeaturesForPlusSubscription() {
         Long userId = 1L;
         mockActiveUser(userId);
@@ -268,8 +345,8 @@ class SubscriptionServiceTest {
         MySubscriptionResponse response = subscriptionService.getMySubscription(userId);
 
         assertThat(response.tier()).isEqualTo("PLUS");
-        assertThat(response.unlockedFeatures()).contains("AI lập thực đơn tuần 7 ngày", "AI lập thực đơn theo dinh dưỡng cá nhân")
-                .doesNotContain("AI đề xuất điều chỉnh dinh dưỡng", "AI hỗ trợ soạn bài viết và công thức", "AI gợi ý biến tấu món chay sáng tạo");
+        assertThat(response.unlockedFeatures()).contains("Hạn mức 300.000 token mỗi tháng", "Model Gemini: Gemini Flash-Lite, Gemini Flash (mặc định)")
+                .noneMatch(feature -> feature.contains("Toàn bộ quyền lợi") || feature.contains("AI lập thực đơn"));
     }
 
     @Test
@@ -322,7 +399,7 @@ class SubscriptionServiceTest {
                 Map.of("orderCode", 123, "amount", 99000, "currency", "VND", "code", "00"), "signed");
         when(payOsClient.verifyWebhook(payload)).thenReturn(true);
         subscriptionService.handlePayOsWebhook(payload);
-        verify(settlement).settle("123", 99000, PaymentStatus.PAID);
+        verify(settlement).settle("123", 99000, PaymentStatus.PAID, null);
     }
 
     @Test

@@ -1,10 +1,11 @@
 package tech.mamxanh.notification.service;
 
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Service;
 
 /**
  * In-app notifications written when an Administrator resolves a Recipe Post report (FR-49).
