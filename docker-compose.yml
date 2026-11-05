@@ -47,6 +47,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:sqlserver://sqlserver:1433;databaseName=MamXanhDB;encrypt=true;trustServerCertificate=true
       SPRING_DATASOURCE_USERNAME: sa
       SPRING_DATASOURCE_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in app/mamxanh-backend/.env}
+      SPRING_FLYWAY_OUT_OF_ORDER: "true"
       MAMXANH_JWT_SECRET: ${MAMXANH_JWT_SECRET:?Set MAMXANH_JWT_SECRET in app/mamxanh-backend/.env}
       MAMXANH_DEMO_PASSWORD: ${MAMXANH_DEMO_PASSWORD:?Set MAMXANH_DEMO_PASSWORD in app/mamxanh-backend/.env}
       AZURE_STORAGE_CONNECTION_STRING: ${AZURE_STORAGE_CONNECTION_STRING:-}

@@ -94,7 +94,8 @@ export function AiChatPage() {
     recipeTitle?.trim() || (recipeId === null ? "" : `công thức #${recipeId}`)
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [executionMode, setExecutionMode] = useState<AiExecutionMode>("CONFIRM")
+  const [executionMode, setExecutionMode] = useState<AiExecutionMode>("CHATBOT")
+  const abortControllerRef = useRef<AbortController | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [sessionExpiry, setSessionExpiry] = useState(Date.now() + 30 * 60 * 1000)
   const previousOwner = useRef(ownerKey)
@@ -147,7 +148,8 @@ export function AiChatPage() {
     setSessionExpiry(saved?.expiresAt ?? Date.now() + 30 * 60 * 1000)
     setRecoveryRequest(pendingAiChatRequest(ownerKey))
     setMessages(saved?.messages ?? [])
-    setExecutionMode(saved?.executionMode ?? "CONFIRM")
+    const canonicalMode: AiExecutionMode = (saved?.executionMode === "AGENT" || saved?.executionMode === "CONFIRM" || saved?.executionMode === "AUTO") ? "AGENT" : "CHATBOT"
+    setExecutionMode(canonicalMode)
     setSessionId(saved?.sessionId ?? null)
     sequenceRef.current = saved?.sequence ?? saved?.messages.reduce((max, item) => Math.max(max, item.id), 0) ?? 0
     setSequence(sequenceRef.current)
@@ -176,7 +178,7 @@ export function AiChatPage() {
       setLoading(false)
       setMessages([])
       setSessionId(null)
-      setExecutionMode("CONFIRM")
+      setExecutionMode("CHATBOT")
       setSequence(0)
     }, Math.max(0, sessionExpiry - Date.now()))
     return () => window.clearTimeout(expiryTimer)
@@ -375,10 +377,19 @@ export function AiChatPage() {
 
   async function stopRun() {
     const clientRequestId = activeRequest.current ?? pendingAiChatRequest(ownerKey)
-    if (!isAuthenticated || !clientRequestId) return
-    await recipesApi.chat({ contextType: "GENERAL", question: "Dừng tác vụ", history: [],
-      ...(sessionId ? { sessionId } : {}), clientRequestId, controlAction: "CANCEL" })
-    setRecoveryRequest(clientRequestId)
+    const cancellation = clientRequestId
+      ? recipesApi.chatCancel(sessionId ?? undefined, !isAuthenticated ? chatGuestViewer() : undefined, clientRequestId)
+          .catch(() => undefined)
+      : Promise.resolve()
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
+    await cancellation
+    setLoading(false)
+    if (clientRequestId && isAuthenticated) {
+      setRecoveryRequest(clientRequestId)
+    }
     setError("Đã yêu cầu dừng. Thao tác ghi đã bắt đầu có thể hoàn tất; hãy kiểm tra kết quả.")
   }
 
@@ -444,8 +455,30 @@ export function AiChatPage() {
       ])
     }
 
+    const assistantId = currentId + 1
+    const abortController = new AbortController()
+    abortControllerRef.current = abortController
+    let streamedTokens = ""
+
+    setMessages((current) => [
+      ...current.map((message) => ({
+        ...message,
+        ...(continuation.confirmationDecision ? { pendingConfirmation: null } : {}),
+        ...(continuation.consentDecision ? { consentRequest: null } : {}),
+      })),
+      {
+        id: assistantId,
+        speaker: "ASSISTANT",
+        content: "",
+        sensitive: revoked ? false : sensitive,
+        recommendations: [],
+        steps: [],
+        sources: [],
+      },
+    ])
+
     try {
-      const response = await recipesApi.chat({
+      const response = await recipesApi.chatStream({
         contextType,
         clientRequestId,
         executionMode,
@@ -470,36 +503,48 @@ export function AiChatPage() {
                 }
               : {}),
           })),
-      })
+      }, {
+        onDelta: (delta) => {
+          streamedTokens += delta
+          setMessages((current) => current.map((msg) =>
+            msg.id === assistantId ? { ...msg, content: streamedTokens } : msg
+          ))
+        },
+        onStep: (step) => {
+          setMessages((current) => current.map((msg) =>
+            msg.id === assistantId ? { ...msg, steps: [...(msg.steps ?? []), step] } : msg
+          ))
+        },
+        onConfirmation: (conf) => {
+          setMessages((current) => current.map((msg) =>
+            msg.id === assistantId ? { ...msg, pendingConfirmation: conf } : msg
+          ))
+        },
+      }, abortController.signal)
+
       if (version !== requestVersion.current) return
       if (response.sessionId) setSessionId(response.sessionId)
       pendingAiChatRequest(ownerKey, null)
       setRecoveryRequest(null)
       setSessionExpiry(response.sessionExpiresAt ? Date.parse(response.sessionExpiresAt) : Date.now() + 30 * 60 * 1000)
-      setMessages((current) => [
-        ...current.map((message) => ({
-          ...message,
-          ...(continuation.confirmationDecision ? { pendingConfirmation: null } : {}),
-          ...(continuation.consentDecision ? { consentRequest: null } : {}),
-        })),
-        {
-          id: currentId + 1,
-          speaker: "ASSISTANT",
-          content: response.answer,
-          sensitive: revoked ? false : sensitive,
-
-          recommendations: response.recommendations ?? [],
-          workflowUrl: response.workflowUrl,
-          steps: response.steps ?? [],
-          pendingConfirmation: response.pendingConfirmation,
-          consentRequest: response.consentRequest,
-          sources: response.sources ?? [],
-          engine: response.engine ?? null,
-          runStatus: response.runStatus ?? null,
-          knowledgeRevision: response.knowledgeRevision ?? null,
-          requestQuestion: normalized,
-        },
-      ])
+      setMessages((current) => current.map((msg) =>
+        msg.id === assistantId
+          ? {
+              ...msg,
+              content: response.answer || streamedTokens,
+              recommendations: response.recommendations ?? [],
+              workflowUrl: response.workflowUrl,
+              steps: response.steps ?? msg.steps ?? [],
+              pendingConfirmation: response.pendingConfirmation ?? msg.pendingConfirmation,
+              consentRequest: response.consentRequest,
+              sources: response.sources ?? [],
+              engine: response.engine ?? null,
+              runStatus: response.runStatus ?? null,
+              knowledgeRevision: response.knowledgeRevision ?? null,
+              requestQuestion: normalized,
+            }
+          : msg
+      ))
 
       const workflowUrl = trustedWorkflowUrl(response.workflowUrl)
       if (workflowUrl) {
@@ -514,6 +559,7 @@ export function AiChatPage() {
         .catch(() => undefined)
       return true
     } catch (cause) {
+      if (abortControllerRef.current?.signal.aborted) return false
       if (version !== requestVersion.current) return
       if (isAuthenticated && sensitive) setRecoveryRequest(clientRequestId)
       else pendingAiChatRequest(ownerKey, null)
@@ -622,7 +668,7 @@ export function AiChatPage() {
     // An edit is a new instruction, never a grant or an approval of the old action.
     if (await decideHumanInput(false)) await send(text, messages, true)
   }
-  const modeLabel = executionMode === "QA" ? "Hỏi đáp" : executionMode === "AUTO" ? "Tự động" : "Có xác nhận"
+  const modeLabel = (executionMode === "CHATBOT" || executionMode === "QA") ? "Chatbot" : "AI Agent"
 
   return (
     <div className="pointer-events-none fixed inset-2 z-50 flex items-end justify-end sm:inset-0 sm:p-5">
@@ -1133,9 +1179,8 @@ export function AiChatPage() {
                 <p className="px-3 py-2 text-xs font-bold uppercase tracking-wide text-ink-muted">Chế độ thực hiện</p>
                 <div role="radiogroup" aria-label="Chế độ thực hiện">
                 {([
-                  { value: "QA", label: "Hỏi đáp", description: "Trả lời và tra cứu, không thay đổi dữ liệu." },
-                  { value: "CONFIRM", label: "Có xác nhận", description: "Xem trước và duyệt trước khi AI thay đổi dữ liệu." },
-                  { value: "AUTO", label: "Tự động", description: "Tự chạy yêu cầu rõ ràng; đăng bài và xóa vẫn hỏi lại." },
+                  { value: "CHATBOT", label: "Chatbot", description: "Hỏi đáp thông minh, trả lời và tra cứu kiến thức không thay đổi dữ liệu." },
+                  { value: "AGENT", label: "AI Agent", description: "Trợ lý tác vụ thông minh, có thể thao tác hệ thống và luôn yêu cầu xác nhận khi ghi dữ liệu." },
                 ] as const).map((mode) => {
                   const selected = executionMode === mode.value
                   return (
@@ -1301,14 +1346,26 @@ export function AiChatPage() {
                 </button>
                 <span className="text-[10px] text-ink-muted">{question.length}/1.000</span>
               </div>
-              <button
-                type="submit"
-                aria-label="Gửi câu hỏi"
-                disabled={loading || hasUnresolvedAssistantAction || !question.trim()}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-on-brand enabled:hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
-              >
-                {loading ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Send className="h-4 w-4" aria-hidden="true" />}
-              </button>
+              {loading ? (
+                <button
+                  type="button"
+                  onClick={() => void stopRun()}
+                  aria-label="Dừng câu trả lời"
+                  title="Dừng câu trả lời"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-stone-200 text-stone-700 hover:bg-stone-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-500"
+                >
+                  <span className="h-3 w-3 rounded-sm bg-stone-700" aria-hidden="true" />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  aria-label="Gửi câu hỏi"
+                  disabled={hasUnresolvedAssistantAction || !question.trim()}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-on-brand enabled:hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+                >
+                  <Send className="h-4 w-4" aria-hidden="true" />
+                </button>
+              )}
             </div>
           </div>
         </form>}

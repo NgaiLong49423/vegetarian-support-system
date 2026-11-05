@@ -36,6 +36,8 @@ public class SecurityConfig {
             "/api/v1/auth/password-resets",
             "/api/v1/auth/password-resets/confirm",
             "/api/v1/recipes/ai/chat",
+            "/api/v1/recipes/ai/chat/stream",
+            "/api/v1/recipes/ai/chat/cancel",
     };
 
     private static final String[] PUBLIC_PAYMENT_POST_ENDPOINTS = {

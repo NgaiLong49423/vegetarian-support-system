@@ -2,15 +2,24 @@ package tech.mamxanh.recipe.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
+import tech.mamxanh.common.exception.AppException;
+import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.recipe.service.AiAssistantExecutionJournal.ActionState;
 import tech.mamxanh.recipe.service.AiAssistantExecutionJournal.JournalEntry;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 class AiAssistantExecutionJournalTest {
 
@@ -101,5 +110,124 @@ class AiAssistantExecutionJournalTest {
         assertThat(entry).isPresent();
         assertThat(entry.get().state()).isEqualTo(ActionState.CANCELLED);
         assertThat(entry.get().errorMessage()).contains("đã bị hủy");
+    }
+
+    @Test
+    void duplicateInFlightReservationThrowsValidationFailed() {
+        long ownerId = 42L;
+        UUID clientRequestId = UUID.randomUUID();
+        String actionId = "delete_shopping_list_1";
+
+        // First reservation succeeds
+        journal.recordReservation(ownerId, clientRequestId, actionId, "delete_shopping_list");
+
+        // Concurrent duplicate reservation with the same key throws validation failed
+        assertThatThrownBy(() -> journal.recordReservation(ownerId, clientRequestId, actionId, "delete_shopping_list"))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("Thao tác đang được xử lý trong một yêu cầu khác");
+    }
+
+    @Test
+    void mismatchedArgumentsHashThrowsValidationFailed() {
+        long ownerId = 42L;
+        UUID clientRequestId = UUID.randomUUID();
+        String actionId = "apply_weekly_menu_1";
+
+        journal.executeWithJournal(ownerId, clientRequestId, actionId, "apply_weekly_menu", "hash_params_version_1",
+                () -> "Applied menu v1");
+
+        // Attempting replay with SAME key but DIFFERENT argumentsHash must be rejected
+        assertThatThrownBy(() -> journal.executeWithJournal(ownerId, clientRequestId, actionId, "apply_weekly_menu", "hash_params_version_2",
+                () -> "Applied menu v2"))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("Tham số của yêu cầu không khớp với bản ghi đã tồn tại");
+    }
+
+    @Test
+    void concurrentThreadsExecutingSameActionOnlyExecuteOnce() throws Exception {
+        long ownerId = 42L;
+        UUID clientRequestId = UUID.randomUUID();
+        String actionId = "delete_shopping_item_1";
+        AtomicInteger invocationCount = new AtomicInteger(0);
+        CountDownLatch readyLatch = new CountDownLatch(2);
+        CountDownLatch startLatch = new CountDownLatch(1);
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            Future<String> f1 = executor.submit(() -> {
+                readyLatch.countDown();
+                startLatch.await();
+                return journal.executeWithJournal(ownerId, clientRequestId, actionId, "delete_shopping_item", () -> {
+                    invocationCount.incrementAndGet();
+                    Thread.sleep(100);
+                    return "Deleted item";
+                });
+            });
+
+            Future<String> f2 = executor.submit(() -> {
+                readyLatch.countDown();
+                startLatch.await();
+                return journal.executeWithJournal(ownerId, clientRequestId, actionId, "delete_shopping_item", () -> {
+                    invocationCount.incrementAndGet();
+                    Thread.sleep(100);
+                    return "Deleted item";
+                });
+            });
+
+            readyLatch.await(5, TimeUnit.SECONDS);
+            startLatch.countDown();
+
+            int successCount = 0;
+            int conflictCount = 0;
+
+            for (Future<String> f : List.of(f1, f2)) {
+                try {
+                    String res = f.get(5, TimeUnit.SECONDS);
+                    if ("Deleted item".equals(res)) {
+                        successCount++;
+                    }
+                } catch (ExecutionException ex) {
+                    if (ex.getCause() instanceof AppException appEx && appEx.errorCode() == ErrorCode.VALIDATION_FAILED) {
+                        conflictCount++;
+                    } else {
+                        throw ex;
+                    }
+                }
+            }
+
+            // Exactly ONE thread executed the action
+            assertThat(invocationCount.get()).isEqualTo(1);
+            assertThat(successCount).isEqualTo(1);
+            assertThat(conflictCount).isEqualTo(1);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void sqlDuplicateKeyHandlingRejectsConcurrentInFlightReservation() {
+        JdbcTemplate mockJdbc = mock(JdbcTemplate.class);
+        PlatformTransactionManager mockTxManager = mock(PlatformTransactionManager.class);
+        AiAssistantExecutionJournal dbJournal = new AiAssistantExecutionJournal(mockJdbc, mockTxManager);
+
+        long ownerId = 100L;
+        UUID clientRequestId = UUID.randomUUID();
+        String actionId = "delete_shopping_list_1";
+        String toolName = "delete_shopping_list";
+
+        // Mock insert throwing DuplicateKeyException
+        doThrow(new DuplicateKeyException("Primary key violation"))
+                .when(mockJdbc).update(contains("INSERT INTO AI_ASSISTANT_ACTION_JOURNAL"), any(), any(), any(), any(), any());
+
+        // Mock select query finding existing RESERVED row
+        when(mockJdbc.queryForList(contains("SELECT arguments_hash"), eq(ownerId), eq(clientRequestId), eq(actionId)))
+                .thenReturn(List.of(Map.of(
+                        "arguments_hash", "some_hash",
+                        "state", "RESERVED"
+                )));
+
+        assertThatThrownBy(() -> dbJournal.recordReservation(ownerId, clientRequestId, actionId, toolName, "some_hash"))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("Thao tác đang được xử lý trong một yêu cầu khác");
     }
 }

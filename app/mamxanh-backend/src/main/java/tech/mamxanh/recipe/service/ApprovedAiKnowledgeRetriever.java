@@ -24,6 +24,12 @@ import java.util.regex.Pattern;
 public class ApprovedAiKnowledgeRetriever {
     private static final Logger LOG = LoggerFactory.getLogger(ApprovedAiKnowledgeRetriever.class);
     private static final Pattern WORDS = Pattern.compile("[\\p{L}\\p{N}]{3,}");
+    private static final Set<String> VIETNAMESE_STOP_WORDS = Set.of(
+            "lam", "sao", "de", "tro", "thanh", "nhu", "the", "nao", "toi", "muon",
+            "co", "gi", "duoc", "khong", "la", "va", "cho", "trong", "ngoai", "ve", "cua", "cac", "nhung",
+            "minh", "ban", "hoi", "voi", "hay", "giup", "tren", "duoi", "truoc", "sau", "giua", "hoac",
+            "neu", "thi", "ma", "tai", "den", "theo"
+    );
 
     private final KnowledgeCatalog catalog;
     private final KnowledgeIndex index;
@@ -58,7 +64,10 @@ public class ApprovedAiKnowledgeRetriever {
             if (searchResult.hits().isEmpty()) {
                 return List.of();
             }
-            List<String> ordered = WORDS.matcher(fold(query)).results().map(java.util.regex.MatchResult::group).toList();
+            List<String> ordered = WORDS.matcher(fold(query)).results()
+                    .map(java.util.regex.MatchResult::group)
+                    .filter(term -> !VIETNAMESE_STOP_WORDS.contains(term))
+                    .toList();
             Set<String> queryTerms = Set.copyOf(ordered);
             if (queryTerms.isEmpty()) {
                 return List.of();
@@ -72,7 +81,8 @@ public class ApprovedAiKnowledgeRetriever {
                 String evidence = String.join(" ", evidenceWords);
                 boolean phrase = ordered.size() <= 1 || java.util.stream.IntStream.range(1, ordered.size())
                         .anyMatch(i -> evidence.contains(ordered.get(i - 1) + " " + ordered.get(i)));
-                return phrase && overlap >= Math.max(2, Math.ceil(queryTerms.size() * 0.5));
+                int requiredOverlap = queryTerms.size() <= 1 ? 1 : Math.max(2, (int) Math.ceil(queryTerms.size() * 0.4));
+                return phrase && overlap >= requiredOverlap;
             }).toList();
 
             if (filteredHits.isEmpty()) {

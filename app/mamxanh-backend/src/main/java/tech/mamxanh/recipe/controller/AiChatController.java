@@ -11,6 +11,8 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import tech.mamxanh.common.config.OpenApiConfig;
 import tech.mamxanh.recipe.dto.request.AiChatRequest;
@@ -66,7 +68,11 @@ public class AiChatController {
             @Valid @RequestBody AiChatRequest request,
             Authentication authentication,
             HttpServletRequest httpRequest) {
-        AiChatRequest effectiveRequest = request;
+        AiChatRequest effectiveRequest = prepareEffectiveRequest(request, authentication, httpRequest);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(service.answer(effectiveRequest));
+    }
+
+    private AiChatRequest prepareEffectiveRequest(AiChatRequest request, Authentication authentication, HttpServletRequest httpRequest) {
         if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
             String guestHeader = httpRequest.getHeader(GuestChatRateLimiter.ID_HEADER);
             String guestId = (guestHeader != null && !guestHeader.isBlank())
@@ -75,13 +81,103 @@ public class AiChatController {
                             ? request.anonymousViewerId().strip()
                             : null);
             guestRateLimiter.check(guestId, httpRequest.getRemoteAddr());
-            // Rate limiting, quota, and temporary-session ownership must use the same Guest identity.
-            effectiveRequest = new AiChatRequest(request.contextType(), request.recipeId(), request.question(),
+            return new AiChatRequest(request.contextType(), request.recipeId(), request.question(),
                     request.history(), guestId, request.sessionId(), request.executionMode(),
                     request.consentDecision(), request.confirmationId(), request.confirmationDecision(),
                     request.clientRequestId(), request.controlAction());
         }
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(service.answer(effectiveRequest));
+        return request;
+    }
+
+    @PostMapping(value = "/stream", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "Ask the vegetarian cooking assistant with real-time SSE streaming",
+            security = {@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH), @SecurityRequirement(name = "")})
+    public org.springframework.web.servlet.mvc.method.annotation.SseEmitter stream(
+            @Valid @RequestBody AiChatRequest request,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        AiChatRequest effectiveRequest = prepareEffectiveRequest(request, authentication, httpRequest);
+        var emitter = new org.springframework.web.servlet.mvc.method.annotation.SseEmitter(120_000L);
+        var cancellationSignal = service.registerStreamCancellation(effectiveRequest);
+        SecurityContext capturedContext = SecurityContextHolder.createEmptyContext();
+        capturedContext.setAuthentication(authentication);
+        java.util.concurrent.atomic.AtomicBoolean terminal = new java.util.concurrent.atomic.AtomicBoolean();
+        Runnable cancelOnDisconnect = () -> {
+            if (!terminal.compareAndSet(false, true)) return;
+            SecurityContext previous = SecurityContextHolder.getContext();
+            SecurityContextHolder.setContext(capturedContext);
+            try {
+                service.answer(asCancellationRequest(effectiveRequest));
+            } catch (RuntimeException cancellationFailure) {
+                org.slf4j.LoggerFactory.getLogger(AiChatController.class).warn(
+                        "Could not stop disconnected AI stream sessionId={}", effectiveRequest.sessionId());
+            } finally {
+                SecurityContextHolder.setContext(previous);
+            }
+        };
+        emitter.onError(ignored -> cancelOnDisconnect.run());
+        emitter.onTimeout(cancelOnDisconnect);
+        emitter.onCompletion(cancelOnDisconnect);
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            SecurityContext previous = SecurityContextHolder.getContext();
+            SecurityContextHolder.setContext(capturedContext);
+            try {
+                service.stream(effectiveRequest, event -> {
+                    if ("complete".equals(event.type()) || "error".equals(event.type())) {
+                        terminal.set(true);
+                    }
+                    try {
+                        emitter.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event()
+                                .name(event.type())
+                                .data(event.data(), org.springframework.http.MediaType.APPLICATION_JSON));
+                    } catch (Exception ex) {
+                        cancelOnDisconnect.run();
+                    }
+                }, cancellationSignal);
+                terminal.set(true);
+                emitter.complete();
+            } catch (Exception failure) {
+                terminal.set(true);
+                try {
+                    emitter.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event()
+                            .name("error")
+                            .data(java.util.Map.of("message", failure.getMessage(), "status", "FAILED"),
+                                    org.springframework.http.MediaType.APPLICATION_JSON));
+                } catch (Exception ignored) {}
+                emitter.completeWithError(failure);
+            } finally {
+                service.releaseStreamCancellation(effectiveRequest, cancellationSignal);
+                SecurityContextHolder.setContext(previous);
+            }
+        });
+        return emitter;
+    }
+
+    private static AiChatRequest asCancellationRequest(AiChatRequest request) {
+        return new AiChatRequest(request.contextType(), request.recipeId(),
+                request.question() != null ? request.question() : "Dừng tác vụ",
+                request.history() != null ? request.history() : java.util.List.of(),
+                request.anonymousViewerId(), request.sessionId(), request.executionMode(),
+                request.consentDecision(), request.confirmationId(), request.confirmationDecision(),
+                request.clientRequestId(), AiChatRequest.ControlAction.CANCEL);
+    }
+
+    @PostMapping("/cancel")
+    @Operation(summary = "Cancel an active AI turn by sessionId or clientRequestId, or cancel a staged confirmation",
+            description = "Send clientRequestId when the stream has not returned a sessionId yet. Cancellation prevents later Agent tool steps; a tool operation already started may finish and committed changes are preserved.",
+            security = {@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH), @SecurityRequirement(name = "")})
+    public ResponseEntity<AiChatResponse> cancel(
+            @Valid @RequestBody AiChatRequest request,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        AiChatRequest effectiveRequest = prepareEffectiveRequest(request, authentication, httpRequest);
+        AiChatRequest cancelRequest = new AiChatRequest(effectiveRequest.contextType(), effectiveRequest.recipeId(),
+                effectiveRequest.question() != null ? effectiveRequest.question() : "Dừng tác vụ",
+                effectiveRequest.history() != null ? effectiveRequest.history() : java.util.List.of(),
+                effectiveRequest.anonymousViewerId(), effectiveRequest.sessionId(), effectiveRequest.executionMode(),
+                effectiveRequest.consentDecision(), effectiveRequest.confirmationId(), effectiveRequest.confirmationDecision(),
+                effectiveRequest.clientRequestId(), AiChatRequest.ControlAction.CANCEL);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(service.answer(cancelRequest));
     }
 
     @DeleteMapping("/sessions/{sessionId}")

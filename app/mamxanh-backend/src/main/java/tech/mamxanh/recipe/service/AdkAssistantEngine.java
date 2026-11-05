@@ -3,6 +3,10 @@ package tech.mamxanh.recipe.service;
 import com.google.adk.agents.LlmAgent;
 import com.google.adk.agents.RunConfig;
 import com.google.adk.events.Event;
+import tech.mamxanh.recipe.dto.response.AiChatStreamEvent;
+import io.reactivex.rxjava3.disposables.Disposable;
+import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
 import com.google.adk.models.BaseLlm;
 import com.google.adk.models.Gemini;
 import com.google.adk.runner.InMemoryRunner;
@@ -44,6 +48,7 @@ import tech.mamxanh.integration.ai.AiUsageEvent;
 import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
 import tech.mamxanh.integration.ai.adk.AdkModelGateway;
 import tech.mamxanh.integration.ai.adk.MemberAccountingPolicy;
+import tech.mamxanh.integration.ai.adk.ModelThinkingPolicy;
 import tech.mamxanh.recipe.dto.request.AiChatRequest;
 import tech.mamxanh.recipe.dto.request.AiChatRequest.ConfirmationDecision;
 import tech.mamxanh.recipe.dto.request.AiChatRequest.ConsentAction;
@@ -63,7 +68,9 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Clock;
+import java.util.HexFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -231,18 +238,23 @@ public class AdkAssistantEngine implements AutoCloseable {
             state.consentRevoked = false;
         }
 
-        ExecutionMode mode = request.executionMode() == null ? ExecutionMode.CONFIRM : request.executionMode();
+        ExecutionMode mode = request.executionMode() == null ? ExecutionMode.CHATBOT : request.executionMode();
 
         // 2. Handle Confirmation Decision (Human-in-the-loop resume/reject)
         if (request.confirmationDecision() != null || request.confirmationId() != null) {
             return handleConfirmationDecision(request, userId, owner, auth, sessionHandle, state, mode);
         }
 
-        // If there was an unhandled pending confirmation and user asks a new question, discard the pending confirmation
+        // Keep a staged write until the user explicitly decides or switches to read-only CHATBOT mode.
         if (state.pendingConfirmation != null) {
-            sessionStore.discardPending(sessionId, owner);
-            state.pendingConfirmation = null;
-            state.serverPendingAction = null;
+            if (request.executionMode() == ExecutionMode.CHATBOT || request.executionMode() == ExecutionMode.QA) {
+                sessionStore.discardPending(sessionId, owner);
+                state.pendingConfirmation = null;
+                state.serverPendingAction = null;
+            } else {
+                throw new AppException(ErrorCode.VALIDATION_FAILED,
+                        "Hãy xác nhận, từ chối hoặc chuyển sang CHATBOT trước khi gửi yêu cầu mới.");
+            }
         }
 
         // 3. Check Personal Data Consent requirements
@@ -261,14 +273,40 @@ public class AdkAssistantEngine implements AutoCloseable {
         }
 
         // 4. Preflight Scope Classification (FR-51 / BR-09 / BR-41)
+        long classificationStarted = System.nanoTime();
         AiChatResponse refusal = classify(request, sessionId, mode, userId);
+        LOG.info("ADK chat classification sessionId={} elapsedMs={} outcome={}", sessionId,
+                elapsedMillis(classificationStarted), refusal == null ? "IN_SCOPE" : refusal.runStatus());
         if (refusal != null) {
             return refusal;
         }
 
         // 5. Execute Turn via ADK Two-Way Agentic Loop
+        List<Source> sources = new ArrayList<>();
+        String effectivePromptText = request.question();
+        if (request.contextType() == AiChatRequest.ContextType.RECIPE && request.recipeId() != null) {
+            AiAssistantToolRegistry.ToolResult recipeContext = toolRegistry.execute("get_recipe_detail", Map.of("recipeId", request.recipeId()));
+            try {
+                effectivePromptText = request.question() + "\n\n[NGỮ CẢNH CÔNG THỨC CÔNG KHAI HIỆN TẠI]:\n"
+                        + mapper.writeValueAsString(recipeContext.result());
+            } catch (JacksonException serializationFailure) {
+                throw new IllegalStateException("Không thể tạo ngữ cảnh công thức công khai.", serializationFailure);
+            }
+        }
+        if (mode.isChatbot()) {
+            List<Source> retrieved = knowledge != null ? knowledge.retrieve(request.question()) : List.of();
+            if (!retrieved.isEmpty()) {
+                sources.addAll(retrieved);
+                StringBuilder kbContext = new StringBuilder();
+                kbContext.append(request.question()).append("\n\n[TÀI LIỆU NỘI BỘ THAM KHẢO]:\n");
+                for (Source s : retrieved) {
+                    kbContext.append("- ").append(s.title()).append(": ").append(s.excerpt()).append("\n");
+                }
+                effectivePromptText = kbContext.toString();
+            }
+        }
         return runAdkTurn(request, userId, owner, auth, sessionHandle, state, mode, activeConsents,
-                Content.fromParts(Part.fromText(request.question())), false, null);
+                Content.fromParts(Part.fromText(effectivePromptText)), false, null, new ArrayList<>(), sources);
     }
 
     private AiChatResponse runAdkTurn(
@@ -302,16 +340,19 @@ public class AdkAssistantEngine implements AutoCloseable {
             List<AssistantStep> initialSteps,
             List<Source> initialSources) {
 
-        String resolvedModel = resolveModel(userId);
+        String resolvedModel = resolveModel(userId, request.anonymousViewerId());
         List<AssistantStep> steps = initialSteps != null ? initialSteps : new ArrayList<>();
         List<Source> sources = initialSources != null ? initialSources : new ArrayList<>();
         AtomicReference<PendingConfirmation> stagedConfirmation = new AtomicReference<>();
+        AtomicReference<Set<ConsentScope>> requiredConsentScopes = new AtomicReference<>(Set.of());
+        String role = userId == null ? "GUEST" : auth.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "");
 
         try {
-            String role = userId == null ? "GUEST" : auth.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "");
-            state.currentTurn.set(new EngineSessionState.TurnContext(
-                    auth, mode, activeConsents, steps, sources, stagedConfirmation, request.clientRequestId()));
-            state.ensureRunner(resolvedModel, role);
+            EngineSessionState.TurnContext turnContext = new EngineSessionState.TurnContext(
+                    auth, mode, activeConsents, steps, sources, stagedConfirmation, request.clientRequestId(),
+                    approvalResume, approvedConfirmationCallId, null, new AiChatCancellationSignal(), requiredConsentScopes);
+            state.currentTurn.set(turnContext);
+            state.ensureRunner(resolvedModel, role, mode);
         } catch (RuntimeException unavailable) {
             LOG.warn("Failed to initialize ADK runner: {}", unavailable.getMessage());
             return buildResponse(request, sessionHandle.id(), mode, "FAILED", List.of(), List.of(), null, null,
@@ -323,6 +364,7 @@ public class AdkAssistantEngine implements AutoCloseable {
                     "Phiên trợ lý đang xử lý một lượt chạy khác. Vui lòng đợi lượt hiện tại hoàn tất.");
         }
 
+        long runStarted = System.nanoTime();
         List<Event> emittedEvents;
         try {
             emittedEvents = state.runner.runAsync(owner, state.adkSessionId, inputContent,
@@ -331,11 +373,22 @@ public class AdkAssistantEngine implements AutoCloseable {
                             .flatMap(ignored -> Flowable.error(new java.util.concurrent.TimeoutException("Run deadline exceeded"))))
                     .toList().blockingGet();
         } catch (RuntimeException failure) {
-            LOG.warn("ADK turn execution failed: {}", failure.getMessage());
+            LOG.warn("ADK turn execution failed sessionId={} elapsedMs={} toolSteps={} cause={}",
+                    sessionHandle.id(), elapsedMillis(runStarted), steps.size(),
+                    isTimeout(failure) ? "TIMEOUT" : failure.getClass().getSimpleName());
             state.busy.set(false);
             return handleRunFailure(request, sessionHandle.id(), mode, steps, sources, failure);
         } finally {
             state.busy.set(false);
+        }
+        LOG.info("ADK turn completed sessionId={} elapsedMs={} toolSteps={}",
+                sessionHandle.id(), elapsedMillis(runStarted), steps.size());
+
+        Set<ConsentScope> missingScopes = requiredConsentScopes.get();
+        if (!missingScopes.isEmpty()) {
+            return buildResponse(request, sessionHandle.id(), mode, "AWAITING_CONSENT",
+                    steps, sources, new ConsentRequest(List.copyOf(missingScopes), "Google Gemini"), null,
+                    "Để tiếp tục thao tác, vui lòng đồng ý đúng phạm vi dữ liệu được yêu cầu.");
         }
 
         // Check if a tool staged a confirmation in CONFIRM mode
@@ -357,14 +410,6 @@ public class AdkAssistantEngine implements AutoCloseable {
             }
         }
 
-        // Grounding with knowledge base if no tools were invoked
-        if (steps.isEmpty()) {
-            List<Source> retrievedSources = knowledge.retrieve(request.question());
-            if (!retrievedSources.isEmpty()) {
-                sources.addAll(retrievedSources);
-            }
-        }
-
         String verifiedAnswer = verifier != null ? verifier.verify(answer, mode, steps, null) : answer;
         return buildResponse(request, sessionHandle.id(), mode, "COMPLETED", steps, sources, null, null, verifiedAnswer);
     }
@@ -378,69 +423,91 @@ public class AdkAssistantEngine implements AutoCloseable {
             EngineSessionState state,
             ExecutionMode mode) {
 
-        AiAssistantSessionStore.PendingPlan storePlan = sessionStore.takePending(sessionHandle.id(), owner, request.confirmationId());
-        ServerPendingAction pendingAction = state.serverPendingAction;
-        PendingConfirmation pending = state.pendingConfirmation;
-
-        if (request.confirmationId() == null || request.confirmationDecision() == null
-                || (pendingAction == null && storePlan == null)
-                || (pendingAction != null && !pendingAction.confirmationId().equals(request.confirmationId()))
-                || (pendingAction != null && clock.instant().isAfter(pendingAction.expiresAt()))
-                || (storePlan != null && !storePlan.id().equals(request.confirmationId()))) {
-            sessionStore.discardPending(sessionHandle.id(), owner);
-            state.pendingConfirmation = null;
-            state.serverPendingAction = null;
-            throw new AppException(ErrorCode.VALIDATION_FAILED, "Yêu cầu xác nhận không hợp lệ hoặc đã hết hạn.");
-        }
-
-        state.pendingConfirmation = null;
-        state.serverPendingAction = null;
-
         String toolName;
         Map<String, Object> arguments;
         String actionId;
         long ownerId;
         UUID effectiveRequestId;
+        UUID confirmationId = request.confirmationId();
 
-        if (pendingAction != null) {
-            toolName = pendingAction.toolName();
-            arguments = pendingAction.immutableArguments();
-            actionId = pendingAction.actionId();
-            ownerId = pendingAction.userId() != null ? pendingAction.userId() : (userId != null ? userId : 0L);
-            effectiveRequestId = pendingAction.clientRequestId() != null ? pendingAction.clientRequestId() : (request.clientRequestId() != null ? request.clientRequestId() : sessionHandle.id());
-        } else {
-            var act = storePlan.actions().get(0);
-            toolName = act.tool();
-            arguments = act.arguments();
-            actionId = toolName + "_1";
-            ownerId = userId != null ? userId : 0L;
-            effectiveRequestId = request.clientRequestId() != null ? request.clientRequestId() : sessionHandle.id();
-        }
+        synchronized (state) {
+            AiAssistantSessionStore.PendingPlan storePlan = sessionStore.takePending(sessionHandle.id(), owner, confirmationId);
+            ServerPendingAction pendingAction = state.serverPendingAction;
 
-        if (arguments == null) {
-            throw new AppException(ErrorCode.VALIDATION_FAILED, "Tham số của thao tác cần xác nhận không tồn tại.");
-        }
-
-        if (request.confirmationDecision() == ConfirmationDecision.REJECT) {
-            if (journal != null) {
-
-
-                journal.cancel(ownerId, effectiveRequestId, actionId);
+            if (confirmationId == null || request.confirmationDecision() == null
+                    || (pendingAction == null && storePlan == null)
+                    || (pendingAction != null && !pendingAction.confirmationId().equals(confirmationId))
+                    || (pendingAction != null && clock.instant().isAfter(pendingAction.expiresAt()))
+                    || (storePlan != null && !storePlan.id().equals(confirmationId))) {
+                sessionStore.discardPending(sessionHandle.id(), owner);
+                state.pendingConfirmation = null;
+                state.serverPendingAction = null;
+                throw new AppException(ErrorCode.VALIDATION_FAILED, "Yêu cầu xác nhận không hợp lệ hoặc đã hết hạn.");
             }
-            return buildResponse(request, sessionHandle.id(), mode, "COMPLETED",
-                    List.of(), List.of(), null, null, "Đã hủy thao tác theo yêu cầu của bạn.");
+
+            if (pendingAction != null) {
+                toolName = pendingAction.toolName();
+                arguments = pendingAction.immutableArguments();
+                actionId = pendingAction.actionId();
+                ownerId = pendingAction.userId() != null ? pendingAction.userId() : (userId != null ? userId : 0L);
+                effectiveRequestId = pendingAction.clientRequestId() != null ? pendingAction.clientRequestId() : (request.clientRequestId() != null ? request.clientRequestId() : sessionHandle.id());
+            } else {
+                var act = storePlan.actions().get(0);
+                toolName = act.tool();
+                arguments = act.arguments();
+                actionId = toolName + "_1";
+                ownerId = userId != null ? userId : 0L;
+                effectiveRequestId = request.clientRequestId() != null ? request.clientRequestId() : sessionHandle.id();
+            }
+
+            if (arguments == null) {
+                sessionStore.discardPending(sessionHandle.id(), owner);
+                state.pendingConfirmation = null;
+                state.serverPendingAction = null;
+                throw new AppException(ErrorCode.VALIDATION_FAILED, "Tham số của thao tác cần xác nhận không tồn tại.");
+            }
+
+            if (request.confirmationDecision() == ConfirmationDecision.REJECT) {
+                sessionStore.markPendingRejected(sessionHandle.id(), owner, confirmationId);
+                state.pendingConfirmation = null;
+                state.serverPendingAction = null;
+                if (journal != null) {
+                    journal.cancel(ownerId, effectiveRequestId, actionId);
+                }
+                return buildResponse(request, sessionHandle.id(), mode, "COMPLETED",
+                        List.of(), List.of(), null, null, "Đã hủy thao tác theo yêu cầu của bạn.");
+            }
         }
+
+        // Calculate argument hash for journal idempotency
+        String argsJson = "";
+        try {
+            argsJson = mapper.writeValueAsString(arguments);
+        } catch (Exception ignored) {
+        }
+        String argumentsHash = hash(actionId + ":" + toolName + ":" + argsJson);
 
         // Execute the confirmed tool directly on backend
         int stepIndex = 1;
-
-
-        // actionId already initialized above
-        AiAssistantToolRegistry.ToolResult toolResult = journal != null
-                ? journal.executeWithJournal(ownerId, effectiveRequestId, actionId, toolName, () -> toolRegistry.execute(toolName, arguments))
-                : toolRegistry.execute(toolName, arguments);
-
-
+        AiAssistantToolRegistry.ToolResult toolResult;
+        try {
+            toolResult = journal != null
+                    ? journal.executeWithJournal(ownerId, effectiveRequestId, actionId, toolName, argumentsHash, () -> toolRegistry.execute(toolName, arguments))
+                    : toolRegistry.execute(toolName, arguments);
+            sessionStore.markPendingExecuted(sessionHandle.id(), owner, confirmationId);
+        } catch (Exception failure) {
+            sessionStore.markPendingFailed(sessionHandle.id(), owner, confirmationId);
+            LOG.warn("Confirmed tool execution failed for tool={}: {}", toolName, failure.getMessage());
+            if (failure instanceof AppException appEx) {
+                throw appEx;
+            }
+            throw new AppException(ErrorCode.AI_RESPONSE_INVALID, "Thao tác không thể hoàn tất: " + failure.getMessage());
+        } finally {
+            synchronized (state) {
+                state.pendingConfirmation = null;
+                state.serverPendingAction = null;
+            }
+        }
 
         List<AssistantStep> steps = new ArrayList<>();
         Map<String, Object> resultMap = new LinkedHashMap<>();
@@ -460,7 +527,7 @@ public class AdkAssistantEngine implements AutoCloseable {
                         .build())
                 .build());
 
-        return runAdkTurn(request, userId, owner, auth, sessionHandle, state, ExecutionMode.QA,
+        return runAdkTurn(request, userId, owner, auth, sessionHandle, state, mode,
                 sessionHandle.consentScopes(), toolResultContent, true, toolName, steps, sources);
     }
 
@@ -517,19 +584,343 @@ public class AdkAssistantEngine implements AutoCloseable {
         }
     }
 
-    public AiChatResponse cancel(AiChatRequest request) {
-        if (request == null || request.sessionId() == null) {
-            throw new AppException(ErrorCode.VALIDATION_FAILED, "Cần sessionId để dừng lượt chạy.");
+    public void stream(AiChatRequest request, Consumer<AiChatStreamEvent> consumer) {
+        stream(request, consumer, new AiChatCancellationSignal());
+    }
+
+    public void stream(AiChatRequest request, Consumer<AiChatStreamEvent> consumer,
+            AiChatCancellationSignal cancellationSignal) {
+        if (request == null) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "Yêu cầu không được để trống.");
         }
+        if (consumer == null) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "Bộ nhận sự kiện không được để trống.");
+        }
+        AiChatCancellationSignal effectiveCancellationSignal = cancellationSignal == null
+                ? new AiChatCancellationSignal() : cancellationSignal;
+        if (effectiveCancellationSignal.isCancelled()) {
+            consumer.accept(AiChatStreamEvent.complete(buildResponse(request, request.sessionId(), request.executionMode(),
+                    "STOPPED", List.of(), List.of(), null, null,
+                    "Đã dừng lượt chạy theo yêu cầu của bạn.")));
+            return;
+        }
+
         Long userId = users.findAuthenticatedUserId().isPresent() ? users.requireActiveMember().id() : null;
         String owner = userId == null ? "guest:" + request.anonymousViewerId() : "user:" + userId;
-        sessionStore.discardPending(request.sessionId(), owner);
-        EngineSessionState state = engineSessions.get(request.sessionId());
+        String role = userId == null ? "GUEST" : users.requireActiveMember().role().name();
+        Authentication auth = createAuthentication(userId, role);
+
+        evictExpiredSessions();
+
+        var sessionHandle = request.sessionId() == null
+                ? sessionStore.open(null, owner, ENGINE)
+                : sessionStore.open(request.sessionId(), owner, ENGINE);
+        UUID sessionId = sessionHandle.id();
+
+        Instant initialExpiresAt = sessionHandle.expiresAt();
+        EngineSessionState state = engineSessions.computeIfAbsent(sessionId,
+                id -> new EngineSessionState(id, userId, owner, auth, initialExpiresAt));
+        state.expiresAt = sessionHandle.expiresAt();
+
+        // 1. Consent Revocation check
+        Set<ConsentScope> activeConsents = new HashSet<>(sessionHandle.consentScopes());
+        if (request.consentDecision() != null) {
+            var decision = request.consentDecision();
+            Set<ConsentScope> submitted = Set.copyOf(decision.scopes() == null ? List.of() : decision.scopes());
+            sessionHandle = sessionStore.applyConsent(sessionId, owner,
+                    decision.action() == ConsentAction.GRANT, submitted);
+            activeConsents = new HashSet<>(sessionHandle.consentScopes());
+            state.expiresAt = sessionHandle.expiresAt();
+            if (decision.action() == ConsentAction.REVOKE) {
+                state.consentRevoked = true;
+                sessionStore.discardPending(sessionId, owner);
+                state.pendingConfirmation = null;
+                state.serverPendingAction = null;
+                AiChatResponse response = buildResponse(request, sessionId, request.executionMode(), "CONSENT_REVOKED",
+                        List.of(), List.of(), null, null,
+                        "Đã thu hồi sự đồng ý dữ liệu; những lượt tiếp theo sẽ không gửi dữ liệu này tới Google Gemini.");
+                consumer.accept(AiChatStreamEvent.complete(response));
+                return;
+            }
+            state.consentRevoked = false;
+        }
+
+        ExecutionMode mode = request.executionMode() == null ? ExecutionMode.CHATBOT : request.executionMode();
+
+        // 2. Handle Confirmation Decision (Human-in-the-loop resume/reject)
+        if (request.confirmationDecision() != null || request.confirmationId() != null) {
+            AiChatResponse resp = handleConfirmationDecision(request, userId, owner, auth, sessionHandle, state, mode);
+            consumer.accept(AiChatStreamEvent.complete(resp));
+            return;
+        }
+
+        // Keep a staged write until the user explicitly decides or switches to read-only CHATBOT mode.
+        if (state.pendingConfirmation != null) {
+            if (request.executionMode() == ExecutionMode.CHATBOT || request.executionMode() == ExecutionMode.QA) {
+                sessionStore.discardPending(sessionId, owner);
+                state.pendingConfirmation = null;
+                state.serverPendingAction = null;
+            } else {
+                consumer.accept(AiChatStreamEvent.error(
+                        "Hãy xác nhận, từ chối hoặc chuyển sang CHATBOT trước khi gửi yêu cầu mới.", "VALIDATION_FAILED"));
+                return;
+            }
+        }
+
+        // 3. Check Personal Data Consent requirements
+        String userHistory = request.history() == null ? "" : request.history().stream()
+                .filter(turn -> turn.speaker() == Speaker.USER && turn.content() != null)
+                .map(AiChatRequest.Turn::content)
+                .reduce("", (a, b) -> a + " " + b);
+        ConsentCategory detectedPersonalCategory = personalCategory(request.question() + " " + userHistory);
+        if (detectedPersonalCategory != null) {
+            ConsentScope requiredScope = new ConsentScope(detectedPersonalCategory, ConsentPurpose.AI_CHAT);
+            if (!activeConsents.contains(requiredScope)) {
+                AiChatResponse resp = buildResponse(request, sessionId, mode, "AWAITING_CONSENT",
+                        List.of(), List.of(), new ConsentRequest(List.of(requiredScope), "Google Gemini"), null,
+                        "Để gửi nội dung có dữ liệu cá nhân tới Google Gemini, vui lòng đồng ý đúng phạm vi trước.");
+                consumer.accept(AiChatStreamEvent.complete(resp));
+                return;
+            }
+        }
+
+        // 4. Preflight Scope Classification (FR-51 / BR-09 / BR-41)
+        long classificationStarted = System.nanoTime();
+        AiChatResponse refusal = classify(request, sessionId, mode, userId);
+        LOG.info("ADK chat classification sessionId={} elapsedMs={} outcome={}", sessionId,
+                elapsedMillis(classificationStarted), refusal == null ? "IN_SCOPE" : refusal.runStatus());
+        if (refusal != null) {
+            consumer.accept(AiChatStreamEvent.complete(refusal));
+            return;
+        }
+        if (effectiveCancellationSignal.isCancelled()) {
+            consumer.accept(AiChatStreamEvent.complete(buildResponse(request, sessionId, mode, "STOPPED",
+                    List.of(), List.of(), null, null, "Đã dừng lượt chạy theo yêu cầu của bạn.")));
+            return;
+        }
+
+        // 5. Execute Turn via ADK Two-Way Agentic Loop with Streaming
+        List<Source> sources = new ArrayList<>();
+        String effectivePromptText = request.question();
+        if (mode.isChatbot()) {
+            List<Source> retrieved = knowledge != null ? knowledge.retrieve(request.question()) : List.of();
+            if (!retrieved.isEmpty()) {
+                sources.addAll(retrieved);
+                StringBuilder kbContext = new StringBuilder();
+                kbContext.append(request.question()).append("\n\n[TÀI LIỆU NỘI BỘ THAM KHẢO]:\n");
+                for (Source s : retrieved) {
+                    kbContext.append("- ").append(s.title()).append(": ").append(s.excerpt()).append("\n");
+                }
+                effectivePromptText = kbContext.toString();
+            }
+        }
+
+        runAdkTurnStream(request, userId, owner, auth, sessionHandle, state, mode, activeConsents,
+                Content.fromParts(Part.fromText(effectivePromptText)), false, null, new ArrayList<>(), sources, consumer,
+                effectiveCancellationSignal);
+    }
+
+    private void runAdkTurnStream(
+            AiChatRequest request,
+            Long userId,
+            String owner,
+            Authentication auth,
+            AiAssistantSessionStore.SessionHandle sessionHandle,
+            EngineSessionState state,
+            ExecutionMode mode,
+            Set<ConsentScope> activeConsents,
+            Content inputContent,
+            boolean approvalResume,
+            String approvedConfirmationCallId,
+            List<AssistantStep> initialSteps,
+            List<Source> initialSources,
+            Consumer<AiChatStreamEvent> consumer,
+            AiChatCancellationSignal cancellationSignal) {
+
+        String resolvedModel = resolveModel(userId, request.anonymousViewerId());
+        List<AssistantStep> steps = initialSteps != null ? initialSteps : new ArrayList<>();
+        List<Source> sources = initialSources != null ? initialSources : new ArrayList<>();
+        AtomicReference<PendingConfirmation> stagedConfirmation = new AtomicReference<>();
+        AtomicReference<Set<ConsentScope>> requiredConsentScopes = new AtomicReference<>(Set.of());
+
+        try {
+            String role = userId == null ? "GUEST" : auth.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "");
+            state.currentTurn.set(new EngineSessionState.TurnContext(
+                    auth, mode, activeConsents, steps, sources, stagedConfirmation, request.clientRequestId(),
+                    approvalResume, approvedConfirmationCallId,
+                    step -> consumer.accept(AiChatStreamEvent.step(step)), cancellationSignal, requiredConsentScopes));
+            state.ensureRunner(resolvedModel, role, mode);
+        } catch (RuntimeException unavailable) {
+            LOG.warn("Failed to initialize ADK runner: {}", unavailable.getMessage());
+            AiChatResponse resp = buildResponse(request, sessionHandle.id(), mode, "FAILED", List.of(), List.of(), null, null,
+                    "Không thể khởi tạo AI với model hoặc cấu hình hiện tại. Vui lòng thử lại sau.");
+            consumer.accept(AiChatStreamEvent.complete(resp));
+            return;
+        }
+
+        if (!state.busy.compareAndSet(false, true)) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED,
+                    "Phiên trợ lý đang xử lý một lượt chạy khác. Vui lòng đợi lượt hiện tại hoàn tất.");
+        }
+
+        long runStarted = System.nanoTime();
+        List<Event> emittedEvents = new ArrayList<>();
+        StringBuilder streamedText = new StringBuilder();
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<Throwable> runFailure = new AtomicReference<>();
+        state.activeLatch = latch;
+        state.turnCancelled.set(cancellationSignal.isCancelled());
+        if (cancellationSignal.isCancelled()) {
+            state.busy.set(false);
+            consumer.accept(AiChatStreamEvent.complete(buildResponse(request, sessionHandle.id(), mode, "STOPPED",
+                    List.of(), List.of(), null, null, "Đã dừng lượt chạy theo yêu cầu của bạn.")));
+            return;
+        }
+
+        Flowable<Event> flow = state.runner.runAsync(owner, state.adkSessionId, inputContent,
+                RunConfig.builder().maxLlmCalls(MAX_LLM_CALLS).toolExecutionMode(RunConfig.ToolExecutionMode.SEQUENTIAL).build())
+                .takeUntil(Flowable.timer(RUN_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)
+                        .flatMap(ignored -> Flowable.error(new java.util.concurrent.TimeoutException("Run deadline exceeded"))));
+
+        Disposable disposable = flow.subscribe(
+                event -> {
+                    emittedEvents.add(event);
+                    if (event.content().isPresent()) {
+                        Content content = event.content().get();
+                        if (content.parts().isPresent()) {
+                            for (Part part : content.parts().get()) {
+                                if (part.text().isPresent() && !part.text().get().isBlank()) {
+                                    String text = part.text().get();
+                                    streamedText.append(text);
+                                    consumer.accept(AiChatStreamEvent.delta(text));
+                                }
+                            }
+                        }
+                    }
+                },
+                error -> {
+                    runFailure.set(error);
+                    latch.countDown();
+                },
+                latch::countDown
+        );
+
+        state.activeDisposable = disposable;
+        if (cancellationSignal.isCancelled()) {
+            disposable.dispose();
+            latch.countDown();
+        }
+
+        try {
+            latch.await();
+        } catch (InterruptedException ie) {
+            disposable.dispose();
+            Thread.currentThread().interrupt();
+        } finally {
+            state.busy.set(false);
+            state.activeDisposable = null;
+            state.activeLatch = null;
+        }
+
+        if (state.turnCancelled.get()) {
+            AiChatResponse stopped = buildResponse(request, sessionHandle.id(), mode, "STOPPED",
+                    steps, sources, null, null, "Đã dừng lượt chạy theo yêu cầu của bạn.");
+            consumer.accept(AiChatStreamEvent.complete(stopped));
+            return;
+        }
+
+        if (runFailure.get() != null) {
+            Throwable failure = runFailure.get();
+            LOG.warn("ADK turn streaming failed sessionId={} elapsedMs={} toolSteps={} cause={}",
+                    sessionHandle.id(), elapsedMillis(runStarted), steps.size(),
+                    isTimeout(failure) ? "TIMEOUT" : failure.getClass().getSimpleName());
+            AiChatResponse failureResp = handleRunFailure(request, sessionHandle.id(), mode, steps, sources,
+                    failure instanceof RuntimeException re ? re : new RuntimeException(failure));
+            consumer.accept(AiChatStreamEvent.complete(failureResp));
+            return;
+        }
+
+        LOG.info("ADK turn stream completed sessionId={} elapsedMs={} toolSteps={}",
+                sessionHandle.id(), elapsedMillis(runStarted), steps.size());
+
+        Set<ConsentScope> missingScopes = requiredConsentScopes.get();
+        if (!missingScopes.isEmpty()) {
+            AiChatResponse response = buildResponse(request, sessionHandle.id(), mode, "AWAITING_CONSENT",
+                    steps, sources, new ConsentRequest(List.copyOf(missingScopes), "Google Gemini"), null,
+                    "Để tiếp tục thao tác, vui lòng đồng ý đúng phạm vi dữ liệu được yêu cầu.");
+            consumer.accept(AiChatStreamEvent.complete(response));
+            return;
+        }
+
+        // Check if a tool staged a confirmation
+        PendingConfirmation pending = stagedConfirmation.get();
+        if (pending != null) {
+            state.pendingConfirmation = pending;
+            AiChatResponse resp = buildResponse(request, sessionHandle.id(), mode, "AWAITING_CONFIRMATION",
+                    steps, sources, null, pending,
+                    verifier != null ? verifier.verify("Mình đã chuẩn bị thao tác \"" + pending.proposedListName() + "\". Bạn vui lòng kiểm tra và bấm Xác nhận để hoàn tất.", mode, steps, pending) : "Mình đã chuẩn bị thao tác \"" + pending.proposedListName() + "\". Bạn vui lòng kiểm tra và bấm Xác nhận để hoàn tất.");
+            consumer.accept(AiChatStreamEvent.confirmation(pending));
+            consumer.accept(AiChatStreamEvent.complete(resp));
+            return;
+        }
+
+        // Extract Gemini final natural language answer
+        String answer = extractFinalAnswer(emittedEvents);
+        if (answer.isBlank() && streamedText.length() > 0) {
+            answer = streamedText.toString().strip();
+        }
+        if (answer.isBlank()) {
+            if (!steps.isEmpty()) {
+                answer = steps.getLast().summary() != null ? steps.getLast().summary() : "Thao tác đã được thực hiện thành công.";
+            } else {
+                answer = "Mình đã xử lý yêu cầu của bạn.";
+            }
+        }
+
+        String verifiedAnswer = verifier != null ? verifier.verify(answer, mode, steps, null) : answer;
+        AiChatResponse response = buildResponse(request, sessionHandle.id(), mode, "COMPLETED", steps, sources, null, null, verifiedAnswer);
+        consumer.accept(AiChatStreamEvent.complete(response));
+    }
+
+    public AiChatResponse cancel(AiChatRequest request) {
+        return cancel(request, null);
+    }
+
+    public AiChatResponse cancel(AiChatRequest request, AiChatCancellationSignal cancellationSignal) {
+        if (request == null || (request.sessionId() == null && request.clientRequestId() == null)) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "Cần sessionId hoặc clientRequestId để dừng lượt chạy.");
+        }
+        if (cancellationSignal != null) cancellationSignal.cancel();
+        Long userId = users.findAuthenticatedUserId().isPresent() ? users.requireActiveMember().id() : null;
+        String owner = userId == null ? "guest:" + request.anonymousViewerId() : "user:" + userId;
+        UUID activeSessionId = request.sessionId();
+        EngineSessionState state = activeSessionId == null ? null : engineSessions.get(activeSessionId);
+        if (state != null && state.busy.get() && request.clientRequestId() != null) {
+            EngineSessionState.TurnContext turn = state.currentTurn.get();
+            if (turn != null && !request.clientRequestId().equals(turn.clientRequestId())) {
+                throw new AppException(ErrorCode.VALIDATION_FAILED, "Yêu cầu dừng không khớp với lượt đang chạy.");
+            }
+        }
+        if (state == null && request.clientRequestId() != null) {
+            state = engineSessions.values().stream()
+                    .filter(candidate -> candidate.owner.equals(owner))
+                    .filter(candidate -> {
+                        EngineSessionState.TurnContext turn = candidate.currentTurn.get();
+                        return turn != null && request.clientRequestId().equals(turn.clientRequestId());
+                    })
+                    .findFirst().orElse(null);
+            if (state != null) activeSessionId = state.sessionId;
+        }
+        if (state != null && !state.owner.equals(owner)) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "Phiên trợ lý không hợp lệ hoặc đã hết hạn.");
+        }
+        if (activeSessionId != null) sessionStore.discardPending(activeSessionId, owner);
         if (state != null) {
+            state.cancelActiveTurn();
             state.pendingConfirmation = null;
             state.serverPendingAction = null;
         }
-        return buildResponse(request, request.sessionId(), request.executionMode(), "STOPPED",
+        return buildResponse(request, activeSessionId, request.executionMode(), "STOPPED",
                 List.of(), List.of(), null, null, "Đã dừng lượt chạy theo yêu cầu của bạn.");
     }
 
@@ -568,9 +959,13 @@ public class AdkAssistantEngine implements AutoCloseable {
         });
     }
 
-    private String resolveModel(Long userId) {
-        String resolved = chatSettings.resolve(userId, null);
-        return resolved == null || resolved.isBlank() ? AiTokenUsage.MODEL : resolved;
+    private String resolveModel(Long userId, String anonymousViewerId) {
+        try {
+            String resolved = chatSettings.resolve(userId, anonymousViewerId);
+            return resolved == null || resolved.isBlank() ? AiTokenUsage.MODEL : resolved;
+        } catch (Exception e) {
+            return AiTokenUsage.MODEL;
+        }
     }
 
     private static Authentication createAuthentication(Long userId, String role) {
@@ -616,6 +1011,15 @@ public class AdkAssistantEngine implements AutoCloseable {
         return "";
     }
 
+    private static ConsentPurpose consentPurposeFor(ConsentCategory category, boolean write) {
+        return switch (category) {
+            case BASIC_PROFILE -> write ? ConsentPurpose.PROFILE_UPDATE : ConsentPurpose.PROFILE_READ;
+            case DIETARY_PREFERENCES -> write ? ConsentPurpose.DIETARY_UPDATE : ConsentPurpose.DIETARY_READ;
+            case HEALTH_PROFILE -> write ? ConsentPurpose.HEALTH_PROFILE_UPDATE : ConsentPurpose.HEALTH_PROFILE_READ;
+            case SHOPPING_LIST -> write ? ConsentPurpose.SHOPPING_LIST_WRITE : ConsentPurpose.SHOPPING_LIST_READ;
+        };
+    }
+
     private AiChatResponse buildResponse(
             AiChatRequest request,
             UUID sessionId,
@@ -653,12 +1057,23 @@ public class AdkAssistantEngine implements AutoCloseable {
             List<AssistantStep> steps,
             List<Source> sources,
             Throwable failure) {
-        if (failure instanceof java.util.concurrent.TimeoutException) {
+        if (isTimeout(failure)) {
             return buildResponse(request, sessionId, mode, "TIMEOUT", steps, sources, null, null,
-                    "Yêu cầu xử lý quá thời gian quy định (30 giây). Vui lòng thử lại với câu hỏi ngắn gọn hơn.");
+                    "Lượt trả lời AI đã vượt thời gian chờ. Bạn có thể thử lại sau ít phút.");
         }
         return buildResponse(request, sessionId, mode, "FAILED", steps, sources, null, null,
                 "Dịch vụ AI đang gặp sự cố khi xử lý lượt chạy. Vui lòng thử lại sau.");
+    }
+
+    private static boolean isTimeout(Throwable failure) {
+        for (int depth = 0; failure != null && depth < 8; depth++, failure = failure.getCause()) {
+            if (failure instanceof java.util.concurrent.TimeoutException) return true;
+        }
+        return false;
+    }
+
+    private static long elapsedMillis(long startedNanos) {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos);
     }
 
     private static LlmFactory createDefaultLlmFactory(String configuredApiKey) {
@@ -700,6 +1115,9 @@ public class AdkAssistantEngine implements AutoCloseable {
         private final String owner;
         private final Authentication auth;
         private final AtomicBoolean busy = new AtomicBoolean(false);
+        private final AtomicBoolean turnCancelled = new AtomicBoolean(false);
+        private volatile Disposable activeDisposable;
+        private volatile CountDownLatch activeLatch;
         private volatile Instant expiresAt;
         private volatile boolean consentRevoked;
         private volatile PendingConfirmation pendingConfirmation;
@@ -707,6 +1125,7 @@ public class AdkAssistantEngine implements AutoCloseable {
         private InMemoryRunner runner;
         private String adkSessionId;
         private String boundModelId;
+        private ExecutionMode boundMode;
         private record TurnContext(
                 Authentication callerAuth,
                 ExecutionMode mode,
@@ -714,9 +1133,32 @@ public class AdkAssistantEngine implements AutoCloseable {
                 List<AssistantStep> steps,
                 List<Source> sources,
                 AtomicReference<PendingConfirmation> stagedConfirmation,
-                UUID clientRequestId
-        ) {}
+                UUID clientRequestId,
+                boolean approvalResume,
+                String approvedConfirmationCallId,
+                Consumer<AssistantStep> onStepConsumer,
+                AiChatCancellationSignal cancellationSignal,
+                AtomicReference<Set<ConsentScope>> requiredConsentScopes
+        ) {
+            void addStep(AssistantStep step) {
+                steps.add(step);
+                if (onStepConsumer != null) {
+                    onStepConsumer.accept(step);
+                }
+            }
+        }
         private final AtomicReference<TurnContext> currentTurn = new AtomicReference<>();
+
+        public void cancelActiveTurn() {
+            TurnContext turn = currentTurn.get();
+            if (turn != null) turn.cancellationSignal().cancel();
+            turnCancelled.set(true);
+            Disposable disposable = activeDisposable;
+            if (disposable != null && !disposable.isDisposed()) disposable.dispose();
+            CountDownLatch latch = activeLatch;
+            if (latch != null) latch.countDown();
+
+        }
 
         private EngineSessionState(UUID sessionId, Long userId, String owner, Authentication auth, Instant expiresAt) {
             this.sessionId = sessionId;
@@ -726,14 +1168,18 @@ public class AdkAssistantEngine implements AutoCloseable {
             this.expiresAt = expiresAt;
         }
 
-                private synchronized void ensureRunner(String modelId, String role) {
-            if (runner != null && Objects.equals(boundModelId, modelId)) {
+        private synchronized void ensureRunner(String modelId, String role, ExecutionMode mode) {
+            ExecutionMode canonicalMode = mode == null ? ExecutionMode.CHATBOT : mode.canonical();
+            if (runner != null && Objects.equals(boundModelId, modelId) && Objects.equals(boundMode, canonicalMode)) {
                 return;
             }
 
             closeRunnerOnly();
 
-            List<AiAssistantToolRegistry.ToolDefinition> definitions = toolRegistry.definitionsFor(role);
+            boolean isChatbot = mode == ExecutionMode.CHATBOT;
+            List<AiAssistantToolRegistry.ToolDefinition> definitions = isChatbot
+                    ? List.of()
+                    : toolRegistry.definitionsFor(role);
 
             List<BaseTool> adkTools = definitions.stream()
                     .map(def -> (BaseTool) new ScopedAssistantTool(def, this))
@@ -742,17 +1188,24 @@ public class AdkAssistantEngine implements AutoCloseable {
             MemberAccountingPolicy policy = new MemberAccountingPolicy(users, aiQuota, events);
             AdkModelGateway gateway = new AdkModelGateway(llmFactory.create(modelId), policy, clock);
 
-            String instructions = promptLoader.loadSystemPrompt() + "\n\n" + promptLoader.loadAgentInstructions();
+            String instructions = isChatbot
+                    ? promptLoader.loadSystemPrompt()
+                    : promptLoader.loadSystemPrompt() + "\n\n" + promptLoader.loadAgentInstructions();
+
+            String agentName = isChatbot ? "mamxanh_chatbot" : "mamxanh_agent";
+            String agentDescription = isChatbot
+                    ? "Mâm Xanh Vegetarian Cooking Chatbot"
+                    : "Mâm Xanh Unified AI Agent";
 
             LlmAgent agent = LlmAgent.builder()
-                    .name("mamxanh_assistant")
-                    .description("Mâm Xanh Unified AI Assistant")
+                    .name(agentName)
+                    .description(agentDescription)
                     .instruction(instructions)
                     .model(gateway)
                     .generateContentConfig(GenerateContentConfig.builder()
                             .maxOutputTokens(2048)
                             .candidateCount(1)
-                            .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build())
+                            .thinkingConfig(ModelThinkingPolicy.resolveConfig(modelId, canonicalMode).orElseGet(ModelThinkingPolicy::fallbackConfig))
                             .build())
                     .beforeModelCallback((context, req) -> {
                         if (req.build().contents().toString().getBytes(StandardCharsets.UTF_8).length > MAX_CONTEXT_BYTES) {
@@ -763,9 +1216,10 @@ public class AdkAssistantEngine implements AutoCloseable {
                     .tools(adkTools)
                     .build();
 
-            this.runner = new InMemoryRunner(agent, "mamxanh_assistant_runner");
+            this.runner = new InMemoryRunner(agent, agentName + "_runner");
             this.adkSessionId = runner.sessionService().createSession(runner.appName(), owner).blockingGet().id();
             this.boundModelId = modelId;
+            this.boundMode = canonicalMode;
         }
 
         private synchronized void closeRunnerOnly() {
@@ -819,34 +1273,56 @@ public class AdkAssistantEngine implements AutoCloseable {
                 return Single.just(Map.of("status", "ERROR", "message", "Mất ngữ cảnh phiên làm việc."));
             }
 
-            return Single.fromCallable(() -> asCaller(turn.callerAuth(), () -> {
+            long toolStarted = System.nanoTime();
+            return Single.<Map<String, Object>>fromCallable(() -> asCaller(turn.callerAuth(), () -> {
+                if (!turn.cancellationSignal().tryBeginToolStep()) {
+                    return Map.of("status", "STOPPED", "message", "Lượt chạy đã bị dừng trước bước công cụ này.");
+                }
                 // Check Consent
                 if (!definition.consentCategories().isEmpty()) {
                     for (ConsentCategory cat : definition.consentCategories()) {
-                        ConsentScope reqScope = new ConsentScope(cat, definition.write() ? ConsentPurpose.SHOPPING_LIST_WRITE : ConsentPurpose.AI_CHAT);
+                        ConsentScope reqScope = new ConsentScope(cat, consentPurposeFor(cat, definition.write()));
                         if (!turn.activeConsents().contains(reqScope)) {
+                            turn.requiredConsentScopes().updateAndGet(existing -> {
+                                Set<ConsentScope> merged = new LinkedHashSet<>(existing);
+                                merged.add(reqScope);
+                                return Set.copyOf(merged);
+                            });
                             return Map.of("status", "CONSENT_REQUIRED", "message", "Thao tác cần có sự đồng ý cho phạm vi: " + cat.name());
                         }
                     }
                 }
 
+                // Check if turn is resuming after approval: block chained writes/confirmations to prevent infinite loops
+                if (turn.approvalResume() && (definition.write() || definition.isHighRisk())) {
+                    return Map.of("status", "SKIPPED", "message", "Không thể gọi thêm công cụ ghi trong lượt phản hồi xác nhận.");
+                }
+
                 // Check QA mode for write actions
-                if (turn.mode() == ExecutionMode.QA && definition.write()) {
+                if (turn.mode().isChatbot() && definition.write()) {
                     int stepIndex = turn.steps().size() + 1;
                     String msg = "Chế độ QA không ghi dữ liệu. Hãy chọn CONFIRM hoặc AUTO cho yêu cầu này.";
                     Map<String, Object> preview = Map.of("preview", args != null ? args : Map.of());
-                    turn.steps().add(new AssistantStep(stepIndex, definition.name(), "SKIPPED_MODE", msg, preview));
+                    turn.addStep(new AssistantStep(stepIndex, definition.name(), "SKIPPED_MODE", msg, preview));
                     return Map.of(
                             "status", "SKIPPED_MODE",
                             "message", msg,
                             "preview", preview);
                 }
 
-                // Check CONFIRM mode staging for write actions
-                if (turn.mode() == ExecutionMode.CONFIRM && definition.write()) {
+                // Check confirmation requirement for high-risk write operations:
+                // 1. All HIGH_RISK_WRITE tools require confirmation in ALL modes (including AUTO and CONFIRM).
+                // 2. In CONFIRM mode, all write actions require confirmation.
+                boolean requiresConfirmation = definition.isHighRisk()
+                        || ((turn.mode() == ExecutionMode.CONFIRM || turn.mode() == ExecutionMode.AGENT)
+                                && definition.write());
+
+                if (requiresConfirmation) {
                     int stepIndex = turn.steps().size() + 1;
                     String actionId = definition.name() + "_" + stepIndex;
-                    String summary = "Cần xác nhận trước khi thay đổi dữ liệu.";
+                    String summary = definition.isHighRisk()
+                            ? "Thao tác rủi ro cao cần xác nhận trước khi thực hiện."
+                            : "Cần xác nhận trước khi thay đổi dữ liệu.";
                     Map<String, Object> immutableArgs = args != null ? Collections.unmodifiableMap(new LinkedHashMap<>(args)) : Map.of();
                     String argsJson = "";
                     try {
@@ -876,15 +1352,20 @@ public class AdkAssistantEngine implements AutoCloseable {
                             storePlan.expiresAt(),
                             turn.mode());
                     sessionState.serverPendingAction = serverAction;
+                    Object proposedNameValue = args == null ? null : args.get("name");
+                    String proposedListName = switch (definition.name()) {
+                        case "create_shopping_list", "rename_shopping_list" -> proposedNameValue instanceof String name ? name.strip() : "";
+                        default -> null;
+                    };
                     PendingConfirmation pending = new PendingConfirmation(
                             planId,
                             definition.description(),
                             storePlan.expiresAt(),
                             true,
-                            definition.name());
+                            proposedListName == null || proposedListName.isBlank() ? null : proposedListName);
                     turn.stagedConfirmation().set(pending);
                     Map<String, Object> preview = Map.of("preview", args != null ? args : Map.of());
-                    turn.steps().add(new AssistantStep(stepIndex, definition.name(), "AWAITING_CONFIRMATION", summary, preview));
+                    turn.addStep(new AssistantStep(stepIndex, definition.name(), "AWAITING_CONFIRMATION", summary, preview));
                     return Map.of(
                             "status", "AWAITING_CONFIRMATION",
                             "confirmationId", planId.toString(),
@@ -899,11 +1380,18 @@ public class AdkAssistantEngine implements AutoCloseable {
 
                 AiAssistantToolRegistry.ToolResult result;
                 if (definition.write() && journal != null) {
+                    String argsJson = "";
+                    try {
+                        argsJson = mapper.writeValueAsString(args != null ? args : Map.of());
+                    } catch (Exception ignored) {
+                    }
+                    String argumentsHash = hash(actionId + ":" + definition.name() + ":" + argsJson);
                     result = journal.executeWithJournal(
                             ownerId,
                             effectiveRequestId,
                             actionId,
                             definition.name(),
+                            argumentsHash,
                             () -> toolRegistry.execute(definition.name(), args));
                 } else {
                     result = toolRegistry.execute(definition.name(), args);
@@ -920,9 +1408,13 @@ public class AdkAssistantEngine implements AutoCloseable {
                     resultMap.put("data", result.result());
                 }
 
-                turn.steps().add(new AssistantStep(stepIndex, definition.name(), result.status(), result.summary(), resultMap));
+                turn.addStep(new AssistantStep(stepIndex, definition.name(), result.status(), result.summary(), resultMap));
                 return resultMap;
-            }));
+            })).doOnSuccess(result -> LOG.info("ADK tool completed sessionId={} tool={} elapsedMs={} status={}",
+                    sessionState.sessionId, definition.name(), elapsedMillis(toolStarted), result.get("status")))
+                    .doOnError(failure -> LOG.warn("ADK tool failed sessionId={} tool={} elapsedMs={} cause={}",
+                            sessionState.sessionId, definition.name(), elapsedMillis(toolStarted),
+                            failure.getClass().getSimpleName()));
         }
 
         private <T> T asCaller(Authentication callerAuth, Callable<T> action) throws Exception {
@@ -935,6 +1427,13 @@ public class AdkAssistantEngine implements AutoCloseable {
             } finally {
                 SecurityContextHolder.setContext(prev);
             }
+        }
+    }
+    private static String hash(String input) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(input.getBytes(StandardCharsets.UTF_8)));
+        } catch (java.security.NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException(impossible);
         }
     }
 }

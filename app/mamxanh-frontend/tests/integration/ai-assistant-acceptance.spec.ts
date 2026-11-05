@@ -180,6 +180,8 @@ test.describe('E2E Acceptance AI Assistant Suite', () => {
         sql(`DELETE FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id IN (SELECT shopping_list_id FROM [SHOPPING_LIST] WHERE user_id = ${customerUserId})`);
         sql(`DELETE FROM [SHOPPING_LIST] WHERE user_id = ${customerUserId}`);
         sql(`DELETE FROM [AI_ASSISTANT_EXECUTION] WHERE owner_id = ${customerUserId}`);
+        sql(`DELETE FROM [AI_ASSISTANT_ACTION_JOURNAL] WHERE owner_id = ${customerUserId}`);
+        sql(`DELETE FROM [AI_USAGE_TELEMETRY] WHERE user_id = ${customerUserId}`);
         sql(`DELETE FROM [AI_TOKEN_USAGE_LEDGER] WHERE user_id = ${customerUserId}`);
         sql(`DELETE FROM [AI_CREDIT_LEDGER] WHERE user_id = ${customerUserId}`);
         sql(`DELETE FROM [AI_CREDIT_WALLET] WHERE user_id = ${customerUserId}`);
@@ -195,6 +197,8 @@ test.describe('E2E Acceptance AI Assistant Suite', () => {
         sql(`DELETE FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id IN (SELECT shopping_list_id FROM [SHOPPING_LIST] WHERE user_id = ${expertUserId})`);
         sql(`DELETE FROM [SHOPPING_LIST] WHERE user_id = ${expertUserId}`);
         sql(`DELETE FROM [AI_ASSISTANT_EXECUTION] WHERE owner_id = ${expertUserId}`);
+        sql(`DELETE FROM [AI_ASSISTANT_ACTION_JOURNAL] WHERE owner_id = ${expertUserId}`);
+        sql(`DELETE FROM [AI_USAGE_TELEMETRY] WHERE user_id = ${expertUserId}`);
         sql(`DELETE FROM [AI_TOKEN_USAGE_LEDGER] WHERE user_id = ${expertUserId}`);
         sql(`DELETE FROM [AI_CREDIT_LEDGER] WHERE user_id = ${expertUserId}`);
         sql(`DELETE FROM [AI_CREDIT_WALLET] WHERE user_id = ${expertUserId}`);
@@ -259,12 +263,18 @@ test.describe('E2E Acceptance AI Assistant Suite', () => {
       await send.click();
       const resp = await respPromise;
       const status = resp.status();
-      const body = await resp.json().catch(() => ({}));
       trackCost(250, 350, 0, q);
 
-      // If this question itself triggered a consent request, grant it to continue processing
-      if (body.runStatus === 'AWAITING_CONSENT' || body.consentRequest) {
-        await expect(dialog.getByText('Cho phép dùng dữ liệu cá nhân?')).toBeVisible({ timeout: 10_000 });
+      // The frontend consumes the SSE body, so inspect the rendered consent card instead of rereading it.
+      const consentPending = dialog.getByText('Cho phép dùng dữ liệu cá nhân?');
+      const confirmationPending = dialog.getByText('Xem lại trước khi thực hiện');
+      await expect.poll(async () =>
+        await consentPending.isVisible().catch(() => false)
+          || await confirmationPending.isVisible().catch(() => false)
+          || await input.isEnabled().catch(() => false),
+        { timeout: 60_000 },
+      ).toBe(true);
+      if (await consentPending.isVisible().catch(() => false)) {
         await dialog.locator('label', { hasText: 'Đồng ý và tiếp tục' }).click();
         const sendBtn = dialog.getByRole('button', { name: 'Gửi', exact: true });
         const grantPromise = page.waitForResponse(
@@ -273,12 +283,11 @@ test.describe('E2E Acceptance AI Assistant Suite', () => {
         );
         await sendBtn.click();
         const grantResp = await grantPromise;
-        const grantBody = await grantResp.json().catch(() => ({}));
         trackCost(250, 350, 0, 'Grant Consent continuation');
-        return { status: grantResp.status(), body: grantBody };
+        return { status: grantResp.status(), body: {} };
       }
 
-      return { status, body };
+      return { status, body: {} };
     };
 
     const getLatestAiResponse = () => dialog.locator('.ai-message-markdown').last();
@@ -362,37 +371,35 @@ test.describe('E2E Acceptance AI Assistant Suite', () => {
       testResults.push({ id: 'TC-G3-01', cap: 'CAP-09', title: 'Hỏi lại tên khi thiếu tham số', status: 'FAIL', note: e.message });
     }
 
-    // --- TC-G3-02 & TC-G3-09: Chế độ QA (Chỉ xem trước, không ghi DB) ---
+    // --- TC-G3-02: CHATBOT chỉ trả lời, không thao tác hoặc ghi DB ---
     try {
-      // Chuyển sang chế độ QA
+      // Chuyển sang CHATBOT
       const modeBtn = dialog.locator('button[aria-label^="Chế độ AI:"]');
       await modeBtn.click();
-      await dialog.locator('button[role="radio"]', { hasText: 'Hỏi đáp' }).click();
+      await dialog.getByRole('radio', { name: /^Chatbot/ }).click();
 
       const qaListName = `Rau củ QA ${marker}`;
       await ask(`Hãy tạo danh sách mua sắm rỗng tên là ${qaListName}`);
-
-      // Expect preview only badge
-      await expect(dialog.getByText('Chỉ xem trước', { exact: true }).first()).toBeVisible({ timeout: 35_000 });
+      await expect(getLatestAiResponse()).toBeVisible({ timeout: 35_000 });
 
       // SQL assertion: Count must be 0
       const count = Number(sql(`SELECT COUNT(*) FROM [SHOPPING_LIST] WHERE user_id = ${customerUserId}`));
       expect(count).toBe(0);
 
       await safeScreenshot(path.join(screenshotDir, 'TC-G3-02-pass.png'));
-      testResults.push({ id: 'TC-G3-02', cap: 'CAP-12, CAP-13', title: 'Chế độ QA xem trước & bảo vệ DB', status: 'PASS', note: 'Chế độ QA trả về preview, SQL Count = 0' });
+      testResults.push({ id: 'TC-G3-02', cap: 'CHATBOT', title: 'CHATBOT không thực thi thao tác ghi', status: 'PASS', note: 'Phản hồi hiển thị, SQL Count = 0' });
     } catch (e: any) {
       await safeScreenshot(path.join(screenshotDir, 'TC-G3-02-fail.png'));
-      recordBug('TC-G3-02', 'Lỗi chế độ QA hoặc ghi DB sai chế độ', 'MAJOR', 'CAP-13', 'Tạo danh sách ở mode QA', 'Preview chỉ xem trước, SQL = 0', 'SQL khác 0 hoặc không thấy preview', e.message);
-      testResults.push({ id: 'TC-G3-02', cap: 'CAP-12, CAP-13', title: 'Chế độ QA xem trước', status: 'FAIL', note: e.message });
+      recordBug('TC-G3-02', 'CHATBOT thực thi thao tác ghi', 'MAJOR', 'CHATBOT', 'Yêu cầu tạo danh sách khi đang ở Chatbot', 'Không gọi tool ghi và SQL không đổi', 'Lỗi hoặc SQL khác 0', e.message);
+      testResults.push({ id: 'TC-G3-02', cap: 'CHATBOT', title: 'CHATBOT không thực thi thao tác ghi', status: 'FAIL', note: e.message });
     }
 
-    // --- TC-G3-03: Chế độ CONFIRM - Người dùng Từ chối (Reject) ---
+    // --- TC-G3-03: AI Agent đề xuất thao tác và tôn trọng từ chối ---
     try {
-      // Chuyển sang CONFIRM mode
+      // Chuyển sang AI Agent
       const modeBtn = dialog.locator('button[aria-label^="Chế độ AI:"]');
       await modeBtn.click();
-      await dialog.locator('button[role="radio"]', { hasText: 'Có xác nhận' }).click();
+      await dialog.getByRole('radio', { name: /^AI Agent/ }).click();
 
       const rejectListName = `Đồ khô hủy ${marker}`;
       await ask(`Hãy tạo danh sách mua sắm rỗng tên là ${rejectListName}`);
@@ -411,18 +418,18 @@ test.describe('E2E Acceptance AI Assistant Suite', () => {
       await respPromise;
       trackCost(250, 350, 0, 'Reject proposal');
 
-      await expect(dialog.getByText(`Đã hủy thao tác tạo danh sách mua sắm "${rejectListName}"`, { exact: false }).first()).toBeVisible({ timeout: 20_000 });
+      await expect(dialog.getByText('Đã hủy thao tác theo yêu cầu của bạn.', { exact: true }).first()).toBeVisible({ timeout: 20_000 });
 
       // SQL assertion: Count remains 0
       const count = Number(sql(`SELECT COUNT(*) FROM [SHOPPING_LIST] WHERE user_id = ${customerUserId}`));
       expect(count).toBe(0);
 
       await safeScreenshot(path.join(screenshotDir, 'TC-G3-03-pass.png'));
-      testResults.push({ id: 'TC-G3-03', cap: 'CAP-14', title: 'Chế độ CONFIRM từ chối (Reject) không tạo DB', status: 'PASS', note: 'Reject thành công, SQL Count = 0' });
+      testResults.push({ id: 'TC-G3-03', cap: 'AI Agent', title: 'AI Agent tôn trọng từ chối và không ghi DB', status: 'PASS', note: 'Reject thành công, SQL Count = 0' });
     } catch (e: any) {
       await safeScreenshot(path.join(screenshotDir, 'TC-G3-03-fail.png'));
       recordBug('TC-G3-03', 'Hủy đề xuất nhưng vẫn ghi DB hoặc lỗi giao diện', 'MAJOR', 'CAP-14', 'Chọn radio Hủy và Gửi', 'Thông báo hủy, SQL = 0', 'Lỗi', e.message);
-      testResults.push({ id: 'TC-G3-03', cap: 'CAP-14', title: 'Chế độ CONFIRM từ chối', status: 'FAIL', note: e.message });
+      testResults.push({ id: 'TC-G3-03', cap: 'AI Agent', title: 'AI Agent tôn trọng từ chối', status: 'FAIL', note: e.message });
     }
 
     // --- TC-G3-04: Chế độ CONFIRM - Phê duyệt (Approve) & Tạo thật trong SQL ---
@@ -555,8 +562,7 @@ test.describe('E2E Acceptance AI Assistant Suite', () => {
     const failedTests = testResults.filter(r => r.status === 'FAIL');
     expect(failedTests, `Có ${failedTests.length} kịch bản kiểm thử E2E thất bại:
 ` +
-      failedTests.map(f => `- ${f.id} (${f.title}): ${f.note}`).join('
-')
+      failedTests.map(f => `- ${f.id} (${f.title}): ${f.note}`).join('\n')
     ).toHaveLength(0);
   });
 });

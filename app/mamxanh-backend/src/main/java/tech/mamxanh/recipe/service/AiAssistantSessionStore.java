@@ -89,11 +89,22 @@ public class AiAssistantSessionStore {
         return new SessionHandle(session.id, Set.copyOf(session.consents), session.pending, session.expiresAt, session.engine);
     }
 
+    public enum ConfirmationStatus {
+        PENDING,
+        APPROVING,
+        EXECUTED,
+        REJECTED,
+        EXPIRED,
+        CANCELLED,
+        FAILED,
+        UNKNOWN
+    }
+
     public synchronized PendingPlan createPending(UUID sessionId, String owner,
             List<PendingAction> actions, boolean explicitConfirmation) {
         Session session = require(sessionId, owner);
         PendingPlan pending = new PendingPlan(UUID.randomUUID(), List.copyOf(actions),
-                explicitConfirmation, clock.instant().plus(confirmationTtl));
+                explicitConfirmation, clock.instant().plus(confirmationTtl), ConfirmationStatus.PENDING);
         session.pending = pending;
         session.lastAccess = clock.instant();
         session.expiresAt = session.lastAccess.plus(sessionTtl);
@@ -103,19 +114,62 @@ public class AiAssistantSessionStore {
     public synchronized PendingPlan takePending(UUID sessionId, String owner, UUID confirmationId) {
         Session session = require(sessionId, owner);
         PendingPlan pending = session.pending;
-        if (pending == null || !pending.id().equals(confirmationId) || !pending.expiresAt().isAfter(clock.instant())) {
-            session.pending = null;
+        if (pending == null || !pending.id().equals(confirmationId)) {
             return null;
         }
-        session.pending = null;
-        session.lastAccess = clock.instant();
-        session.expiresAt = session.lastAccess.plus(sessionTtl);
-        return pending;
+        Instant now = clock.instant();
+        if (!pending.expiresAt().isAfter(now)) {
+            session.pending = pending.withStatus(ConfirmationStatus.EXPIRED);
+            return null;
+        }
+        // Only PENDING can transition to APPROVING
+        if (pending.status() != ConfirmationStatus.PENDING) {
+            return null;
+        }
+        PendingPlan approving = pending.withStatus(ConfirmationStatus.APPROVING);
+        session.pending = approving;
+        session.lastAccess = now;
+        session.expiresAt = now.plus(sessionTtl);
+        return approving;
+    }
+
+    public synchronized void markPendingExecuted(UUID sessionId, String owner, UUID confirmationId) {
+        Session session = sessions.get(sessionId);
+        if (session != null && session.owner.equals(owner) && session.pending != null && session.pending.id().equals(confirmationId)) {
+            session.pending = session.pending.withStatus(ConfirmationStatus.EXECUTED);
+            session.lastAccess = clock.instant();
+        }
+    }
+
+    public synchronized void markPendingRejected(UUID sessionId, String owner, UUID confirmationId) {
+        Session session = sessions.get(sessionId);
+        if (session != null && session.owner.equals(owner) && session.pending != null && session.pending.id().equals(confirmationId)) {
+            session.pending = session.pending.withStatus(ConfirmationStatus.REJECTED);
+            session.lastAccess = clock.instant();
+        }
+    }
+
+    public synchronized void markPendingFailed(UUID sessionId, String owner, UUID confirmationId) {
+        Session session = sessions.get(sessionId);
+        if (session != null && session.owner.equals(owner) && session.pending != null && session.pending.id().equals(confirmationId)) {
+            session.pending = session.pending.withStatus(ConfirmationStatus.FAILED);
+            session.lastAccess = clock.instant();
+        }
+    }
+
+    public synchronized void markPendingCancelled(UUID sessionId, String owner, UUID confirmationId) {
+        Session session = sessions.get(sessionId);
+        if (session != null && session.owner.equals(owner) && session.pending != null && session.pending.id().equals(confirmationId)) {
+            session.pending = session.pending.withStatus(ConfirmationStatus.CANCELLED);
+            session.lastAccess = clock.instant();
+        }
     }
 
     public synchronized void discardPending(UUID sessionId, String owner) {
         Session session = require(sessionId, owner);
-        session.pending = null;
+        if (session.pending != null) {
+            session.pending = session.pending.withStatus(ConfirmationStatus.CANCELLED);
+        }
     }
 
     public synchronized void delete(UUID sessionId, String owner) {
@@ -155,8 +209,21 @@ public class AiAssistantSessionStore {
         }
     }
 
-    public record PendingPlan(UUID id, List<PendingAction> actions,
-            boolean requiresExplicitConfirmation, Instant expiresAt) { }
+    public record PendingPlan(
+            UUID id,
+            List<PendingAction> actions,
+            boolean requiresExplicitConfirmation,
+            Instant expiresAt,
+            ConfirmationStatus status
+    ) {
+        public PendingPlan(UUID id, List<PendingAction> actions, boolean requiresExplicitConfirmation, Instant expiresAt) {
+            this(id, actions, requiresExplicitConfirmation, expiresAt, ConfirmationStatus.PENDING);
+        }
+
+        public PendingPlan withStatus(ConfirmationStatus newStatus) {
+            return new PendingPlan(id, actions, requiresExplicitConfirmation, expiresAt, newStatus);
+        }
+    }
 
     private static final class Session {
         private final UUID id;

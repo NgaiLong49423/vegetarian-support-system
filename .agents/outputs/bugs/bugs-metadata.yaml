@@ -1,12 +1,12 @@
 # Đồng bộ develop: BUG-067–069 của FR-10 chuyển thành BUG-082–084, giữ bản ghi develop ở mã gốc.
 schema_version: 1
-last_updated: 2026-11-02
+last_updated: 2026-11-05
 # BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
 # BUG-066 được cấp khi đồng bộ PR #161 ngày 2026-10-25 vì BUG-065 đã được dùng cho lỗi OpenAPI.
 # BUG-078–080 đã được cấp trên nhánh feature/17-ai-usage-telemetry, tránh cấp trùng khi tích hợp.
 # Đồng bộ PR #227: bản ghi quyền FR-21 của nhánh feature đổi BUG-086 → BUG-095; BUG-086 trên develop được giữ nguyên.
-next_id: 96
+next_id: 104
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -16,6 +16,78 @@ status_definitions:
 # Đồng bộ PR #194: mã gốc FR-10 → mã sau tích hợp: BUG-054 → BUG-070, BUG-055 → BUG-071, BUG-056 → BUG-072, BUG-057 → BUG-073, BUG-058 → BUG-074, BUG-059 → BUG-075, BUG-060 → BUG-076, BUG-066 → BUG-077.
 # Bản ghi BUG-060 của FR-11 tại 79394340 trùng lỗi privacy đã hợp nhất dưới BUG-076; giữ BUG-060 của develop.
 bugs:
+  - id: BUG-103
+    title: Confirmation hiển thị tên tool thay vì tên Shopping List dự kiến
+    status: RESOLVED
+    severity: Medium
+    area: Backend/AI Assistant/Confirmation preview
+    file: .agents/outputs/bugs/BUG-103.md
+    created: 2026-11-05
+    updated: 2026-11-05
+    related_issue: Unknown
+  - id: BUG-102
+    title: Chế độ AI Agent không yêu cầu xác nhận cho thao tác ghi rủi ro thấp
+    status: RESOLVED
+    severity: High
+    area: Backend/AI Assistant/Execution Mode
+    file: .agents/outputs/bugs/BUG-102.md
+    created: 2026-11-05
+    updated: 2026-11-05
+    related_issue: Unknown
+  - id: BUG-101
+    title: Agent không hiển thị yêu cầu consent khi tool bị chặn vì thiếu consent
+    status: RESOLVED
+    severity: High
+    area: Backend/AI Assistant/Consent
+    file: .agents/outputs/bugs/BUG-101.md
+    created: 2026-11-05
+    updated: 2026-11-05
+    related_issue: Unknown
+  - id: BUG-100
+    title: Agent có thể bắt đầu tool step tiếp theo sau khi lượt chạy bị hủy
+    status: RESOLVED
+    severity: High
+    area: Backend/AI Assistant/Agent cancellation
+    file: .agents/outputs/bugs/BUG-100.md
+    created: 2026-11-05
+    updated: 2026-11-05
+    related_issue: Unknown
+  - id: BUG-099
+    title: Hủy lượt chat SSE trước khi nhận sessionId chưa được nối với lượt đang chạy
+    status: RESOLVED
+    severity: High
+    area: Backend/AI Assistant/SSE cancellation
+    file: .agents/outputs/bugs/BUG-099.md
+    created: 2026-11-05
+    updated: 2026-11-05
+    related_issue: Unknown
+  - id: BUG-098
+    title: AUTO có thể thực hiện thao tác rủi ro cao mà không xác nhận
+    status: RESOLVED
+    severity: High
+    area: Backend/AI Assistant/Execution Mode
+    file: .agents/outputs/bugs/BUG-098.md
+    created: 2026-11-04
+    updated: 2026-11-04
+    related_issue: Unknown
+  - id: BUG-097
+    title: Câu hỏi nấu ăn chung timeout sau bước tra cứu tri thức
+    status: RESOLVED
+    severity: High
+    area: Backend/AI Assistant/ADK latency và chọn tool
+    file: .agents/outputs/bugs/BUG-097.md
+    created: 2026-11-04
+    updated: 2026-11-04
+    related_issue: Unknown
+  - id: BUG-096
+    title: Timeout ADK bị báo thành lỗi xử lý chung
+    status: RESOLVED
+    severity: Medium
+    area: Backend/AI Assistant/Phản hồi timeout
+    file: .agents/outputs/bugs/BUG-096.md
+    created: 2026-11-04
+    updated: 2026-11-04
+    related_issue: Unknown
   - id: BUG-086
     title: Chatbot dùng timeout Gemini chung 60 giây vượt giới hạn 10 giây
     status: RESOLVED

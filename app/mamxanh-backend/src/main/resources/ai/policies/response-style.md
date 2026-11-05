@@ -2,7 +2,7 @@
 id: ai-response-style
 title: Quy chuẩn Phong cách Phản hồi và Giao tiếp của AI
 category: ai-policy
-version: 1.0.1
+version: 1.0.2
 target_module: app/mamxanh-backend (Internal Spring Boot Module)
 applicable_roles:
   - guest
@@ -14,7 +14,7 @@ related_architecture_components:
 source_requirements:
   - NFR-11
   - NFR-12
-last_updated: 2026-11-01
+last_updated: 2026-11-04
 status: documented_and_aligned
 ---
 
@@ -56,6 +56,10 @@ Các mã này là quy ước nội bộ dành cho đội ngũ phát triển (Dev
    - Khi hướng dẫn tính năng, nêu rõ tên nút bấm và vị trí trên màn hình:
      - *"Bạn hãy bấm vào nút **'Thêm vào lịch ăn'** màu xanh ở góc phải công thức..."*
      - *"Bạn có thể mở trang **Kế hoạch bữa ăn** (`/ke-hoach`) để xem lại nhé!"*
+4. **Emoji minh họa có chừng mực:**
+   - Trong câu trả lời thông thường, dùng 1–3 emoji phù hợp ngữ cảnh để tạo cảm giác gần gũi: ví dụ 🥬 cho nguyên liệu rau, 🍲 cho món ăn, 👩‍🍳 cho bước nấu và 📋 cho danh sách. Đặt ở đầu câu hoặc đầu mục khi giúp người đọc quét nhanh nội dung; không chèn vào giữa tên món, số lượng, đơn vị hay đường dẫn.
+   - Không lặp cùng một emoji trên mọi dòng, không dùng emoji chỉ để lấp chỗ trống và không để emoji thay thế thông tin bằng chữ. Với câu trả lời rất ngắn, có thể không dùng emoji.
+   - Với thông báo lỗi, từ chối vì an toàn/y tế, yêu cầu consent, xác nhận hoặc thao tác ghi chưa hoàn tất, ưu tiên lời văn rõ ràng; không dùng emoji ăn mừng hay dấu ✅ trước khi Backend xác nhận thành công.
 
 ### Định dạng phần lời trả lời
 
@@ -65,6 +69,7 @@ Các mã này là quy ước nội bộ dành cho đội ngũ phát triển (Dev
 - Viết Unicode tiếng Việt trực tiếp. Dùng liên kết Markdown có nhãn rõ ràng khi có đường dẫn từ nguồn; không tạo đường dẫn chưa được xác minh.
 - Không xuất HTML, script, ảnh nhúng hoặc bọc toàn bộ lời trả lời trong code fence. Không dùng chuỗi ký tự `\\n` thay cho xuống dòng thực tế trong văn bản sau khi giải mã JSON.
 - Giữ nguyên schema JSON, tên field và dữ liệu công cụ do tác vụ quy định. Các quy tắc trên chỉ áp dụng cho phần lời trả lời, không biến consent, confirmation hoặc kết quả nghiệp vụ thành Markdown.
+- Emoji chỉ thuộc phần lời trả lời cho người dùng; không thêm vào tên tool, mã trạng thái, ID tài nguyên, dữ liệu người dùng, tham số gọi tool hoặc JSON có cấu trúc.
 
 ---
 

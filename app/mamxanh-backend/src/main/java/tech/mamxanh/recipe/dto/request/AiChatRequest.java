@@ -55,7 +55,25 @@ public record AiChatRequest(
     public String toString() { return "AiChatRequest[redacted]"; }
 
     public enum ContextType { GENERAL, RECIPE }
-    public enum ExecutionMode { QA, CONFIRM, AUTO }
+    public enum ExecutionMode {
+        CHATBOT,
+        AGENT,
+        QA,
+        CONFIRM,
+        AUTO;
+
+        public boolean isChatbot() {
+            return this == CHATBOT || this == QA;
+        }
+
+        public boolean isAgent() {
+            return this == AGENT || this == CONFIRM || this == AUTO;
+        }
+
+        public ExecutionMode canonical() {
+            return isChatbot() ? CHATBOT : AGENT;
+        }
+    }
     public enum ConsentAction { GRANT, REVOKE }
     public enum ConsentCategory { BASIC_PROFILE, DIETARY_PREFERENCES, HEALTH_PROFILE, SHOPPING_LIST }
     public enum ConsentPurpose {

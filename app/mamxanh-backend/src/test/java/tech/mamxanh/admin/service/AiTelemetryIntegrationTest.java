@@ -31,6 +31,7 @@ import tech.mamxanh.integration.ai.*;
  * Only the external provider is controlled; no live Google billing is asserted.
  */
 @ExtendWith(OutputCaptureExtension.class)
+@org.springframework.test.context.TestPropertySource(properties = "mamxanh.ai.orchestrator=LEGACY")
 class AiTelemetryIntegrationTest extends AbstractIntegrationTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired AiTelemetryWriter writer;

@@ -2,11 +2,9 @@ package tech.mamxanh.recipe.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.adk.models.BaseLlm;
 import com.google.adk.models.BaseLlmConnection;
@@ -105,6 +103,8 @@ class AdkAssistantEngineTest {
 
     @Test
     void pureConversationalQueryReturnsGroundedAnswerWithoutToolCalls() {
+        when(knowledge.retrieve(anyString())).thenReturn(List.of(
+                new AiChatResponse.Source("DOMAIN_KNOWLEDGE", "unrelated", "Hướng dẫn khác", "", null)));
         ScriptedLlm llm = new ScriptedLlm(request -> textResponse("Chào bạn! Hôm nay bạn muốn nấu món chay gì?"));
         var engine = createEngine(llm);
 
@@ -117,7 +117,26 @@ class AdkAssistantEngineTest {
         assertThat(response.answer()).isEqualTo("Chào bạn! Hôm nay bạn muốn nấu món chay gì?");
         assertThat(response.runStatus()).isEqualTo("COMPLETED");
         assertThat(response.steps()).isEmpty();
+        assertThat(response.sources()).isEmpty();
         assertThat(llm.requests).hasSize(1);
+    }
+
+    @Test
+    void wrappedModelTimeoutIsReportedAsTimeoutInsteadOfGenericFailure() {
+        ScriptedLlm llm = new ScriptedLlm(request -> {
+            throw new RuntimeException(new java.util.concurrent.TimeoutException("The source did not signal an event for 10000 milliseconds"));
+        });
+        var engine = createEngine(llm);
+        AiChatRequest request = new AiChatRequest(ContextType.GENERAL, null,
+                "Giải thích cách thay trứng trong bánh thuần chay", List.of(), null, null,
+                ExecutionMode.CONFIRM, null, null, null, UUID.randomUUID());
+
+        AiChatResponse response = engine.execute(request);
+
+        assertThat(response.runStatus()).isEqualTo("TIMEOUT");
+        assertThat(response.answer()).contains("vượt thời gian chờ");
+        assertThat(response.answer()).doesNotContain("30 giây");
+        assertThat(response.steps()).isEmpty();
     }
 
     @Test
@@ -189,6 +208,44 @@ class AdkAssistantEngineTest {
         assertThat(response.consentRequest()).isNotNull();
         assertThat(response.consentRequest().scopes()).contains(new ConsentScope(ConsentCategory.HEALTH_PROFILE, ConsentPurpose.AI_CHAT));
         assertThat(llm.requests).isEmpty();
+    }
+
+    @Test
+    void toolConsentRequirementIsReturnedAsAUserConsentRequest() {
+        when(toolRegistry.definitionsFor("CUSTOMER")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("create_shopping_list", "Tạo danh sách mua sắm", "{}",
+                        true, false, Set.of(ConsentCategory.SHOPPING_LIST), AiAssistantToolRegistry.RiskTier.LOW_RISK_WRITE)));
+        ScriptedLlm llm = new ScriptedLlm(request -> functionResponseNames(request).isEmpty()
+                ? functionCall("create_shopping_list", "call-create-consent", Map.of("name", "Đi chợ cuối tuần"))
+                : textResponse("Tôi cần sự đồng ý để tiếp tục."));
+
+        AiChatRequest initialRequest = new AiChatRequest(ContextType.GENERAL, null,
+                "Tạo danh sách mua sắm tên Đi chợ cuối tuần", List.of(), null, null,
+                ExecutionMode.AGENT, null, null, null, UUID.randomUUID());
+        AdkAssistantEngine engine = createEngine(llm);
+        AiChatResponse response = engine.execute(initialRequest);
+
+        assertThat(response.runStatus()).isEqualTo("AWAITING_CONSENT");
+        assertThat(response.consentRequest()).isNotNull();
+        assertThat(response.consentRequest().scopes()).containsExactly(
+                new ConsentScope(ConsentCategory.SHOPPING_LIST, ConsentPurpose.SHOPPING_LIST_WRITE));
+        assertThat(response.pendingConfirmation()).isNull();
+        verify(toolRegistry, never()).execute(eq("create_shopping_list"), any());
+
+        ScriptedLlm consentedLlm = new ScriptedLlm(request -> functionResponseNames(request).isEmpty()
+                ? functionCall("create_shopping_list", "call-create-after-consent", Map.of("name", "Đi chợ cuối tuần"))
+                : textResponse("Danh sách đã sẵn sàng để xác nhận."));
+        AiChatRequest consentedRequest = new AiChatRequest(ContextType.GENERAL, null,
+                initialRequest.question(), List.of(), null, response.sessionId(), ExecutionMode.AGENT,
+                new AiChatRequest.ConsentDecision(AiChatRequest.ConsentAction.GRANT,
+                        List.of(new ConsentScope(ConsentCategory.SHOPPING_LIST, ConsentPurpose.SHOPPING_LIST_WRITE))),
+                null, null, UUID.randomUUID());
+        AiChatResponse awaitingConfirmation = createEngine(consentedLlm).execute(consentedRequest);
+
+        assertThat(awaitingConfirmation.runStatus()).isEqualTo("AWAITING_CONFIRMATION");
+        assertThat(awaitingConfirmation.pendingConfirmation()).isNotNull();
+        assertThat(awaitingConfirmation.pendingConfirmation().proposedListName()).isEqualTo("Đi chợ cuối tuần");
+        verify(toolRegistry, never()).execute(eq("create_shopping_list"), any());
     }
 
     @Test
@@ -264,6 +321,474 @@ class AdkAssistantEngineTest {
         assertThat(cancelled.runStatus()).isEqualTo("COMPLETED");
         assertThat(cancelled.answer()).isEqualTo("Đã hủy thao tác theo yêu cầu của bạn.");
         assertThat(cancelled.steps()).isEmpty();
+    }
+
+    @Test
+    void autoModeWithHighRiskWriteToolStagesConfirmationAndBlocksDirectExecution() {
+        when(toolRegistry.definitionsFor("CUSTOMER")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("delete_shopping_list", "Xóa danh sách mua sắm", "{}", true, true, Set.of(ConsentCategory.SHOPPING_LIST), AiAssistantToolRegistry.RiskTier.HIGH_RISK_WRITE)));
+
+        ScriptedLlm llm = new ScriptedLlm(request -> {
+            List<String> fnResponses = functionResponseNames(request);
+            if (fnResponses.isEmpty()) {
+                return functionCall("delete_shopping_list", "call-del-1", Map.of("listId", 999));
+            }
+            return textResponse("Vui lòng xác nhận xóa danh sách mua sắm.");
+        });
+
+        var engine = createEngine(llm);
+
+        var consentDecision = new AiChatRequest.ConsentDecision(AiChatRequest.ConsentAction.GRANT,
+                List.of(new ConsentScope(ConsentCategory.SHOPPING_LIST, ConsentPurpose.SHOPPING_LIST_WRITE),
+                        new ConsentScope(ConsentCategory.SHOPPING_LIST, ConsentPurpose.AI_CHAT)));
+
+        AiChatRequest request = new AiChatRequest(ContextType.GENERAL, null, "Xóa danh sách mua sắm #999 giúp mình",
+                List.of(), null, null, ExecutionMode.AUTO, consentDecision, null, null, UUID.randomUUID());
+
+        AiChatResponse response = engine.execute(request);
+
+        assertThat(response.runStatus()).isEqualTo("AWAITING_CONFIRMATION");
+        assertThat(response.pendingConfirmation()).isNotNull();
+        assertThat(response.pendingConfirmation().proposedListName()).isNull();
+        assertThat(response.steps()).hasSize(1);
+        assertThat(response.steps().getFirst().status()).isEqualTo("AWAITING_CONFIRMATION");
+
+        verify(toolRegistry, never()).execute(eq("delete_shopping_list"), any());
+    }
+
+    @Test
+    void allEightHighRiskWriteToolsRequireConfirmationInAutoMode() {
+        List<String> highRiskTools = List.of(
+                "update_dietary_preferences",
+                "update_health_profile",
+                "apply_weekly_menu",
+                "delete_shopping_item",
+                "delete_shopping_list",
+                "create_recipe_post",
+                "update_own_recipe_post",
+                "delete_own_recipe_post"
+        );
+
+        when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(10L, Role.EXPERT));
+
+        for (String toolName : highRiskTools) {
+            when(toolRegistry.definitionsFor(anyString())).thenReturn(List.of(
+                    new AiAssistantToolRegistry.ToolDefinition(toolName, "Thao tác " + toolName, "{}", true, true, Set.of(), AiAssistantToolRegistry.RiskTier.HIGH_RISK_WRITE)));
+
+            ScriptedLlm llm = new ScriptedLlm(request -> {
+                List<String> fnResponses = functionResponseNames(request);
+                if (fnResponses.isEmpty()) {
+                    return functionCall(toolName, "call-1", Map.of("id", 1));
+                }
+                return textResponse("Vui lòng xác nhận.");
+            });
+
+            var engine = createEngine(llm);
+
+            AiChatRequest req = new AiChatRequest(ContextType.GENERAL, null, "Thực hiện " + toolName,
+                    List.of(), null, null, ExecutionMode.AUTO, null, null, null, UUID.randomUUID());
+
+            AiChatResponse resp = engine.execute(req);
+
+            assertThat(resp.runStatus()).as("Tool %s must require confirmation in AUTO mode", toolName).isEqualTo("AWAITING_CONFIRMATION");
+            assertThat(resp.pendingConfirmation()).as("Tool %s must have pendingConfirmation in AUTO mode", toolName).isNotNull();
+            verify(toolRegistry, never()).execute(eq(toolName), any());
+        }
+    }
+
+    @Test
+    void autoModeWithLowRiskWriteToolExecutesDirectlyWithoutConfirmation() {
+        when(toolRegistry.definitionsFor("CUSTOMER")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("add_meal_plan_slot", "Thêm món vào kế hoạch", "{}", true, false, Set.of(), AiAssistantToolRegistry.RiskTier.LOW_RISK_WRITE)));
+
+        when(toolRegistry.execute(eq("add_meal_plan_slot"), any())).thenReturn(
+                new AiAssistantToolRegistry.ToolResult("SUCCEEDED", "Đã thêm món vào bữa sáng", Map.of("slotId", 501), List.of()));
+
+        ScriptedLlm llm = new ScriptedLlm(request -> {
+            List<String> fnResponses = functionResponseNames(request);
+            if (fnResponses.isEmpty()) {
+                return functionCall("add_meal_plan_slot", "call-slot-1", Map.of("recipeId", 101, "mealType", "BREAKFAST"));
+            }
+            return textResponse("Đã thêm món vào bữa sáng thành công!");
+        });
+
+        var engine = createEngine(llm);
+
+        AiChatRequest request = new AiChatRequest(ContextType.GENERAL, null, "Thêm món 101 vào bữa sáng giúp mình",
+                List.of(), null, null, ExecutionMode.AUTO, null, null, null, UUID.randomUUID());
+
+        AiChatResponse response = engine.execute(request);
+
+        assertThat(response.runStatus()).isEqualTo("COMPLETED");
+        assertThat(response.pendingConfirmation()).isNull();
+        assertThat(response.steps()).hasSize(1);
+        assertThat(response.steps().getFirst().tool()).isEqualTo("add_meal_plan_slot");
+        assertThat(response.steps().getFirst().status()).isEqualTo("SUCCEEDED");
+        verify(toolRegistry, times(1)).execute(eq("add_meal_plan_slot"), any());
+    }
+
+    @Test
+    void qaModeSkipsWriteTools() {
+        when(toolRegistry.definitionsFor("CUSTOMER")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("add_meal_plan_slot", "Thêm món vào kế hoạch", "{}", true, false, Set.of(), AiAssistantToolRegistry.RiskTier.LOW_RISK_WRITE)));
+
+        ScriptedLlm llm = new ScriptedLlm(request -> {
+            List<String> fnResponses = functionResponseNames(request);
+            if (fnResponses.isEmpty()) {
+                return functionCall("add_meal_plan_slot", "call-slot-1", Map.of("recipeId", 101));
+            }
+            return textResponse("Chế độ QA không ghi dữ liệu.");
+        });
+
+        var engine = createEngine(llm);
+
+        AiChatRequest request = new AiChatRequest(ContextType.GENERAL, null, "Thêm món 101 vào kế hoạch",
+                List.of(), null, null, ExecutionMode.QA, null, null, null, UUID.randomUUID());
+
+        AiChatResponse response = engine.execute(request);
+
+        assertThat(response.runStatus()).isEqualTo("COMPLETED");
+        assertThat(response.steps()).hasSize(1);
+        assertThat(response.steps().getFirst().status()).isEqualTo("SKIPPED_MODE");
+        verify(toolRegistry, never()).execute(eq("add_meal_plan_slot"), any());
+    }
+
+    @Test
+    void concurrentApprovalRequestsOnlyExecuteOnce() {
+        when(toolRegistry.definitionsFor("CUSTOMER")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("delete_shopping_list", "Xóa danh sách mua sắm", "{}", true, true, Set.of(), AiAssistantToolRegistry.RiskTier.HIGH_RISK_WRITE)));
+
+        when(toolRegistry.execute(eq("delete_shopping_list"), any())).thenReturn(
+                new AiAssistantToolRegistry.ToolResult("SUCCEEDED", "Đã xóa danh sách mua sắm", Map.of("deleted", true), List.of()));
+
+        ScriptedLlm llm = new ScriptedLlm(request -> {
+            List<String> fnResponses = functionResponseNames(request);
+            if (fnResponses.isEmpty()) {
+                return functionCall("delete_shopping_list", "call-del-1", Map.of("listId", 10));
+            }
+            return textResponse("Đã xóa xong!");
+        });
+
+        var engine = createEngine(llm);
+
+        AiChatRequest req1 = new AiChatRequest(ContextType.GENERAL, null, "Xóa danh sách 10",
+                List.of(), null, null, ExecutionMode.CONFIRM, null, null, null, UUID.randomUUID());
+        AiChatResponse staged = engine.execute(req1);
+        UUID confId = staged.pendingConfirmation().confirmationId();
+        UUID sessId = staged.sessionId();
+
+        AiChatRequest req2 = new AiChatRequest(ContextType.GENERAL, null, "Xác nhận",
+                List.of(), null, sessId, ExecutionMode.CONFIRM, null, confId, ConfirmationDecision.APPROVE, UUID.randomUUID());
+        AiChatResponse resp2 = engine.execute(req2);
+        assertThat(resp2.runStatus()).isEqualTo("COMPLETED");
+
+        AiChatRequest req3 = new AiChatRequest(ContextType.GENERAL, null, "Xác nhận lại",
+                List.of(), null, sessId, ExecutionMode.CONFIRM, null, confId, ConfirmationDecision.APPROVE, UUID.randomUUID());
+        assertThatThrownBy(() -> engine.execute(req3))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("Yêu cầu xác nhận không hợp lệ hoặc đã hết hạn");
+
+        verify(toolRegistry, times(1)).execute(eq("delete_shopping_list"), any());
+    }
+
+    @Test
+    void expiredConfirmationThrowsValidationFailed() {
+        when(toolRegistry.definitionsFor("CUSTOMER")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("delete_shopping_list", "Xóa danh sách", "{}", true, true, Set.of(), AiAssistantToolRegistry.RiskTier.HIGH_RISK_WRITE)));
+
+        ScriptedLlm llm = new ScriptedLlm(request -> {
+            List<String> fnResponses = functionResponseNames(request);
+            if (fnResponses.isEmpty()) {
+                return functionCall("delete_shopping_list", "call-del-1", Map.of("listId", 10));
+            }
+            return textResponse("Vui lòng xác nhận.");
+        });
+
+        Instant t0 = Instant.parse("2026-11-01T02:00:00Z");
+        AtomicReference<Instant> currentInstant = new AtomicReference<>(t0);
+        Clock mutableClock = new Clock() {
+            @Override public java.time.ZoneId getZone() { return ZoneOffset.UTC; }
+            @Override public Clock withZone(java.time.ZoneId zone) { return this; }
+            @Override public Instant instant() { return currentInstant.get(); }
+        };
+
+        var customSessionStore = new AiAssistantSessionStore(mutableClock, Duration.ofMinutes(30));
+        var engine = new AdkAssistantEngine(
+                users, aiQuota, chatSettings, customSessionStore, toolRegistry,
+                knowledge, promptLoader, aiClient, mapper, events, mutableClock,
+                modelId -> llm, null);
+
+        AiChatRequest req1 = new AiChatRequest(ContextType.GENERAL, null, "Xóa danh sách 10",
+                List.of(), null, null, ExecutionMode.CONFIRM, null, null, null, UUID.randomUUID());
+        AiChatResponse staged = engine.execute(req1);
+        UUID confId = staged.pendingConfirmation().confirmationId();
+
+        currentInstant.set(t0.plus(Duration.ofMinutes(6)));
+
+        AiChatRequest req2 = new AiChatRequest(ContextType.GENERAL, null, "Xác nhận sau 6 phút",
+                List.of(), null, staged.sessionId(), ExecutionMode.CONFIRM, null, confId, ConfirmationDecision.APPROVE, UUID.randomUUID());
+
+        assertThatThrownBy(() -> engine.execute(req2))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("Yêu cầu xác nhận không hợp lệ hoặc đã hết hạn");
+
+        verify(toolRegistry, never()).execute(eq("delete_shopping_list"), any());
+    }
+
+    @Test
+    void confirmedToolFailureMarksPendingFailedAndThrowsAppException() {
+        when(toolRegistry.definitionsFor("CUSTOMER")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("delete_shopping_list", "Xóa danh sách", "{}", true, true, Set.of(), AiAssistantToolRegistry.RiskTier.HIGH_RISK_WRITE)));
+
+        when(toolRegistry.execute(eq("delete_shopping_list"), any())).thenThrow(
+                new AppException(ErrorCode.NOT_FOUND, "Danh sách mua sắm không tồn tại"));
+
+        ScriptedLlm llm = new ScriptedLlm(request -> {
+            List<String> fnResponses = functionResponseNames(request);
+            if (fnResponses.isEmpty()) {
+                return functionCall("delete_shopping_list", "call-del-1", Map.of("listId", 999));
+            }
+            return textResponse("Vui lòng xác nhận.");
+        });
+
+        var engine = createEngine(llm);
+
+        AiChatRequest req1 = new AiChatRequest(ContextType.GENERAL, null, "Xóa danh sách #999",
+                List.of(), null, null, ExecutionMode.CONFIRM, null, null, null, UUID.randomUUID());
+        AiChatResponse staged = engine.execute(req1);
+        UUID confId = staged.pendingConfirmation().confirmationId();
+
+        AiChatRequest req2 = new AiChatRequest(ContextType.GENERAL, null, "Xác nhận xóa",
+                List.of(), null, staged.sessionId(), ExecutionMode.CONFIRM, null, confId, ConfirmationDecision.APPROVE, UUID.randomUUID());
+
+        assertThatThrownBy(() -> engine.execute(req2))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("Danh sách mua sắm không tồn tại");
+    }
+
+    @Test
+    void approvalResumeBlocksChainedWritesToPreventInfiniteLoop() {
+        when(toolRegistry.definitionsFor("CUSTOMER")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("delete_shopping_list", "Xóa danh sách", "{}", true, true, Set.of(), AiAssistantToolRegistry.RiskTier.HIGH_RISK_WRITE),
+                new AiAssistantToolRegistry.ToolDefinition("add_meal_plan_slot", "Thêm món", "{}", true, false, Set.of(), AiAssistantToolRegistry.RiskTier.LOW_RISK_WRITE)));
+
+        when(toolRegistry.execute(eq("delete_shopping_list"), any())).thenReturn(
+                new AiAssistantToolRegistry.ToolResult("SUCCEEDED", "Đã xóa danh sách", Map.of("deleted", true), List.of()));
+
+        ScriptedLlm llm = new ScriptedLlm(request -> {
+            List<String> fnResponses = functionResponseNames(request);
+            if (fnResponses.isEmpty()) {
+                return functionCall("delete_shopping_list", "call-del-1", Map.of("listId", 10));
+            }
+            if (isFunctionResponseStatus(request, "SUCCEEDED")) {
+                return functionCall("add_meal_plan_slot", "call-chained-1", Map.of("recipeId", 101));
+            }
+            return textResponse("Vui lòng xác nhận xóa danh sách.");
+        });
+
+        var engine = createEngine(llm);
+
+        AiChatRequest req1 = new AiChatRequest(ContextType.GENERAL, null, "Xóa danh sách 10",
+                List.of(), null, null, ExecutionMode.CONFIRM, null, null, null, UUID.randomUUID());
+        AiChatResponse staged = engine.execute(req1);
+        UUID confId = staged.pendingConfirmation().confirmationId();
+
+        AiChatRequest req2 = new AiChatRequest(ContextType.GENERAL, null, "Xác nhận",
+                List.of(), null, staged.sessionId(), ExecutionMode.CONFIRM, null, confId, ConfirmationDecision.APPROVE, UUID.randomUUID());
+
+        AiChatResponse resumed = engine.execute(req2);
+
+        assertThat(resumed.runStatus()).isEqualTo("COMPLETED");
+        verify(toolRegistry, never()).execute(eq("add_meal_plan_slot"), any());
+        verify(toolRegistry, times(1)).execute(eq("delete_shopping_list"), any());
+    }
+
+    @Test
+    void chatbotModeZeroToolsAnswersDirectlyAndInjectsKnowledgeSources() {
+        ScriptedLlm llm = new ScriptedLlm(request -> {
+            assertThat(request.tools()).isEmpty();
+            return textResponse("Món đậu hũ sốt cà chua rất giàu đạm thực vật.");
+        });
+
+        var engine = createEngine(llm);
+
+        AiChatRequest req = new AiChatRequest(ContextType.GENERAL, null, "Món chay nào giàu đạm?",
+                List.of(), null, null, ExecutionMode.CHATBOT, null, null, null, UUID.randomUUID());
+        AiChatResponse resp = engine.execute(req);
+
+        assertThat(resp.runStatus()).isEqualTo("COMPLETED");
+        assertThat(resp.answer()).contains("đậu hũ");
+        verify(toolRegistry, never()).execute(any(), any());
+    }
+
+    @Test
+    void modeSwitchingFromAgentToChatbotDiscardsPendingConfirmation() {
+        when(toolRegistry.definitionsFor("CUSTOMER")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("delete_shopping_list", "Xóa danh sách", "{}", true, true, Set.of(), AiAssistantToolRegistry.RiskTier.HIGH_RISK_WRITE)));
+
+        ScriptedLlm llm = new ScriptedLlm(request -> {
+            List<String> fnResponses = functionResponseNames(request);
+            if (fnResponses.isEmpty() && !request.tools().isEmpty()) {
+                return functionCall("delete_shopping_list", "call-del-1", Map.of("listId", 5));
+            }
+            return textResponse("Món chay giàu đạm gồm đậu nành, nấm và các loại hạt.");
+        });
+
+        var engine = createEngine(llm);
+
+        // Turn 1 in AGENT mode stages confirmation
+        AiChatRequest req1 = new AiChatRequest(ContextType.GENERAL, null, "Xóa danh sách số 5",
+                List.of(), null, null, ExecutionMode.AGENT, null, null, null, UUID.randomUUID());
+        AiChatResponse resp1 = engine.execute(req1);
+
+        assertThat(resp1.runStatus()).isEqualTo("AWAITING_CONFIRMATION");
+        assertThat(resp1.pendingConfirmation()).isNotNull();
+
+        // Turn 2: User switches mode to CHATBOT and asks a general question
+        AiChatRequest req2 = new AiChatRequest(ContextType.GENERAL, null, "Món chay nào giàu đạm?",
+                List.of(), null, resp1.sessionId(), ExecutionMode.CHATBOT, null, null, null, UUID.randomUUID());
+        AiChatResponse resp2 = engine.execute(req2);
+
+        assertThat(resp2.runStatus()).isEqualTo("COMPLETED");
+        assertThat(resp2.pendingConfirmation()).isNull();
+        assertThat(sessionStore.inspect(resp1.sessionId(), "user:10").pending().status())
+                .isEqualTo(AiAssistantSessionStore.ConfirmationStatus.CANCELLED);
+    }
+
+    @Test
+    void newAgentQuestionDoesNotDiscardPendingConfirmation() {
+        when(toolRegistry.definitionsFor("CUSTOMER")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("delete_shopping_list", "Xóa danh sách", "{}", true, true, Set.of(), AiAssistantToolRegistry.RiskTier.HIGH_RISK_WRITE)));
+        ScriptedLlm llm = new ScriptedLlm(request -> {
+            if (functionResponseNames(request).isEmpty() && !request.tools().isEmpty()) {
+                return functionCall("delete_shopping_list", "call-del-1", Map.of("listId", 5));
+            }
+            return textResponse("Đang chờ xác nhận.");
+        });
+        var engine = createEngine(llm);
+
+        AiChatResponse staged = engine.execute(new AiChatRequest(ContextType.GENERAL, null, "Xóa danh sách số 5",
+                List.of(), null, null, ExecutionMode.AGENT, null, null, null, UUID.randomUUID()));
+        assertThat(staged.runStatus()).isEqualTo("AWAITING_CONFIRMATION");
+
+        AiChatRequest nextQuestion = new AiChatRequest(ContextType.GENERAL, null, "Gợi ý món khác",
+                List.of(), null, staged.sessionId(), ExecutionMode.AGENT, null, null, null, UUID.randomUUID());
+        assertThatThrownBy(() -> engine.execute(nextQuestion))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("Hãy xác nhận, từ chối hoặc chuyển sang CHATBOT");
+        assertThat(sessionStore.inspect(staged.sessionId(), "user:10").pending().status())
+                .isEqualTo(AiAssistantSessionStore.ConfirmationStatus.PENDING);
+    }
+
+    @Test
+    void cancellationBeforeStreamStartsSkipsClassifierAndAgentRun() {
+        AtomicBoolean providerCalled = new AtomicBoolean();
+        ScriptedLlm llm = new ScriptedLlm(request -> {
+            providerCalled.set(true);
+            return textResponse("Không được gọi sau cancellation.");
+        });
+        var engine = createEngine(llm);
+        AiChatCancellationSignal cancellation = new AiChatCancellationSignal();
+        cancellation.cancel();
+        List<tech.mamxanh.recipe.dto.response.AiChatStreamEvent> events = new ArrayList<>();
+        AiChatRequest request = new AiChatRequest(ContextType.GENERAL, null, "Món chay giàu đạm?",
+                List.of(), null, null, ExecutionMode.AGENT, null, null, null, UUID.randomUUID());
+
+        engine.stream(request, events::add, cancellation);
+
+        assertThat(providerCalled).isFalse();
+        assertThat(events).hasSize(1);
+        assertThat(events.get(0).type()).isEqualTo("complete");
+        assertThat(((AiChatResponse) events.get(0).data()).runStatus()).isEqualTo("STOPPED");
+    }
+
+    @Test
+    void cancellationByClientRequestIdAfterFirstToolStepPreventsTheNextToolStep() {
+        when(toolRegistry.definitionsFor("CUSTOMER")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("get_shopping_list", "Đọc danh sách", "{}", false, false, Set.of(), AiAssistantToolRegistry.RiskTier.READ_ONLY)));
+        when(toolRegistry.execute(eq("get_shopping_list"), any()))
+                .thenReturn(new AiAssistantToolRegistry.ToolResult("SUCCEEDED", "Đã đọc danh sách", Map.of(), List.of()));
+        ScriptedLlm llm = new ScriptedLlm(request -> {
+            int functionResponses = functionResponseNames(request).size();
+            return functionCall("get_shopping_list", "call-read-" + functionResponses, Map.of());
+        });
+        var engine = createEngine(llm);
+        UUID clientRequestId = UUID.randomUUID();
+        AiChatRequest request = new AiChatRequest(ContextType.GENERAL, null, "Đọc danh sách của tôi",
+                List.of(), null, null, ExecutionMode.AGENT, null, null, null, clientRequestId);
+        AtomicBoolean cancelSent = new AtomicBoolean();
+        List<tech.mamxanh.recipe.dto.response.AiChatStreamEvent> events = new ArrayList<>();
+
+        engine.stream(request, event -> {
+            events.add(event);
+            if ("step".equals(event.type()) && cancelSent.compareAndSet(false, true)) {
+                AiChatRequest cancel = new AiChatRequest(ContextType.GENERAL, null, "Dừng",
+                        List.of(), null, null, ExecutionMode.AGENT, null, null, null, clientRequestId,
+                        AiChatRequest.ControlAction.CANCEL);
+                engine.cancel(cancel);
+            }
+        });
+
+        verify(toolRegistry, times(1)).execute(eq("get_shopping_list"), any());
+        var complete = events.stream().filter(event -> "complete".equals(event.type())).findFirst().orElseThrow();
+        assertThat(((AiChatResponse) complete.data()).runStatus()).isEqualTo("STOPPED");
+    }
+
+
+    @Test
+    void streamingEmitsDeltaAndCompleteEvents() {
+        ScriptedLlm llm = new ScriptedLlm(request -> textResponse("Đậu hũ và nấm là nguồn đạm thực vật phổ biến."));
+        var engine = createEngine(llm);
+
+        List<tech.mamxanh.recipe.dto.response.AiChatStreamEvent> collected = new ArrayList<>();
+        AiChatRequest req = new AiChatRequest(ContextType.GENERAL, null, "Món chay nào giàu đạm?",
+                List.of(), null, null, ExecutionMode.CHATBOT, null, null, null, UUID.randomUUID());
+
+        engine.stream(req, collected::add);
+
+        assertThat(collected).isNotEmpty();
+        boolean hasDelta = collected.stream().anyMatch(e -> "delta".equals(e.type()));
+        boolean hasComplete = collected.stream().anyMatch(e -> "complete".equals(e.type()));
+        assertThat(hasDelta).isTrue();
+        assertThat(hasComplete).isTrue();
+
+        var completeEvent = collected.stream()
+                .filter(e -> "complete".equals(e.type()))
+                .findFirst()
+                .orElseThrow();
+        AiChatResponse response = (AiChatResponse) completeEvent.data();
+        assertThat(response.runStatus()).isEqualTo("COMPLETED");
+        assertThat(response.answer()).contains("Đậu hũ");
+    }
+
+    @Test
+    void cancellationReturnsStoppedAndDiscardsPending() {
+        when(toolRegistry.definitionsFor("CUSTOMER")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("delete_shopping_list", "Xóa danh sách", "{}", true, true, Set.of(), AiAssistantToolRegistry.RiskTier.HIGH_RISK_WRITE)));
+
+        ScriptedLlm llm = new ScriptedLlm(request -> {
+            List<String> fnResponses = functionResponseNames(request);
+            if (fnResponses.isEmpty() && !request.tools().isEmpty()) {
+                return functionCall("delete_shopping_list", "call-del-1", Map.of("listId", 7));
+            }
+            return textResponse("Vui lòng xác nhận xóa danh sách.");
+        });
+        var engine = createEngine(llm);
+
+        AiChatRequest req1 = new AiChatRequest(ContextType.GENERAL, null, "Xóa danh sách 7",
+                List.of(), null, null, ExecutionMode.AGENT, null, null, null, UUID.randomUUID());
+        AiChatResponse staged = engine.execute(req1);
+
+        assertThat(staged.runStatus()).isEqualTo("AWAITING_CONFIRMATION");
+
+        AiChatRequest cancelReq = new AiChatRequest(ContextType.GENERAL, null, "Dừng",
+                List.of(), null, staged.sessionId(), ExecutionMode.AGENT, null, null, null, UUID.randomUUID(), AiChatRequest.ControlAction.CANCEL);
+        AiChatResponse stopped = engine.cancel(cancelReq);
+
+        assertThat(stopped.runStatus()).isEqualTo("STOPPED");
+        assertThat(stopped.answer()).contains("Đã dừng lượt chạy");
+        assertThat(sessionStore.inspect(staged.sessionId(), "user:10").pending().status())
+                .isEqualTo(AiAssistantSessionStore.ConfirmationStatus.CANCELLED);
     }
 
     // Helper classes for test scripting

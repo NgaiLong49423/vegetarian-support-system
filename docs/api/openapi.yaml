@@ -3,7 +3,7 @@ info:
   title: OpenAPI definition
   version: v0
 servers:
-- url: http://127.0.0.1:18084
+- url: http://localhost:8080
   description: Generated server url
 paths:
   /api/v1/shopping-lists/{listId}/recipes/{recipeId}/servings:
@@ -3430,12 +3430,98 @@ paths:
       security:
       - {}
       - bearerAuth: []
+  /api/v1/recipes/ai/chat/stream:
+    post:
+      tags:
+      - ai-chat-controller
+      summary: Ask the vegetarian cooking assistant with real-time SSE streaming
+      operationId: stream
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiChatRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/SseEmitter"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/recipes/ai/chat/cancel:
+    post:
+      tags:
+      - ai-chat-controller
+      summary: "Cancel an active AI turn by sessionId or clientRequestId, or cancel\
+        \ a staged confirmation"
+      description: Send clientRequestId when the stream has not returned a sessionId
+        yet. Cancellation prevents later Agent tool steps; a tool operation already
+        started may finish and committed changes are preserved.
+      operationId: cancel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiChatRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AiChatResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/recipes/ai-assistance:
     post:
       tags:
       - recipe-post-controller
       summary: Generate editable AI-assisted recipe text
-      description: Requires an active Expert account with an active Pro subscription.
+      description: Requires an active Expert account and available AI token budget.
         Does not create or publish a recipe draft.
       operationId: generateAiAssistance
       requestBody:
@@ -3452,7 +3538,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecipeAiAssistanceResponse"
         "403":
-          description: Expert role or Pro entitlement is required.
+          description: Expert role is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: The selected AI model is not available for the account tier.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "429":
+          description: AI token budget is exhausted.
           content:
             application/problem+json:
               schema:
@@ -10098,6 +10196,8 @@ components:
           type: string
           description: Execution mode for this request. Defaults to CONFIRM when omitted.
           enum:
+          - CHATBOT
+          - AGENT
           - QA
           - CONFIRM
           - AUTO
@@ -10232,6 +10332,8 @@ components:
         executionMode:
           type: string
           enum:
+          - CHATBOT
+          - AGENT
           - QA
           - CONFIRM
           - AUTO
@@ -10339,6 +10441,12 @@ components:
         version:
           type: string
           description: "Version of the registered knowledge source, when applicable."
+    SseEmitter:
+      type: object
+      properties:
+        timeout:
+          type: integer
+          format: int64
     RecipeAiAssistanceRequest:
       type: object
       properties:
@@ -10401,17 +10509,17 @@ components:
           type: string
         paymentLinkId:
           type: string
+        paymentSuccess:
+          type: boolean
+        transactionAtUtc:
+          type: string
+          format: date-time
         orderCode:
           type: integer
           format: int64
         amount:
           type: integer
           format: int32
-        paymentSuccess:
-          type: boolean
-        transactionAtUtc:
-          type: string
-          format: date-time
     ConfirmNutritionEligibilityRequest:
       type: object
       properties:

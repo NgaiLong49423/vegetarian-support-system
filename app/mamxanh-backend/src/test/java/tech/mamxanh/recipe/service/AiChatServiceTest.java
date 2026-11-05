@@ -8,6 +8,7 @@ import static org.mockito.Mockito.*;
 import java.time.Clock;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -20,6 +21,7 @@ import tech.mamxanh.integration.ai.AiClient;
 import tech.mamxanh.integration.ai.AiUsageEvent;
 import tech.mamxanh.nutrition.service.DietaryPreferenceService;
 import tech.mamxanh.recipe.dto.request.AiChatRequest;
+import tech.mamxanh.recipe.dto.response.AiChatResponse;
 import tech.mamxanh.recipe.dto.response.RecipePostResponse;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -67,6 +69,30 @@ class AiChatServiceTest {
         ArgumentCaptor<AiUsageEvent> usage = ArgumentCaptor.forClass(AiUsageEvent.class);
         verify(events, times(2)).publishEvent(usage.capture());
         assertThat(usage.getValue().userId()).isNull();
+    }
+
+    @Test
+    void cancelByClientRequestIdSignalsAnActiveStreamBeforeSessionIdExists() {
+        AdkAssistantEngine engine = mock(AdkAssistantEngine.class);
+        AiChatService streamService = new AiChatService(users, recipes, recipePosts, preferences, ai,
+                new JsonMapper(), events, Clock.systemUTC(), entitlements, aiQuota, null,
+                null, null, null, engine, mock(AiAssistantSessionStore.class));
+        UUID clientRequestId = UUID.randomUUID();
+        AiChatRequest streamRequest = new AiChatRequest(AiChatRequest.ContextType.GENERAL, null, "Đọc danh sách",
+                List.of(), null, null, AiChatRequest.ExecutionMode.AGENT, null, null, null, clientRequestId);
+        AiChatCancellationSignal signal = streamService.registerStreamCancellation(streamRequest);
+        AiChatRequest cancelRequest = new AiChatRequest(AiChatRequest.ContextType.GENERAL, null, "Dừng",
+                List.of(), null, null, AiChatRequest.ExecutionMode.AGENT, null, null, null, clientRequestId,
+                AiChatRequest.ControlAction.CANCEL);
+        AiChatResponse stopped = new AiChatResponse(AiChatRequest.ContextType.GENERAL, null, "Đã dừng.", List.of(), null,
+                null, AiChatRequest.ExecutionMode.AGENT, UUID.randomUUID(), List.of(), null, null, List.of(),
+                "ADK_ASSISTANT", "STOPPED", null, null);
+        when(engine.cancel(cancelRequest, signal)).thenReturn(stopped);
+
+        assertThat(streamService.answer(cancelRequest).runStatus()).isEqualTo("STOPPED");
+        assertThat(signal.isCancelled()).isTrue();
+        verify(engine).cancel(cancelRequest, signal);
+        streamService.releaseStreamCancellation(streamRequest, signal);
     }
 
     @Test

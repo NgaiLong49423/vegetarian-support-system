@@ -58,11 +58,17 @@ public class AiAssistantExecutionJournal {
             UUID clientRequestId,
             String actionId,
             String toolName,
+            String argumentsHash,
             ActionState state,
             Object resultData,
             String errorMessage,
             Instant createdAt
-    ) { }
+    ) {
+        public JournalEntry(long ownerId, UUID clientRequestId, String actionId, String toolName,
+                ActionState state, Object resultData, String errorMessage, Instant createdAt) {
+            this(ownerId, clientRequestId, actionId, toolName, null, state, resultData, errorMessage, createdAt);
+        }
+    }
 
     private final Map<ActionKey, JournalEntry> entries = new ConcurrentHashMap<>();
     private final JdbcTemplate jdbc;
@@ -113,22 +119,61 @@ public class AiAssistantExecutionJournal {
     }
 
     public JournalEntry recordReservation(long ownerId, UUID clientRequestId, String actionId, String toolName) {
+        return recordReservation(ownerId, clientRequestId, actionId, toolName, hash(actionId + ":" + toolName));
+    }
+
+    public JournalEntry recordReservation(long ownerId, UUID clientRequestId, String actionId, String toolName, String argumentsHash) {
         ActionKey key = new ActionKey(ownerId, clientRequestId, actionId);
+        String finalHash = (argumentsHash != null && !argumentsHash.isBlank()) ? argumentsHash : hash(actionId + ":" + toolName);
         JournalEntry entry = new JournalEntry(
-                ownerId, clientRequestId, actionId, toolName,
+                ownerId, clientRequestId, actionId, toolName, finalHash,
                 ActionState.RESERVED, null, null, Instant.now()
         );
-        entries.put(key, entry);
+
+        JournalEntry existing = entries.putIfAbsent(key, entry);
+        if (existing != null) {
+            if (existing.argumentsHash() != null && !existing.argumentsHash().equalsIgnoreCase(finalHash)) {
+                throw new AppException(ErrorCode.VALIDATION_FAILED, "Tham số của yêu cầu không khớp với bản ghi đã tồn tại.");
+            }
+            if (existing.state() == ActionState.RESERVED || existing.state() == ActionState.WRITING) {
+                throw new AppException(ErrorCode.VALIDATION_FAILED, "Thao tác đang được xử lý trong một yêu cầu khác.");
+            }
+            if (existing.state() == ActionState.SUCCEEDED) {
+                return existing;
+            }
+            entries.put(key, entry);
+        }
 
         if (jdbc != null && requiresNewTransaction != null) {
-            String hash = hash(actionId + ":" + toolName);
             try {
                 requiresNewTransaction.executeWithoutResult(status -> jdbc.update("""
                         INSERT INTO AI_ASSISTANT_ACTION_JOURNAL(owner_id, client_request_id, action_id, tool_name, arguments_hash, state)
                         VALUES (?, ?, ?, ?, ?, 'RESERVED')
-                        """, ownerId, clientRequestId, actionId, toolName, hash));
+                        """, ownerId, clientRequestId, actionId, toolName, finalHash));
             } catch (DuplicateKeyException duplicate) {
-                log.debug("Reservation duplicate key detected for owner={}, req={}, action={}", ownerId, clientRequestId, actionId);
+                log.warn("Reservation duplicate key detected in SQL for owner={}, req={}, action={}", ownerId, clientRequestId, actionId);
+                List<Map<String, Object>> rows = jdbc.queryForList("""
+                        SELECT arguments_hash, state, result_json, error_message
+                        FROM AI_ASSISTANT_ACTION_JOURNAL
+                        WHERE owner_id = ? AND client_request_id = ? AND action_id = ?
+                        """, ownerId, clientRequestId, actionId);
+                if (!rows.isEmpty()) {
+                    Map<String, Object> row = rows.get(0);
+                    String existingHash = (String) row.get("arguments_hash");
+                    String stateStr = (String) row.get("state");
+                    if (existingHash != null && !existingHash.trim().equalsIgnoreCase(finalHash.trim())) {
+                        throw new AppException(ErrorCode.VALIDATION_FAILED, "Tham số của yêu cầu không khớp với bản ghi đã tồn tại.");
+                    }
+                    if ("RESERVED".equals(stateStr) || "WRITING".equals(stateStr)) {
+                        throw new AppException(ErrorCode.VALIDATION_FAILED, "Thao tác đang được xử lý trong một yêu cầu khác.");
+                    }
+                    if ("SUCCEEDED".equals(stateStr)) {
+                        return find(ownerId, clientRequestId, actionId).orElse(entry);
+                    }
+                }
+                throw new AppException(ErrorCode.VALIDATION_FAILED, "Thao tác đang được xử lý trong một yêu cầu khác.");
+            } catch (AppException appEx) {
+                throw appEx;
             } catch (Exception ex) {
                 log.warn("Failed to persist reservation in SQL Server: {}", ex.getMessage());
             }
@@ -140,8 +185,9 @@ public class AiAssistantExecutionJournal {
         ActionKey key = new ActionKey(ownerId, clientRequestId, actionId);
         entries.compute(key, (k, existing) -> {
             String tool = existing != null ? existing.toolName() : "unknown";
+            String argHash = existing != null ? existing.argumentsHash() : null;
             Instant created = existing != null ? existing.createdAt() : Instant.now();
-            return new JournalEntry(ownerId, clientRequestId, actionId, tool, newState, resultData, errorMessage, created);
+            return new JournalEntry(ownerId, clientRequestId, actionId, tool, argHash, newState, resultData, errorMessage, created);
         });
 
         if (jdbc != null) {
@@ -176,7 +222,7 @@ public class AiAssistantExecutionJournal {
         if (jdbc != null) {
             try {
                 List<JournalEntry> rows = jdbc.query("""
-                        SELECT owner_id, client_request_id, action_id, tool_name, state, result_json, error_message, created_at
+                        SELECT owner_id, client_request_id, action_id, tool_name, arguments_hash, state, result_json, error_message, created_at
                         FROM AI_ASSISTANT_ACTION_JOURNAL
                         WHERE owner_id = ? AND client_request_id = ? AND action_id = ? AND expires_at > SYSUTCDATETIME()
                         """, (rs, rowNum) -> {
@@ -193,6 +239,7 @@ public class AiAssistantExecutionJournal {
                             (UUID) rs.getObject("client_request_id"),
                             rs.getString("action_id"),
                             rs.getString("tool_name"),
+                            rs.getString("arguments_hash"),
                             state,
                             resultJson,
                             rs.getString("error_message"),
@@ -231,19 +278,39 @@ public class AiAssistantExecutionJournal {
             String actionId,
             String toolName,
             Callable<T> action) {
+        return executeWithJournal(ownerId, clientRequestId, actionId, toolName, null, action);
+    }
+
+    public <T> T executeWithJournal(
+            long ownerId,
+            UUID clientRequestId,
+            String actionId,
+            String toolName,
+            String argumentsHash,
+            Callable<T> action) {
 
         ActionKey key = new ActionKey(ownerId, clientRequestId, actionId);
+        String finalHash = (argumentsHash != null && !argumentsHash.isBlank()) ? argumentsHash : hash(actionId + ":" + toolName);
 
         // 1. Idempotency Check: if already succeeded in this or previous retry turn, return cached result
         Optional<JournalEntry> existing = find(ownerId, clientRequestId, actionId);
-        if (existing.isPresent() && existing.get().state() == ActionState.SUCCEEDED) {
-            @SuppressWarnings("unchecked")
-            T cached = (T) existing.get().resultData();
-            return cached;
+        if (existing.isPresent()) {
+            JournalEntry entry = existing.get();
+            if (entry.argumentsHash() != null && !entry.argumentsHash().equalsIgnoreCase(finalHash)) {
+                throw new AppException(ErrorCode.VALIDATION_FAILED, "Tham số của yêu cầu không khớp với bản ghi đã tồn tại.");
+            }
+            if (entry.state() == ActionState.SUCCEEDED) {
+                @SuppressWarnings("unchecked")
+                T cached = (T) entry.resultData();
+                return cached;
+            }
+            if (entry.state() == ActionState.RESERVED || entry.state() == ActionState.WRITING) {
+                throw new AppException(ErrorCode.VALIDATION_FAILED, "Thao tác đang được xử lý trong một yêu cầu khác.");
+            }
         }
 
         // 2. Reserve Action
-        recordReservation(ownerId, clientRequestId, actionId, toolName);
+        recordReservation(ownerId, clientRequestId, actionId, toolName, finalHash);
 
         // 3. Execute domain action (wrapped in shared transaction if manager available)
         try {

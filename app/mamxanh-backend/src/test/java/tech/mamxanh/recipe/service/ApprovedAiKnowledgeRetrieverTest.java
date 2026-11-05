@@ -22,10 +22,14 @@ class ApprovedAiKnowledgeRetrieverTest {
                 .extracting(source -> source.id()).contains("password-recovery");
         assertThat(retriever.retrieve("So sánh các gói dịch vụ AI Free Plus Pro"))
                 .extracting(source -> source.id()).contains("plans-overview");
+        assertThat(retriever.retrieve("Đăng ký hồ sơ chuyên gia ẩm thực"))
+                .extracting(source -> source.id()).contains("expert-registration");
+        assertThat(retriever.retrieve("Nạp thêm AI Credit thanh toán"))
+                .extracting(source -> source.id()).contains("ai-credit-and-top-up");
     }
 
     @Test
     void returnsNoSourceWhenApprovedCorpusHasNoMatchingEvidence() {
-        assertThat(retriever.retrieve("quần đảo ngoài hành tinh" )).isEmpty();
+        assertThat(retriever.retrieve("quần đảo ngoài hành tinh")).isEmpty();
     }
 }

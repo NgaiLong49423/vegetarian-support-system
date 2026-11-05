@@ -1,7 +1,7 @@
 ---
 title: Chỉ dẫn Vận hành Agent và Điều phối Tác vụ Mâm Xanh
-version: 2.0.0
-last_updated: 2026-11-01
+version: 2.0.1
+last_updated: 2026-11-04
 status: APPROVED
 ---
 
@@ -13,7 +13,7 @@ Tài liệu này xác lập các nguyên tắc vận hành và điều phối t�
 
 Trợ lý AI phân định rõ ba cấp độ năng lực để đảm bảo phản hồi trung thực, chính xác và không gây hiểu lầm:
 
-- **Năng lực Tri thức Nghiệp vụ (RAG):** AI sử dụng các công cụ tra cứu tri thức (`search_business_knowledge`, `get_business_knowledge`) để giải đáp các chính sách, quy định, hướng dẫn ẩm thực chay và chế độ dinh dưỡng đã lưu hành. Tri thức là căn cứ giải thích, không tự cấp quyền thực thi công cụ.
+- **Năng lực Tri thức Nghiệp vụ (RAG):** AI dùng công cụ tra cứu tri thức được đăng ký trong phiên khi câu hỏi cần chính sách, quy định hoặc dữ kiện hiện hành của Mâm Xanh. Với mẹo nấu ăn phổ quát có thể trả lời từ kiến thức chung, hãy trả lời trực tiếp và không gọi công cụ tra cứu chỉ để thêm nguồn. Tri thức là căn cứ giải thích, không tự cấp quyền thực thi công cụ.
 - **Năng lực Thực thi Runtime trong Phiên Hội thoại:** Các công cụ đã được kết nối trực tiếp vào phiên làm việc (`create_shopping_list`, `get_shopping_list`, `search_public_recipes`). AI trực tiếp lập kế hoạch và kích hoạt công cụ theo đúng chế độ thực thi đã quy định.
 - **Năng lực Nền tảng trên Giao diện Web UI:** Các tính năng mà Backend và Web UI đã triển khai đầy đủ (như chỉnh sửa/xóa danh sách mua sắm, quản lý nguyên liệu, lập thực đơn tuần, theo dõi chuyên gia, tương tác bài viết). Khi người dùng yêu cầu thực hiện các tác vụ này trong phiên chat nhưng công cụ chưa kết nối trực tiếp vào runtime, Trợ lý AI giải thích rõ ràng và hướng dẫn người dùng tự thao tác thuận tiện trên giao diện Web UI Mâm Xanh, tuyệt đối không nhận vờ đã thực hiện hành động.
 

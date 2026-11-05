@@ -91,41 +91,41 @@ public class AiAssistantToolRegistry {
         boolean expert = "EXPERT".equals(role);
         var definitions = new java.util.ArrayList<ToolDefinition>();
         definitions.add(def("search_public_recipes", "Search current public Mâm Xanh recipes; returns real recipe IDs and source titles.",
-                "{\"query\":\"string, max 120 chars\"}", false, false, Set.of()));
+                "{\"query\":\"string, max 120 chars\"}", RiskTier.READ_ONLY, Set.of()));
         definitions.add(def("get_recipe_detail", "Read published recipe details including ingredients, steps, and nutrition.",
-                "{\"recipeId\":1}", false, false, Set.of()));
+                "{\"recipeId\":1}", RiskTier.READ_ONLY, Set.of()));
         definitions.add(def("get_ingredient_detail", "Read public vegetarian ingredient details including name, group, and nutritional information.",
-                "{\"ingredientId\":1}", false, false, Set.of()));
+                "{\"ingredientId\":1}", RiskTier.READ_ONLY, Set.of()));
         definitions.add(def("navigate_to_page", "Navigate the user to an existing Mâm Xanh page only when they explicitly ask to open, go to, or switch to that page. Use only one page key from the allowed list.",
-                "{\"page\":\"HOME|EXPLORE|MEAL_PLAN|SHOPPING_LIST|AI_PLANS|AI_CREDIT_TOP_UP|PROFILE|DIETARY_PREFERENCES|HEALTH_PROFILE|RECIPE_CREATE|EXPERT_DIRECTORY|COMMUNITY|TRANSACTION_HISTORY\"}", false, false, Set.of()));
+                "{\"page\":\"HOME|EXPLORE|MEAL_PLAN|SHOPPING_LIST|AI_PLANS|AI_CREDIT_TOP_UP|PROFILE|DIETARY_PREFERENCES|HEALTH_PROFILE|RECIPE_CREATE|EXPERT_DIRECTORY|COMMUNITY|TRANSACTION_HISTORY\"}", RiskTier.READ_ONLY, Set.of()));
         definitions.add(def("search_approved_knowledge", "Search only approved Mâm Xanh knowledge and policies; never use the Internet.",
-                "{\"query\":\"string\"}", false, false, Set.of()));
+                "{\"query\":\"string\"}", RiskTier.READ_ONLY, Set.of()));
         if (!member) return List.copyOf(definitions);
 
-        definitions.add(def("get_own_profile", "Read the authenticated member's own basic profile.", "{}", false, false, Set.of(AiChatRequest.ConsentCategory.BASIC_PROFILE)));
-        definitions.add(def("update_own_profile", "Update only the authenticated member's display name and bio.", "{\"displayName\":\"string\",\"bio\":\"string|null\"}", true, false, Set.of(AiChatRequest.ConsentCategory.BASIC_PROFILE)));
-        definitions.add(def("get_dietary_preferences", "Read the authenticated member's own vegetarian and avoid/dislike preferences.", "{}", false, false, Set.of(AiChatRequest.ConsentCategory.DIETARY_PREFERENCES)));
-        definitions.add(def("update_dietary_preferences", "Update the authenticated member's own dietary preferences.", "SaveDietaryPreferencesRequest", true, false, Set.of(AiChatRequest.ConsentCategory.DIETARY_PREFERENCES)));
-        definitions.add(def("get_health_profile", "Read the authenticated member's own health profile and nutrition eligibility.", "{}", false, false, Set.of(AiChatRequest.ConsentCategory.HEALTH_PROFILE)));
-        definitions.add(def("update_health_profile", "Save the authenticated member's own health profile; in-app health-data consent remains required.", "SaveNutritionProfileRequest", true, false, Set.of(AiChatRequest.ConsentCategory.HEALTH_PROFILE)));
-        definitions.add(def("set_recipe_reaction", "Like, dislike, or clear the authenticated member's reaction to a published recipe.", "{\"recipeId\":1,\"reaction\":\"LIKE|DISLIKE|NONE\"}", true, false, Set.of()));
-        definitions.add(def("create_recipe_comment", "Create a comment on a published recipe for the authenticated member.", "{\"recipeId\":1,\"content\":\"text\",\"parentCommentId\":null}", true, false, Set.of()));
-        definitions.add(def("follow_expert", "Follow or unfollow an eligible expert account.", "{\"expertId\":1,\"follow\":true}", true, false, Set.of()));
-        definitions.add(def("get_meal_plan", "Read the authenticated member's meal plan for one week.", "{\"weekStartDate\":\"YYYY-MM-DD\"}", false, false, Set.of()));
-        definitions.add(def("apply_weekly_menu", "Apply a complete 21-slot weekly menu to the authenticated member's own meal plan.", "ApplyAiWeeklyMenuRequest plus weekStartDate", true, false, Set.of()));
-        definitions.add(def("add_meal_plan_slot", "Add a single recipe entry to the authenticated member's meal plan on a given date and meal type.", "{\"date\":\"YYYY-MM-DD\",\"mealType\":\"BREAKFAST|LUNCH|DINNER\",\"recipeId\":1}", true, false, Set.of()));
-        definitions.add(def("list_shopping_lists", "List the authenticated member's own shopping lists.", "{}", false, false, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
-        definitions.add(def("get_shopping_list", "Read one shopping list owned by the authenticated member.", "{\"listId\":1}", false, false, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
-        definitions.add(def("create_shopping_list", "Create an empty shopping list for the authenticated member.", "{\"name\":\"string\"}", true, false, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
-        definitions.add(def("rename_shopping_list", "Rename a shopping list owned by the authenticated member.", "{\"listId\":1,\"name\":\"string\"}", true, false, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
-        definitions.add(def("add_shopping_item", "Add a quantity-backed item to a shopping list owned by the authenticated member.", "{\"listId\":1,\"name\":\"string\",\"quantity\":1,\"unitId\":1,\"ingredientId\":null}", true, false, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
-        definitions.add(def("set_shopping_item_bought", "Mark an owned shopping item bought or not bought.", "{\"listId\":1,\"itemId\":1,\"bought\":true}", true, false, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
-        definitions.add(def("delete_shopping_item", "Delete a shopping item from a list owned by the authenticated member.", "{\"listId\":1,\"itemId\":1}", true, true, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
-        definitions.add(def("delete_shopping_list", "Permanently delete a shopping list owned by the authenticated member.", "{\"listId\":1}", true, true, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
+        definitions.add(def("get_own_profile", "Read the authenticated member's own basic profile.", "{}", RiskTier.READ_ONLY, Set.of(AiChatRequest.ConsentCategory.BASIC_PROFILE)));
+        definitions.add(def("update_own_profile", "Update only the authenticated member's display name and bio.", "{\"displayName\":\"string\",\"bio\":\"string|null\"}", RiskTier.LOW_RISK_WRITE, Set.of(AiChatRequest.ConsentCategory.BASIC_PROFILE)));
+        definitions.add(def("get_dietary_preferences", "Read the authenticated member's own vegetarian and avoid/dislike preferences.", "{}", RiskTier.READ_ONLY, Set.of(AiChatRequest.ConsentCategory.DIETARY_PREFERENCES)));
+        definitions.add(def("update_dietary_preferences", "Update the authenticated member's own dietary preferences. Always requires explicit confirmation.", "SaveDietaryPreferencesRequest", RiskTier.HIGH_RISK_WRITE, Set.of(AiChatRequest.ConsentCategory.DIETARY_PREFERENCES)));
+        definitions.add(def("get_health_profile", "Read the authenticated member's own health profile and nutrition eligibility.", "{}", RiskTier.READ_ONLY, Set.of(AiChatRequest.ConsentCategory.HEALTH_PROFILE)));
+        definitions.add(def("update_health_profile", "Save the authenticated member's own health profile; in-app health-data consent remains required. Always requires explicit confirmation.", "SaveNutritionProfileRequest", RiskTier.HIGH_RISK_WRITE, Set.of(AiChatRequest.ConsentCategory.HEALTH_PROFILE)));
+        definitions.add(def("set_recipe_reaction", "Like, dislike, or clear the authenticated member's reaction to a published recipe.", "{\"recipeId\":1,\"reaction\":\"LIKE|DISLIKE|NONE\"}", RiskTier.LOW_RISK_WRITE, Set.of()));
+        definitions.add(def("create_recipe_comment", "Create a comment on a published recipe for the authenticated member.", "{\"recipeId\":1,\"content\":\"text\",\"parentCommentId\":null}", RiskTier.LOW_RISK_WRITE, Set.of()));
+        definitions.add(def("follow_expert", "Follow or unfollow an eligible expert account.", "{\"expertId\":1,\"follow\":true}", RiskTier.LOW_RISK_WRITE, Set.of()));
+        definitions.add(def("get_meal_plan", "Read the authenticated member's meal plan for one week.", "{\"weekStartDate\":\"YYYY-MM-DD\"}", RiskTier.READ_ONLY, Set.of()));
+        definitions.add(def("apply_weekly_menu", "Apply a complete 21-slot weekly menu to the authenticated member's own meal plan. Always requires explicit confirmation.", "ApplyAiWeeklyMenuRequest plus weekStartDate", RiskTier.HIGH_RISK_WRITE, Set.of()));
+        definitions.add(def("add_meal_plan_slot", "Add a single recipe entry to the authenticated member's meal plan on a given date and meal type.", "{\"date\":\"YYYY-MM-DD\",\"mealType\":\"BREAKFAST|LUNCH|DINNER\",\"recipeId\":1}", RiskTier.LOW_RISK_WRITE, Set.of()));
+        definitions.add(def("list_shopping_lists", "List the authenticated member's own shopping lists.", "{}", RiskTier.READ_ONLY, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
+        definitions.add(def("get_shopping_list", "Read one shopping list owned by the authenticated member.", "{\"listId\":1}", RiskTier.READ_ONLY, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
+        definitions.add(def("create_shopping_list", "Create an empty shopping list for the authenticated member.", "{\"name\":\"string\"}", RiskTier.LOW_RISK_WRITE, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
+        definitions.add(def("rename_shopping_list", "Rename a shopping list owned by the authenticated member.", "{\"listId\":1,\"name\":\"string\"}", RiskTier.LOW_RISK_WRITE, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
+        definitions.add(def("add_shopping_item", "Add a quantity-backed item to a shopping list owned by the authenticated member.", "{\"listId\":1,\"name\":\"string\",\"quantity\":1,\"unitId\":1,\"ingredientId\":null}", RiskTier.LOW_RISK_WRITE, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
+        definitions.add(def("set_shopping_item_bought", "Mark an owned shopping item bought or not bought.", "{\"listId\":1,\"itemId\":1,\"bought\":true}", RiskTier.LOW_RISK_WRITE, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
+        definitions.add(def("delete_shopping_item", "Delete a shopping item from a list owned by the authenticated member. Always requires explicit confirmation.", "{\"listId\":1,\"itemId\":1}", RiskTier.HIGH_RISK_WRITE, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
+        definitions.add(def("delete_shopping_list", "Permanently delete a shopping list owned by the authenticated member. Always requires explicit confirmation.", "{\"listId\":1}", RiskTier.HIGH_RISK_WRITE, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
         if (expert) {
-            definitions.add(def("create_recipe_post", "Create and publish a RecipePost as the authenticated expert. Always requires explicit confirmation.", "CreateRecipeRequest", true, true, Set.of()));
-            definitions.add(def("update_own_recipe_post", "Update a RecipePost owned by the authenticated expert.", "{\"recipeId\":1,\"recipe\":UpdateRecipePostRequest}", true, false, Set.of()));
-            definitions.add(def("delete_own_recipe_post", "Permanently delete a RecipePost owned by the authenticated expert. Always requires explicit confirmation.", "{\"recipeId\":1}", true, true, Set.of()));
+            definitions.add(def("create_recipe_post", "Create and publish a RecipePost as the authenticated expert. Always requires explicit confirmation.", "CreateRecipeRequest", RiskTier.HIGH_RISK_WRITE, Set.of()));
+            definitions.add(def("update_own_recipe_post", "Update a RecipePost owned by the authenticated expert. Always requires explicit confirmation.", "{\"recipeId\":1,\"recipe\":UpdateRecipePostRequest}", RiskTier.HIGH_RISK_WRITE, Set.of()));
+            definitions.add(def("delete_own_recipe_post", "Permanently delete a RecipePost owned by the authenticated expert. Always requires explicit confirmation.", "{\"recipeId\":1}", RiskTier.HIGH_RISK_WRITE, Set.of()));
         }
         return List.copyOf(definitions);
     }
@@ -310,13 +310,38 @@ public class AiAssistantToolRegistry {
         return value instanceof String string ? string.strip() : "";
     }
 
+    public enum RiskTier {
+        READ_ONLY,
+        LOW_RISK_WRITE,
+        HIGH_RISK_WRITE
+    }
+
+    private static ToolDefinition def(String name, String description, String inputSchema,
+            RiskTier riskTier, Set<AiChatRequest.ConsentCategory> consent) {
+        boolean write = riskTier != RiskTier.READ_ONLY;
+        boolean alwaysConfirm = riskTier == RiskTier.HIGH_RISK_WRITE;
+        return new ToolDefinition(name, description, inputSchema, write, alwaysConfirm, consent, riskTier);
+    }
+
     private static ToolDefinition def(String name, String description, String inputSchema,
             boolean write, boolean alwaysConfirm, Set<AiChatRequest.ConsentCategory> consent) {
-        return new ToolDefinition(name, description, inputSchema, write, alwaysConfirm, consent);
+        RiskTier tier = alwaysConfirm ? RiskTier.HIGH_RISK_WRITE : (write ? RiskTier.LOW_RISK_WRITE : RiskTier.READ_ONLY);
+        return new ToolDefinition(name, description, inputSchema, write, alwaysConfirm, consent, tier);
     }
 
     public record ToolDefinition(String name, String description, String inputSchema, boolean write,
-            boolean alwaysConfirm, Set<AiChatRequest.ConsentCategory> consentCategories) { }
+            boolean alwaysConfirm, Set<AiChatRequest.ConsentCategory> consentCategories, RiskTier riskTier) {
+
+        public ToolDefinition(String name, String description, String inputSchema, boolean write,
+                boolean alwaysConfirm, Set<AiChatRequest.ConsentCategory> consentCategories) {
+            this(name, description, inputSchema, write, alwaysConfirm, consentCategories,
+                    alwaysConfirm ? RiskTier.HIGH_RISK_WRITE : (write ? RiskTier.LOW_RISK_WRITE : RiskTier.READ_ONLY));
+        }
+
+        public boolean isHighRisk() {
+            return riskTier == RiskTier.HIGH_RISK_WRITE || alwaysConfirm;
+        }
+    }
 
     public record ToolResult(String status, String summary, Object result, List<Source> sources) { }
 }

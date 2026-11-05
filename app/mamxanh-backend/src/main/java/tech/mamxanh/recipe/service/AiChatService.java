@@ -29,6 +29,8 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 /** FR-51 legacy chat plus the consent-aware, bounded orchestration contract. */
@@ -89,6 +91,9 @@ public class AiChatService {
     private final AiPromptLoader promptLoader;
     private final AdkAssistantEngine adkEngine;
     private final AiAssistantSessionStore sessionStore;
+    private final java.util.Map<StreamCancellationKey, AiChatCancellationSignal> streamCancellations = new ConcurrentHashMap<>();
+
+    private record StreamCancellationKey(String owner, UUID clientRequestId) { }
     private String orchestratorMode = "DUAL_RUN";
     private boolean readClustersEnabled = true;
 
@@ -192,6 +197,50 @@ public class AiChatService {
         return answer(request);
     }
 
+    public void stream(AiChatRequest request, java.util.function.Consumer<tech.mamxanh.recipe.dto.response.AiChatStreamEvent> consumer) {
+        stream(request, consumer, new AiChatCancellationSignal());
+    }
+
+    public AiChatCancellationSignal registerStreamCancellation(AiChatRequest request) {
+        AiChatCancellationSignal signal = new AiChatCancellationSignal();
+        if (request == null || request.clientRequestId() == null) return signal;
+        if (streamCancellations.putIfAbsent(cancellationKey(request), signal) != null) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED,
+                    "clientRequestId đang được dùng bởi một lượt chat đang chạy.");
+        }
+        return signal;
+    }
+
+    public void releaseStreamCancellation(AiChatRequest request, AiChatCancellationSignal signal) {
+        if (request == null || request.clientRequestId() == null || signal == null) return;
+        streamCancellations.remove(cancellationKey(request), signal);
+    }
+
+    private StreamCancellationKey cancellationKey(AiChatRequest request) {
+        Long userId = users.findAuthenticatedUserId().map(id -> users.requireActiveMember().id()).orElse(null);
+        String owner = userId == null ? "guest:" + request.anonymousViewerId() : "user:" + userId;
+        return new StreamCancellationKey(owner, request.clientRequestId());
+    }
+
+    public void stream(AiChatRequest request, java.util.function.Consumer<tech.mamxanh.recipe.dto.response.AiChatStreamEvent> consumer,
+            AiChatCancellationSignal cancellationSignal) {
+        Long userId = users.findAuthenticatedUserId().map(id -> users.requireActiveMember().id()).orElse(null);
+        String owner = userId == null ? "guest:" + request.anonymousViewerId() : "user:" + userId;
+
+        if (request.controlAction() != null) {
+            if (adkEngine != null && request.sessionId() != null && adkEngine.ownsSession(request.sessionId(), owner)) {
+                consumer.accept(tech.mamxanh.recipe.dto.response.AiChatStreamEvent.complete(adkEngine.cancel(request)));
+                return;
+            }
+        }
+        if (adkEngine != null) {
+            adkEngine.stream(request, consumer, cancellationSignal);
+            return;
+        }
+        AiChatResponse response = answer(request);
+        consumer.accept(tech.mamxanh.recipe.dto.response.AiChatStreamEvent.complete(response));
+    }
+
     public AiChatResponse answer(AiChatRequest request) {
         Long userId = users.findAuthenticatedUserId().map(id -> users.requireActiveMember().id()).orElse(null);
         String owner = userId == null ? "guest:" + request.anonymousViewerId() : "user:" + userId;
@@ -203,8 +252,14 @@ public class AiChatService {
 
         // 1. Control actions (Cancel / Stop)
         if (request.controlAction() != null) {
+            StreamCancellationKey key = request.clientRequestId() == null ? null : cancellationKey(request);
+            AiChatCancellationSignal cancellationSignal = key == null ? null : streamCancellations.get(key);
+            if (cancellationSignal != null) cancellationSignal.cancel();
             if (adkEngine != null && request.sessionId() != null && adkEngine.ownsSession(request.sessionId(), owner)) {
-                return adkEngine.cancel(request);
+                return adkEngine.cancel(request, cancellationSignal);
+            }
+            if (adkEngine != null && cancellationSignal != null) {
+                return adkEngine.cancel(request, cancellationSignal);
             }
             if (adkShoppingPilot != null) {
                 return adkShoppingPilot.cancel(request);
