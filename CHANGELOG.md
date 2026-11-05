@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-11-05 — Harden AI Chat Deadlines and Response Handling
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `4f8bea14`.
 
 **Scope:** Bound Gemini model calls and assistant turns by monotonic deadlines, preserve incomplete stream state, and reinforce user-facing response style.
 
