@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-11-05 — Increase AI Response Emoji Use
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `889fbc7d`.
 
 **Scope:** Make longer Chatbot and Agent explanations more lively and easier to scan while keeping short and sensitive responses restrained.
 
@@ -29,7 +29,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-11-05 — Navigate AI Assistant to Public Recipe Details
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `889fbc7d`.
 
 **Scope:** Let the AI Assistant open a selected published recipe directly from its public recipe search results.
 
