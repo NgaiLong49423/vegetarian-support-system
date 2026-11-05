@@ -406,7 +406,7 @@ export function AdminTransactionsPage() {
               [
                 "Doanh thu ghi nhận",
 
-                currency.format(summary.revenueVnd),
+                currency.format(summary.revenueVnd ?? 0),
 
                 "Chỉ tính giao dịch thành công",
               ],
@@ -414,11 +414,11 @@ export function AdminTransactionsPage() {
               [
                 "Giao dịch thành công",
 
-                summary.paid.toLocaleString("vi-VN"),
+                (summary.paid ?? 0).toLocaleString("vi-VN"),
 
                 `Tỷ lệ ${
                   summary.total
-                    ? ((summary.paid / summary.total) * 100).toLocaleString(
+                    ? (((summary.paid ?? 0) / summary.total) * 100).toLocaleString(
                         "vi-VN",
 
                         { maximumFractionDigits: 1 },
@@ -430,7 +430,7 @@ export function AdminTransactionsPage() {
               [
                 "Chờ thanh toán",
 
-                summary.pending.toLocaleString("vi-VN"),
+                (summary.pending ?? 0).toLocaleString("vi-VN"),
 
                 "Theo trạng thái đã ghi nhận",
               ],
@@ -438,7 +438,7 @@ export function AdminTransactionsPage() {
               [
                 "Đã hủy",
 
-                summary.cancelled.toLocaleString("vi-VN"),
+                (summary.cancelled ?? 0).toLocaleString("vi-VN"),
 
                 "Đã hủy trước khi thanh toán",
               ],
@@ -446,7 +446,7 @@ export function AdminTransactionsPage() {
               [
                 "Cần đối soát",
 
-                summary.needsReconciliation.toLocaleString("vi-VN"),
+                (summary.needsReconciliation ?? 0).toLocaleString("vi-VN"),
 
                 "Đã thanh toán sau hạn hoặc thiếu thời điểm xác minh",
               ],
@@ -454,7 +454,7 @@ export function AdminTransactionsPage() {
               [
                 "Thất bại",
 
-                summary.failed.toLocaleString("vi-VN"),
+                (summary.failed ?? 0).toLocaleString("vi-VN"),
 
                 "Thanh toán không thành công",
               ],

@@ -112,9 +112,9 @@ export function AdminAiConfigurationPage({ section }: { section?: ConfigurationS
         const before = savedConfiguration.plans.find(item => item.tier === plan.tier);
         if (!before) continue;
         const label = tierLabels[plan.tier];
-        if (before.priceVnd !== plan.priceVnd) changes.push(`${label}: Giá ${before.priceVnd.toLocaleString('vi-VN')}đ → ${plan.priceVnd.toLocaleString('vi-VN')}đ`);
+        if (before.priceVnd !== plan.priceVnd) changes.push(`${label}: Giá ${before.priceVnd.toLocaleString('vi-VN')}đ → ${(plan.priceVnd ?? 0).toLocaleString('vi-VN')}đ`);
         const oldQuota = before.pendingTokenQuota ?? before.tokenQuota;
-        if (oldQuota !== plan.tokenQuota) changes.push(`${label}: ${oldQuota.toLocaleString('vi-VN')} → ${plan.tokenQuota.toLocaleString('vi-VN')} token/tháng`);
+        if (oldQuota !== plan.tokenQuota) changes.push(`${label}: ${oldQuota.toLocaleString('vi-VN')} → ${(plan.tokenQuota ?? 0).toLocaleString('vi-VN')} token/tháng`);
       }
     } else if (section === 'models') {
       const oldModels = new Map(savedConfiguration.models.map(model => [model.modelId, model]));
@@ -233,14 +233,14 @@ export function AdminAiConfigurationPage({ section }: { section?: ConfigurationS
           ? `${configuration.plans.length} gói · ${configuration.plans.find(plan => plan.tier === 'PLUS')?.tokenQuota.toLocaleString('vi-VN') ?? '—'} token Plus`
           : item === 'models'
             ? `${configuration.models.length} model · ${configuration.models.filter(model => model.enabled).length} đang bật`
-            : `${configuration.credit.creditsPer1000Vnd.toLocaleString('vi-VN')} Credit / 1.000đ · nạp ${configuration.credit.minimumTopUpVnd.toLocaleString('vi-VN')}–${configuration.credit.maximumTopUpVnd.toLocaleString('vi-VN')}đ`;
+            : `${(configuration.credit?.creditsPer1000Vnd ?? 0).toLocaleString('vi-VN')} Credit / 1.000đ · nạp ${(configuration.credit?.minimumTopUpVnd ?? 0).toLocaleString('vi-VN')}–${(configuration.credit?.maximumTopUpVnd ?? 0).toLocaleString('vi-VN')}đ`;
         return <Link key={item} to={sectionRoutes[item]} className="group rounded-2xl border border-brand-100 bg-paper p-5 transition hover:border-brand-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400">
           <div className="flex items-start justify-between gap-3"><span className="rounded-xl bg-brand-50 p-3 text-brand-700"><Icon className="h-5 w-5" /></span><ArrowRight className="mt-2 h-4 w-4 text-ink-muted transition group-hover:translate-x-1 group-hover:text-brand-700" /></div>
           <h2 className="mt-4 text-lg font-extrabold text-ink">{sectionTitles[item]}</h2><p className="mt-1 text-sm leading-5 text-ink-muted">{sectionDescriptions[item]}</p><p className="mt-4 rounded-xl bg-raised px-3 py-2 text-sm font-semibold text-ink-soft">{summary}</p>
         </Link>;
       })}</div>}
 
-      {section === 'plans' && <Card className="p-5 sm:p-6">
+      {(section === 'plans' || !section) && <Card className="p-5 sm:p-6">
         {sectionHeader('plans', 'Token Free tính theo tháng dương lịch, giờ Việt Nam; Plus/Pro tính theo từng tháng trong chu kỳ gói. Giá và quota Plus/Pro áp dụng cho lần kích hoạt mới.')}
         <div className="mt-5 grid gap-4 md:grid-cols-3">
           {configuration.plans.map(plan => <section key={plan.tier} className="rounded-2xl border border-brand-100 bg-paper p-4">
@@ -249,12 +249,12 @@ export function AdminAiConfigurationPage({ section }: { section?: ConfigurationS
               <label className="mt-4 block text-sm font-semibold text-ink">Giá (VND)<input className={fieldClass} type="number" min="0" step="1000" value={plan.priceVnd} disabled={plan.tier === 'FREE'} onChange={event => updatePlan(plan.tier, 'priceVnd', Number(event.target.value))} /></label>
               <label className="mt-3 block text-sm font-semibold text-ink">Token mỗi tháng<input className={fieldClass} type="number" min="0" step="1000" value={plan.tokenQuota} onChange={event => updatePlan(plan.tier, 'tokenQuota', Number(event.target.value))} /></label>
             </> : <dl className="mt-4 grid grid-cols-2 gap-3 text-sm"><div><dt className="text-ink-muted">Giá</dt><dd className="mt-1 font-bold text-ink">{plan.priceVnd.toLocaleString('vi-VN')}đ</dd></div><div><dt className="text-ink-muted">Token mỗi tháng</dt><dd className="mt-1 font-bold text-ink">{plan.tokenQuota.toLocaleString('vi-VN')}</dd></div></dl>}
-            {plan.pendingTokenQuota !== null && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs leading-5 text-amber-900">Free sắp đổi thành {plan.pendingTokenQuota.toLocaleString('vi-VN')} token từ {plan.pendingEffectiveAt ? new Date(plan.pendingEffectiveAt).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }) : 'chu kỳ tới'}.</p>}
+            {plan.pendingTokenQuota !== null && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs leading-5 text-amber-900">Free sắp đổi thành {plan.pendingTokenQuota?.toLocaleString('vi-VN')} token từ {plan.pendingEffectiveAt ? new Date(plan.pendingEffectiveAt).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }) : 'chu kỳ tới'}.</p>}
           </section>)}
         </div>
       </Card>}
 
-      {section === 'models' && <Card className="p-5 sm:p-6">
+      {(section === 'models' || !section) && <Card className="p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">{sectionHeader('models', 'Model ID mới được kiểm tra với Gemini trước khi lưu; mỗi tier cần đúng một model mặc định đang bật.')}{editingSection === 'models' && <Button variant="outline" onClick={() => setConfiguration(current => current && ({ ...current, models: [...current.models, emptyModel()] }))}><Plus className="mr-2 h-4 w-4" />Thêm model</Button>}</div>
         <div className="mt-5 space-y-4">
           {configuration.models.map((model, index) => <section key={`${model.modelId}-${index}`} className="rounded-2xl border border-brand-100 p-4">
@@ -274,10 +274,10 @@ export function AdminAiConfigurationPage({ section }: { section?: ConfigurationS
         </div>
       </Card>}
 
-      {section === 'credit' && <Card className="p-5 sm:p-6">
+      {(section === 'credit' || !section) && <Card className="p-5 sm:p-6">
         {sectionHeader('credit', 'Tỷ lệ overage có hiệu lực ngay; tỷ lệ nạp và giới hạn áp dụng cho đơn mới.')}
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {([['creditsPer1000Vnd', 'Credit / 1.000đ'], ['creditsPer1000OverageTokens', 'Credit / 1.000 token overage'], ['minimumTopUpVnd', 'Nạp tối thiểu (VND)'], ['maximumTopUpVnd', 'Nạp tối đa (VND)']] as const).map(([key, label]) => <div key={key} className="text-sm font-semibold text-ink">{editingSection === 'credit' ? <label>{label}<input className={fieldClass} type="number" min="1" value={configuration.credit[key]} onChange={event => setConfiguration(current => current && ({ ...current, credit: { ...current.credit, [key]: Number(event.target.value) } }))} /></label> : <><p className="text-ink-muted">{label}</p><p className="mt-2 text-lg font-bold">{configuration.credit[key].toLocaleString('vi-VN')}</p></>}</div>)}
+          {([['creditsPer1000Vnd', 'Credit / 1.000đ'], ['creditsPer1000OverageTokens', 'Credit / 1.000 token overage'], ['minimumTopUpVnd', 'Nạp tối thiểu (VND)'], ['maximumTopUpVnd', 'Nạp tối đa (VND)']] as const).map(([key, label]) => <div key={key} className="text-sm font-semibold text-ink">{editingSection === 'credit' ? <label>{label}<input className={fieldClass} type="number" min="1" value={configuration.credit[key]} onChange={event => setConfiguration(current => current && ({ ...current, credit: { ...current.credit, [key]: Number(event.target.value) } }))} /></label> : <><p className="text-ink-muted">{label}</p><p className="mt-2 text-lg font-bold">{(configuration.credit[key] ?? 0).toLocaleString('vi-VN')}</p></>}</div>)}
         </div>
       </Card>}
 
