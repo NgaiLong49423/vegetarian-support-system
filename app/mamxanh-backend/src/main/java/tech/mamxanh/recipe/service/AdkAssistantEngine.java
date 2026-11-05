@@ -42,9 +42,11 @@ import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.integration.ai.AiClient;
+import tech.mamxanh.integration.ai.AiTurnDeadline;
 import tech.mamxanh.integration.ai.AiPromptLoader;
 import tech.mamxanh.integration.ai.AiTokenUsage;
 import tech.mamxanh.integration.ai.AiUsageEvent;
+import tech.mamxanh.integration.ai.GeminiAiClient;
 import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
 import tech.mamxanh.integration.ai.adk.AdkModelGateway;
 import tech.mamxanh.integration.ai.adk.MemberAccountingPolicy;
@@ -90,7 +92,7 @@ import java.util.regex.Pattern;
 public class AdkAssistantEngine implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(AdkAssistantEngine.class);
     public static final String ENGINE = AiAssistantSessionStore.ENGINE_ADK;
-    public static final Duration RUN_TIMEOUT = Duration.ofSeconds(30);
+    public static final Duration RUN_TIMEOUT = AiTurnDeadline.OPERATIONAL_TURN;
     public static final Duration STEP_TIMEOUT = Duration.ofSeconds(10);
     public static final int MAX_LLM_CALLS = 6;
     public static final int MAX_CONTEXT_BYTES = 64_000;
@@ -199,6 +201,7 @@ public class AdkAssistantEngine implements AutoCloseable {
         if (request.controlAction() != null) {
             return cancel(request);
         }
+        AiTurnDeadline turnDeadline = AiTurnDeadline.after(RUN_TIMEOUT);
 
         Long userId = users.findAuthenticatedUserId().isPresent() ? users.requireActiveMember().id() : null;
         String owner = userId == null ? "guest:" + request.anonymousViewerId() : "user:" + userId;
@@ -242,7 +245,7 @@ public class AdkAssistantEngine implements AutoCloseable {
 
         // 2. Handle Confirmation Decision (Human-in-the-loop resume/reject)
         if (request.confirmationDecision() != null || request.confirmationId() != null) {
-            return handleConfirmationDecision(request, userId, owner, auth, sessionHandle, state, mode);
+            return handleConfirmationDecision(request, userId, owner, auth, sessionHandle, state, mode, turnDeadline);
         }
 
         // Keep a staged write until the user explicitly decides or switches to read-only CHATBOT mode.
@@ -274,9 +277,13 @@ public class AdkAssistantEngine implements AutoCloseable {
 
         // 4. Preflight Scope Classification (FR-51 / BR-09 / BR-41)
         long classificationStarted = System.nanoTime();
-        AiChatResponse refusal = classify(request, sessionId, mode, userId);
+        AiChatResponse refusal = classify(request, sessionId, mode, userId, turnDeadline);
         LOG.info("ADK chat classification sessionId={} elapsedMs={} outcome={}", sessionId,
                 elapsedMillis(classificationStarted), refusal == null ? "IN_SCOPE" : refusal.runStatus());
+        if (turnDeadline.remaining().isZero()) {
+            return handleRunFailure(request, sessionId, mode, List.of(), List.of(),
+                    new java.util.concurrent.TimeoutException("Turn deadline exceeded during classification"));
+        }
         if (refusal != null) {
             return refusal;
         }
@@ -294,7 +301,10 @@ public class AdkAssistantEngine implements AutoCloseable {
             }
         }
         if (mode.isChatbot()) {
+            long retrievalStarted = System.nanoTime();
             List<Source> retrieved = knowledge != null ? knowledge.retrieve(request.question()) : List.of();
+            LOG.info("AI chat retrieval sessionId={} elapsedMs={} resultCount={}", sessionId,
+                    elapsedMillis(retrievalStarted), retrieved.size());
             if (!retrieved.isEmpty()) {
                 sources.addAll(retrieved);
                 StringBuilder kbContext = new StringBuilder();
@@ -305,8 +315,12 @@ public class AdkAssistantEngine implements AutoCloseable {
                 effectivePromptText = kbContext.toString();
             }
         }
+        if (turnDeadline.remaining().isZero()) {
+            return handleRunFailure(request, sessionId, mode, List.of(), sources,
+                    new java.util.concurrent.TimeoutException("Turn deadline exceeded before generation"));
+        }
         return runAdkTurn(request, userId, owner, auth, sessionHandle, state, mode, activeConsents,
-                Content.fromParts(Part.fromText(effectivePromptText)), false, null, new ArrayList<>(), sources);
+                Content.fromParts(Part.fromText(effectivePromptText)), false, null, new ArrayList<>(), sources, turnDeadline);
     }
 
     private AiChatResponse runAdkTurn(
@@ -322,7 +336,8 @@ public class AdkAssistantEngine implements AutoCloseable {
             boolean approvalResume,
             String approvedConfirmationCallId) {
         return runAdkTurn(request, userId, owner, auth, sessionHandle, state, mode, activeConsents,
-                inputContent, approvalResume, approvedConfirmationCallId, new ArrayList<>(), new ArrayList<>());
+                inputContent, approvalResume, approvedConfirmationCallId, new ArrayList<>(), new ArrayList<>(),
+                AiTurnDeadline.after(RUN_TIMEOUT));
     }
 
     private AiChatResponse runAdkTurn(
@@ -338,7 +353,8 @@ public class AdkAssistantEngine implements AutoCloseable {
             boolean approvalResume,
             String approvedConfirmationCallId,
             List<AssistantStep> initialSteps,
-            List<Source> initialSources) {
+            List<Source> initialSources,
+            AiTurnDeadline turnDeadline) {
 
         String resolvedModel = resolveModel(userId, request.anonymousViewerId());
         List<AssistantStep> steps = initialSteps != null ? initialSteps : new ArrayList<>();
@@ -350,7 +366,8 @@ public class AdkAssistantEngine implements AutoCloseable {
         try {
             EngineSessionState.TurnContext turnContext = new EngineSessionState.TurnContext(
                     auth, mode, activeConsents, steps, sources, stagedConfirmation, request.clientRequestId(),
-                    approvalResume, approvedConfirmationCallId, null, new AiChatCancellationSignal(), requiredConsentScopes);
+                    approvalResume, approvedConfirmationCallId, null, new AiChatCancellationSignal(), requiredConsentScopes,
+                    turnDeadline);
             state.currentTurn.set(turnContext);
             state.ensureRunner(resolvedModel, role, mode);
         } catch (RuntimeException unavailable) {
@@ -367,11 +384,9 @@ public class AdkAssistantEngine implements AutoCloseable {
         long runStarted = System.nanoTime();
         List<Event> emittedEvents;
         try {
-            emittedEvents = state.runner.runAsync(owner, state.adkSessionId, inputContent,
-                    RunConfig.builder().maxLlmCalls(MAX_LLM_CALLS).toolExecutionMode(RunConfig.ToolExecutionMode.SEQUENTIAL).build())
-                    .takeUntil(Flowable.timer(RUN_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)
-                            .flatMap(ignored -> Flowable.error(new java.util.concurrent.TimeoutException("Run deadline exceeded"))))
-                    .toList().blockingGet();
+            emittedEvents = turnDeadline.enforce(state.runner.runAsync(owner, state.adkSessionId, inputContent,
+                    RunConfig.builder().maxLlmCalls(MAX_LLM_CALLS).toolExecutionMode(RunConfig.ToolExecutionMode.SEQUENTIAL).build()),
+                    "Run deadline exceeded").toList().blockingGet();
         } catch (RuntimeException failure) {
             LOG.warn("ADK turn execution failed sessionId={} elapsedMs={} toolSteps={} cause={}",
                     sessionHandle.id(), elapsedMillis(runStarted), steps.size(),
@@ -421,7 +436,8 @@ public class AdkAssistantEngine implements AutoCloseable {
             Authentication auth,
             AiAssistantSessionStore.SessionHandle sessionHandle,
             EngineSessionState state,
-            ExecutionMode mode) {
+            ExecutionMode mode,
+            AiTurnDeadline turnDeadline) {
 
         String toolName;
         Map<String, Object> arguments;
@@ -528,18 +544,20 @@ public class AdkAssistantEngine implements AutoCloseable {
                 .build());
 
         return runAdkTurn(request, userId, owner, auth, sessionHandle, state, mode,
-                sessionHandle.consentScopes(), toolResultContent, true, toolName, steps, sources);
+                sessionHandle.consentScopes(), toolResultContent, true, toolName, steps, sources, turnDeadline);
     }
 
-    private AiChatResponse classify(AiChatRequest request, UUID sessionId, ExecutionMode mode, Long userId) {
+    private AiChatResponse classify(AiChatRequest request, UUID sessionId, ExecutionMode mode, Long userId,
+            AiTurnDeadline turnDeadline) {
         aiQuota.requireAvailable(userId, userId == null ? request.anonymousViewerId() : null);
         String model = chatSettings.resolve(userId, userId == null ? request.anonymousViewerId() : null);
         try {
+            Duration classifierBudget = turnDeadline.modelCallBudget(AiTurnDeadline.OPERATIONAL_CLASSIFIER_CALL);
             String latest = mapper.writeValueAsString(Map.of("contextType", request.contextType(), "question", request.question()));
             String classifierPrompt = promptLoader.loadClassifierPrompt();
             AiClient.ChatResult result = model == null
-                    ? aiClient.classifyChatScope(classifierPrompt, latest)
-                    : aiClient.classifyChatScope(model, classifierPrompt, latest);
+                    ? aiClient.classifyChatScope(classifierPrompt, latest, classifierBudget)
+                    : aiClient.classifyChatScope(model, classifierPrompt, latest, classifierBudget);
 
             if (result == null || result.structuredJson() == null || result.structuredJson().isBlank()) {
                 return buildResponse(request, sessionId, mode, "FAILED", List.of(), List.of(), null, null, CLASSIFICATION_UNAVAILABLE_ANSWER);
@@ -577,10 +595,18 @@ public class AdkAssistantEngine implements AutoCloseable {
             LOG.warn("AI request classification failed category={} status={} message={}: {}",
                     exception.kind(), exception.httpStatus(), exception.getMessage(),
                     exception.getCause() != null ? exception.getCause().getMessage() : "no cause");
+            if (exception.kind() == GeminiAiClient.FailureKind.TIMEOUT || turnDeadline.remaining().isZero()) {
+                return handleRunFailure(request, sessionId, mode, List.of(), List.of(), exception);
+            }
             return buildResponse(request, sessionId, mode, "FAILED", List.of(), List.of(), null, null, CLASSIFICATION_UNAVAILABLE_ANSWER);
         } catch (JacksonException exception) {
             LOG.warn("AI classification JSON parsing failed: {}", exception.getMessage());
             return buildResponse(request, sessionId, mode, "FAILED", List.of(), List.of(), null, null, CLASSIFICATION_UNAVAILABLE_ANSWER);
+        } catch (IllegalStateException deadlineFailure) {
+            if (turnDeadline.remaining().isZero()) {
+                return handleRunFailure(request, sessionId, mode, List.of(), List.of(), deadlineFailure);
+            }
+            throw deadlineFailure;
         }
     }
 
@@ -596,6 +622,7 @@ public class AdkAssistantEngine implements AutoCloseable {
         if (consumer == null) {
             throw new AppException(ErrorCode.VALIDATION_FAILED, "Bộ nhận sự kiện không được để trống.");
         }
+        AiTurnDeadline turnDeadline = AiTurnDeadline.after(RUN_TIMEOUT);
         AiChatCancellationSignal effectiveCancellationSignal = cancellationSignal == null
                 ? new AiChatCancellationSignal() : cancellationSignal;
         if (effectiveCancellationSignal.isCancelled()) {
@@ -649,7 +676,7 @@ public class AdkAssistantEngine implements AutoCloseable {
 
         // 2. Handle Confirmation Decision (Human-in-the-loop resume/reject)
         if (request.confirmationDecision() != null || request.confirmationId() != null) {
-            AiChatResponse resp = handleConfirmationDecision(request, userId, owner, auth, sessionHandle, state, mode);
+            AiChatResponse resp = handleConfirmationDecision(request, userId, owner, auth, sessionHandle, state, mode, turnDeadline);
             consumer.accept(AiChatStreamEvent.complete(resp));
             return;
         }
@@ -686,9 +713,14 @@ public class AdkAssistantEngine implements AutoCloseable {
 
         // 4. Preflight Scope Classification (FR-51 / BR-09 / BR-41)
         long classificationStarted = System.nanoTime();
-        AiChatResponse refusal = classify(request, sessionId, mode, userId);
+        AiChatResponse refusal = classify(request, sessionId, mode, userId, turnDeadline);
         LOG.info("ADK chat classification sessionId={} elapsedMs={} outcome={}", sessionId,
                 elapsedMillis(classificationStarted), refusal == null ? "IN_SCOPE" : refusal.runStatus());
+        if (turnDeadline.remaining().isZero()) {
+            consumer.accept(AiChatStreamEvent.complete(handleRunFailure(request, sessionId, mode, List.of(), List.of(),
+                    new java.util.concurrent.TimeoutException("Turn deadline exceeded during classification"))));
+            return;
+        }
         if (refusal != null) {
             consumer.accept(AiChatStreamEvent.complete(refusal));
             return;
@@ -703,7 +735,10 @@ public class AdkAssistantEngine implements AutoCloseable {
         List<Source> sources = new ArrayList<>();
         String effectivePromptText = request.question();
         if (mode.isChatbot()) {
+            long retrievalStarted = System.nanoTime();
             List<Source> retrieved = knowledge != null ? knowledge.retrieve(request.question()) : List.of();
+            LOG.info("AI chat retrieval sessionId={} elapsedMs={} resultCount={}", sessionId,
+                    elapsedMillis(retrievalStarted), retrieved.size());
             if (!retrieved.isEmpty()) {
                 sources.addAll(retrieved);
                 StringBuilder kbContext = new StringBuilder();
@@ -714,10 +749,15 @@ public class AdkAssistantEngine implements AutoCloseable {
                 effectivePromptText = kbContext.toString();
             }
         }
+        if (turnDeadline.remaining().isZero()) {
+            consumer.accept(AiChatStreamEvent.complete(handleRunFailure(request, sessionId, mode, List.of(), sources,
+                    new java.util.concurrent.TimeoutException("Turn deadline exceeded before generation"))));
+            return;
+        }
 
         runAdkTurnStream(request, userId, owner, auth, sessionHandle, state, mode, activeConsents,
                 Content.fromParts(Part.fromText(effectivePromptText)), false, null, new ArrayList<>(), sources, consumer,
-                effectiveCancellationSignal);
+                effectiveCancellationSignal, turnDeadline);
     }
 
     private void runAdkTurnStream(
@@ -735,7 +775,8 @@ public class AdkAssistantEngine implements AutoCloseable {
             List<AssistantStep> initialSteps,
             List<Source> initialSources,
             Consumer<AiChatStreamEvent> consumer,
-            AiChatCancellationSignal cancellationSignal) {
+            AiChatCancellationSignal cancellationSignal,
+            AiTurnDeadline turnDeadline) {
 
         String resolvedModel = resolveModel(userId, request.anonymousViewerId());
         List<AssistantStep> steps = initialSteps != null ? initialSteps : new ArrayList<>();
@@ -748,7 +789,8 @@ public class AdkAssistantEngine implements AutoCloseable {
             state.currentTurn.set(new EngineSessionState.TurnContext(
                     auth, mode, activeConsents, steps, sources, stagedConfirmation, request.clientRequestId(),
                     approvalResume, approvedConfirmationCallId,
-                    step -> consumer.accept(AiChatStreamEvent.step(step)), cancellationSignal, requiredConsentScopes));
+                    step -> consumer.accept(AiChatStreamEvent.step(step)), cancellationSignal, requiredConsentScopes,
+                    turnDeadline));
             state.ensureRunner(resolvedModel, role, mode);
         } catch (RuntimeException unavailable) {
             LOG.warn("Failed to initialize ADK runner: {}", unavailable.getMessage());
@@ -777,10 +819,10 @@ public class AdkAssistantEngine implements AutoCloseable {
             return;
         }
 
-        Flowable<Event> flow = state.runner.runAsync(owner, state.adkSessionId, inputContent,
-                RunConfig.builder().maxLlmCalls(MAX_LLM_CALLS).toolExecutionMode(RunConfig.ToolExecutionMode.SEQUENTIAL).build())
-                .takeUntil(Flowable.timer(RUN_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)
-                        .flatMap(ignored -> Flowable.error(new java.util.concurrent.TimeoutException("Run deadline exceeded"))));
+        Flowable<Event> flow = turnDeadline.enforce(state.runner.runAsync(owner, state.adkSessionId, inputContent,
+                RunConfig.builder().maxLlmCalls(MAX_LLM_CALLS)
+                        .toolExecutionMode(RunConfig.ToolExecutionMode.SEQUENTIAL)
+                        .streamingMode(RunConfig.StreamingMode.SSE).build()), "Run deadline exceeded");
 
         Disposable disposable = flow.subscribe(
                 event -> {
@@ -799,6 +841,7 @@ public class AdkAssistantEngine implements AutoCloseable {
                     }
                 },
                 error -> {
+                    if (isTimeout(error)) cancellationSignal.cancel();
                     runFailure.set(error);
                     latch.countDown();
                 },
@@ -1087,7 +1130,7 @@ public class AdkAssistantEngine implements AutoCloseable {
             Client client = Client.builder()
                     .apiKey(apiKey.strip())
                     .httpOptions(HttpOptions.builder()
-                            .timeout(10_000)
+                            .timeout(Math.toIntExact(AiTurnDeadline.HTTP_TRANSPORT_TIMEOUT.toMillis()))
                             .retryOptions(HttpRetryOptions.builder().attempts(1).build())
                             .build())
                     .build();
@@ -1138,7 +1181,8 @@ public class AdkAssistantEngine implements AutoCloseable {
                 String approvedConfirmationCallId,
                 Consumer<AssistantStep> onStepConsumer,
                 AiChatCancellationSignal cancellationSignal,
-                AtomicReference<Set<ConsentScope>> requiredConsentScopes
+                AtomicReference<Set<ConsentScope>> requiredConsentScopes,
+                AiTurnDeadline turnDeadline
         ) {
             void addStep(AssistantStep step) {
                 steps.add(step);
@@ -1186,7 +1230,16 @@ public class AdkAssistantEngine implements AutoCloseable {
                     .toList();
 
             MemberAccountingPolicy policy = new MemberAccountingPolicy(users, aiQuota, events);
-            AdkModelGateway gateway = new AdkModelGateway(llmFactory.create(modelId), policy, clock);
+            AdkModelGateway gateway = new AdkModelGateway(llmFactory.create(modelId), policy, clock)
+                    .withRemainingTurnBudget(() -> {
+                        TurnContext turn = currentTurn.get();
+                        return turn == null ? RUN_TIMEOUT : turn.turnDeadline().remaining();
+                    })
+                    .withRunAllowed(() -> {
+                        TurnContext turn = currentTurn.get();
+                        return turn != null && !turn.cancellationSignal().isCancelled()
+                                && !turn.turnDeadline().remaining().isZero();
+                    });
 
             String instructions = isChatbot
                     ? promptLoader.loadSystemPrompt()

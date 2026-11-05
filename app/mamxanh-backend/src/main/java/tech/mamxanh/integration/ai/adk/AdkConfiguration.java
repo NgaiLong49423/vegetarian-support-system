@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.integration.ai.AiTokenUsage;
+import tech.mamxanh.integration.ai.AiTurnDeadline;
 import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
 import tech.mamxanh.subscription.service.AiTokenQuotaService;
 
@@ -67,7 +68,7 @@ public class AdkConfiguration {
         Client client = Client.builder()
                 .apiKey(apiKey.strip())
                 .httpOptions(HttpOptions.builder()
-                        .timeout(10_000)
+                        .timeout(Math.toIntExact(AiTurnDeadline.HTTP_TRANSPORT_TIMEOUT.toMillis()))
                         .retryOptions(HttpRetryOptions.builder().attempts(1).build())
                         .build())
                 .build();

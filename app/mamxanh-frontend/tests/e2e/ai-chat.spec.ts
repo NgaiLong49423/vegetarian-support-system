@@ -71,6 +71,34 @@ test('complete long AI answers remain in history for the next question', async (
   expect(requests[1].history).toContainEqual({ speaker: 'ASSISTANT', content: answer });
 });
 
+test('partial SSE content is marked incomplete when the stream closes without a terminal event', async ({ page }) => {
+  let streamRequests = 0;
+  await page.route('**/api/v1/recipes/ai/chat/stream', route => {
+    streamRequests += 1;
+    return route.fulfill({
+      status: 200,
+      contentType: 'text/event-stream',
+      body: streamRequests === 1
+        ? 'event: delta\ndata: {"delta":"Phần trả lời còn dang dở"}\n\n'
+        : 'event: delta\ndata: {"delta":"Lượt mới đã hoàn tất."}\n\n'
+          + 'event: complete\ndata: {"contextType":"GENERAL","answer":"Lượt mới đã hoàn tất.","runStatus":"COMPLETED","steps":[],"sources":[]}\n\n',
+    });
+  });
+  await page.goto('/trang-chu');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Giải thích một món chay');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+
+  const chat = page.getByRole('dialog');
+  await expect(chat.getByText('Phần trả lời còn dang dở', { exact: true })).toBeVisible();
+  await expect(chat.getByText('Phản hồi chưa hoàn tất', { exact: true })).toBeVisible();
+  await expect(chat.getByRole('alert')).toContainText('kết thúc trước khi có sự kiện hoàn tất');
+  await page.getByLabel('Câu hỏi của bạn').fill('Thử gửi một lượt mới sau lỗi');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await expect(chat.getByText('Lượt mới đã hoàn tất.', { exact: true })).toBeVisible();
+  expect(streamRequests).toBe(2);
+});
+
 test('follow-up chat includes only IDs of recipe cards shown in assistant history', async ({ page }) => {
   const requests: Array<{ history: Array<{ speaker: string; recommendedRecipeIds?: number[] }> }> = [];
   await page.route('**/api/v1/recipes/ai/chat', async (route) => {

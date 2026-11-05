@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.InterruptedIOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -24,11 +25,11 @@ import java.util.function.Supplier;
 @Deprecated(since = "G5", forRemoval = false)
 public class GeminiAiClient implements AiClient, AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(GeminiAiClient.class);
-    // Reserve application overhead within the NFR-18 ten-second provider budget.
-    private static final int REQUEST_TIMEOUT_MS = 9_000;
-    // Give the extra sequential classification call enough time for normal provider/network latency.
-    private static final int CHAT_SCOPE_TIMEOUT_MS = 6_000;
-    private static final int CHAT_ANSWER_TIMEOUT_MS = 7_000;
+    // Keep the transport below the absolute per-call cap; operation deadlines are shorter.
+    private static final int TRANSPORT_TIMEOUT_MS = (int) AiTurnDeadline.MAX_MODEL_CALL.toMillis();
+    private static final int REQUEST_TIMEOUT_MS = (int) AiTurnDeadline.OPERATIONAL_MODEL_CALL.toMillis();
+    private static final int CHAT_SCOPE_TIMEOUT_MS = (int) AiTurnDeadline.OPERATIONAL_CLASSIFIER_CALL.toMillis();
+    private static final int CHAT_ANSWER_TIMEOUT_MS = (int) AiTurnDeadline.OPERATIONAL_MODEL_CALL.toMillis();
     private static final int MIN_RETRY_BUDGET_MS = 2_000;
     // Confirmed model in TECHNOLOGY-STACK.md; shared by all account tiers.
     private static final String MODEL = "gemini-3.8-flash";
@@ -40,7 +41,7 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
 
     @Autowired
     public GeminiAiClient(@Value("${GEMINI_API_KEY:}") String apiKey) {
-        this(apiKey, HttpOptions.builder().timeout(DEFAULT_TIMEOUT_MILLIS).build());
+        this(apiKey, HttpOptions.builder().timeout(TRANSPORT_TIMEOUT_MS).build());
     }
 
     /** Verifies a model through Gemini's model metadata endpoint without generating billable content. */
@@ -56,7 +57,7 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
         this.client = apiKey == null || apiKey.isBlank() ? null : Client.builder()
                 .apiKey(apiKey.strip())
                 .httpOptions(httpOptions.toBuilder()
-                        .timeout(Math.min(httpOptions.timeout().orElse(REQUEST_TIMEOUT_MS), REQUEST_TIMEOUT_MS))
+                        .timeout(Math.min(httpOptions.timeout().orElse(TRANSPORT_TIMEOUT_MS), TRANSPORT_TIMEOUT_MS))
                         // The outer application deadline owns retries; disable independent SDK backoff.
                         .retryOptions(HttpRetryOptions.builder().attempts(1).build()).build())
                 .build();
@@ -119,7 +120,20 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
     }
 
     @Override
+    public ChatResult classifyChatScope(String systemInstruction, String prompt, Duration timeout) {
+        return classifyChatScope(MODEL, systemInstruction, prompt, timeout);
+    }
+
+    @Override
     public ChatResult classifyChatScope(String modelId, String systemInstruction, String prompt) {
+        return classifyChatScope(modelId, systemInstruction, prompt, Duration.ofMillis(CHAT_SCOPE_TIMEOUT_MS));
+    }
+
+    @Override
+    public ChatResult classifyChatScope(String modelId, String systemInstruction, String prompt, Duration timeout) {
+        long requestedMillis = timeout == null ? CHAT_SCOPE_TIMEOUT_MS : timeout.toMillis();
+        int callTimeoutMillis = (int) Math.min(CHAT_SCOPE_TIMEOUT_MS, requestedMillis);
+        if (callTimeoutMillis <= 0) throw new AiProviderException("Gemini chat scope deadline exceeded");
         Schema schema = Schema.builder().type(Type.Known.OBJECT)
                 .properties(Map.of("decisionId", Schema.builder().type(Type.Known.STRING).build(),
                         "reasonId", Schema.builder().type(Type.Known.STRING).build()))
@@ -132,7 +146,7 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                 .maxOutputTokens(1024)
                 .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build())
                 .build();
-        return request("CHAT_SCOPE", "Gemini chat scope classification failed", CHAT_SCOPE_TIMEOUT_MS, () -> {
+        return request("CHAT_SCOPE", "Gemini chat scope classification failed", callTimeoutMillis, () -> {
             var response = client.models.generateContent(modelId, prompt, config);
             String finishReason = response.candidates().orElse(List.of()).stream().findFirst()
                     .flatMap(candidate -> candidate.finishReason()).map(Object::toString).orElse("STOP");
@@ -356,6 +370,7 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
 
     private static FailureKind classify(Throwable failure) {
         for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            if (cause instanceof java.util.concurrent.TimeoutException) return FailureKind.TIMEOUT;
             if (cause instanceof InterruptedIOException) return FailureKind.TIMEOUT;
             if (cause instanceof ApiException) return FailureKind.HTTP;
         }

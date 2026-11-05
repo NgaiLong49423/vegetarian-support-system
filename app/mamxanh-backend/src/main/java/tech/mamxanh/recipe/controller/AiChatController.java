@@ -97,7 +97,8 @@ public class AiChatController {
             Authentication authentication,
             HttpServletRequest httpRequest) {
         AiChatRequest effectiveRequest = prepareEffectiveRequest(request, authentication, httpRequest);
-        var emitter = new org.springframework.web.servlet.mvc.method.annotation.SseEmitter(120_000L);
+        var emitter = new org.springframework.web.servlet.mvc.method.annotation.SseEmitter(
+                tech.mamxanh.integration.ai.AiTurnDeadline.SSE_TIMEOUT.toMillis());
         var cancellationSignal = service.registerStreamCancellation(effectiveRequest);
         SecurityContext capturedContext = SecurityContextHolder.createEmptyContext();
         capturedContext.setAuthentication(authentication);

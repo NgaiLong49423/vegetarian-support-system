@@ -1,13 +1,34 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.148.0
+> **Version:** v2.148.1
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-11-04
+> **Last Updated:** 2026-11-05
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-11-05 — Harden AI Chat Deadlines and Response Handling
+
+**Status:** Working tree — not committed.
+
+**Scope:** Bound Gemini model calls and assistant turns by monotonic deadlines, preserve incomplete stream state, and reinforce user-facing response style.
+
+### Added
+
+- Add automated fake-model coverage for absolute deadlines during continuous streaming, cancellation, partial-stream failures, and single-count usage.
+
+### Changed
+
+- Set separate operational timeouts and hard caps for Gemini calls and full assistant turns; stream partial and final Gemini responses through the existing SSE flow.
+- Require one to three context-appropriate emoji in ordinary explanatory, instructional, and list responses, with safety and confirmation exceptions.
+- Update NFR-18 while retaining NFR-03 and the independent FR-51 classifier.
+
+### Fixed
+
+- Prevent streaming tokens from extending a model-call or assistant-turn deadline and prevent incomplete SSE output from appearing complete in the UI.
+- Reinforce the response-style requirement in the synthesized system prompt so Gemini receives an explicit instruction.
 
 ## 2026-11-04 — Persist AI Action Journal and Standardize Test Suites
 

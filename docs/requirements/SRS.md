@@ -1,8 +1,8 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v2.19.0
+> **Version:** v2.20.0
 > **Created:** 2026-09-11
-> **Last Updated:** 2026-10-31
+> **Last Updated:** 2026-11-05
 > **Status:** Active
 > **Related Docs:** `docs/requirements/PRD.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`, `docs/architecture/ARCHITECTURE.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -575,7 +575,7 @@ Tài liệu này duy trì bảng chỉ mục tóm tắt các nhóm yêu cầu ph
 | Performance | NFR-01 – NFR-05 | Phản hồi đăng nhập, tìm kiếm, Chatbot AI, tạo thực đơn tuần; chịu tải đồng thời | Login $\le 2$s (P95); Search $\le 3$s; Chatbot $\le 5$s (P90 $\le 7$s); Menu $\le 8$s; nghiệm thu 50 concurrent users, 100 là stretch; 500 CCU chỉ là design goal | [Chi tiết](srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-performance) |
 | Security | NFR-06 – NFR-10 | Mã hóa mật khẩu, rate limit 5 lần sai khóa tài khoản 10 phút trên `USER`, stateless JWT Bearer token, bảo vệ dữ liệu sức khỏe, RBAC và OWASP Top 10 | 100% hash BCrypt; HTTPS/TLS 1.2+; Backend 401/403; kiểm tra tức thời `account_status`, client-side logout | [Chi tiết](srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-security) |
 | Usability | NFR-11 – NFR-15 | Đăng ký $\le 3$ bước, Chatbot trực quan, Responsive tiếng Việt 360px–1920px, tương thích đa trình duyệt và mobile | $\ge 90\%$ dùng Chatbot không cần trợ giúp; responsive đa thiết bị; tương thích 2 bản gần nhất Chrome, Firefox, Safari, Edge, Mobile | [Chi tiết](srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-usability) |
-| Reliability | NFR-16 – NFR-19 | Transaction không mất dữ liệu đã commit, xử lý lỗi/timeout Gemini $\le 10$s không ghi nhận lượt gọi thành công hoặc thay đổi entitlement; uptime 99,5% và 1.000–10.000 users là design goals | Database rollback khi lỗi; fallback thân thiện theo BR-04; design goals không phải MVP release gates | [Chi tiết](srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-reliability) |
+| Reliability | NFR-16 – NFR-19 | Transaction không mất dữ liệu đã commit; Gemini call 20s vận hành, tối đa 30s/call; AI run 45s vận hành, tối đa 60s; không ghi nhận lượt gọi thành công hoặc thay đổi entitlement khi timeout; uptime 99,5% và 1.000–10.000 users là design goals | Database rollback khi lỗi; fallback thân thiện theo BR-04; deadline monotonic không gia hạn bởi token streaming; design goals không phải MVP release gates | [Chi tiết](srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-reliability) |
 | Privacy | NFR-20 – NFR-22 | Consent dữ liệu cá nhân/sức khỏe, PCI-DSS không lưu số thẻ, session AI tạm thời, không lưu raw prompt trong telemetry | Thông báo forwarding tới Gemini; telemetry retention 90 ngày | [Chi tiết](srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-privacy) |
 | Auditability | NFR-23 – NFR-25 | OpenAPI, Modular Monolith dùng MVC/layered structure trong từng business module, AI quality theo curated evaluation set | Một Spring Boot deployable backend; $\ge 80\%$ curated cases đạt rule | [Chi tiết](srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-auditability) |
 

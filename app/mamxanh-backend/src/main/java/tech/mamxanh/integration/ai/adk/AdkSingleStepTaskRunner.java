@@ -11,10 +11,10 @@ import com.google.genai.types.Part;
 import com.google.genai.types.Schema;
 import com.google.genai.types.ThinkingConfig;
 import com.google.genai.types.ThinkingLevel;
-import io.reactivex.rxjava3.core.Flowable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
+import tech.mamxanh.integration.ai.AiTurnDeadline;
 import tech.mamxanh.integration.ai.AiTokenUsage;
 
 import java.time.Clock;
@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -36,7 +35,7 @@ import java.util.function.Function;
  */
 public final class AdkSingleStepTaskRunner {
     private static final Logger LOG = LoggerFactory.getLogger(AdkSingleStepTaskRunner.class);
-    public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(10);
+    public static final Duration DEFAULT_TIMEOUT = AiTurnDeadline.OPERATIONAL_MODEL_CALL;
     private final AdkModelGateway gateway;
     private final Clock clock;
     private final Function<String, AdkModelGateway> gatewayFactory;
@@ -64,6 +63,10 @@ public final class AdkSingleStepTaskRunner {
         Objects.requireNonNull(instruction, "instruction");
         Objects.requireNonNull(promptText, "promptText");
         Duration effectiveTimeout = timeout != null ? timeout : DEFAULT_TIMEOUT;
+        if (effectiveTimeout.isNegative() || effectiveTimeout.isZero()
+                || effectiveTimeout.compareTo(AiTurnDeadline.MAX_MODEL_CALL) > 0) {
+            throw new IllegalArgumentException("Task deadline must be within the absolute model-call limit");
+        }
 
         String spanCapture = System.getProperty("ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS");
         if (spanCapture == null || spanCapture.isBlank()) {
@@ -128,9 +131,9 @@ public final class AdkSingleStepTaskRunner {
 
             Content message = Content.fromParts(Part.fromText(promptText));
 
-            List<Event> events = runner.runAsync(callerName, sessionId, message, runConfig)
-                    .takeUntil(Flowable.timer(effectiveTimeout.toMillis(), TimeUnit.MILLISECONDS)
-                            .flatMap(ignored -> Flowable.error(new java.util.concurrent.TimeoutException("Task execution deadline exceeded"))))
+            List<Event> events = AiTurnDeadline.after(effectiveTimeout)
+                    .enforce(runner.runAsync(callerName, sessionId, message, runConfig),
+                            "Task execution deadline exceeded")
                     .doOnCancel(() -> { if (runToken.equals(activeRun.get())) halted.set(true); })
                     .doOnError(failure -> { if (runToken.equals(activeRun.get())) halted.set(true); })
                     .doFinally(() -> activeRun.compareAndSet(runToken, null))

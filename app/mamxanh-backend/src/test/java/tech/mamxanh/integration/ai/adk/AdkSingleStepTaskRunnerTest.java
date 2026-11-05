@@ -88,6 +88,19 @@ class AdkSingleStepTaskRunnerTest {
     }
 
     @Test
+    void executeTaskRejectsTimeoutAboveAbsolutePerCallCapBeforeModelCall() {
+        var accounting = new TestPolicy();
+        var model = new TestModel(req -> textResponse("{}"));
+        var runner = new AdkSingleStepTaskRunner(new AdkModelGateway(model, accounting, CLOCK), CLOCK);
+
+        assertThatThrownBy(() -> runner.executeTask(userAuth("101", "ROLE_CUSTOMER"), "task", "Instruction",
+                "Prompt", null, 512, Duration.ofSeconds(31)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("absolute model-call limit");
+        assertThat(model.requests).isEmpty();
+    }
+
+    @Test
     void executeTaskStripsMarkdownCodeFencesFromStructuredOutput() {
         var accounting = new TestPolicy();
         var model = new TestModel(req -> textResponse("```json\n{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}\n```"));

@@ -42,8 +42,14 @@ class GeminiAiClientTest {
     }
 
     @Test
+    void adkDeadlineExceptionIsClassifiedAsTimeout() {
+        assertThat(new GeminiAiClient.AiProviderException("deadline", new java.util.concurrent.TimeoutException("elapsed"))
+                .kind()).isEqualTo(GeminiAiClient.FailureKind.TIMEOUT);
+    }
+
+    @Test
     void sharedGeminiClientUsesTheNfrBoundedProviderTimeout() {
-        assertThat(GeminiAiClient.DEFAULT_TIMEOUT_MILLIS).isEqualTo(9_000);
+        assertThat(GeminiAiClient.DEFAULT_TIMEOUT_MILLIS).isEqualTo(20_000);
     }
 
     @Test
@@ -330,7 +336,7 @@ class GeminiAiClientTest {
         server.createContext("/", exchange -> {
             requests.incrementAndGet();
             exchange.getRequestBody().readAllBytes();
-            try { Thread.sleep(12_000); }
+            try { Thread.sleep(25_000); }
             catch (InterruptedException failure) { Thread.currentThread().interrupt(); }
             exchange.close();
         });
@@ -342,7 +348,7 @@ class GeminiAiClientTest {
             assertThatThrownBy(() -> client.answerChat("system", "question"))
                     .isInstanceOfSatisfying(GeminiAiClient.AiProviderException.class,
                             failure -> assertThat(failure.kind()).isEqualTo(GeminiAiClient.FailureKind.TIMEOUT));
-            assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(10));
+            assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(22));
         }
         assertThat(requests.get()).isEqualTo(1);
     }
@@ -383,8 +389,8 @@ class GeminiAiClientTest {
 
     @Test
     void lateUnavailableResponseDoesNotStartARetryWithoutEnoughBudget() throws IOException {
-        // Keep the retry budget exhausted while leaving enough margin for a loaded test JVM.
-        startSequenceServer(503, 4_000, false);
+        // Leave 3s of the 20s operation budget: every jittered retry needs at least 3.0-3.25s.
+        startSequenceServer(503, 17_000, false);
         try (var client = longTransportTimeoutClient()) {
             assertThatThrownBy(() -> client.answerChat("system", "question"))
                     .isInstanceOfSatisfying(GeminiAiClient.AiProviderException.class,
@@ -395,13 +401,13 @@ class GeminiAiClientTest {
 
     @Test
     void retryAndBackoffCannotExtendTheOverallDeadline() throws IOException {
-        startSequenceServer(503, 0, true);
+        startSequenceServer(503, 0, true, 25_000);
         try (var client = longTransportTimeoutClient()) {
             long started = System.nanoTime();
             assertThatThrownBy(() -> client.answerChat("system", "question"))
                     .isInstanceOfSatisfying(GeminiAiClient.AiProviderException.class,
                             failure -> assertThat(failure.kind()).isEqualTo(GeminiAiClient.FailureKind.TIMEOUT));
-            assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(10));
+            assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(22));
         }
         assertThat(requests).hasValue(2);
     }
@@ -412,11 +418,16 @@ class GeminiAiClientTest {
     }
 
     private void startSequenceServer(int firstStatus, long firstDelayMillis, boolean slowSecond) throws IOException {
+        startSequenceServer(firstStatus, firstDelayMillis, slowSecond, 12_000);
+    }
+
+    private void startSequenceServer(int firstStatus, long firstDelayMillis, boolean slowSecond,
+            long secondDelayMillis) throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/", exchange -> {
             int count = requests.incrementAndGet();
             exchange.getRequestBody().readAllBytes();
-            try { Thread.sleep(count == 1 ? firstDelayMillis : slowSecond ? 12_000 : 0); }
+            try { Thread.sleep(count == 1 ? firstDelayMillis : slowSecond ? secondDelayMillis : 0); }
             catch (InterruptedException failure) { Thread.currentThread().interrupt(); }
             String body = count == 1 ? "{\"error\":{\"code\":" + firstStatus + ",\"message\":\"private-provider-body\",\"status\":\"UNAVAILABLE\"}}"
                     : "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"{\\\"action\\\":\\\"ANSWER\\\",\\\"answer\\\":\\\"Recovered\\\",\\\"recommendations\\\":[]}\"}],\"role\":\"model\"},\"finishReason\":\"STOP\"}]}";

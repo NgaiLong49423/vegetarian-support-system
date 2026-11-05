@@ -479,13 +479,7 @@ export async function streamAiChat(
   }
 
   if (!finalResponse) {
-    finalResponse = {
-      contextType: payload.contextType,
-      recipeId: payload.recipeId ?? null,
-      answer: '',
-      recommendations: [],
-      runStatus: 'COMPLETED',
-    };
+    throw new ApiError('Luồng trả lời kết thúc trước khi có sự kiện hoàn tất.', 502, 'AI_STREAM_INCOMPLETE');
   }
 
   return finalResponse;

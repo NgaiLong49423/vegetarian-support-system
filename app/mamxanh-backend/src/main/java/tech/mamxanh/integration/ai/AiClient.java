@@ -1,6 +1,7 @@
 package tech.mamxanh.integration.ai;
 
 import java.util.List;
+import java.time.Duration;
 
 public interface AiClient {
     /** Maximum number of characters allowed in an AI chat answer (and stored assistant turn). */
@@ -22,8 +23,17 @@ public interface AiClient {
     /** Classifies the latest chat request without generating a user-facing answer. */
     ChatResult classifyChatScope(String systemInstruction, String prompt);
 
+    default ChatResult classifyChatScope(String systemInstruction, String prompt, Duration timeout) {
+        return classifyChatScope(systemInstruction, prompt);
+    }
+
     default ChatResult classifyChatScope(String modelId, String systemInstruction, String prompt) {
         return classifyChatScope(systemInstruction, prompt);
+    }
+
+    /** Classifies within the caller's remaining monotonic-turn budget when supported. */
+    default ChatResult classifyChatScope(String modelId, String systemInstruction, String prompt, Duration timeout) {
+        return classifyChatScope(modelId, systemInstruction, prompt);
     }
 
     ChatResult answerChat(String systemInstruction, String prompt);

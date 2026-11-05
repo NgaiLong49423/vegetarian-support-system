@@ -561,6 +561,9 @@ export function AiChatPage() {
     } catch (cause) {
       if (abortControllerRef.current?.signal.aborted) return false
       if (version !== requestVersion.current) return
+      setMessages((current) => current.map((message) => message.id === assistantId
+        ? { ...message, runStatus: streamedTokens ? "PARTIAL_FAILURE" : "FAILED" }
+        : message))
       if (isAuthenticated && sensitive) setRecoveryRequest(clientRequestId)
       else pendingAiChatRequest(ownerKey, null)
       const apiError = asApiError(cause)
@@ -945,6 +948,13 @@ export function AiChatPage() {
                 {message.speaker === "ASSISTANT"
                   ? <AiMessageContent content={message.content} />
                   : <p className="whitespace-pre-wrap [overflow-wrap:anywhere]">{message.content}</p>}
+                {message.speaker === "ASSISTANT" && message.engine !== "ADK_SHOPPING_PILOT" &&
+                  ["PARTIAL_FAILURE", "FAILED", "TIMEOUT", "STOPPED"].includes(message.runStatus ?? "") && (
+                    <p role="status" className="mt-2 border-t border-red-200 pt-2 text-xs font-semibold text-red-800">
+                      {({ PARTIAL_FAILURE: "Phản hồi chưa hoàn tất", FAILED: "Câu trả lời chưa hoàn tất",
+                        TIMEOUT: "Hết thời gian chờ", STOPPED: "Đã dừng" } as Record<string, string>)[message.runStatus ?? ""]}
+                    </p>
+                  )}
                 {message.steps?.some(step => step.status !== "AWAITING_CONFIRMATION") ? (
                   <div className="mt-3 space-y-2" aria-label="Các bước AI đã xử lý">
                     {message.steps.filter(step => step.status !== "AWAITING_CONFIRMATION").map((step) => {
@@ -975,7 +985,7 @@ export function AiChatPage() {
                   <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-brand-100/70 pt-2 text-[11px] text-ink-muted">
                     <span>
                       <strong className="text-ink">Danh sách mua sắm · thử nghiệm</strong>
-                      {message.runStatus ? ` · ${({ COMPLETED: "Hoàn tất", AWAITING_CONFIRMATION: "Chờ xác nhận", PREVIEW_ONLY: "Chỉ xem trước", PARTIAL_FAILURE: "Hoàn tất một phần", FAILED: "Chưa hoàn tất", CANCELLED: "Đã hủy", BLOCKED_BUDGET: "Hết ngân sách", CONSENT_REVOKED: "Đã thu hồi đồng ý", CLARIFICATION_REQUIRED: "Cần thêm thông tin", AWAITING_CONSENT: "Chờ đồng ý" } as Record<string,string>)[message.runStatus] ?? "Đang xử lý"}` : ""}
+                      {message.runStatus ? ` · ${({ COMPLETED: "Hoàn tất", AWAITING_CONFIRMATION: "Chờ xác nhận", PREVIEW_ONLY: "Chỉ xem trước", PARTIAL_FAILURE: "Phản hồi chưa hoàn tất", FAILED: "Chưa hoàn tất", TIMEOUT: "Hết thời gian chờ", STOPPED: "Đã dừng", CANCELLED: "Đã hủy", BLOCKED_BUDGET: "Hết ngân sách", CONSENT_REVOKED: "Đã thu hồi đồng ý", CLARIFICATION_REQUIRED: "Cần thêm thông tin", AWAITING_CONSENT: "Chờ đồng ý" } as Record<string,string>)[message.runStatus] ?? "Đang xử lý"}` : ""}
                       {message.knowledgeRevision ? ` · Tri thức: ${message.knowledgeRevision}` : ""}
                     </span>
                     {!message.consentRequest && message.runStatus !== "CONSENT_REVOKED" && (

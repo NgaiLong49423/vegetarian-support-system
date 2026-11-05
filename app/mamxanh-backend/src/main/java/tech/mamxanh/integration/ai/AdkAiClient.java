@@ -30,9 +30,9 @@ import java.util.Map;
 @Primary
 public class AdkAiClient implements AiClient, AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(AdkAiClient.class);
-    private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(10);
-    private static final Duration CHAT_SCOPE_TIMEOUT = Duration.ofSeconds(10);
-    private static final Duration CHAT_ANSWER_TIMEOUT = Duration.ofSeconds(7);
+    private static final Duration DEFAULT_TIMEOUT = AiTurnDeadline.OPERATIONAL_MODEL_CALL;
+    private static final Duration CHAT_SCOPE_TIMEOUT = AiTurnDeadline.OPERATIONAL_CLASSIFIER_CALL;
+    private static final Duration CHAT_ANSWER_TIMEOUT = AiTurnDeadline.OPERATIONAL_MODEL_CALL;
 
     private final AdkSingleStepTaskRunner taskRunner;
     private final AiPromptLoader promptLoader;
@@ -197,9 +197,24 @@ public class AdkAiClient implements AiClient, AutoCloseable {
     }
 
     @Override
+    public ChatResult classifyChatScope(String systemInstruction, String prompt, Duration timeout) {
+        return classifyChatScope(selectedModel(), systemInstruction, prompt, timeout);
+    }
+
+    @Override
     public ChatResult classifyChatScope(String modelId, String systemInstruction, String prompt) {
+        return classifyChatScope(modelId, systemInstruction, prompt, CHAT_SCOPE_TIMEOUT);
+    }
+
+    @Override
+    public ChatResult classifyChatScope(String modelId, String systemInstruction, String prompt, Duration timeout) {
+        Duration callTimeout = timeout == null || timeout.compareTo(CHAT_SCOPE_TIMEOUT) > 0
+                ? CHAT_SCOPE_TIMEOUT : timeout;
+        if (callTimeout.isZero() || callTimeout.isNegative()) {
+            throw new AiProviderException("ADK chat scope classification deadline exceeded");
+        }
         if (isLegacyFallback()) {
-            return fallbackClient.classifyChatScope(modelId, systemInstruction, prompt);
+            return fallbackClient.classifyChatScope(modelId, systemInstruction, prompt, callTimeout);
         }
 
         Schema schema = Schema.builder().type(Type.Known.OBJECT)
@@ -210,7 +225,7 @@ public class AdkAiClient implements AiClient, AutoCloseable {
         try {
             var result = taskRunner.executeTaskWithResult(
                     currentAuth(), modelId, "CHAT_SCOPE", systemInstruction, prompt,
-                    schema, 1024, CHAT_SCOPE_TIMEOUT);
+                    schema, 1024, callTimeout);
 
             String text = result.text();
             var usage = result.usage();

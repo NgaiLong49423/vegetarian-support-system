@@ -14,7 +14,8 @@ class AiPromptLoaderTest {
     void formattingGuidanceIsLoadedWithoutChangingStructuredResponseContracts() {
         String prompt = new AiPromptLoader().loadSystemPrompt();
         assertThat(prompt).contains("Định dạng phần lời trả lời", "dòng trống", "Không xuất HTML",
-                "Giữ nguyên schema JSON", "consent, confirmation");
+                "Giữ nguyên schema JSON", "consent, confirmation",
+                "BẮT BUỘC dùng 1–3 emoji phù hợp ngữ cảnh");
     }
 
 

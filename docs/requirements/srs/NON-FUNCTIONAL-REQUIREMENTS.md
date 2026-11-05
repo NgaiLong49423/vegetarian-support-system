@@ -1,8 +1,8 @@
 > **Document:** Non-Functional Requirements Specification
 > **File:** `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.5.0
+> **Version:** v2.6.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-11-01
+> **Last Updated:** 2026-11-05
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`
 
@@ -268,8 +268,11 @@ This document contains only requirements included in Requirements / Implementati
 - **Mô tả yêu cầu:** Xử lý lỗi linh hoạt khi dịch vụ Google Gemini bên ngoài gặp sự cố mạng, timeout hoặc trả về lỗi HTTP 429/500.
 - **Nghiệp vụ liên quan:** `FR-02`, `FR-10`, `FR-51`, `BR-04`.
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
-  - *Threshold:* Mỗi lần gọi model hoặc query embedding có deadline tối đa 10 giây, bao gồm retry cùng model nếu có. Query embedding không tự retry; khi lỗi hoặc timeout, retrieval dùng keyword với trạng thái degraded rõ ràng, không tự đổi model/provider. Với AI Assistant nhiều bước, retrieval nằm trong deadline run; mỗi lần thực thi hoặc resume có deadline toàn run tối đa 30 giây; thời gian chờ người dùng xác nhận giữa các lần thực thi không tính vào deadline này. Hết deadline phải dừng các bước kế tiếp; không chạy lại thao tác ghi đã hoàn tất. Khi vượt ngưỡng hoặc lỗi provider, hệ thống trả về thông báo lỗi thân thiện, cho phép người dùng thử lại theo quyền và xác nhận hiện hành, ghi log lỗi kỹ thuật theo `BR-04` và không làm gián đoạn các tính năng phi AI.
-- **Phương pháp kiểm chứng (Verification Method):** Kiểm thử mô phỏng mock lỗi timeout hoặc lỗi 429 từ Gemini API và kiểm tra hệ thống trả về thông báo lỗi chuẩn xác, ghi vết error log và cho phép người dùng thao tác bình thường.
+  - *Operational timeout:* Gemini answer-generation model call dùng 20 giây; classifier tối đa 10 giây; query embedding giữ giới hạn vận hành hiện hành 10 giây. Các lần gọi riêng không được vượt trần tuyệt đối 30 giây/call, bao gồm retry trong cùng call. Mỗi lần xử lý hoặc resume của AI Assistant có operational deadline 45 giây và hard cap tuyệt đối 60 giây; khoảng chờ xác nhận giữa các request không tính vào lượt đang chạy.
+  - Deadline toàn lượt bắt đầu khi Backend nhận request và dùng đồng hồ monotonic. Mỗi model call bị giới hạn bởi `min(operational timeout, thời gian còn lại của lượt)`. HTTP transport, ADK, Backend và SSE không được gia hạn deadline; token streaming liên tục không được kéo dài deadline. Hết deadline hoặc Stop/disconnect phải ngăn các bước Agent tiếp theo trong khả năng SDK hỗ trợ; thao tác đã commit giữ nguyên, không chạy lại write đã hoàn tất.
+  - Query embedding không tự retry; khi lỗi hoặc timeout, retrieval dùng keyword với trạng thái degraded rõ ràng, không tự đổi model/provider. Khi vượt ngưỡng hoặc lỗi provider, hệ thống trả về thông báo lỗi thân thiện, cho phép người dùng thử lại theo quyền và xác nhận hiện hành, ghi log lỗi kỹ thuật theo `BR-04` và không làm gián đoạn các tính năng phi AI.
+- **Căn cứ cấu hình:** Trước đây generation bị dừng tại 10 giây dù classifier hoàn tất trong khoảng 2,5 giây; Gemini thật trên `gemini-3.8-flash` sau đó ghi nhận ba model call 3,094 ms, 5,139 ms và 2,427 ms. Timeout vận hành 20 giây tạo khoảng dự phòng so với lần thành công chậm nhất, đồng thời vượt giới hạn cũ gây timeout; 30/60 giây là trần an toàn, không phải timeout mặc định hoặc mục tiêu NFR-03. Mẫu live nhỏ không chứng minh P90 hay tải cao.
+- **Phương pháp kiểm chứng (Verification Method):** Fake-model tests cho deadline, timeout, partial/final stream, lỗi giữa stream, Stop/disconnect và token liên tục; live Gemini tuần tự để đo classifier/RAG/model/TTFT/total/token usage; kiểm tra response terminal qua Playwright trên Frontend, Backend và SQL Server thật. Báo cáo phải phân biệt telemetry token/cost estimate với billing provider thực tế.
 
 ---
 

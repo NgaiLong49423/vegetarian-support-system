@@ -35,6 +35,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import tech.mamxanh.integration.ai.AiTurnDeadline;
 
 class AdkSpikeTest {
     @Test void twentyTurnWindowBoundsNativeRamWithoutLosingConfirmedParameters() {
@@ -382,6 +383,133 @@ class AdkSpikeTest {
         assertThat(ledger.usages).isEmpty();
     }
 
+    @Test void streamingEmitsPartialAndFinalButAccountsOnlyTheFinalResponse() {
+        var ledger = new Ledger();
+        var model = new FakeModel(r -> text("unused")) {
+            @Override public Flowable<LlmResponse> generateContent(LlmRequest r, boolean stream) {
+                return Flowable.just(partial("A"), text("Answer"));
+            }
+        };
+
+        var responses = new AdkModelGateway(model, ledger, CLOCK, Duration.ofSeconds(1))
+                .generateContent(LlmRequest.builder().contents(List.of(user("x"))).build(), true)
+                .toList().blockingGet();
+
+        assertThat(responses).hasSize(2);
+        assertThat(responses.getFirst().partial()).contains(true);
+        assertThat(responses.getLast().partial()).isEmpty();
+        assertThat(ledger.usages).hasSize(1);
+    }
+
+    @Test void finalTextMayCarryAnOpaqueGeminiThoughtSignaturePart() {
+        var ledger = new Ledger();
+        var finalResponse = text("Answer").toBuilder().content(Content.fromParts(
+                Part.fromText("Answer"), Part.builder().thoughtSignature(new byte[] {1, 2, 3}).build())).build();
+        var response = new AdkModelGateway(new FakeModel(r -> finalResponse), ledger, CLOCK)
+                .generateContent(LlmRequest.builder().contents(List.of(user("x"))).build(), false).blockingLast();
+
+        assertThat(response.content().orElseThrow().parts().orElseThrow()).hasSize(2);
+        assertThat(ledger.usages).hasSize(1);
+        var signatureOnly = finalResponse.toBuilder().content(Content.fromParts(
+                Part.builder().thoughtSignature(new byte[] {1, 2, 3}).build())).build();
+        assertThatThrownBy(() -> new AdkModelGateway(new FakeModel(r -> signatureOnly), new Ledger(), CLOCK)
+                .generateContent(LlmRequest.builder().contents(List.of(user("x"))).build(), false).blockingLast())
+                .hasMessageContaining("NO_USABLE_CONTENT");
+    }
+
+    @Test void streamingFailureAfterPartialDoesNotRetryOrRecordUsage() {
+        var ledger = new Ledger();
+        var generationCalls = new AtomicInteger();
+        var model = new FakeModel(r -> text("unused")) {
+            @Override public Flowable<LlmResponse> generateContent(LlmRequest r, boolean stream) {
+                generationCalls.incrementAndGet();
+                return Flowable.concat(Flowable.just(partial("Partial")),
+                        Flowable.error(new IllegalStateException("fixture stream failure")));
+            }
+        };
+        var subscriber = new AdkModelGateway(model, ledger, CLOCK)
+                .generateContent(LlmRequest.builder().contents(List.of(user("x"))).build(), true).test();
+
+        subscriber.awaitDone(1, java.util.concurrent.TimeUnit.SECONDS).assertError(IllegalStateException.class);
+        assertThat(generationCalls).hasValue(1); // streaming errors never trigger provider retry
+        assertThat(ledger.usages).isEmpty();
+    }
+
+    @Test void continuousPartialTokensCannotExtendTheAbsoluteModelDeadline() {
+        var ledger = new Ledger();
+        var cancelled = new AtomicBoolean();
+        var model = new FakeModel(r -> text("unused")) {
+            @Override public Flowable<LlmResponse> generateContent(LlmRequest r, boolean stream) {
+                return Flowable.interval(0, 5, java.util.concurrent.TimeUnit.MILLISECONDS)
+                        .map(index -> partial("token"))
+                        .doOnCancel(() -> cancelled.set(true));
+            }
+        };
+        var subscriber = new AdkModelGateway(model, ledger, CLOCK, Duration.ofMillis(55))
+                .generateContent(LlmRequest.builder().contents(List.of(user("x"))).build(), true).test();
+
+        subscriber.awaitDone(1, java.util.concurrent.TimeUnit.SECONDS).assertError(java.util.concurrent.TimeoutException.class);
+        assertThat(cancelled).isTrue();
+        assertThat(ledger.usages).isEmpty();
+    }
+
+    @Test void continuousModelTokensCannotExtendTheAbsoluteWholeTurnDeadline() {
+        var cancelled = new AtomicBoolean();
+        var model = new FakeModel(r -> text("unused")) {
+            @Override public Flowable<LlmResponse> generateContent(LlmRequest r, boolean stream) {
+                return Flowable.interval(0, 5, java.util.concurrent.TimeUnit.MILLISECONDS)
+                        .map(index -> partial("token"))
+                        .doOnCancel(() -> cancelled.set(true));
+            }
+        };
+        var deadline = AiTurnDeadline.after(Duration.ofMillis(65));
+        var subscriber = deadline.enforce(model.generateContent(
+                        LlmRequest.builder().contents(List.of(user("x"))).build(), true),
+                "Run deadline exceeded").test();
+
+        subscriber.awaitDone(1, java.util.concurrent.TimeUnit.SECONDS).assertError(java.util.concurrent.TimeoutException.class);
+        assertThat(subscriber.values()).isNotEmpty();
+        assertThat(cancelled).isTrue();
+    }
+
+    @Test void stoppingASseConsumerDisposesItsModelSource() {
+        var cancelled = new AtomicBoolean();
+        var model = new FakeModel(r -> text("unused")) {
+            @Override public Flowable<LlmResponse> generateContent(LlmRequest r, boolean stream) {
+                return Flowable.interval(0, 5, java.util.concurrent.TimeUnit.MILLISECONDS)
+                        .map(index -> partial("token"))
+                        .doOnCancel(() -> cancelled.set(true));
+            }
+        };
+        var subscriber = new AdkModelGateway(model, new Ledger(), CLOCK)
+                .generateContent(LlmRequest.builder().contents(List.of(user("x"))).build(), true).test();
+        subscriber.awaitCount(1);
+        subscriber.cancel();
+
+        assertThat(cancelled).isTrue();
+    }
+
+    @Test void slowStreamingResponseTimesOutEvenWhenNoFirstChunkArrives() {
+        var model = new FakeModel(r -> text("unused")) {
+            @Override public Flowable<LlmResponse> generateContent(LlmRequest r, boolean stream) {
+                return Flowable.timer(100, java.util.concurrent.TimeUnit.MILLISECONDS).map(ignored -> text("late"));
+            }
+        };
+        var subscriber = new AdkModelGateway(model, new Ledger(), CLOCK, Duration.ofMillis(35))
+                .generateContent(LlmRequest.builder().contents(List.of(user("x"))).build(), true).test();
+
+        subscriber.awaitDone(1, java.util.concurrent.TimeUnit.SECONDS).assertError(java.util.concurrent.TimeoutException.class);
+    }
+
+    @Test void timeoutPolicyKeepsOperationalDeadlinesBelowTheApprovedCaps() {
+        assertThat(AdkModelGateway.CALL_TIMEOUT).isEqualTo(Duration.ofSeconds(20));
+        assertThat(AiTurnDeadline.OPERATIONAL_TURN).isEqualTo(Duration.ofSeconds(45));
+        assertThat(AdkModelGateway.CALL_TIMEOUT).isLessThan(AiTurnDeadline.MAX_MODEL_CALL);
+        assertThat(AiTurnDeadline.OPERATIONAL_TURN).isLessThan(AiTurnDeadline.MAX_TURN);
+        assertThatThrownBy(() -> AiTurnDeadline.after(Duration.ofSeconds(61)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
     static AdkSpikeSession session(Authentication owner, BaseLlm model, Ledger ledger, FixtureTools tools, boolean confirm) {
         String method = confirm ? "create_list" : "read_list";
         return new AdkSpikeSession(owner, new AdkModelGateway(model, ledger, CLOCK),
@@ -394,6 +522,9 @@ class AdkSpikeTest {
     }
     static Content user(String value) { return Content.fromParts(Part.fromText(value)); }
     static LlmResponse text(String value) { return response(Part.fromText(value)); }
+    static LlmResponse partial(String value) {
+        return LlmResponse.builder().content(Content.fromParts(Part.fromText(value))).partial(true).build();
+    }
     static LlmResponse call(String name, String id, Map<String, Object> args) {
         return response(Part.builder().functionCall(FunctionCall.builder().name(name).id(id).args(args).build()).build());
     }

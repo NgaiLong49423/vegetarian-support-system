@@ -17,6 +17,7 @@ import com.google.genai.types.Part;
 import io.reactivex.rxjava3.core.Flowable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
 import tech.mamxanh.auth.entity.Role;
 import tech.mamxanh.auth.service.CurrentUserService;
@@ -82,9 +83,9 @@ class AdkAssistantEngineTest {
         when(promptLoader.loadClassifierPrompt()).thenReturn("Classifier prompt.");
 
         // Default classifier: OK
-        when(aiClient.classifyChatScope(anyString(), anyString(), anyString())).thenReturn(
+        when(aiClient.classifyChatScope(anyString(), anyString(), anyString(), any())).thenReturn(
                 new AiClient.ChatResult("{}", "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 10, 5, 15));
-        when(aiClient.classifyChatScope(anyString(), anyString())).thenReturn(
+        when(aiClient.classifyChatScope(anyString(), anyString(), any(Duration.class))).thenReturn(
                 new AiClient.ChatResult("{}", "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 10, 5, 15));
 
         when(aiQuota.beginCall(anyLong(), any(), anyString(), anyString(), any())).thenAnswer(inv -> {
@@ -119,6 +120,9 @@ class AdkAssistantEngineTest {
         assertThat(response.steps()).isEmpty();
         assertThat(response.sources()).isEmpty();
         assertThat(llm.requests).hasSize(1);
+        var classifierBudget = ArgumentCaptor.forClass(Duration.class);
+        verify(aiClient).classifyChatScope(anyString(), anyString(), anyString(), classifierBudget.capture());
+        assertThat(classifierBudget.getValue().toNanos()).isBetween(1L, Duration.ofSeconds(10).toNanos());
     }
 
     @Test
@@ -178,7 +182,7 @@ class AdkAssistantEngineTest {
 
     @Test
     void scopeClassificationRejectionReturnsRefusalWithoutCallingADK() {
-        when(aiClient.classifyChatScope(anyString(), anyString(), anyString())).thenReturn(
+        when(aiClient.classifyChatScope(anyString(), anyString(), anyString(), any())).thenReturn(
                 new AiClient.ChatResult("{}", "{\"decisionId\":\"MX_CHAT_OFF_TOPIC\",\"reasonId\":\"NONE\"}", 10, 5, 15));
 
         ScriptedLlm llm = new ScriptedLlm(request -> textResponse("Should not be called"));

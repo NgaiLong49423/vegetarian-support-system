@@ -13,6 +13,7 @@ import tech.mamxanh.subscription.service.AiChatSettingsService;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -117,8 +118,11 @@ class AdkAiClientTest {
         when(taskRunner.executeTaskWithResult(any(), any(), eq("CHAT_SCOPE"), any(), any(), any(), anyInt(), any()))
                 .thenReturn(new SingleStepResult("", usage));
 
-        assertThatThrownBy(() -> primaryClient.classifyChatScope("gemini-3.8-flash", "Instruction", "Hỏi bệnh lý"))
+        assertThatThrownBy(() -> primaryClient.classifyChatScope("gemini-3.8-flash", "Instruction", "Hỏi bệnh lý",
+                Duration.ofSeconds(3)))
                 .isInstanceOf(GeminiAiClient.AiProviderException.class);
+        verify(taskRunner).executeTaskWithResult(any(), eq("gemini-3.8-flash"), eq("CHAT_SCOPE"), any(), any(), any(),
+                eq(1024), eq(Duration.ofSeconds(3)));
     }
 
     @Test
@@ -131,5 +135,7 @@ class AdkAiClientTest {
 
         assertThat(result.structuredJson()).contains("Nấu súp lơ");
         assertThat(result.totalTokens()).isEqualTo(200);
+        verify(taskRunner).executeTaskWithResult(any(), eq("gemini-3.8-flash"), eq("CHAT"), any(), any(), any(),
+                eq(2048), eq(AiTurnDeadline.OPERATIONAL_MODEL_CALL));
     }
 }
