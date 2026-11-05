@@ -36,7 +36,16 @@ async function mockAccountApi(page: Page, options: { failFirstList?: boolean; fa
         historyFailed = true;
         return route.fulfill({ status: 503, json: { status: 503, code: 'SERVICE_UNAVAILABLE', detail: 'Chưa tải được lịch sử tài khoản.' } });
       }
-      return route.fulfill({ json: { content: [], page: 0, size: 20, totalElements: 0, totalPages: 0 } });
+      return route.fulfill({ json: {
+        content: [
+          { id: 101, action: 'AI_CREDIT_GRANTED', oldValue: '100', newValue: '350', reason: 'Tặng token bù lỗi hệ thống', occurredAt: '2026-10-21T08:00:00' },
+          { id: 102, action: 'ROLE_CHANGED', oldValue: 'Thành viên', newValue: 'Chuyên gia', reason: 'Đã xét duyệt chuyên môn', occurredAt: '2026-10-22T08:00:00' }
+        ],
+        page: 0,
+        size: 20,
+        totalElements: 2,
+        totalPages: 2
+      } });
     }
     if (request.method() === 'GET' && path === '/42') return route.fulfill({ json: current });
     if (request.method() === 'GET' && path === '') {
@@ -226,7 +235,11 @@ test('shows and retries account history without losing the selected account', as
 
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByRole('alert')).toContainText('Chưa tải được lịch sử tài khoản.');
-  await page.getByRole('button', { name: 'Thử lại' }).click();
-  await expect(page.getByText('Chưa có lịch sử thay đổi.')).toBeVisible();
-  await expect(page.getByText('Mã tài khoản')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Thử lại' }).click();
+  await expect(dialog.getByText('+100 AI Credit')).toBeVisible();
+  await expect(dialog.getByText('Mã tài khoản')).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Sau' })).toBeEnabled();
+  await dialog.getByRole('button', { name: 'Sau' }).click();
+  await dialog.getByRole('button', { name: 'Đóng' }).click();
+  await expect(dialog).toHaveCount(0);
 });
