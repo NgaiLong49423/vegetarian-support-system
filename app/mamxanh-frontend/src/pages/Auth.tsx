@@ -101,9 +101,13 @@ export function AuthPage({ mode }: { mode: Mode }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const location = useLocation();
   const sessionNotice = mode === 'login' ? (location.state as { sessionNotice?: SessionNotice } | null)?.sessionNotice : undefined;
+  const workflowNotice = mode === 'login' ? (location.state as { workflowNotice?: string } | null)?.workflowNotice : undefined;
   // UC-03.7: the reset token from the email link is kept in memory only; the effect below removes it from the URL.
   const [resetToken] = useState(() => mode === 'reset' ? new URLSearchParams(location.search).get('token') : null);
-  const [notice, setNotice] = useState<Notice | null>(() => sessionNotice ? { tone: 'error', text: SESSION_NOTICES[sessionNotice] } : mode === 'reset' && !resetToken ? INVALID_RESET_LINK : null);
+  const [notice, setNotice] = useState<Notice | null>(() => workflowNotice
+    ? { tone: 'error', text: workflowNotice }
+    : sessionNotice ? { tone: 'error', text: SESSION_NOTICES[sessionNotice] }
+    : mode === 'reset' && !resetToken ? INVALID_RESET_LINK : null);
   const [submitting, setSubmitting] = useState(false);
   const [verifyState, setVerifyState] = useState<VerifyState>('idle');
   const [resetState, setResetState] = useState<ResetState>(resetToken ? 'ready' : 'unusable');

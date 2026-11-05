@@ -9,6 +9,25 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-11-05 — Verify AI Assistant Navigation Results
+
+**Status:** Committed — `bea5d644`.
+
+**Scope:** Make Agent navigation responses reflect the route actually selected by the Backend and verified by the Frontend.
+
+### Added
+
+- Add coverage for the 14 supported navigation destinations, route access outcomes, user navigation races, data loading errors, and a real Gemini + ADK workflow.
+
+### Changed
+
+- Keep the chat transcript and session behavior intact while the Frontend validates and renders a requested destination.
+- Update the API guide to distinguish Backend tool success from a rendered destination and from access or data-loading outcomes.
+
+### Fixed
+
+- Preserve `workflowUrl` from nested ADK tool results and prevent Gemini from claiming a navigation succeeded before the Frontend confirms the route.
+
 ## 2026-11-05 — Increase AI Response Emoji Use
 
 **Status:** Committed — `889fbc7d`.
@@ -3399,7 +3418,7 @@ None.
 
 ## 2026-10-04 — Correct GitHub CLI Authentication Checks in Codex
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `bea5d644`.
 
 **Scope:** Prevent Codex from reporting a failed GitHub CLI login solely because its Windows sandbox cannot access the user's keyring or network.
 
@@ -4464,7 +4483,7 @@ None.
 
 ## 2026-09-16 — Harden Promptfoo Acceptance Checks
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `bea5d644`.
 
 **Scope:** Correct evaluator safety checks and evidence semantics while preserving external isolated SUT workspaces and existing business requirements.
 
@@ -4487,7 +4506,7 @@ None.
 
 ## 2026-09-16 — Standardize English for Changelog and Commit Messages
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `bea5d644`.
 
 **Scope:** Establish English as the mandatory language for all new or edited `CHANGELOG.md` content and all Git commit messages while retaining Vietnamese as the default prose language for other internal development documentation.
 
@@ -4507,7 +4526,7 @@ None.
 
 ## 2026-09-16 — Finalize Requirements Baseline v1.0.0
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `bea5d644`.
 
 **Scope:** Standardize and promote the PRD and Modular SRS document set to the active Requirements Baseline v1.0.0, including synchronized metadata, document registration, and downstream design and verification guidance.
 
@@ -4530,7 +4549,7 @@ None.
 
 ## 2026-09-16 — Remove Google Maps Restaurant Discovery from the Implementation Baseline
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `bea5d644`.
 
 **Scope:** Reclassify the entire M11 restaurant-discovery capability from `DEFERRED` to `OUT_OF_SCOPE` because it does not serve the core meal-planning flow and the application does not intend to manage or verify external restaurant data.
 
@@ -4550,7 +4569,7 @@ None.
 
 ## 2026-09-15 — Unified AI Chatbot Model & Recipe Instruction Step Baseline Alignment
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `bea5d644`.
 
 **Scope:** Unify AI Chatbot into a single multi-capability assistant under FR-51 per approved Product Decision, align AI Chatbot performance with NFR-03, expand NFR-25 AI quality and compliance evaluation, clarify BR-51 authority boundaries, enforce mandatory 1–30 cooking steps across Recipe Post requirements, and update Root SRS Draft status definition.
 
@@ -4655,7 +4674,7 @@ None.
 
 ## 2026-09-14 — NFR Decomposition & ISO/IEC 25010 Quality Categorization
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `bea5d644`.
 
 **Scope:** Standardize and decompose 27 non-functional requirements (`NFR-01` through `NFR-27`) into six core project quality categories based on ISO/IEC 25010, including quantitative criteria and confirmed architecture boundaries.
 
@@ -4679,7 +4698,7 @@ None.
 
 ## 2026-09-14 — Modular SRS Architecture & Field-Specific Authority Model
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `bea5d644`.
 
 **Scope:** Restructure the Software Requirements Specification into a multi-file Modular SRS, separating the root `SRS.md` authoritative registry from three specialized detailed specifications: `FUNCTIONAL-REQUIREMENTS.md`, `BUSINESS-RULES.md`, and `NON-FUNCTIONAL-REQUIREMENTS.md`.
 
@@ -4704,7 +4723,7 @@ None.
 
 ## 2026-09-14 — Personal Pantry & Inventory-based Recommendation Scope
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `bea5d644`.
 
 **Scope:** Decompose Personal Pantry/Inventory management, pantry-based recipe or post discovery, and AI-assisted recipe creation from available ingredients; classify the capability as `OUT_OF_SCOPE` for the initial MVP.
 
@@ -4724,7 +4743,7 @@ None.
 
 ## 2026-09-14 — Basic Shopping List MVP Adoption
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `bea5d644`.
 
 **Scope:** Move the basic Shopping List capability into the official MVP under Module M05 with three functional requirements (`FR-53`, `FR-54`, `FR-55`) and safe ingredient-aggregation rules.
 
@@ -4744,7 +4763,7 @@ None.
 
 ## 2026-09-14 — Restaurant Discovery Review and True Blog Scope
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `bea5d644`.
 
 **Scope:** Move vegetarian restaurant discovery to lecturer review, decompose a Samsung Food-style long-form Blog with embedded Recipe Cards, and classify the Blog capability outside the initial MVP.
 
@@ -4765,7 +4784,7 @@ None.
 
 ## 2026-09-14 — Documentation Language Policy
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `bea5d644`.
 
 **Scope:** Establish Vietnamese as the primary prose language for internal development documentation, preserve necessary English technical terms, and require fully English content only for documents explicitly classified as academic submissions.
 
@@ -4785,7 +4804,7 @@ None.
 
 ## 2026-09-13 — Controlled Documentation Baseline Migration
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `bea5d644`.
 
 **Scope:** Separate product requirements, software requirements, architecture, technology selection and verification strategy into maintained sources with explicit ownership, while preserving existing requirement meaning and holding unresolved lifecycle assignments for decision.
 
@@ -4808,7 +4827,7 @@ None.
 
 ## 2026-09-13 — Recipe Publishing and AI Scope Simplification
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `bea5d644`.
 
 **Scope:** Align the requirements baseline with the team's confirmed simplification of Recipe Post publishing and deferred AI features.
 
@@ -4832,7 +4851,7 @@ None.
 
 ## 2026-09-13 — Changelog Format and Contribution Authority
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `bea5d644`.
 
 **Scope:** Standardize the English project history and separate shared contribution rules from AI-specific instructions.
 
@@ -4854,7 +4873,7 @@ None.
 
 ## 2026-09-12 — Repository Layout and Agent Onboarding
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `bea5d644`.
 
 **Scope:** Establish predictable document placement and targeted onboarding for new agents.
 
@@ -4877,7 +4896,7 @@ None.
 
 ## 2026-09-12 — Project Documentation and Five-Member Team Setup
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `bea5d644`.
 
 **Scope:** Adapt repository guidance to the Vegetarian Support System and the five-member SWP391 team.
 

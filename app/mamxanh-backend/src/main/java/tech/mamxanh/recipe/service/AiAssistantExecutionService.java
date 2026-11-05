@@ -164,14 +164,29 @@ public class AiAssistantExecutionService {
         String workflowUrl = steps.stream().filter(step -> "navigate_to_page".equals(step.tool()))
                 .map(AssistantStep::result).filter(java.util.Objects::nonNull).map(result -> result.get("workflowUrl"))
                 .filter(String.class::isInstance).map(String.class::cast).findFirst().orElse(null);
+        boolean navigationAttempted = steps.stream().anyMatch(step -> "navigate_to_page".equals(step.tool()));
         boolean toolFailed = steps.stream().anyMatch(step -> "FAILED".equals(step.status()));
-        String answer = toolFailed
+        String answer = navigationAttempted
+                ? workflowUrl == null
+                        ? "Mình chưa thể mở trang bạn yêu cầu. Hãy xem trạng thái bước bên dưới."
+                        : "Đang mở trang bạn yêu cầu."
+                : toolFailed
                 ? "Mình chưa hoàn tất được yêu cầu. Hãy kiểm tra trạng thái từng bước bên dưới trước khi thử lại."
                 : plan.answer() == null || plan.answer().isBlank()
                         ? "Mình đã xử lý yêu cầu trong phạm vi các công cụ được phép." : plan.answer();
+        if (!navigationAttempted && claimsNavigationCompleted(answer)) {
+            answer = "Mình chưa xác nhận được việc mở trang. Hãy yêu cầu mở một trang cụ thể để hệ thống kiểm tra và điều hướng.";
+        }
         return response(request, session.id(), mode, steps, sources, null, confirmation,
                 workflowUrl, recipeRecommendations(steps),
                 answer);
+    }
+
+    private static boolean claimsNavigationCompleted(String answer) {
+        String normalized = answer.toLowerCase(java.util.Locale.ROOT);
+        return normalized.contains("đã mở trang") || normalized.contains("đã chuyển bạn")
+                || normalized.contains("mình đã chuyển") || normalized.contains("đang mở trang")
+                || normalized.contains("đã đưa bạn đến") || normalized.contains("đã điều hướng bạn");
     }
 
     public void deleteSession(UUID sessionId, String anonymousViewerId) {

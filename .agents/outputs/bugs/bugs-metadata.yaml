@@ -17,10 +17,10 @@ status_definitions:
 # Bản ghi BUG-060 của FR-11 tại 79394340 trùng lỗi privacy đã hợp nhất dưới BUG-076; giữ BUG-060 của develop.
 bugs:
   - id: BUG-107
-    title: Agent không mở được trang chi tiết công thức công khai
-    status: TRACKING
+    title: Agent không xác nhận đúng kết quả điều hướng
+    status: RESOLVED
     severity: High
-    area: Backend/AI Assistant/Điều hướng công thức
+    area: Backend/Frontend/AI Assistant/Điều hướng
     file: .agents/outputs/bugs/BUG-107.md
     created: 2026-11-05
     updated: 2026-11-05

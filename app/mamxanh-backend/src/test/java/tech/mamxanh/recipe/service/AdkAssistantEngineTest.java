@@ -181,6 +181,41 @@ class AdkAssistantEngineTest {
     }
 
     @Test
+    void adkNavigationResponseCarriesTheValidatedRouteAndDoesNotRepeatGeminisPrematureSuccessClaim() {
+        when(toolRegistry.definitionsFor("CUSTOMER")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("navigate_to_page", "Điều hướng", "{}", false, false, Set.of())));
+        when(toolRegistry.execute(eq("navigate_to_page"), any())).thenReturn(
+                new AiAssistantToolRegistry.ToolResult("SUCCEEDED", "Đang mở trang EXPLORE.",
+                        Map.of("workflowUrl", "/kham-pha"), List.of()));
+        ScriptedLlm llm = new ScriptedLlm(request -> functionResponseNames(request).isEmpty()
+                ? functionCall("navigate_to_page", "call-navigation-1", Map.of("page", "EXPLORE"))
+                : textResponse("Mình đã mở trang Khám phá cho bạn rồi nhé!"));
+        var engine = createEngine(llm);
+
+        AiChatResponse response = engine.execute(new AiChatRequest(ContextType.GENERAL, null,
+                "Mở trang Khám phá", List.of(), null, null, ExecutionMode.AGENT, null, null, null, UUID.randomUUID()));
+
+        assertThat(response.workflowUrl()).isEqualTo("/kham-pha");
+        assertThat(response.answer()).isEqualTo("Đang mở trang bạn yêu cầu.");
+        assertThat(response.steps()).singleElement().satisfies(step -> {
+            assertThat(step.tool()).isEqualTo("navigate_to_page");
+            assertThat(step.status()).isEqualTo("SUCCEEDED");
+        });
+    }
+
+    @Test
+    void adkCannotClaimItNavigatedWhenNoNavigationToolRan() {
+        ScriptedLlm llm = new ScriptedLlm(request -> textResponse("Mình đã mở trang Khám phá cho bạn rồi nhé!"));
+        var engine = createEngine(llm);
+
+        AiChatResponse response = engine.execute(new AiChatRequest(ContextType.GENERAL, null,
+                "Trang Khám phá có gì?", List.of(), null, null, ExecutionMode.AGENT, null, null, null, UUID.randomUUID()));
+
+        assertThat(response.workflowUrl()).isNull();
+        assertThat(response.answer()).contains("chưa xác nhận được việc mở trang");
+    }
+
+    @Test
     void scopeClassificationRejectionReturnsRefusalWithoutCallingADK() {
         when(aiClient.classifyChatScope(anyString(), anyString(), anyString(), any())).thenReturn(
                 new AiClient.ChatResult("{}", "{\"decisionId\":\"MX_CHAT_OFF_TOPIC\",\"reasonId\":\"NONE\"}", 10, 5, 15));

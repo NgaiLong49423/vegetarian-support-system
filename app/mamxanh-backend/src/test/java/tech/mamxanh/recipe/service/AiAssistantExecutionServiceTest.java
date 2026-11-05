@@ -73,12 +73,19 @@ class AiAssistantExecutionServiceTest {
         when(settings.resolve(7L, null)).thenReturn(null);
         when(ai.classifyChatScope(anyString(), anyString())).thenReturn(new AiClient.ChatResult(null,
                 "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 1, 1, 2));
-        when(ai.planAssistantTools(anyString(), anyString())).thenReturn(new AiClient.ChatResult(null,
-                "{\"answer\":\"Đã mở trang chủ.\",\"toolCalls\":[{\"name\":\"navigate_to_page\",\"arguments\":{\"page\":\"UNKNOWN\"}}]}", 1, 1, 2));
+        when(ai.planAssistantTools(anyString(), anyString()))
+                .thenReturn(new AiClient.ChatResult(null,
+                        "{\"answer\":\"Đã mở trang chủ.\",\"toolCalls\":[{\"name\":\"navigate_to_page\",\"arguments\":{\"page\":\"UNKNOWN\"}}]}", 1, 1, 2))
+                .thenReturn(new AiClient.ChatResult(null,
+                        "{\"answer\":\"Đã mở trang chủ.\",\"toolCalls\":[{\"name\":\"navigate_to_page\",\"arguments\":{\"page\":\"UNKNOWN\"}}]}", 1, 1, 2))
+                .thenReturn(new AiClient.ChatResult(null,
+                        "{\"answer\":\"Đã mở trang Khám phá.\",\"toolCalls\":[]}", 1, 1, 2));
         when(registry.definitionsFor("CUSTOMER")).thenReturn(List.of(new AiAssistantToolRegistry.ToolDefinition(
                 "navigate_to_page", "Navigate", "{page:string}", false, false, java.util.Set.of())));
         when(registry.execute("navigate_to_page", Map.of("page", "UNKNOWN")))
-                .thenThrow(new AppException(ErrorCode.AI_RESPONSE_INVALID));
+                .thenThrow(new AppException(ErrorCode.AI_RESPONSE_INVALID))
+                .thenReturn(new AiAssistantToolRegistry.ToolResult("SUCCEEDED", "Đang mở trang HOME.",
+                        Map.of("workflowUrl", "/trang-chu"), List.of()));
         var service = new AiAssistantExecutionService(users, ai, settings, quota,
                 new AiAssistantSessionStore(Clock.systemUTC(), java.time.Duration.ofMinutes(30)), registry,
                 new ApprovedAiKnowledgeRetriever(), new JsonMapper(), mock(ApplicationEventPublisher.class), Clock.systemUTC());
@@ -87,8 +94,18 @@ class AiAssistantExecutionServiceTest {
                 "Mở trang chủ", List.of(), null, null, ExecutionMode.CONFIRM, null, null, null));
 
         assertThat(response.steps()).singleElement().extracting("status").isEqualTo("FAILED");
-        assertThat(response.answer()).contains("chưa hoàn tất").doesNotContain("Đã mở");
+        assertThat(response.answer()).contains("chưa thể mở").doesNotContain("Đã mở");
         assertThat(response.workflowUrl()).isNull();
+
+        var successfulTool = service.execute(new AiChatRequest(AiChatRequest.ContextType.GENERAL, null,
+                "Mở trang chủ", List.of(), null, null, ExecutionMode.CONFIRM, null, null, null));
+        assertThat(successfulTool.workflowUrl()).isEqualTo("/trang-chu");
+        assertThat(successfulTool.answer()).isEqualTo("Đang mở trang bạn yêu cầu.");
+
+        var unsupportedClaim = service.execute(new AiChatRequest(AiChatRequest.ContextType.GENERAL, null,
+                "Mở trang khám phá", List.of(), null, null, ExecutionMode.CONFIRM, null, null, null));
+        assertThat(unsupportedClaim.workflowUrl()).isNull();
+        assertThat(unsupportedClaim.answer()).contains("chưa xác nhận").doesNotContain("Đã mở");
     }
 
     @Test

@@ -8,7 +8,7 @@ import {
   type PointerEvent,
 } from "react"
 
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 
 import {
   Bot,
@@ -61,6 +61,38 @@ function trustedWorkflowUrl(value: string | null | undefined): string | null {
   return value
 }
 
+function workflowAccessNotice(url: string, isAuthenticated: boolean, role?: string): string | null {
+  if (!isAuthenticated && ["/di-cho", "/ho-so", "/ho-so/so-thich-an-uong", "/ho-so/dinh-duong", "/giao-dich", "/dang-cong-thuc", "/nap-ai-credit"].includes(url))
+    return "Bạn cần đăng nhập để truy cập trang này."
+  if (url === "/dang-cong-thuc" && role !== "EXPERT") return "Trang đăng công thức chỉ dành cho tài khoản Chuyên gia."
+  if (url === "/nap-ai-credit" && !isAuthenticated) return "Bạn cần đăng nhập để xem và nạp AI Credit."
+  if (url === "/nap-ai-credit" && role !== "CUSTOMER" && role !== "EXPERT")
+    return "Tính năng nạp AI Credit dành cho tài khoản Khách hàng và Chuyên gia."
+  return null
+}
+
+function workflowPageName(url: string): string {
+  const names: Record<string, string> = {
+    "/trang-chu": "Trang chủ", "/kham-pha": "Khám phá", "/ke-hoach": "Lịch ăn",
+    "/di-cho": "Danh sách mua sắm", "/goi-ai": "Gói AI", "/nap-ai-credit": "Nạp AI Credit",
+    "/ho-so": "Hồ sơ", "/ho-so/so-thich-an-uong": "Sở thích ăn uống",
+    "/ho-so/dinh-duong": "Hồ sơ dinh dưỡng", "/dang-cong-thuc": "Đăng công thức",
+    "/chuyen-gia": "Chuyên gia", "/cong-dong": "Cộng đồng", "/giao-dich": "Lịch sử giao dịch",
+  }
+  return names[url] ?? (url.startsWith("/cong-thuc/id/") ? "Chi tiết công thức" : "trang yêu cầu")
+}
+
+function requestsNavigation(question: string): boolean {
+  return /(mở|chuyển|đi đến|đưa tôi đến|đưa bạn đến|navigate|go to)/i.test(question)
+    && /(trang|màn hình|công thức|lịch ăn|danh sách|hồ sơ|khám phá|home|explore)/i.test(question)
+}
+
+function safeUnverifiedAnswer(answer: string): string {
+  return /đã mở trang|đã chuyển bạn|mình đã chuyển|đang mở trang|đã đưa bạn đến|đã điều hướng bạn/i.test(answer)
+    ? "Mình chưa xác nhận được việc mở trang. Hãy yêu cầu mở một trang cụ thể để hệ thống kiểm tra và điều hướng."
+    : answer
+}
+
 function formatResetDateTime(timestamp: number): string {
   if (!timestamp) return ''
   const date = new Date(timestamp)
@@ -82,6 +114,9 @@ function chatGuestViewer(): string {
 
 export function AiChatPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const locationRef = useRef({ pathname: location.pathname, search: location.search })
+  locationRef.current = { pathname: location.pathname, search: location.search }
   const { account, isAuthenticated } = useAuth()
 
   const { isOpen, recipeId, recipeTitle, recipeArticle, closeChat, startNewChat } =
@@ -93,6 +128,13 @@ export function AiChatPage() {
 
   const hasRecipeContext = recipeId !== null
   const requestVersion = useRef(0)
+  const navigationAttempt = useRef<{
+    target: string
+    source: string
+    assistantId: number
+    blockedNotice: string | null
+    timer: number
+  } | null>(null)
   const activeRecipeTitle =
     recipeTitle?.trim() || (recipeId === null ? "" : `công thức #${recipeId}`)
 
@@ -136,6 +178,44 @@ export function AiChatPage() {
   } | null>(null)
 
   const contextType = hasRecipeContext ? "RECIPE" : "GENERAL"
+
+  useEffect(() => {
+    const attempt = navigationAttempt.current
+    if (!attempt) return
+    const current = `${location.pathname}${location.search}`
+    if (current === attempt.target) {
+      window.clearTimeout(attempt.timer)
+      navigationAttempt.current = null
+      const content = attempt.blockedNotice
+        ?? `Đã mở ${workflowPageName(attempt.target)} trên Mâm Xanh.`
+      setMessages((items) => items.map((message) => message.id === attempt.assistantId
+        ? { ...message, content, workflowUrl: undefined }
+        : message))
+      if (!attempt.blockedNotice) closeChat()
+      return
+    }
+    if (current === "/dang-nhap" || current === "/dang-ky") {
+      window.clearTimeout(attempt.timer)
+      navigationAttempt.current = null
+      setMessages((items) => items.map((message) => message.id === attempt.assistantId
+        ? { ...message, content: "Bạn cần đăng nhập để truy cập trang này.", workflowUrl: undefined }
+        : message))
+      return
+    }
+    if (current !== attempt.source) {
+      // A different location may be a user's own navigation or an application guard.
+      // Do not overwrite it with a rollback; also do not claim the requested page opened.
+      window.clearTimeout(attempt.timer)
+      navigationAttempt.current = null
+      setMessages((items) => items.map((message) => message.id === attempt.assistantId
+        ? { ...message, content: "Ứng dụng đã chuyển sang một trang khác; chưa thể xác nhận trang yêu cầu đã mở.", workflowUrl: undefined }
+        : message))
+    }
+  }, [location.pathname, location.search, closeChat])
+
+  useEffect(() => () => {
+    if (navigationAttempt.current) window.clearTimeout(navigationAttempt.current.timer)
+  }, [])
 
   useEffect(() => {
     if (previousOwner.current !== ownerKey) {
@@ -426,6 +506,7 @@ export function AiChatPage() {
     const normalized = questionText.trim()
     if (!normalized || loading || retrySeconds > 0) return
 
+    const sourceLocation = `${locationRef.current.pathname}${locationRef.current.search}`
     const version = requestVersion.current
     const clientRequestId = globalThis.crypto.randomUUID()
     activeRequest.current = clientRequestId
@@ -459,6 +540,7 @@ export function AiChatPage() {
     }
 
     const assistantId = currentId + 1
+    const navigationIntent = requestsNavigation(normalized)
     const abortController = new AbortController()
     abortControllerRef.current = abortController
     let streamedTokens = ""
@@ -509,6 +591,7 @@ export function AiChatPage() {
       }, {
         onDelta: (delta) => {
           streamedTokens += delta
+          if (navigationIntent) return
           setMessages((current) => current.map((msg) =>
             msg.id === assistantId ? { ...msg, content: streamedTokens } : msg
           ))
@@ -534,9 +617,11 @@ export function AiChatPage() {
         msg.id === assistantId
           ? {
               ...msg,
-              content: response.answer || streamedTokens,
+              content: trustedWorkflowUrl(response.workflowUrl)
+                ? "Đang mở trang bạn yêu cầu…"
+                : safeUnverifiedAnswer(response.answer || streamedTokens),
               recommendations: response.recommendations ?? [],
-              workflowUrl: response.workflowUrl,
+              workflowUrl: trustedWorkflowUrl(response.workflowUrl) ? undefined : response.workflowUrl,
               steps: response.steps ?? msg.steps ?? [],
               pendingConfirmation: response.pendingConfirmation ?? msg.pendingConfirmation,
               consentRequest: response.consentRequest,
@@ -551,8 +636,53 @@ export function AiChatPage() {
 
       const workflowUrl = trustedWorkflowUrl(response.workflowUrl)
       if (workflowUrl) {
-        closeChat()
-        navigate(workflowUrl)
+        const current = `${locationRef.current.pathname}${locationRef.current.search}`
+        const roleNotice = workflowAccessNotice(workflowUrl, isAuthenticated, account?.role)
+        if (current !== sourceLocation) {
+          setMessages((items) => items.map((message) => message.id === assistantId
+            ? { ...message, content: "Bạn đã chuyển sang trang khác trong lúc trợ lý xử lý; hệ thống giữ nguyên trang bạn chọn.", workflowUrl: undefined }
+            : message))
+        } else if (!isAuthenticated && roleNotice) {
+          const navTranscript = [
+            ...previous.filter((message) => !message.displayOnly),
+            ...(addQuestion ? [{ id: currentId, speaker: "USER" as const, content: normalized, sensitive }] : []),
+            { id: assistantId, speaker: "ASSISTANT" as const, content: roleNotice, recommendations: [], steps: [], sources: [], sensitive },
+          ]
+          writeAiChatSession(ownerKey, {
+            sessionId: response.sessionId ?? sessionId,
+            messages: navTranscript,
+            executionMode,
+            sequence: assistantId,
+            expiresAt: response.sessionExpiresAt ? Date.parse(response.sessionExpiresAt) : sessionExpiry,
+          })
+          setMessages((items) => items.map((message) => message.id === assistantId
+            ? { ...message, content: roleNotice, workflowUrl: undefined }
+            : message))
+          navigate("/dang-nhap", { state: { workflowNotice: roleNotice } })
+        } else
+        if (current === workflowUrl) {
+          setMessages((items) => items.map((message) => message.id === assistantId
+            ? { ...message, content: roleNotice ?? `Bạn đang ở ${workflowPageName(workflowUrl)} trên Mâm Xanh.`, workflowUrl: undefined }
+            : message))
+          if (!roleNotice) closeChat()
+        } else {
+          const attempt = {
+            target: workflowUrl,
+            source: current,
+            assistantId,
+            blockedNotice: roleNotice,
+            timer: 0,
+          }
+          attempt.timer = window.setTimeout(() => {
+            if (navigationAttempt.current !== attempt) return
+            navigationAttempt.current = null
+            setMessages((items) => items.map((message) => message.id === assistantId
+              ? { ...message, content: "Không thể xác nhận việc mở trang yêu cầu. Trang hiện tại và cuộc trò chuyện vẫn được giữ.", workflowUrl: undefined }
+              : message))
+          }, 2500)
+          navigationAttempt.current = attempt
+          navigate(workflowUrl)
+        }
       }
 
       setSequence(currentId + 1)

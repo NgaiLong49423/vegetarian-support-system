@@ -1073,12 +1073,23 @@ public class AdkAssistantEngine implements AutoCloseable {
             PendingConfirmation pending,
             String answer) {
         Instant expires = clock.instant().plus(Duration.ofMinutes(30));
+        String workflowUrl = navigationWorkflowUrl(steps);
+        boolean navigationAttempted = steps != null && steps.stream()
+                .anyMatch(step -> "navigate_to_page".equals(step.tool()));
+        String safeAnswer = answer;
+        if (navigationAttempted) {
+            safeAnswer = workflowUrl == null
+                    ? "Mình chưa thể mở trang bạn yêu cầu. Hãy xem trạng thái bước bên dưới."
+                    : "Đang mở trang bạn yêu cầu.";
+        } else if (claimsNavigationCompleted(answer)) {
+            safeAnswer = "Mình chưa xác nhận được việc mở trang. Hãy yêu cầu mở một trang cụ thể để hệ thống kiểm tra và điều hướng.";
+        }
         return new AiChatResponse(
                 request.contextType(),
                 request.recipeId(),
-                answer,
+                safeAnswer,
                 List.of(),
-                null,
+                workflowUrl,
                 sessionId,
                 mode != null ? mode : ExecutionMode.CONFIRM,
                 UUID.randomUUID(),
@@ -1090,6 +1101,33 @@ public class AdkAssistantEngine implements AutoCloseable {
                 status,
                 expires,
                 "kb-v1.0.0-20261101");
+    }
+
+    private static String navigationWorkflowUrl(List<AssistantStep> steps) {
+        if (steps == null) return null;
+        return steps.stream()
+                .filter(step -> "navigate_to_page".equals(step.tool()) && "SUCCEEDED".equals(step.status()))
+                .map(AssistantStep::result)
+                .filter(java.util.Objects::nonNull)
+                .map(result -> {
+                    Object direct = result.get("workflowUrl");
+                    if (direct instanceof String url) return url;
+                    Object data = result.get("data");
+                    if (data instanceof Map<?, ?> map && map.get("workflowUrl") instanceof String url) return url;
+                    return null;
+                })
+                .filter(java.util.Objects::nonNull)
+                .findFirst().orElse(null);
+    }
+
+    private static boolean claimsNavigationCompleted(String answer) {
+        if (answer == null || answer.isBlank()) return false;
+        String normalized = answer.toLowerCase(java.util.Locale.ROOT);
+        return normalized.contains("đã mở trang") || normalized.contains("đã chuyển bạn")
+                || normalized.contains("mình đã chuyển") || normalized.contains("đang mở trang")
+                || normalized.contains("đã đưa bạn đến") || normalized.contains("đã điều hướng bạn")
+                || normalized.contains("mở trang") && (normalized.contains("rồi nhé")
+                        || normalized.contains("cho bạn") || normalized.contains("thành công"));
     }
 
     private AiChatResponse handleRunFailure(

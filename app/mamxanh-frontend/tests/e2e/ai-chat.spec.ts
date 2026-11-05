@@ -220,6 +220,140 @@ test('Agent workflow handoff opens the selected public recipe detail only for a 
   await expect(page).toHaveURL('/cong-thuc/id/56');
 });
 
+const supportedAgentDestinations = [
+  { page: 'HOME', path: '/trang-chu', heading: /Mâm Xanh|nấu/i, role: 'EXPERT' },
+  { page: 'EXPLORE', path: '/kham-pha', heading: 'Khám phá công thức chay', role: 'EXPERT' },
+  { page: 'MEAL_PLAN', path: '/ke-hoach?view=for-you', heading: /lịch ăn|tuần/i, role: 'EXPERT' },
+  { page: 'SHOPPING_LIST', path: '/di-cho', heading: 'Danh sách mua sắm', role: 'EXPERT' },
+  { page: 'AI_PLANS', path: '/goi-ai', heading: 'Nâng cấp gói AI', role: 'EXPERT' },
+  { page: 'AI_CREDIT_TOP_UP', path: '/nap-ai-credit', heading: 'Nạp AI Credit', role: 'EXPERT' },
+  { page: 'PROFILE', path: '/ho-so', heading: 'Member test', role: 'EXPERT' },
+  { page: 'DIETARY_PREFERENCES', path: '/ho-so/so-thich-an-uong', heading: 'Sở thích ăn uống', role: 'EXPERT' },
+  { page: 'HEALTH_PROFILE', path: '/ho-so/dinh-duong', heading: 'Hồ sơ dinh dưỡng cá nhân', role: 'EXPERT' },
+  { page: 'RECIPE_CREATE', path: '/dang-cong-thuc', heading: 'Đăng công thức món chay mới', role: 'EXPERT' },
+  { page: 'EXPERT_DIRECTORY', path: '/chuyen-gia', heading: 'Chuyên gia ẩm thực chay', role: 'EXPERT' },
+  { page: 'COMMUNITY', path: '/cong-dong', heading: 'Bài viết & Kiến thức ẩm thực chay', role: 'EXPERT' },
+  { page: 'TRANSACTION_HISTORY', path: '/giao-dich', heading: 'Lịch sử giao dịch', role: 'EXPERT' },
+  { page: 'RECIPE_DETAIL', path: '/cong-thuc/id/56', heading: 'Không thể mở công thức', role: 'EXPERT' },
+] as const;
+
+for (const destination of supportedAgentDestinations) {
+  test(`Agent opens ${destination.page} at its rendered React Router destination`, async ({ page }) => {
+    await signInAsMember(page, destination.role);
+    await page.route('**/api/v1/recipes/ai/chat', route => route.fulfill({ json: {
+      contextType: 'GENERAL', recipeId: null, answer: 'Đã mở trang theo yêu cầu.',
+      recommendations: [], workflowUrl: destination.path,
+    } }));
+    await page.goto('/trang-chu');
+    await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+    await page.getByLabel('Câu hỏi của bạn').fill(`Mở trang ${destination.page}`);
+    await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+
+    await expect(page).toHaveURL(new RegExp(`${destination.path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`));
+    await expect(page.getByRole('heading', { name: destination.heading }).first()).toBeVisible();
+    if (destination.page !== 'RECIPE_DETAIL')
+      await expect(page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' })).toBeVisible();
+  });
+}
+
+test('a valid route with a data API failure remains on the rendered target and is not rolled back', async ({ page }) => {
+  await signInAsMember(page);
+  await page.route('**/api/v1/recipes/ai/chat', route => route.fulfill({ json: {
+    contextType: 'GENERAL', recipeId: null, answer: 'Đã mở công thức.', recommendations: [], workflowUrl: '/cong-thuc/id/56',
+  } }));
+  await page.route('**/api/v1/recipes/56', route => route.fulfill({ status: 503, json: { detail: 'Recipe API unavailable' } }));
+  await page.goto('/kham-pha');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Mở trang chi tiết công thức 56');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await expect(page).toHaveURL('/cong-thuc/id/56');
+  await expect(page.getByRole('heading', { name: 'Không thể mở công thức' })).toBeVisible();
+});
+
+test('an informational question without a navigation workflow does not change route', async ({ page }) => {
+  await page.route('**/api/v1/recipes/ai/chat', route => route.fulfill({ json: {
+    contextType: 'GENERAL', recipeId: null, answer: 'Trang Khám phá giúp tìm công thức công khai.', recommendations: [],
+  } }));
+  await page.goto('/kham-pha');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Trang Khám phá có gì?');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await expect(page).toHaveURL('/kham-pha');
+  await expect(page.getByText('Trang Khám phá giúp tìm công thức công khai.')).toBeVisible();
+});
+
+test('Guest navigation to the protected recipe form lands on login without a false success or rollback', async ({ page }) => {
+  await page.route('**/api/v1/recipes/ai/chat', route => route.fulfill({ json: {
+    contextType: 'GENERAL', recipeId: null, answer: 'Đã mở trang đăng công thức.', recommendations: [], workflowUrl: '/dang-cong-thuc',
+  } }));
+  await page.goto('/trang-chu');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Mở trang đăng công thức');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await expect(page).toHaveURL('/dang-nhap');
+  await expect(page.getByRole('alert')).toContainText('Bạn cần đăng nhập để truy cập trang này.');
+  const transcript = await page.evaluate(() => Object.keys(sessionStorage).find(key => key.startsWith('mamxanh.ai-chat.session.v1.guest-')));
+  expect(transcript).toBeTruthy();
+});
+
+test('a user route change while Agent is responding is never overwritten by the delayed workflow URL', async ({ page }) => {
+  await signInAsMember(page);
+  let finishResponse!: () => void;
+  let signalRequest!: () => void;
+  const responseGate = new Promise<void>(resolve => { finishResponse = resolve; });
+  const requestSeen = new Promise<void>(resolve => { signalRequest = resolve; });
+  await page.route('**/api/v1/recipes/ai/chat', async route => {
+    signalRequest();
+    await responseGate;
+    await route.fulfill({ json: {
+      contextType: 'GENERAL', recipeId: null, answer: 'Đang mở trang danh sách mua sắm.',
+      recommendations: [], workflowUrl: '/di-cho',
+    } });
+  });
+  await page.goto('/trang-chu');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Mở trang danh sách mua sắm');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await requestSeen;
+  await page.evaluate(() => {
+    window.history.pushState({}, '', '/kham-pha');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  });
+  await expect(page).toHaveURL('/kham-pha');
+  finishResponse();
+  await expect(page.getByText('Bạn đã chuyển sang trang khác trong lúc trợ lý xử lý; hệ thống giữ nguyên trang bạn chọn.')).toBeVisible();
+  await expect(page).toHaveURL('/kham-pha');
+  await expect(page.getByRole('heading', { name: 'Khám phá công thức chay' })).toBeVisible();
+});
+
+test('a Customer is told when the valid recipe form route is blocked by role permissions', async ({ page }) => {
+  await signInAsMember(page, 'CUSTOMER');
+  await page.route('**/api/v1/recipes/ai/chat', route => route.fulfill({ json: {
+    contextType: 'GENERAL', recipeId: null, answer: 'Đã mở trang đăng công thức.', recommendations: [], workflowUrl: '/dang-cong-thuc',
+  } }));
+  await page.goto('/trang-chu');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Mở trang đăng công thức');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await expect(page).toHaveURL('/dang-cong-thuc');
+  await expect(page.getByRole('heading', { name: 'Đăng công thức chỉ dành cho Chuyên gia' })).toBeVisible();
+  await expect(page.getByText('Trang đăng công thức chỉ dành cho tài khoản Chuyên gia.')).toBeVisible();
+  await expect(page.getByRole('dialog')).toBeVisible();
+});
+
+test('an untrusted or malformed destination is rejected before Router changes the URL', async ({ page }) => {
+  await page.route('**/api/v1/recipes/ai/chat', route => route.fulfill({ json: {
+    contextType: 'GENERAL', recipeId: null, answer: 'Đã mở trang chi tiết.', recommendations: [],
+    workflowUrl: '/trang-chu/cong-thuc/id/56',
+  } }));
+  await page.goto('/trang-chu');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Mở trang chi tiết công thức');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await expect(page).toHaveURL('/trang-chu');
+  await expect(page.getByText(/chưa xác nhận được việc mở trang/)).toBeVisible();
+});
+
 test('provider throttling shows the server guidance without suggesting Guest registration', async ({ page }) => {
   const detail = 'Dịch vụ AI đang tạm giới hạn yêu cầu. Vui lòng thử lại sau.';
   await page.route('**/api/v1/recipes/ai/chat', (route) => route.fulfill({ status: 503,
@@ -286,11 +420,11 @@ test('chat transcript survives workflow navigation, close/reopen, reload, and ca
 
   await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
   await expect(page.getByText('Mở lịch ăn của tôi')).toBeVisible();
-  await expect(page.getByText('Đã mở lịch ăn cho bạn.')).toBeVisible();
+  await expect(page.getByText('Đã mở Lịch ăn trên Mâm Xanh.')).toBeVisible();
   await page.reload();
   await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
   await expect(page.getByText('Mở lịch ăn của tôi')).toBeVisible();
-  await expect(page.getByText('Đã mở lịch ăn cho bạn.')).toBeVisible();
+  await expect(page.getByText('Đã mở Lịch ăn trên Mâm Xanh.')).toBeVisible();
 
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Bắt đầu cuộc trò chuyện mới' }).click();
