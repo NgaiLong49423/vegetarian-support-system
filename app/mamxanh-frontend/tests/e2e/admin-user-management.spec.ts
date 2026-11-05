@@ -55,6 +55,22 @@ async function mockAccountApi(page: Page, options: { failFirstList?: boolean; fa
     }
     return route.fulfill({ status: 404, json: { status: 404, code: 'NOT_FOUND' } });
   });
+
+  await page.route('**/api/v1/admin/ai-accounts/**', async (route) => {
+    const req = route.request();
+    const url = new URL(req.url());
+    if (req.method() === 'GET' && url.pathname.endsWith('/tier')) {
+      return route.fulfill({ json: { currentTier: 'FREE', newTier: 'FREE', tokenQuota: 10000, endsAt: null } });
+    }
+    if (req.method() === 'POST' && url.pathname.endsWith('/package-gifts')) {
+      return route.fulfill({ json: { currentTier: 'FREE', newTier: 'PLUS', tokenQuota: 50000, endsAt: '2026-12-01T00:00:00' } });
+    }
+    if (req.method() === 'POST' && url.pathname.endsWith('/credit-grants')) {
+      return route.fulfill({ json: { credits: 500, balance: 1500 } });
+    }
+    return route.fulfill({ status: 404, json: { status: 404, code: 'NOT_FOUND' } });
+  });
+
   return { listRequests, writes };
 }
 
@@ -72,6 +88,13 @@ test('loads real account API data and sends server-side filters', async ({ page 
   await page.getByRole('textbox', { name: 'Tìm người dùng' }).fill('an@example.test');
   await expect.poll(() => listRequests.some((url) => url.searchParams.get('query') === 'an@example.test')).toBe(true);
   await expect(page.getByRole('button', { name: 'Xuất danh sách' })).toHaveCount(0);
+});
+
+test('filters users by status using ThemedSelect', async ({ page }) => {
+  const { listRequests } = await mockAccountApi(page);
+  await page.goto('/admin/nguoi-dung');
+  await page.getByRole('combobox', { name: 'Lọc trạng thái' }).selectOption('LOCKED');
+  await expect.poll(() => listRequests.some((url) => url.searchParams.get('status') === 'LOCKED')).toBe(true);
 });
 
 test('role changes require a reason and update only from the API response', async ({ page }) => {
@@ -101,6 +124,58 @@ test('locking requires a reason, while administrator accounts remain view-only',
   const adminRow = page.getByRole('row').filter({ hasText: 'Quản trị viên' });
   await expect(adminRow.getByRole('button', { name: 'Khóa tài khoản' })).toHaveCount(0);
   await expect(adminRow.getByRole('button', { name: 'Đổi vai trò' })).toHaveCount(0);
+});
+
+test('unlocks a locked user account with reason', async ({ page }) => {
+  await mockAccountApi(page);
+  await page.goto('/admin/nguoi-dung');
+  const row = page.getByRole('row').filter({ hasText: 'Nguyễn An' });
+
+  // First lock
+  await row.getByRole('button', { name: 'Khóa tài khoản' }).click();
+  await page.getByRole('textbox', { name: 'Lý do thay đổi' }).fill('Khóa tạm thời để kiểm tra tài khoản');
+  await page.getByRole('button', { name: 'Xác nhận' }).click();
+  await expect(row).toContainText('Đã khóa');
+
+  // Now unlock
+  await row.getByRole('button', { name: 'Mở khóa tài khoản' }).click();
+  await page.getByRole('textbox', { name: 'Lý do thay đổi' }).fill('Đã hoàn tất xác minh danh tính tài khoản');
+  await page.getByRole('button', { name: 'Xác nhận' }).click();
+  await expect(row).toContainText('Hoạt động');
+});
+
+test('gifts an AI package to a member with reason and confirmation', async ({ page }) => {
+  await mockAccountApi(page);
+  await page.goto('/admin/nguoi-dung');
+  const row = page.getByRole('row').filter({ hasText: 'Nguyễn An' });
+  await row.getByRole('button', { name: 'Tặng gói AI / Cộng AI Credit' }).click();
+
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Tặng gói AI' }).click();
+
+  await page.getByRole('combobox', { name: 'Gói AI muốn tặng' }).selectOption('PLUS');
+  await page.getByRole('textbox', { name: 'Lý do tặng gói AI' }).fill('Tặng gói AI trải nghiệm cho người dùng');
+  await page.getByRole('button', { name: 'Xác nhận tặng gói' }).click();
+
+  await expect(page.getByRole('status')).toContainText('Đã tặng gói AI PLUS cho Nguyễn An.');
+});
+
+test('grants AI credit with credit amount and reason', async ({ page }) => {
+  await mockAccountApi(page);
+  await page.goto('/admin/nguoi-dung');
+  const row = page.getByRole('row').filter({ hasText: 'Nguyễn An' });
+  await row.getByRole('button', { name: 'Tặng gói AI / Cộng AI Credit' }).click();
+
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Tặng AI Credit' }).click();
+
+  await page.getByRole('spinbutton', { name: 'Số AI Credit muốn tặng' }).fill('500');
+  await page.getByRole('textbox', { name: 'Lý do tặng AI Credit' }).fill('Tặng AI Credit bù đắp phiên lỗi');
+  await page.getByRole('button', { name: 'Xác nhận tặng AI Credit' }).click();
+
+  await expect(page.getByRole('status')).toContainText('Đã cộng 500 AI Credit.');
 });
 
 test('shows an API error and retries loading accounts', async ({ page }) => {

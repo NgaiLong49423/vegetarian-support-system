@@ -55,9 +55,6 @@ export function ThemedSelect({
     }
   }, [open])
 
-  const selectedOption =
-    options.find((opt) => opt.value === value) ?? options[0]
-
   const handleSelect = (val: string) => {
     if (disabled) return
     onChange({ target: { value: val, name } })
