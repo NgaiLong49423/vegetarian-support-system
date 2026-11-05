@@ -415,14 +415,7 @@ export function AdminReportsPage() {
               }`}
             >
               {item.label}
-              {counts && (
-                <>
-                  {" "}
-                  <span className="tabular-nums opacity-80">
-                    (<AnimatedNumber value={item.count(counts)} />)
-                  </span>
-                </>
-              )}
+              {counts && ` (${item.count(counts)})`}
             </button>
           ))}
         </div>

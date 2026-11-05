@@ -20,8 +20,8 @@ export function HamsterLoader({
 }: HamsterLoaderProps) {
   return (
     <div
-      role="status"
       aria-label={ariaLabel}
+      aria-live="polite"
       className={`hamster-loader-container ${className}`}
     >
       <div className={`wheel-and-hamster size-${size}`} aria-hidden="true">
