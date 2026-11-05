@@ -12,6 +12,7 @@ import tools.jackson.databind.ObjectMapper;
 class KnowledgeTest {
     private final KnowledgeCatalog catalog = KnowledgeCatalog.packaged();
     static final KnowledgeIndex.Config CONFIG = new KnowledgeIndex.Config("gemini-embedding-001", 768, "task-type-v1");
+    static final KnowledgeIndex.Config PACKAGED_CONFIG = new KnowledgeIndex.Config("gemini-embedding-2", 768, "search-prefix-v1");
     static List<Double> vector(int position) {
         var v = new ArrayList<>(Collections.nCopies(768, 0.0)); v.set(position, 1.0); return v;
     }
@@ -28,6 +29,21 @@ class KnowledgeTest {
         });
         assertThat(catalog.fingerprint()).isEqualTo(KnowledgeCatalog.packaged().fingerprint());
         assertThatThrownBy(() -> catalog.document("../application.properties")).isInstanceOf(IllegalArgumentException.class);
+    }
+    @Test void packagedIndexMatchesTheCurrentCatalogAndCoversEveryChunk() {
+        var packaged = KnowledgeIndex.packaged(catalog, PACKAGED_CONFIG);
+        assertThat(packaged).isPresent();
+        assertThat(packaged.orElseThrow().vectors()).containsOnlyKeys(
+                catalog.chunks().stream().map(KnowledgeCatalog.Chunk::id).toArray(String[]::new));
+    }
+    @Test void userFacingRetrievalNeverExposesAgentOnlyPlaybooks() {
+        var playbookChunkIds = catalog.chunks().stream().filter(c -> c.documentId().equals("assistant-scope"))
+                .map(KnowledgeCatalog.Chunk::id).toList();
+        try (var retriever = new HybridKnowledgeRetriever(catalog, null, null, Clock.systemUTC())) {
+            assertThat(retriever.result(playbookChunkIds, "keyword_degraded", "TEST", true).hits()).isEmpty();
+            assertThatThrownBy(() -> retriever.get("assistant-scope", true)).isInstanceOf(SecurityException.class);
+            assertThat(retriever.get("password-recovery", true)).isNotNull();
+        }
     }
     @Test void windowsCheckoutLineEndingsPreserveCorpusAndIndexCompatibility() {
         var manifest=new KnowledgeCatalog.Manifest(catalog.revision(),catalog.documents().stream().map(KnowledgeCatalog.Document::metadata).toList());

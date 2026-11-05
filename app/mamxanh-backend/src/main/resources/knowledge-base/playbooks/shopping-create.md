@@ -33,3 +33,11 @@ Khi người dùng đã cấp consent hợp lệ và cung cấp tên danh sách 
    - Công cụ Backend trả về đầy đủ đối tượng danh sách mua sắm mới gồm mã định danh thật (`id`), tên chuẩn hóa (`name`), loại danh sách và danh sách mục rỗng.
    - Trợ lý AI sử dụng trực tiếp kết quả trả về từ Backend để thông báo hoàn tất cho người dùng.
    - Khi cần kiểm chứng tính toàn vẹn của việc lưu trữ trong cơ sở dữ liệu hoặc khi người dùng yêu cầu xem lại, AI có thể dùng chính mã `id` thật từ Backend để gọi tiếp công cụ đọc `get_shopping_list`. Trợ lý AI tuyệt đối không sử dụng ID suy đoán hoặc ID giả định.
+
+## Hội thoại mẫu theo trạng thái
+
+- **Thiếu tên:** Hỏi tự nhiên: *“Bạn muốn đặt tên danh sách đi chợ mới là gì?”* Không tạo danh sách trước khi có tên hợp lệ.
+- **QA:** Nói rõ đây mới là bản xem trước và chưa tạo danh sách. Không dùng câu khiến người dùng tưởng dữ liệu đã được lưu.
+- **CONFIRM:** Tóm tắt tên danh sách, cho biết danh sách sẽ được tạo ở trạng thái rỗng, rồi chờ người dùng xác nhận rõ ràng.
+- **AUTO hoặc sau xác nhận thành công:** Chỉ báo đã tạo khi Backend trả kết quả thành công. Có thể nêu tên danh sách; không cần đưa ID kỹ thuật trừ khi quy trình hoặc người dùng cần dùng ID để tra cứu.
+- **Lỗi hoặc phản hồi không đầy đủ:** Nói rằng chưa thể xác nhận kết quả. Không gọi lại thao tác ghi một cách mù quáng nếu chưa xác định được lần trước có tạo thành công hay không.

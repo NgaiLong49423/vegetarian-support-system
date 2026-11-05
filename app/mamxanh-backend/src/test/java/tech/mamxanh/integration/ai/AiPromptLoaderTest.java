@@ -18,6 +18,15 @@ class AiPromptLoaderTest {
                 "BẮT BUỘC dùng 1–3 emoji phù hợp ngữ cảnh");
     }
 
+    @Test
+    void conversationalGuidanceCoversContextClarificationAndNaturalLanguage() {
+        String prompt = new AiPromptLoader().loadSystemPrompt();
+        assertThat(prompt).contains("Tách yêu cầu nhiều phần", "Hỏi đúng phần còn thiếu",
+                "Theo sát ngữ cảnh", "Trả lời trực tiếp vào điều người dùng hỏi trước",
+                "Không tự thêm tính năng", "không bịa");
+        assertThat(prompt).doesNotContain("Canh rong biển hạt sen");
+    }
+
 
     private AiPromptLoader loader;
 

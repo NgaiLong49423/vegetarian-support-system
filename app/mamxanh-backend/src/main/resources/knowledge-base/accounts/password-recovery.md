@@ -16,7 +16,7 @@ source_files:
   - app/mamxanh-backend/src/main/java/tech/mamxanh/auth/service/PasswordResetEmailNotifier.java
   - app/mamxanh-backend/src/main/java/tech/mamxanh/auth/controller/AuthController.java
 implementation_status: verified
-last_verified: 2026-11-01
+last_verified: 2026-11-03
 ---
 
 # Quên mật khẩu và khôi phục tài khoản
@@ -49,9 +49,13 @@ Trong trường hợp bạn quên mật khẩu hoặc không thể đăng nhập
 ## Những điều cần lưu ý
 
 1. **Thời hạn hiệu lực của liên kết:**
-   - Liên kết đặt lại mật khẩu trong email chỉ có giá trị sử dụng một lần và có thời hạn nhất định (thường là 15-30 phút). Nếu quá hạn, bạn sẽ cần gửi lại yêu cầu mới.
+   - Liên kết đặt lại mật khẩu chỉ dùng được một lần và có hiệu lực 15 phút theo cấu hình hiện tại. Nếu liên kết đã hết hạn, đã được sử dụng hoặc đã bị thay thế bởi yêu cầu mới hơn, bạn hãy gửi lại yêu cầu đặt lại mật khẩu.
 2. **Không nhận được email:**
    - Kiểm tra kỹ thư mục Spam, Thư rác hoặc Quảng cáo.
    - Kiểm tra xem bạn có gõ sai địa chỉ email khi yêu cầu hay không.
 3. **Tài khoản đăng nhập bằng Google:**
    - Nếu bạn tạo tài khoản bằng nút "Tiếp tục với Google", bạn không có mật khẩu riêng trên Mâm Xanh. Bạn chỉ cần nhấn nút "Tiếp tục với Google" để đăng nhập trực tiếp.
+
+## Nếu liên kết không hoạt động
+
+Nếu trang báo liên kết không hợp lệ hoặc đã hết hạn, hãy quay lại trang **Quên mật khẩu?** và gửi yêu cầu mới. Mỗi yêu cầu mới thay thế liên kết trước đó, nên hãy mở liên kết mới nhất trong email. Nếu chưa thấy thư, kiểm tra thư rác và xác nhận bạn đã nhập đúng địa chỉ email; thông báo trên màn hình không xác nhận email có tài khoản hay không.
