@@ -6,11 +6,13 @@ import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.auth.service.CurrentUserService.PublicProfile;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
+import tech.mamxanh.notification.service.NotificationService;
 import tech.mamxanh.recipe.dto.request.CommentCreateRequest;
 import tech.mamxanh.recipe.dto.request.CommentUpdateRequest;
 import tech.mamxanh.recipe.dto.response.CommentResponse;
 import tech.mamxanh.recipe.dto.response.RecipeCommentPageResponse;
 import tech.mamxanh.recipe.entity.RecipeCommentEntity;
+import tech.mamxanh.recipe.entity.RecipePostEntity;
 import tech.mamxanh.recipe.repository.RecipeAuthorReferenceRepository;
 import tech.mamxanh.recipe.repository.RecipeCommentRepository;
 import tech.mamxanh.recipe.repository.RecipePostRepository;
@@ -27,6 +29,7 @@ import java.util.stream.Collectors;
  * FR-46 threaded comments on published recipes (BR-66). Guests read; an ACTIVE Customer or Expert
  * writes, and only the owner edits or deletes. Content is plain text that clients render as text
  * (AC-46.3). A deleted comment stays as a tombstone while it still has a visible reply (AC-46.2).
+ * A reply to another member's comment notifies that member in the same transaction (FR-49, AC-49.1).
  */
 @Service
 public class RecipeCommentService {
@@ -38,14 +41,17 @@ public class RecipeCommentService {
     private final RecipePostRepository recipeRepository;
     private final RecipeAuthorReferenceRepository accountRepository;
     private final CurrentUserService currentUserService;
+    private final NotificationService notificationService;
     private final Clock clock;
 
     public RecipeCommentService(RecipeCommentRepository commentRepository, RecipePostRepository recipeRepository,
-            RecipeAuthorReferenceRepository accountRepository, CurrentUserService currentUserService, Clock clock) {
+            RecipeAuthorReferenceRepository accountRepository, CurrentUserService currentUserService,
+            NotificationService notificationService, Clock clock) {
         this.commentRepository = commentRepository;
         this.recipeRepository = recipeRepository;
         this.accountRepository = accountRepository;
         this.currentUserService = currentUserService;
+        this.notificationService = notificationService;
         this.clock = clock;
     }
 
@@ -74,14 +80,22 @@ public class RecipeCommentService {
     @Transactional
     public CommentResponse create(long recipeId, CommentCreateRequest request) {
         long userId = requireActiveMember();
-        requirePublishedRecipe(recipeId);
+        RecipePostEntity recipe = requirePublishedRecipe(recipeId);
         LocalDateTime now = LocalDateTime.now(clock);
-        RecipeCommentEntity comment = request.parentCommentId() == null
-                ? RecipeCommentEntity.root(recipeId, userId, request.content(), now)
-                : RecipeCommentEntity.replyTo(replyParent(recipeId, request.parentCommentId()), userId,
-                        request.content(), now);
+        if (request.parentCommentId() == null) {
+            RecipeCommentEntity comment = RecipeCommentEntity.root(recipeId, userId, request.content(), now);
+            commentRepository.save(comment);
+            return single(comment);
+        }
+        RecipeCommentEntity target = replyTarget(recipeId, request.parentCommentId());
+        RecipeCommentEntity comment = RecipeCommentEntity.replyTo(replyParent(target), userId, request.content(), now);
         commentRepository.save(comment);
-        return single(comment);
+        CommentResponse created = single(comment);
+        if (target.getUserId() != userId) {
+            notificationService.commentReply(target.getUserId(), comment.getId(), recipeId, recipe.getTitle(),
+                    created.author().displayName());
+        }
+        return created;
     }
 
     @Transactional
@@ -105,11 +119,15 @@ public class RecipeCommentService {
         }
     }
 
-    /** UC-46 step 4: a reply to a level-5 comment joins its level-4 parent so the thread never gets deeper. */
-    private RecipeCommentEntity replyParent(long recipeId, long targetId) {
-        RecipeCommentEntity target = commentRepository.findById(targetId)
+    /** The comment the member answers; it must be live and on the same recipe (BR-66). */
+    private RecipeCommentEntity replyTarget(long recipeId, long targetId) {
+        return commentRepository.findById(targetId)
                 .filter(comment -> comment.getRecipeId() == recipeId && !comment.isDeleted())
                 .orElseThrow(() -> new AppException(ErrorCode.COMMENT_NOT_FOUND));
+    }
+
+    /** UC-46 step 4: a reply to a level-5 comment joins its level-4 parent so the thread never gets deeper. */
+    private RecipeCommentEntity replyParent(RecipeCommentEntity target) {
         if (target.getDepth() < RecipeCommentEntity.MAX_DEPTH) {
             return target;
         }
@@ -127,8 +145,8 @@ public class RecipeCommentService {
         return comment;
     }
 
-    private void requirePublishedRecipe(long recipeId) {
-        recipeRepository.findByIdAndStatus(recipeId, PUBLISHED)
+    private RecipePostEntity requirePublishedRecipe(long recipeId) {
+        return recipeRepository.findByIdAndStatus(recipeId, PUBLISHED)
                 .orElseThrow(() -> new AppException(ErrorCode.RECIPE_NOT_FOUND));
     }
 
