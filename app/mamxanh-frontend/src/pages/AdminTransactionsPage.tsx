@@ -1,8 +1,25 @@
 import { useEffect, useRef, useState, type FormEvent } from "react"
 
-import { Download, RefreshCw, Search, X } from "lucide-react"
+import {
+  AlertTriangle,
+  Ban,
+  CheckCircle2,
+  Clock,
+  Download,
+  RefreshCw,
+  Search,
+  TrendingUp,
+  X,
+  XCircle,
+} from "lucide-react"
 
-import { Card, Badge, Button } from "../components/ui"
+import {
+  Card,
+  Badge,
+  Button,
+  AnimatedNumber,
+  ThemedSelect,
+} from "../components/ui"
 
 import { useAuth } from "../components/AuthContext"
 
@@ -70,7 +87,15 @@ const input =
 function State({ value }: { value: TransactionState }) {
   return (
     <Badge
-            tone={value === "PAID" ? "leaf" : value === "PENDING" ? "amber" : value === "NEEDS_RECONCILIATION" ? "brand" : "neutral"}
+      tone={
+        value === "PAID"
+          ? "leaf"
+          : value === "PENDING"
+            ? "amber"
+            : value === "NEEDS_RECONCILIATION"
+              ? "brand"
+              : "neutral"
+      }
     >
       {statuses[value]}
     </Badge>
@@ -285,44 +310,43 @@ export function AdminTransactionsPage() {
           </label>
           <label className="space-y-2 text-sm text-ink-soft">
             <span id="transaction-tier-label">Gói dịch vụ</span>
-            <select
+            <ThemedSelect
               aria-labelledby="transaction-tier-label"
               className={input}
               value={draft.tier}
               onChange={(e) =>
                 setDraft({
                   ...draft,
-
                   tier: e.target.value as TransactionFilters["tier"],
                 })
               }
-            >
-              <option value="">Tất cả gói</option>
-              <option value="PLUS">Plus</option>
-              <option value="PRO">Pro</option>
-            </select>
+              options={[
+                { value: "", label: "Tất cả gói" },
+                { value: "PLUS", label: "Plus" },
+                { value: "PRO", label: "Pro" },
+              ]}
+            />
           </label>
           <label className="space-y-2 text-sm text-ink-soft">
             <span id="transaction-status-label">Trạng thái</span>
-            <select
+            <ThemedSelect
               aria-labelledby="transaction-status-label"
               className={input}
               value={draft.status}
               onChange={(e) =>
                 setDraft({
                   ...draft,
-
                   status: e.target.value as TransactionFilters["status"],
                 })
               }
-            >
-              <option value="">Tất cả trạng thái</option>
-              {Object.entries(statuses).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: "", label: "Tất cả trạng thái" },
+                ...Object.entries(statuses).map(([val, lbl]) => ({
+                  value: val,
+                  label: lbl,
+                })),
+              ]}
+            />
           </label>
           <label className="space-y-2 text-sm text-ink-soft">
             <span>Từ ngày tạo</span>
@@ -403,70 +427,121 @@ export function AdminTransactionsPage() {
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {[
-              [
-                "Doanh thu ghi nhận",
-
-                currency.format(summary.revenueVnd ?? 0),
-
-                "Chỉ tính giao dịch thành công",
-              ],
-
-              [
-                "Giao dịch thành công",
-
-                (summary.paid ?? 0).toLocaleString("vi-VN"),
-
-                `Tỷ lệ ${
-                  summary.total
-                    ? (((summary.paid ?? 0) / summary.total) * 100).toLocaleString(
-                        "vi-VN",
-
-                        { maximumFractionDigits: 1 },
-                      )
-                    : "0"
-                }% trên tổng giao dịch`,
-              ],
-
-              [
-                "Chờ thanh toán",
-
-                (summary.pending ?? 0).toLocaleString("vi-VN"),
-
-                "Theo trạng thái đã ghi nhận",
-              ],
-
-              [
-                "Đã hủy",
-
-                (summary.cancelled ?? 0).toLocaleString("vi-VN"),
-
-                "Đã hủy trước khi thanh toán",
-              ],
-
-              [
-                "Cần đối soát",
-
-                (summary.needsReconciliation ?? 0).toLocaleString("vi-VN"),
-
-                "Đã thanh toán sau hạn hoặc thiếu thời điểm xác minh",
-              ],
-
-              [
-                "Thất bại",
-
-                (summary.failed ?? 0).toLocaleString("vi-VN"),
-
-                "Thanh toán không thành công",
-              ],
-            ].map(([label, value, hint]) => (
-              <Card key={label} className="p-5">
-                <p className="text-sm font-semibold text-ink-muted">{label}</p>
-                <p className="mt-3 break-words text-2xl font-extrabold text-leaf-700">
-                  {value}
-                </p>
-                <p className="mt-2 text-xs leading-5 text-ink-muted">{hint}</p>
-              </Card>
-            ))}
+              {
+                label: "Doanh thu ghi nhận",
+                value: (
+                  <AnimatedNumber value={summary.revenueVnd ?? 0} suffix=" ₫" />
+                ),
+                hint: "Chỉ tính giao dịch thành công",
+                icon: <TrendingUp className="h-4 w-4" />,
+                iconClass: "bg-leaf-50 text-leaf-700 ring-1 ring-leaf-200/70",
+                accent: "from-leaf-500 via-leaf-400 to-transparent",
+                valueClass: "text-leaf-700 dark:text-leaf-400",
+              },
+              {
+                label: "Giao dịch thành công",
+                value: <AnimatedNumber value={summary.paid ?? 0} />,
+                hint: (
+                  <>
+                    Tỷ lệ{" "}
+                    <AnimatedNumber
+                      value={
+                        summary.total
+                          ? ((summary.paid ?? 0) / summary.total) * 100
+                          : 0
+                      }
+                      decimals={1}
+                      suffix="%"
+                    />{" "}
+                    trên tổng đơn
+                  </>
+                ),
+                icon: <CheckCircle2 className="h-4 w-4" />,
+                iconClass:
+                  "bg-brand-50 text-brand-600 ring-1 ring-brand-200/70",
+                accent: "from-brand-500 via-brand-400 to-transparent",
+                valueClass: "text-ink",
+              },
+              {
+                label: "Chờ thanh toán",
+                value: <AnimatedNumber value={summary.pending ?? 0} />,
+                hint: "Phiên thanh toán đang mở",
+                icon: <Clock className="h-4 w-4" />,
+                iconClass:
+                  "bg-amber-50 text-amber-700 ring-1 ring-amber-200/70",
+                accent: "from-amber-500 via-amber-400 to-transparent",
+                valueClass: "text-amber-700 dark:text-amber-400",
+              },
+              {
+                label: "Đã hủy",
+                value: <AnimatedNumber value={summary.cancelled ?? 0} />,
+                hint: "Đã hủy trước khi quét mã",
+                icon: <Ban className="h-4 w-4" />,
+                iconClass: "bg-raised text-ink-muted ring-1 ring-brand-200/50",
+                accent: "from-slate-400 via-slate-300 to-transparent",
+                valueClass: "text-ink-muted",
+              },
+              {
+                label: "Cần đối soát",
+                value: (
+                  <AnimatedNumber value={summary.needsReconciliation ?? 0} />
+                ),
+                hint: "Cần kiểm tra trạng thái ngân hàng",
+                icon: <AlertTriangle className="h-4 w-4" />,
+                iconClass:
+                  "bg-amber-50 text-amber-800 ring-1 ring-amber-300/70",
+                accent: "from-amber-500 via-rose-400 to-transparent",
+                valueClass: "text-amber-800 dark:text-amber-300",
+              },
+              {
+                label: "Thất bại",
+                value: <AnimatedNumber value={summary.failed ?? 0} />,
+                hint: "Thanh toán không thành công",
+                icon: <XCircle className="h-4 w-4" />,
+                iconClass: "bg-rose-50 text-rose-700 ring-1 ring-rose-200/70",
+                accent: "from-rose-500 via-rose-400 to-transparent",
+                valueClass: "text-rose-700 dark:text-rose-400",
+              },
+            ].map(
+              ({ label, value, hint, icon, iconClass, accent, valueClass }) => (
+                <Card
+                  key={label}
+                  className="group relative flex flex-col justify-between overflow-hidden border-brand-200/80 bg-paper p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-900/5"
+                >
+                  <div
+                    className={
+                      "absolute inset-x-0 top-0 h-1 bg-gradient-to-r " + accent
+                    }
+                  />
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
+                        {label}
+                      </p>
+                      <span
+                        className={
+                          "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl shadow-2xs transition-transform duration-200 group-hover:scale-110 " +
+                          iconClass
+                        }
+                      >
+                        {icon}
+                      </span>
+                    </div>
+                    <p
+                      className={
+                        "mt-3 break-words text-2xl font-black tracking-tight sm:text-3xl " +
+                        valueClass
+                      }
+                    >
+                      {value}
+                    </p>
+                  </div>
+                  <p className="mt-3 border-t border-brand-100/60 pt-2.5 text-xs leading-5 text-ink-muted">
+                    {hint}
+                  </p>
+                </Card>
+              ),
+            )}
           </div>
           <p className="text-xs leading-5 text-ink-muted">
             Thống kê và CSV bao gồm mọi trang theo bộ lọc đã áp dụng. CSV tối đa
@@ -531,9 +606,26 @@ export function AdminTransactionsPage() {
                         </p>
                       </td>
                       <td className="px-4 py-4">
-                        {tx.productType === "AI_CREDIT"
-                          ? <div><Badge>Nạp AI Credit · {tx.creditAmount?.toLocaleString("vi-VN", { maximumFractionDigits: 9 })}</Badge><p className="mt-1 text-xs text-ink-muted">{tx.creditsPer1000VndSnapshot?.toLocaleString("vi-VN")} Credit / 1.000đ</p></div>
-                          : tx.tier ? <Badge>{tx.tier}</Badge> : "Chưa xác định"}
+                        {tx.productType === "AI_CREDIT" ? (
+                          <div>
+                            <Badge>
+                              Nạp AI Credit ·{" "}
+                              {tx.creditAmount?.toLocaleString("vi-VN", {
+                                maximumFractionDigits: 9,
+                              })}
+                            </Badge>
+                            <p className="mt-1 text-xs text-ink-muted">
+                              {tx.creditsPer1000VndSnapshot?.toLocaleString(
+                                "vi-VN",
+                              )}{" "}
+                              Credit / 1.000đ
+                            </p>
+                          </div>
+                        ) : tx.tier ? (
+                          <Badge>{tx.tier}</Badge>
+                        ) : (
+                          "Chưa xác định"
+                        )}
                       </td>
                       <td className="whitespace-nowrap px-4 py-4 font-semibold text-ink">
                         {currency.format(tx.amountVnd)}
@@ -648,9 +740,21 @@ export function AdminTransactionsPage() {
 
                 ["Email", detail.customerEmail],
 
-                ["Sản phẩm", detail.productType === "AI_CREDIT" ? `Nạp AI Credit · ${detail.creditAmount?.toLocaleString("vi-VN", { maximumFractionDigits: 9 })} Credit` : detail.tier ?? "Chưa xác định"],
+                [
+                  "Sản phẩm",
+                  detail.productType === "AI_CREDIT"
+                    ? `Nạp AI Credit · ${detail.creditAmount?.toLocaleString("vi-VN", { maximumFractionDigits: 9 })} Credit`
+                    : (detail.tier ?? "Chưa xác định"),
+                ],
 
-                ...(detail.productType === "AI_CREDIT" ? [["Tỷ lệ nạp", `${detail.creditsPer1000VndSnapshot?.toLocaleString("vi-VN")} Credit / 1.000đ`]] : []),
+                ...(detail.productType === "AI_CREDIT"
+                  ? [
+                      [
+                        "Tỷ lệ nạp",
+                        `${detail.creditsPer1000VndSnapshot?.toLocaleString("vi-VN")} Credit / 1.000đ`,
+                      ],
+                    ]
+                  : []),
 
                 ["Số tiền", currency.format(detail.amountVnd)],
 

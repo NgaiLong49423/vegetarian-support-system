@@ -1,5 +1,11 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react"
+import { Link } from "react-router-dom"
 import {
   Activity,
   AlertCircle,
@@ -18,17 +24,23 @@ import {
   ShieldCheck,
   Sparkles,
   X,
-} from 'lucide-react';
-import { PageContainer } from '../components/Layout';
-import { Button, Card, EmptyState } from '../components/ui';
-import { IngredientImage } from '../components/IngredientImage';
-import { getIngredientGroupVisual } from '../utils/ingredientImage';
+} from "lucide-react"
+import { PageContainer } from "../components/Layout"
+import {
+  Button,
+  Card,
+  EmptyState,
+  AnimatedNumber,
+  ThemedSelect,
+} from "../components/ui"
+import { IngredientImage } from "../components/IngredientImage"
+import { getIngredientGroupVisual } from "../utils/ingredientImage"
 import {
   normalizeIngredientGroup,
   normalizeSourceName,
   STANDARD_INGREDIENT_GROUPS,
   STANDARD_DATA_SOURCES,
-} from '../utils/vietnameseText';
+} from "../utils/vietnameseText"
 import {
   AdminCatalogApiError,
   adminCatalogApi,
@@ -36,42 +48,75 @@ import {
   type IngredientRecipeReference,
   type IngredientSearch,
   type IngredientNutrition,
-  type CatalogUnit, type IngredientConversion, type ConversionDraft,
-} from '../services/adminCatalogApi';
+  type CatalogUnit,
+  type IngredientConversion,
+  type ConversionDraft,
+} from "../services/adminCatalogApi"
 
 // Today in Vietnam time, the calendar the Backend checks referenceDate against, whatever the browser zone (BUG-059).
-const today = () => new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit',
-}).format(new Date());
-const MAX_INGREDIENT_IMAGE_BYTES = 2 * 1024 * 1024;
-const INGREDIENT_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const today = () =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date())
+const MAX_INGREDIENT_IMAGE_BYTES = 2 * 1024 * 1024
+const INGREDIENT_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+])
 const fieldClass =
-  'mt-1.5 w-full rounded-xl border border-brand-200/80 bg-paper px-3.5 py-2.5 text-sm font-sans text-ink outline-none transition-all placeholder:text-ink-muted/50 focus:border-brand-500 focus:ring-2 focus:ring-brand-100';
-const labelClass = 'block text-sm font-semibold text-ink';
+  "mt-1.5 w-full rounded-xl border border-brand-200/80 bg-paper px-3.5 py-2.5 text-sm font-sans text-ink outline-none transition-all placeholder:text-ink-muted/50 focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+const labelClass = "block text-sm font-semibold text-ink"
 const nutritionFields = [
-  { key: 'energyKcalPer100g', label: 'Năng lượng', unit: 'kcal', step: '0.01' },
-  { key: 'proteinGramsPer100g', label: 'Chất đạm', unit: 'g', step: '0.01' },
-  { key: 'carbohydrateGramsPer100g', label: 'Carbohydrate', unit: 'g', step: '0.01' },
-  { key: 'totalFatGramsPer100g', label: 'Chất béo', unit: 'g', step: '0.01' },
-  { key: 'fiberGramsPer100g', label: 'Chất xơ', unit: 'g', step: '0.01' },
-  { key: 'calciumMgPer100g', label: 'Canxi', unit: 'mg', step: '0.01' },
-  { key: 'ironMgPer100g', label: 'Sắt', unit: 'mg', step: '0.01' },
-  { key: 'vitaminB12MicrogramsPer100g', label: 'Vitamin B12', unit: 'µg', step: '0.0001' },
-  { key: 'zincMgPer100g', label: 'Kẽm', unit: 'mg', step: '0.01' },
-] as const satisfies ReadonlyArray<{ key: keyof IngredientNutrition; label: string; unit: string; step: string }>;
-type NutritionDraft = Record<keyof IngredientNutrition, string>;
+  { key: "energyKcalPer100g", label: "Năng lượng", unit: "kcal", step: "0.01" },
+  { key: "proteinGramsPer100g", label: "Chất đạm", unit: "g", step: "0.01" },
+  {
+    key: "carbohydrateGramsPer100g",
+    label: "Carbohydrate",
+    unit: "g",
+    step: "0.01",
+  },
+  { key: "totalFatGramsPer100g", label: "Chất béo", unit: "g", step: "0.01" },
+  { key: "fiberGramsPer100g", label: "Chất xơ", unit: "g", step: "0.01" },
+  { key: "calciumMgPer100g", label: "Canxi", unit: "mg", step: "0.01" },
+  { key: "ironMgPer100g", label: "Sắt", unit: "mg", step: "0.01" },
+  {
+    key: "vitaminB12MicrogramsPer100g",
+    label: "Vitamin B12",
+    unit: "µg",
+    step: "0.0001",
+  },
+  { key: "zincMgPer100g", label: "Kẽm", unit: "mg", step: "0.01" },
+] as const satisfies ReadonlyArray<{
+  key: keyof IngredientNutrition
+  label: string
+  unit: string
+  step: string
+}>
+type NutritionDraft = Record<keyof IngredientNutrition, string>
 
-const emptyNutritionDraft = (): NutritionDraft => Object.fromEntries(
-  nutritionFields.map(({ key }) => [key, '']),
-) as NutritionDraft;
+const emptyNutritionDraft = (): NutritionDraft =>
+  Object.fromEntries(
+    nutritionFields.map(({ key }) => [key, ""]),
+  ) as NutritionDraft
 
-const toNutritionDraft = (nutrition: IngredientNutrition): NutritionDraft => Object.fromEntries(
-  nutritionFields.map(({ key }) => [key, nutrition[key] === null ? '' : String(nutrition[key])]),
-) as NutritionDraft;
+const toNutritionDraft = (nutrition: IngredientNutrition): NutritionDraft =>
+  Object.fromEntries(
+    nutritionFields.map(({ key }) => [
+      key,
+      nutrition[key] === null ? "" : String(nutrition[key]),
+    ]),
+  ) as NutritionDraft
 
-const recipeStatusLabel = (status: string) => status === 'PUBLISHED'
-  ? 'Đang công khai'
-  : status === 'HIDDEN' ? 'Đã ẩn' : 'Đã xóa';
+const recipeStatusLabel = (status: string) =>
+  status === "PUBLISHED"
+    ? "Đang công khai"
+    : status === "HIDDEN"
+      ? "Đã ẩn"
+      : "Đã xóa"
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -79,20 +124,20 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       {label}
       {children}
     </label>
-  );
+  )
 }
 interface IngredientCardProps {
-  item: CatalogIngredient;
-  supportedUnits: Array<{ code: string; approximate: boolean }>;
-  unitSupportLoading: boolean;
-  unitSupportError: string;
-  onRetryUnitSupport: () => void;
-  saving: boolean;
-  onOpenNutritionDetails: (item: CatalogIngredient) => void;
-  onShowRecipes: (item: CatalogIngredient) => void;
-  onEditInfo: (item: CatalogIngredient) => void;
-  onToggleActive: (item: CatalogIngredient) => void;
-  onManageUnits: (item: CatalogIngredient) => void;
+  item: CatalogIngredient
+  supportedUnits: Array<{ code: string; approximate: boolean }>
+  unitSupportLoading: boolean
+  unitSupportError: string
+  onRetryUnitSupport: () => void
+  saving: boolean
+  onOpenNutritionDetails: (item: CatalogIngredient) => void
+  onShowRecipes: (item: CatalogIngredient) => void
+  onEditInfo: (item: CatalogIngredient) => void
+  onToggleActive: (item: CatalogIngredient) => void
+  onManageUnits: (item: CatalogIngredient) => void
 }
 
 function IngredientTableRow({
@@ -108,13 +153,13 @@ function IngredientTableRow({
   onToggleActive,
   onManageUnits,
 }: IngredientCardProps) {
-  const groupVisual = getIngredientGroupVisual(item.ingredientGroup);
+  const groupVisual = getIngredientGroupVisual(item.ingredientGroup)
 
   return (
     <tr
       key={item.id}
       className={`transition-colors hover:bg-brand-50/40 ${
-        item.active ? 'bg-paper' : 'bg-brand-50/20 text-ink-muted'
+        item.active ? "bg-paper" : "bg-brand-50/20 text-ink-muted"
       }`}
     >
       {/* 1. Nguyên liệu (Ảnh thumbnail + Tên + Nguồn tham khảo) */}
@@ -126,7 +171,10 @@ function IngredientTableRow({
             containerClassName="h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-brand-200/80 bg-brand-50 shadow-2xs"
           />
           <div className="min-w-0">
-            <p className="font-bold text-ink leading-tight line-clamp-1" title={item.name}>
+            <p
+              className="font-bold text-ink leading-tight line-clamp-1"
+              title={item.name}
+            >
               {item.name}
             </p>
             <div className="flex items-center gap-1 text-[11px] text-ink-muted">
@@ -143,24 +191,43 @@ function IngredientTableRow({
                 </a>
               )}
             </div>
-            <div className="mt-1 flex flex-wrap items-center gap-1" aria-label={`Đơn vị được hỗ trợ cho ${item.name}`}>
-              <span className="mr-0.5 text-[10px] font-semibold text-ink-muted">Đơn vị:</span>
+            <div
+              className="mt-1 flex flex-wrap items-center gap-1"
+              aria-label={`Đơn vị được hỗ trợ cho ${item.name}`}
+            >
+              <span className="mr-0.5 text-[10px] font-semibold text-ink-muted">
+                Đơn vị:
+              </span>
               {unitSupportLoading ? (
                 <span className="text-[10px] text-ink-muted">Đang tải…</span>
               ) : unitSupportError ? (
-                <button type="button" className="text-[10px] font-semibold text-red-700 underline" onClick={onRetryUnitSupport}>
+                <button
+                  type="button"
+                  className="text-[10px] font-semibold text-red-700 underline"
+                  onClick={onRetryUnitSupport}
+                >
                   Tải lại danh sách
                 </button>
               ) : (
                 <>
                   {supportedUnits.map(({ code, approximate }) => (
-                    <span key={code} title={approximate ? 'Hệ số quy đổi ước tính' : 'Đơn vị được hỗ trợ'}
-                      className="rounded-md border border-leaf-200 bg-leaf-50 px-1.5 py-0.5 text-[10px] font-semibold text-leaf-800">
-                      {code}{approximate ? ' ≈' : ''}
+                    <span
+                      key={code}
+                      title={
+                        approximate
+                          ? "Hệ số quy đổi ước tính"
+                          : "Đơn vị được hỗ trợ"
+                      }
+                      className="rounded-md border border-leaf-200 bg-leaf-50 px-1.5 py-0.5 text-[10px] font-semibold text-leaf-800"
+                    >
+                      {code}
+                      {approximate ? " ≈" : ""}
                     </span>
                   ))}
                   {supportedUnits.length === 3 && (
-                    <span className="text-[10px] text-ink-muted">Chỉ hỗ trợ khối lượng</span>
+                    <span className="text-[10px] text-ink-muted">
+                      Chỉ hỗ trợ khối lượng
+                    </span>
                   )}
                 </>
               )}
@@ -171,7 +238,9 @@ function IngredientTableRow({
 
       {/* 2. Nhóm nguyên liệu */}
       <td className="py-3 px-2 align-middle whitespace-nowrap">
-        <span className={`inline-block rounded-lg border px-2.5 py-0.5 text-xs font-semibold ${groupVisual.badgeClass}`}>
+        <span
+          className={`inline-block rounded-lg border px-2.5 py-0.5 text-xs font-semibold ${groupVisual.badgeClass}`}
+        >
           {normalizeIngredientGroup(item.ingredientGroup)}
         </span>
       </td>
@@ -181,12 +250,16 @@ function IngredientTableRow({
         <span
           className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
             item.active
-              ? 'border-leaf-300/80 bg-leaf-50 text-leaf-800'
-              : 'border-brand-200/80 bg-paper text-ink-muted'
+              ? "border-leaf-300/80 bg-leaf-50 text-leaf-800"
+              : "border-brand-200/80 bg-paper text-ink-muted"
           }`}
         >
-          <span className={`size-1.5 rounded-full ${item.active ? 'bg-leaf-500' : 'bg-ink-muted/50'}`} />
-          {item.active ? 'Đang hoạt động' : 'Ngừng hoạt động'}
+          <span
+            className={`size-1.5 rounded-full ${
+              item.active ? "bg-leaf-500" : "bg-ink-muted/50"
+            }`}
+          />
+          {item.active ? "Đang hoạt động" : "Ngừng hoạt động"}
         </span>
       </td>
 
@@ -195,11 +268,11 @@ function IngredientTableRow({
         <span
           className={`inline-flex items-center rounded-lg border px-2.5 py-0.5 text-xs font-semibold ${
             item.nutritionSupported
-              ? 'border-leaf-300/80 bg-leaf-50/95 text-leaf-800'
-              : 'border-brand-200/80 bg-paper/95 text-ink-muted'
+              ? "border-leaf-300/80 bg-leaf-50/95 text-leaf-800"
+              : "border-brand-200/80 bg-paper/95 text-ink-muted"
           }`}
         >
-          {item.nutritionSupported ? 'Hỗ trợ dinh dưỡng' : 'Chưa hỗ trợ'}
+          {item.nutritionSupported ? "Hỗ trợ dinh dưỡng" : "Chưa hỗ trợ"}
         </span>
       </td>
 
@@ -211,8 +284,8 @@ function IngredientTableRow({
           aria-label={`Xem công thức có dùng ${item.name}`}
           className={`inline-flex items-center justify-center min-w-8 h-7 px-2.5 rounded-full text-xs font-bold transition-all shadow-2xs hover:scale-105 ${
             item.recipeUsageCount
-              ? 'bg-brand-100 text-brand-800 border border-brand-300 hover:bg-brand-200'
-              : 'bg-cream-soft text-ink-muted border border-brand-200/60'
+              ? "bg-brand-100 text-brand-800 border border-brand-300 hover:bg-brand-200"
+              : "bg-cream-soft text-ink-muted border border-brand-200/60"
           }`}
           title={`${item.recipeUsageCount ?? 0} công thức có dùng ${item.name}`}
         >
@@ -224,7 +297,14 @@ function IngredientTableRow({
       {/* 6. Thao tác quản trị */}
       <td className="py-3 px-4 text-center align-middle whitespace-nowrap">
         <div className="flex items-center justify-center gap-1.5">
-          <Button size="sm" variant="outline" onClick={() => onManageUnits(item)} className="h-8 py-1 px-2.5 text-xs font-semibold">Đơn vị</Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onManageUnits(item)}
+            className="h-8 py-1 px-2.5 text-xs font-semibold"
+          >
+            Đơn vị
+          </Button>
           <Button
             size="sm"
             variant="outline"
@@ -241,472 +321,574 @@ function IngredientTableRow({
             aria-label={`Xem chi tiết ${item.name} · Sửa dinh dưỡng ${item.name}`}
             className="h-8 py-1 px-2.5 text-xs font-semibold"
           >
-            <Activity className="h-3 w-3 mr-1 shrink-0 text-brand-600" /> Dinh dưỡng
+            <Activity className="h-3 w-3 mr-1 shrink-0 text-brand-600" /> Dinh
+            dưỡng
           </Button>
           <Button
             size="sm"
             variant="outline"
             onClick={() => onToggleActive(item)}
             disabled={saving}
-            aria-label={`${item.active ? 'Ngừng sử dụng' : 'Bật lại'} ${item.name}`}
+            aria-label={`${
+              item.active ? "Ngừng sử dụng" : "Bật lại"
+            } ${item.name}`}
             className={`h-8 py-1 px-2.5 text-xs font-semibold ${
               item.active
-                ? 'text-red-700 hover:border-red-300 hover:bg-red-50'
-                : 'text-leaf-700 hover:border-leaf-300 hover:bg-leaf-50'
+                ? "text-red-700 hover:border-red-300 hover:bg-red-50"
+                : "text-leaf-700 hover:border-leaf-300 hover:bg-leaf-50"
             }`}
           >
-            {item.active ? 'Ngừng sử dụng' : 'Bật lại'}
+            {item.active ? "Ngừng sử dụng" : "Bật lại"}
           </Button>
         </div>
       </td>
     </tr>
-  );
+  )
 }
 
 export function AdminCatalogPage() {
-  const [ingredients, setIngredients] = useState<CatalogIngredient[]>([]);
-  const [supportedUnitsByIngredient, setSupportedUnitsByIngredient] = useState<Record<number, Array<{ code: string; approximate: boolean }>>>({});
-  const [unitSupportLoading, setUnitSupportLoading] = useState(false);
-  const [unitSupportError, setUnitSupportError] = useState('');
-  const [query, setQuery] = useState('');
-  const [groupFilter, setGroupFilter] = useState('');
-  const [activeFilter, setActiveFilter] = useState('');
-  const [nutritionFilter, setNutritionFilter] = useState('');
+  const [ingredients, setIngredients] = useState<CatalogIngredient[]>([])
+  const [supportedUnitsByIngredient, setSupportedUnitsByIngredient] =
+    useState<Record<number, Array<{ code: string; approximate: boolean }>>>({})
+  const [unitSupportLoading, setUnitSupportLoading] = useState(false)
+  const [unitSupportError, setUnitSupportError] = useState("")
+  const [query, setQuery] = useState("")
+  const [groupFilter, setGroupFilter] = useState("")
+  const [activeFilter, setActiveFilter] = useState("")
+  const [nutritionFilter, setNutritionFilter] = useState("")
   const [ingredientFilters, setIngredientFilters] = useState<IngredientSearch>({
-    query: '', ingredientGroup: '', active: null, nutritionSupported: null, page: 0, size: 24,
-  });
-  const [totalElements, setTotalElements] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [referencesTarget, setReferencesTarget] = useState<CatalogIngredient | null>(null);
-  const [recipeReferences, setRecipeReferences] = useState<IngredientRecipeReference[]>([]);
-  const [recipeReferencePage, setRecipeReferencePage] = useState(0);
-  const [recipeReferencePages, setRecipeReferencePages] = useState(0);
-  const [recipeReferenceTotal, setRecipeReferenceTotal] = useState(0);
-  const [referencesLoading, setReferencesLoading] = useState(false);
-  const [catalogOptions, setCatalogOptions] = useState<{ groups: string[]; sources: string[] }>({
+    query: "",
+    ingredientGroup: "",
+    active: null,
+    nutritionSupported: null,
+    page: 0,
+    size: 24,
+  })
+  const [totalElements, setTotalElements] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [referencesTarget, setReferencesTarget] =
+    useState<CatalogIngredient | null>(null)
+  const [recipeReferences, setRecipeReferences] =
+    useState<IngredientRecipeReference[]>([])
+  const [recipeReferencePage, setRecipeReferencePage] = useState(0)
+  const [recipeReferencePages, setRecipeReferencePages] = useState(0)
+  const [recipeReferenceTotal, setRecipeReferenceTotal] = useState(0)
+  const [referencesLoading, setReferencesLoading] = useState(false)
+  const [catalogOptions, setCatalogOptions] = useState<{
+    groups: string[]
+    sources: string[]
+  }>({
     groups: [...STANDARD_INGREDIENT_GROUPS],
     sources: [...STANDARD_DATA_SOURCES],
-  });
-  const [ingredientId, setIngredientId] = useState<number | null>(null);
-  const [ingredientEditorOpen, setIngredientEditorOpen] = useState(false);
-  const [nutritionTarget, setNutritionTarget] = useState<CatalogIngredient | null>(null);
-  const [unitManagerTarget, setUnitManagerTarget] = useState<CatalogIngredient | null>(null);
-  const [nutritionEnabled, setNutritionEnabled] = useState(false);
-  const [nutritionDetailsLoading, setNutritionDetailsLoading] = useState(false);
-  const [nutritionForm, setNutritionForm] = useState<NutritionDraft>(emptyNutritionDraft);
+  })
+  const [ingredientId, setIngredientId] = useState<number | null>(null)
+  const [ingredientEditorOpen, setIngredientEditorOpen] = useState(false)
+  const [nutritionTarget, setNutritionTarget] =
+    useState<CatalogIngredient | null>(null)
+  const [unitManagerTarget, setUnitManagerTarget] =
+    useState<CatalogIngredient | null>(null)
+  const [nutritionEnabled, setNutritionEnabled] = useState(false)
+  const [nutritionDetailsLoading, setNutritionDetailsLoading] = useState(false)
+  const [nutritionForm, setNutritionForm] =
+    useState<NutritionDraft>(emptyNutritionDraft)
   const [ingredientForm, setIngredientForm] = useState({
-    name: '',
-    ingredientGroup: '',
-    sourceName: '',
-    sourceUrl: '',
+    name: "",
+    ingredientGroup: "",
+    sourceName: "",
+    sourceUrl: "",
     referenceDate: today(),
-  });
-  const [ingredientImageUrl, setIngredientImageUrl] = useState<string | null>(null);
-  const [ingredientImageFile, setIngredientImageFile] = useState<File | null>(null);
-  const [ingredientImagePreviewUrl, setIngredientImagePreviewUrl] = useState<string | null>(null);
-  const [ingredientImageError, setIngredientImageError] = useState('');
-  const ingredientImageInputRef = useRef<HTMLInputElement>(null);
-  const [loading, setLoading] = useState(true);
-  const [accessDenied, setAccessDenied] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
-  const nutritionLoadId = useRef(0);
-  const unitSupportLoadId = useRef(0);
+  })
+  const [ingredientImageUrl, setIngredientImageUrl] = useState<string | null>(
+    null,
+  )
+  const [ingredientImageFile, setIngredientImageFile] = useState<File | null>(
+    null,
+  )
+  const [ingredientImagePreviewUrl, setIngredientImagePreviewUrl] =
+    useState<string | null>(null)
+  const [ingredientImageError, setIngredientImageError] = useState("")
+  const ingredientImageInputRef = useRef<HTMLInputElement>(null)
+  const [loading, setLoading] = useState(true)
+  const [accessDenied, setAccessDenied] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
+  const [notice, setNotice] = useState("")
+  const nutritionLoadId = useRef(0)
+  const unitSupportLoadId = useRef(0)
   const loadUnitSupport = async (ingredientRows = ingredients) => {
-    const requestId = ++unitSupportLoadId.current;
-    setUnitSupportLoading(true);
-    setUnitSupportError('');
+    const requestId = ++unitSupportLoadId.current
+    setUnitSupportLoading(true)
+    setUnitSupportError("")
     try {
-      const [units, conversions] = await Promise.all([adminCatalogApi.units(), adminCatalogApi.conversions()]);
-      if (requestId !== unitSupportLoadId.current) return;
-      const activeCodes = new Set(units.filter((unit) => unit.active).map((unit) => unit.code));
-      const unitCodeById = new Map(units.map((unit) => [unit.id, unit.code]));
-      const next: typeof supportedUnitsByIngredient = {};
+      const [units, conversions] = await Promise.all([
+        adminCatalogApi.units(),
+        adminCatalogApi.conversions(),
+      ])
+      if (requestId !== unitSupportLoadId.current) return
+      const activeCodes = new Set(
+        units.filter((unit) => unit.active).map((unit) => unit.code),
+      )
+      const unitCodeById = new Map(units.map((unit) => [unit.id, unit.code]))
+      const next: typeof supportedUnitsByIngredient = {}
       for (const ingredient of ingredientRows) {
         const entries = conversions
-          .filter((conversion) => conversion.ingredientId === ingredient.id && conversion.active)
-          .map((conversion) => ({ code: unitCodeById.get(conversion.unitId), approximate: conversion.approximate }))
-          .filter((entry): entry is { code: string; approximate: boolean } => Boolean(entry.code && activeCodes.has(entry.code)));
-        const byCode = new Map(entries.map((entry) => [entry.code, entry]));
+          .filter(
+            (conversion) =>
+              conversion.ingredientId === ingredient.id && conversion.active,
+          )
+          .map((conversion) => ({
+            code: unitCodeById.get(conversion.unitId),
+            approximate: conversion.approximate,
+          }))
+          .filter((entry): entry is { code: string; approximate: boolean } =>
+            Boolean(entry.code && activeCodes.has(entry.code)),
+          )
+        const byCode = new Map(entries.map((entry) => [entry.code, entry]))
         next[ingredient.id] = [
-          ...['mg', 'g', 'kg'].map((code) => ({ code, approximate: false })),
-          ...['ml', 'L', 'tsp', 'tbsp', 'cup', 'quả', 'củ', 'miếng']
-            .flatMap((code) => byCode.has(code) ? [byCode.get(code)!] : []),
-        ];
+          ...["mg", "g", "kg"].map((code) => ({ code, approximate: false })),
+          ...["ml", "L", "tsp", "tbsp", "cup", "quả", "củ", "miếng"].flatMap(
+            (code) => (byCode.has(code) ? [byCode.get(code)!] : []),
+          ),
+        ]
       }
-      setSupportedUnitsByIngredient(next);
+      setSupportedUnitsByIngredient(next)
     } catch (cause) {
-      if (requestId === unitSupportLoadId.current) setUnitSupportError(cause instanceof Error ? cause.message : 'Không tải được danh sách đơn vị.');
+      if (requestId === unitSupportLoadId.current)
+        setUnitSupportError(
+          cause instanceof Error
+            ? cause.message
+            : "Không tải được danh sách đơn vị.",
+        )
     } finally {
-      if (requestId === unitSupportLoadId.current) setUnitSupportLoading(false);
+      if (requestId === unitSupportLoadId.current) setUnitSupportLoading(false)
     }
-  };
+  }
   const cancelNutritionDetailsLoad = () => {
-    nutritionLoadId.current += 1;
-    setNutritionDetailsLoading(false);
-  };
+    nutritionLoadId.current += 1
+    setNutritionDetailsLoading(false)
+  }
 
   const refresh = async (filters = ingredientFilters) => {
-    setLoading(true);
-    setError('');
-    setAccessDenied(false);
+    setLoading(true)
+    setError("")
+    setAccessDenied(false)
     try {
       const [ingredientPage, options] = await Promise.all([
         adminCatalogApi.searchIngredients(filters),
         adminCatalogApi.ingredientOptions(),
-      ]);
-      setIngredients(ingredientPage.content);
-      setTotalElements(ingredientPage.totalElements);
-      setTotalPages(ingredientPage.totalPages);
-      void loadUnitSupport(ingredientPage.content);
+      ])
+      setIngredients(ingredientPage.content)
+      setTotalElements(ingredientPage.totalElements)
+      setTotalPages(ingredientPage.totalPages)
+      void loadUnitSupport(ingredientPage.content)
 
-      const rawGroups = options?.groups && options.groups.length > 0
-        ? options.groups
-        : [...STANDARD_INGREDIENT_GROUPS];
-      const rawSources = options?.sources && options.sources.length > 0
-        ? options.sources
-        : [...STANDARD_DATA_SOURCES];
+      const rawGroups =
+        options?.groups && options.groups.length > 0
+          ? options.groups
+          : [...STANDARD_INGREDIENT_GROUPS]
+      const rawSources =
+        options?.sources && options.sources.length > 0
+          ? options.sources
+          : [...STANDARD_DATA_SOURCES]
 
-      const cleanGroups = Array.from(new Set(rawGroups.map((g) => normalizeIngredientGroup(g))));
-      const cleanSources = Array.from(new Set(rawSources.map((s) => normalizeSourceName(s))));
+      const cleanGroups = Array.from(
+        new Set(rawGroups.map((g) => normalizeIngredientGroup(g))),
+      )
+      const cleanSources = Array.from(
+        new Set(rawSources.map((s) => normalizeSourceName(s))),
+      )
 
-      setCatalogOptions({ groups: cleanGroups, sources: cleanSources });
+      setCatalogOptions({ groups: cleanGroups, sources: cleanSources })
     } catch (cause) {
       setAccessDenied(
         cause instanceof AdminCatalogApiError &&
           (cause.status === 401 || cause.status === 403),
-      );
+      )
       setError(
-        cause instanceof Error ? cause.message : 'Không tải được danh mục.',
-      );
+        cause instanceof Error ? cause.message : "Không tải được danh mục.",
+      )
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    void refresh();
-  }, []);
+    void refresh()
+  }, [])
 
   useEffect(() => {
-    if (!ingredientImagePreviewUrl) return;
-    return () => URL.revokeObjectURL(ingredientImagePreviewUrl);
-  }, [ingredientImagePreviewUrl]);
+    if (!ingredientImagePreviewUrl) return
+    return () => URL.revokeObjectURL(ingredientImagePreviewUrl)
+  }, [ingredientImagePreviewUrl])
 
   const closeActiveModal = () => {
-    if (saving) return;
-    cancelNutritionDetailsLoad();
-    setNutritionTarget(null);
-    setReferencesTarget(null);
-    setIngredientEditorOpen(false);
-    setIngredientId(null);
-    setIngredientImageUrl(null);
-    setIngredientImageFile(null);
-    setIngredientImagePreviewUrl(null);
-    setIngredientImageError('');
-  };
+    if (saving) return
+    cancelNutritionDetailsLoad()
+    setNutritionTarget(null)
+    setReferencesTarget(null)
+    setIngredientEditorOpen(false)
+    setIngredientId(null)
+    setIngredientImageUrl(null)
+    setIngredientImageFile(null)
+    setIngredientImagePreviewUrl(null)
+    setIngredientImageError("")
+  }
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !saving) {
-        closeActiveModal();
+      if (e.key === "Escape" && !saving) {
+        closeActiveModal()
       }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [saving]);
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [saving])
 
   const perform = async (
     action: () => Promise<unknown>,
     successMessage: string,
     onSuccess?: () => void,
   ) => {
-    setSaving(true);
-    setError('');
-    setNotice('');
+    setSaving(true)
+    setError("")
+    setNotice("")
     try {
-      await action();
-      onSuccess?.();
-      setNotice(successMessage);
-      await refresh();
+      await action()
+      onSuccess?.()
+      setNotice(successMessage)
+      await refresh()
     } catch (cause) {
       setError(
-        cause instanceof Error ? cause.message : 'Không lưu được thay đổi.',
-      );
+        cause instanceof Error ? cause.message : "Không lưu được thay đổi.",
+      )
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
   const submitIngredient = async (event: FormEvent) => {
-    event.preventDefault();
-    if (ingredientImageError) return;
-    const isCreatingIngredient = ingredientId === null;
+    event.preventDefault()
+    if (ingredientImageError) return
+    const isCreatingIngredient = ingredientId === null
     const refreshFilters = isCreatingIngredient
       ? { ...ingredientFilters, page: 0 }
-      : ingredientFilters;
+      : ingredientFilters
     const body = {
       ...ingredientForm,
       name: ingredientForm.name.trim(),
-      ingredientGroup: normalizeIngredientGroup(ingredientForm.ingredientGroup).trim(),
+      ingredientGroup: normalizeIngredientGroup(
+        ingredientForm.ingredientGroup,
+      ).trim(),
       sourceName: normalizeSourceName(ingredientForm.sourceName).trim(),
       sourceUrl: ingredientForm.sourceUrl.trim() || null,
-    };
-    setSaving(true);
-    setError('');
-    setNotice('');
-    let savedIngredient: CatalogIngredient | null = null;
+    }
+    setSaving(true)
+    setError("")
+    setNotice("")
+    let savedIngredient: CatalogIngredient | null = null
     try {
-      savedIngredient = ingredientId === null
-        ? await adminCatalogApi.createIngredient(body)
-        : await adminCatalogApi.updateIngredient(ingredientId, body);
+      savedIngredient =
+        ingredientId === null
+          ? await adminCatalogApi.createIngredient(body)
+          : await adminCatalogApi.updateIngredient(ingredientId, body)
 
       if (ingredientImageFile) {
-        const uploaded = await adminCatalogApi.uploadIngredientImage(savedIngredient.id, ingredientImageFile);
-        savedIngredient = { ...savedIngredient, imageUrl: uploaded.imageUrl };
+        const uploaded = await adminCatalogApi.uploadIngredientImage(
+          savedIngredient.id,
+          ingredientImageFile,
+        )
+        savedIngredient = { ...savedIngredient, imageUrl: uploaded.imageUrl }
       }
 
-      setIngredientEditorOpen(false);
-      setIngredientId(null);
+      setIngredientEditorOpen(false)
+      setIngredientId(null)
       setIngredientForm({
-        name: '',
-        ingredientGroup: '',
-        sourceName: '',
-        sourceUrl: '',
+        name: "",
+        ingredientGroup: "",
+        sourceName: "",
+        sourceUrl: "",
         referenceDate: today(),
-      });
-      setIngredientImageUrl(null);
-      setIngredientImageFile(null);
-      setIngredientImagePreviewUrl(null);
-      setIngredientImageError('');
-      if (isCreatingIngredient) setIngredientFilters(refreshFilters);
-      setNotice(ingredientImageFile
-        ? 'Đã lưu thành công.'
-        : ingredientId === null ? 'Đã thêm nguyên liệu.' : 'Đã cập nhật nguyên liệu.');
-      await refresh(refreshFilters);
+      })
+      setIngredientImageUrl(null)
+      setIngredientImageFile(null)
+      setIngredientImagePreviewUrl(null)
+      setIngredientImageError("")
+      if (isCreatingIngredient) setIngredientFilters(refreshFilters)
+      setNotice(
+        ingredientImageFile
+          ? "Đã lưu thành công."
+          : ingredientId === null
+            ? "Đã thêm nguyên liệu."
+            : "Đã cập nhật nguyên liệu.",
+      )
+      await refresh(refreshFilters)
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : 'Không lưu được thay đổi.';
+      const message =
+        cause instanceof Error ? cause.message : "Không lưu được thay đổi."
       if (savedIngredient && ingredientImageFile) {
-        if (isCreatingIngredient) setIngredientFilters(refreshFilters);
-        await refresh(refreshFilters);
-        setIngredientId(savedIngredient.id);
-        setIngredientImageUrl(savedIngredient.imageUrl);
-        setNotice('Thông tin nguyên liệu đã lưu, nhưng ảnh chưa tải lên thành công. Bạn có thể thử lưu lại để tải ảnh.');
-        setError(`Không tải được ảnh minh họa: ${message}`);
+        if (isCreatingIngredient) setIngredientFilters(refreshFilters)
+        await refresh(refreshFilters)
+        setIngredientId(savedIngredient.id)
+        setIngredientImageUrl(savedIngredient.imageUrl)
+        setNotice(
+          "Thông tin nguyên liệu đã lưu, nhưng ảnh chưa tải lên thành công. Bạn có thể thử lưu lại để tải ảnh.",
+        )
+        setError(`Không tải được ảnh minh họa: ${message}`)
       } else {
-        setError(message);
+        setError(message)
       }
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
   const editIngredient = (ingredient: CatalogIngredient) => {
-    cancelNutritionDetailsLoad();
-    setNutritionTarget(null);
-    setReferencesTarget(null);
-    setIngredientEditorOpen(true);
-    setIngredientId(ingredient.id);
+    cancelNutritionDetailsLoad()
+    setNutritionTarget(null)
+    setReferencesTarget(null)
+    setIngredientEditorOpen(true)
+    setIngredientId(ingredient.id)
     setIngredientForm({
       name: ingredient.name,
       ingredientGroup: normalizeIngredientGroup(ingredient.ingredientGroup),
       sourceName: normalizeSourceName(ingredient.sourceName),
-      sourceUrl: ingredient.sourceUrl ?? '',
+      sourceUrl: ingredient.sourceUrl ?? "",
       referenceDate: ingredient.referenceDate,
-    });
-    setIngredientImageUrl(ingredient.imageUrl);
-    setIngredientImageFile(null);
-    setIngredientImagePreviewUrl(null);
-    setIngredientImageError('');
-    setError('');
-    setNotice('');
-  };
+    })
+    setIngredientImageUrl(ingredient.imageUrl)
+    setIngredientImageFile(null)
+    setIngredientImagePreviewUrl(null)
+    setIngredientImageError("")
+    setError("")
+    setNotice("")
+  }
 
   const openNutritionDetails = async (ingredient: CatalogIngredient) => {
-    const loadId = ++nutritionLoadId.current;
-    setReferencesTarget(null);
-    setIngredientEditorOpen(false);
-    setIngredientId(null);
-    setNutritionTarget(ingredient);
-    setNutritionEnabled(ingredient.nutritionSupported);
-    setNutritionForm(toNutritionDraft(ingredient.nutrition));
-    setNutritionDetailsLoading(true);
-    setError('');
-    setNotice('');
+    const loadId = ++nutritionLoadId.current
+    setReferencesTarget(null)
+    setIngredientEditorOpen(false)
+    setIngredientId(null)
+    setNutritionTarget(ingredient)
+    setNutritionEnabled(ingredient.nutritionSupported)
+    setNutritionForm(toNutritionDraft(ingredient.nutrition))
+    setNutritionDetailsLoading(true)
+    setError("")
+    setNotice("")
     try {
-      const full = await adminCatalogApi.ingredient(ingredient.id);
-      if (loadId !== nutritionLoadId.current) return;
-      setNutritionTarget(full);
-      setNutritionEnabled(full.nutritionSupported);
-      setNutritionForm(toNutritionDraft(full.nutrition));
+      const full = await adminCatalogApi.ingredient(ingredient.id)
+      if (loadId !== nutritionLoadId.current) return
+      setNutritionTarget(full)
+      setNutritionEnabled(full.nutritionSupported)
+      setNutritionForm(toNutritionDraft(full.nutrition))
     } catch {
       // Keep loaded row data if remote detail fetch is skipped
     } finally {
-      if (loadId === nutritionLoadId.current) setNutritionDetailsLoading(false);
+      if (loadId === nutritionLoadId.current) setNutritionDetailsLoading(false)
     }
-  };
+  }
 
   const showRecipeReferences = async (ingredient: CatalogIngredient) => {
-    cancelNutritionDetailsLoad();
-    setNutritionTarget(null);
-    setIngredientEditorOpen(false);
-    setReferencesTarget(ingredient);
-    setRecipeReferences([]);
-    setRecipeReferencePage(0);
-    setRecipeReferencePages(0);
-    setRecipeReferenceTotal(0);
-    setReferencesLoading(true);
-    setError('');
-    setNotice('');
+    cancelNutritionDetailsLoad()
+    setNutritionTarget(null)
+    setIngredientEditorOpen(false)
+    setReferencesTarget(ingredient)
+    setRecipeReferences([])
+    setRecipeReferencePage(0)
+    setRecipeReferencePages(0)
+    setRecipeReferenceTotal(0)
+    setReferencesLoading(true)
+    setError("")
+    setNotice("")
     try {
-      const result = await adminCatalogApi.searchIngredientRecipes(ingredient.id, 0, 10);
-      setRecipeReferences(result.content);
-      setRecipeReferencePages(result.totalPages);
-      setRecipeReferenceTotal(result.totalElements);
+      const result = await adminCatalogApi.searchIngredientRecipes(
+        ingredient.id,
+        0,
+        10,
+      )
+      setRecipeReferences(result.content)
+      setRecipeReferencePages(result.totalPages)
+      setRecipeReferenceTotal(result.totalElements)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không tải được công thức đang dùng nguyên liệu này.');
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Không tải được công thức đang dùng nguyên liệu này.",
+      )
     } finally {
-      setReferencesLoading(false);
+      setReferencesLoading(false)
     }
-  };
+  }
 
   const changeRecipeReferencePage = async (page: number) => {
-    if (!referencesTarget) return;
-    setReferencesLoading(true);
-    setError('');
+    if (!referencesTarget) return
+    setReferencesLoading(true)
+    setError("")
     try {
-      const result = await adminCatalogApi.searchIngredientRecipes(referencesTarget.id, page, 10);
-      setRecipeReferences(result.content);
-      setRecipeReferencePage(result.page);
-      setRecipeReferencePages(result.totalPages);
-      setRecipeReferenceTotal(result.totalElements);
+      const result = await adminCatalogApi.searchIngredientRecipes(
+        referencesTarget.id,
+        page,
+        10,
+      )
+      setRecipeReferences(result.content)
+      setRecipeReferencePage(result.page)
+      setRecipeReferencePages(result.totalPages)
+      setRecipeReferenceTotal(result.totalElements)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không tải được công thức đang dùng nguyên liệu này.');
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Không tải được công thức đang dùng nguyên liệu này.",
+      )
     } finally {
-      setReferencesLoading(false);
+      setReferencesLoading(false)
     }
-  };
+  }
 
   const submitNutrition = (event: FormEvent) => {
-    event.preventDefault();
-    if (!nutritionTarget) return;
-    const nutrition = Object.fromEntries(nutritionFields.map(({ key }) => {
-      const value = nutritionForm[key].trim();
-      return [key, value === '' ? null : Number(value)];
-    })) as IngredientNutrition;
+    event.preventDefault()
+    if (!nutritionTarget) return
+    const nutrition = Object.fromEntries(
+      nutritionFields.map(({ key }) => {
+        const value = nutritionForm[key].trim()
+        return [key, value === "" ? null : Number(value)]
+      }),
+    ) as IngredientNutrition
     void perform(
       () => adminCatalogApi.updateNutrition(nutritionTarget.id, nutrition),
-      'Đã lưu số liệu dinh dưỡng. Các chỉ tiêu để trống sẽ không được tính.',
+      "Đã lưu số liệu dinh dưỡng. Các chỉ tiêu để trống sẽ không được tính.",
       () => setNutritionForm(toNutritionDraft(nutrition)),
-    );
-  };
+    )
+  }
 
   const toggleNutritionSupport = () => {
-    if (!nutritionTarget) return;
-    const enabled = !nutritionEnabled;
+    if (!nutritionTarget) return
+    const enabled = !nutritionEnabled
     void perform(
       () => adminCatalogApi.setNutritionSupported(nutritionTarget.id, enabled),
-      enabled ? 'Đã bật tính các chỉ tiêu có dữ liệu.' : 'Đã ngừng hỗ trợ tính dinh dưỡng.',
+      enabled
+        ? "Đã bật tính các chỉ tiêu có dữ liệu."
+        : "Đã ngừng hỗ trợ tính dinh dưỡng.",
       () => setNutritionEnabled(enabled),
-    );
-  };
+    )
+  }
 
   const toggleIngredient = (item: CatalogIngredient) =>
     void perform(
       () => adminCatalogApi.setIngredientActive(item.id, !item.active),
       item.active
-        ? 'Đã ngừng sử dụng nguyên liệu, liên kết cũ được giữ nguyên.'
-        : 'Đã bật lại nguyên liệu.',
-    );
+        ? "Đã ngừng sử dụng nguyên liệu, liên kết cũ được giữ nguyên."
+        : "Đã bật lại nguyên liệu.",
+    )
 
   const searchIngredients = (event: FormEvent) => {
-    event.preventDefault();
+    event.preventDefault()
     const filters: IngredientSearch = {
       query: query.trim(),
       ingredientGroup: groupFilter.trim(),
-      active: activeFilter === '' ? null : activeFilter === 'true',
-      nutritionSupported: nutritionFilter === '' ? null : nutritionFilter === 'true',
+      active: activeFilter === "" ? null : activeFilter === "true",
+      nutritionSupported:
+        nutritionFilter === "" ? null : nutritionFilter === "true",
       page: 0,
       size: ingredientFilters.size,
-    };
-    setIngredientFilters(filters);
-    void refresh(filters);
-  };
+    }
+    setIngredientFilters(filters)
+    void refresh(filters)
+  }
 
   const clearIngredientFilters = () => {
     const filters: IngredientSearch = {
-      query: '', ingredientGroup: '', active: null, nutritionSupported: null,
-      page: 0, size: ingredientFilters.size,
-    };
-    setQuery('');
-    setGroupFilter('');
-    setActiveFilter('');
-    setNutritionFilter('');
-    setIngredientFilters(filters);
-    void refresh(filters);
-  };
+      query: "",
+      ingredientGroup: "",
+      active: null,
+      nutritionSupported: null,
+      page: 0,
+      size: ingredientFilters.size,
+    }
+    setQuery("")
+    setGroupFilter("")
+    setActiveFilter("")
+    setNutritionFilter("")
+    setIngredientFilters(filters)
+    void refresh(filters)
+  }
 
   const changeIngredientPage = (page: number) => {
-    const filters = { ...ingredientFilters, page };
-    setIngredientFilters(filters);
-    void refresh(filters);
-  };
+    const filters = { ...ingredientFilters, page }
+    setIngredientFilters(filters)
+    void refresh(filters)
+  }
 
   const openNewIngredient = () => {
-    cancelNutritionDetailsLoad();
-    setReferencesTarget(null);
-    setNutritionTarget(null);
-    setIngredientId(null);
+    cancelNutritionDetailsLoad()
+    setReferencesTarget(null)
+    setNutritionTarget(null)
+    setIngredientId(null)
     setIngredientForm({
-      name: '',
-      ingredientGroup: '',
-      sourceName: '',
-      sourceUrl: '',
+      name: "",
+      ingredientGroup: "",
+      sourceName: "",
+      sourceUrl: "",
       referenceDate: today(),
-    });
-    setIngredientImageUrl(null);
-    setIngredientImageFile(null);
-    setIngredientImagePreviewUrl(null);
-    setIngredientImageError('');
-    setError('');
-    setNotice('');
-    setIngredientEditorOpen(true);
-  };
+    })
+    setIngredientImageUrl(null)
+    setIngredientImageFile(null)
+    setIngredientImagePreviewUrl(null)
+    setIngredientImageError("")
+    setError("")
+    setNotice("")
+    setIngredientEditorOpen(true)
+  }
 
-  const selectIngredientImage = (file: File | undefined, input: HTMLInputElement) => {
-    setIngredientImageError('');
-    if (!file) return;
+  const selectIngredientImage = (
+    file: File | undefined,
+    input: HTMLInputElement,
+  ) => {
+    setIngredientImageError("")
+    if (!file) return
     if (!INGREDIENT_IMAGE_TYPES.has(file.type)) {
-      setIngredientImageFile(null);
-      setIngredientImagePreviewUrl(null);
-      setIngredientImageError('Ảnh phải có định dạng JPEG, PNG hoặc WebP.');
-      input.value = '';
-      return;
+      setIngredientImageFile(null)
+      setIngredientImagePreviewUrl(null)
+      setIngredientImageError("Ảnh phải có định dạng JPEG, PNG hoặc WebP.")
+      input.value = ""
+      return
     }
     if (file.size === 0 || file.size > MAX_INGREDIENT_IMAGE_BYTES) {
-      setIngredientImageFile(null);
-      setIngredientImagePreviewUrl(null);
-      setIngredientImageError('Ảnh phải có dung lượng lớn hơn 0 và tối đa 2 MB.');
-      input.value = '';
-      return;
+      setIngredientImageFile(null)
+      setIngredientImagePreviewUrl(null)
+      setIngredientImageError(
+        "Ảnh phải có dung lượng lớn hơn 0 và tối đa 2 MB.",
+      )
+      input.value = ""
+      return
     }
-    setIngredientImageFile(file);
-    setIngredientImagePreviewUrl(URL.createObjectURL(file));
-  };
+    setIngredientImageFile(file)
+    setIngredientImagePreviewUrl(URL.createObjectURL(file))
+  }
 
-  const activeCountOnPage = ingredients.filter((item) => item.active).length;
-  const nutritionReadyCountOnPage = ingredients.filter((item) => item.nutritionSupported).length;
+  const activeCountOnPage = ingredients.filter((item) => item.active).length
+  const nutritionReadyCountOnPage = ingredients.filter(
+    (item) => item.nutritionSupported,
+  ).length
 
   return (
     <PageContainer className="w-full max-w-none px-0 py-2 sm:py-4">
       {/* Breadcrumb Navigation */}
-      <nav aria-label="Đường dẫn trang" className="mb-4 flex flex-wrap items-center gap-2 text-xs font-medium text-ink-muted">
-        <Link to="/trang-chu" className="transition-colors hover:text-brand-600">Trang chủ</Link>
+      <nav
+        aria-label="Đường dẫn trang"
+        className="mb-4 flex flex-wrap items-center gap-2 text-xs font-medium text-ink-muted"
+      >
+        <Link
+          to="/trang-chu"
+          className="transition-colors hover:text-brand-600"
+        >
+          Trang chủ
+        </Link>
         <span className="text-brand-300">/</span>
         <span>Quản trị hệ thống</span>
         <span className="text-brand-300">/</span>
-        <span className="font-bold text-brand-600">Danh mục nguyên liệu dinh dưỡng</span>
+        <span className="font-bold text-brand-600">
+          Danh mục nguyên liệu dinh dưỡng
+        </span>
       </nav>
 
       {/* Admin Command Hero Banner */}
@@ -724,7 +906,9 @@ export function AdminCatalogPage() {
               Danh mục nguyên liệu dinh dưỡng
             </h1>
             <p className="mt-2.5 text-sm leading-6 text-ink-muted">
-              Quản lý tên chuẩn, nguồn tham khảo và dữ liệu dinh dưỡng. Nguyên liệu đã được dùng chỉ có thể ngừng sử dụng, công thức cũ vẫn giữ liên kết.
+              Quản lý tên chuẩn, nguồn tham khảo và dữ liệu dinh dưỡng. Nguyên
+              liệu đã được dùng chỉ có thể ngừng sử dụng, công thức cũ vẫn giữ
+              liên kết.
             </p>
           </div>
 
@@ -750,7 +934,7 @@ export function AdminCatalogPage() {
                 <LoaderCircle className="h-4 w-4 animate-spin text-brand-600" />
               ) : (
                 <RefreshCw className="h-4 w-4" />
-              )}{' '}
+              )}{" "}
               Tải lại
             </Button>
           </div>
@@ -758,41 +942,61 @@ export function AdminCatalogPage() {
 
         {!accessDenied && (
           <div className="relative mt-6 grid grid-cols-2 gap-3 border-t border-brand-100/80 pt-5 sm:grid-cols-4">
-            <div className="flex items-center gap-3 rounded-2xl border border-brand-100/80 bg-cream-soft/60 px-4 py-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
+            <div className="group relative flex items-center gap-3.5 overflow-hidden rounded-2xl border border-brand-200/80 bg-paper p-4 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md hover:shadow-brand-900/5">
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-500 via-brand-400 to-transparent" />
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 shadow-2xs ring-1 ring-brand-200/70 transition-transform duration-200 group-hover:scale-105">
                 <Database className="h-5 w-5" />
               </span>
               <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Tổng danh mục</p>
-                <p className="truncate text-lg font-extrabold text-ink">{totalElements}</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
+                  Tổng danh mục
+                </p>
+                <p className="truncate text-xl font-black tracking-tight text-ink">
+                  <AnimatedNumber value={totalElements} />
+                </p>
               </div>
             </div>
-            <div className="flex items-center gap-3 rounded-2xl border border-brand-100/80 bg-cream-soft/60 px-4 py-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-leaf-100 text-leaf-700">
+            <div className="group relative flex items-center gap-3.5 overflow-hidden rounded-2xl border border-brand-200/80 bg-paper p-4 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md hover:shadow-brand-900/5">
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-leaf-500 via-leaf-400 to-transparent" />
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-leaf-50 text-leaf-700 shadow-2xs ring-1 ring-leaf-200/70 transition-transform duration-200 group-hover:scale-105">
                 <Check className="h-5 w-5" />
               </span>
               <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Đang hoạt động</p>
-                <p className="truncate text-lg font-extrabold text-ink">{activeCountOnPage}/{ingredients.length || 0}</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
+                  Đang hoạt động
+                </p>
+                <p className="truncate text-xl font-black tracking-tight text-ink">
+                  <AnimatedNumber value={activeCountOnPage} />/
+                  <AnimatedNumber value={ingredients.length || 0} />
+                </p>
               </div>
             </div>
-            <div className="flex items-center gap-3 rounded-2xl border border-brand-100/80 bg-cream-soft/60 px-4 py-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
+            <div className="group relative flex items-center gap-3.5 overflow-hidden rounded-2xl border border-brand-200/80 bg-paper p-4 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md hover:shadow-brand-900/5">
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-transparent" />
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 shadow-2xs ring-1 ring-emerald-200/70 transition-transform duration-200 group-hover:scale-105">
                 <Activity className="h-5 w-5" />
               </span>
               <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Chuẩn 9 chỉ tiêu</p>
-                <p className="truncate text-lg font-extrabold text-ink">{nutritionReadyCountOnPage}</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
+                  Chuẩn 9 chỉ tiêu
+                </p>
+                <p className="truncate text-xl font-black tracking-tight text-ink">
+                  <AnimatedNumber value={nutritionReadyCountOnPage} />
+                </p>
               </div>
             </div>
-            <div className="flex items-center gap-3 rounded-2xl border border-brand-100/80 bg-cream-soft/60 px-4 py-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-raised text-ink-soft">
+            <div className="group relative flex items-center gap-3.5 overflow-hidden rounded-2xl border border-brand-200/80 bg-paper p-4 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md hover:shadow-brand-900/5">
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-500 via-amber-400 to-transparent" />
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700 shadow-2xs ring-1 ring-amber-200/70 transition-transform duration-200 group-hover:scale-105">
                 <Layers className="h-5 w-5" />
               </span>
               <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Nhóm & Nguồn</p>
-                <p className="truncate text-lg font-extrabold text-ink">
-                  {catalogOptions.groups.length} · {catalogOptions.sources.length}
+                <p className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
+                  Nhóm & Nguồn
+                </p>
+                <p className="truncate text-xl font-black tracking-tight text-ink">
+                  <AnimatedNumber value={catalogOptions.groups.length} /> ·{" "}
+                  <AnimatedNumber value={catalogOptions.sources.length} />
                 </p>
               </div>
             </div>
@@ -806,12 +1010,18 @@ export function AdminCatalogPage() {
           <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-100 text-red-600 shadow-2xs">
             <ShieldAlert className="h-7 w-7" />
           </div>
-          <h2 className="text-xl font-bold text-ink">Quyền truy cập bị từ chối (403 Forbidden)</h2>
+          <h2 className="text-xl font-bold text-ink">
+            Quyền truy cập bị từ chối (403 Forbidden)
+          </h2>
           <p className="mt-2 max-w-md text-sm leading-relaxed text-ink-muted">
-            Khu vực này chỉ dành riêng cho Quản trị viên hệ thống Mâm Xanh. Vui lòng đăng nhập bằng tài khoản có thẩm quyền để quản lý danh mục.
+            Khu vực này chỉ dành riêng cho Quản trị viên hệ thống Mâm Xanh. Vui
+            lòng đăng nhập bằng tài khoản có thẩm quyền để quản lý danh mục.
           </p>
           {error && (
-            <div role="alert" className="mt-5 flex w-full max-w-md items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-left text-sm text-red-800">
+            <div
+              role="alert"
+              className="mt-5 flex w-full max-w-md items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-left text-sm text-red-800"
+            >
               <AlertCircle className="h-5 w-5 shrink-0 text-red-600" />
               <span className="font-medium">{error}</span>
             </div>
@@ -824,11 +1034,20 @@ export function AdminCatalogPage() {
           <div>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-extrabold text-ink sm:text-xl">Danh sách nguyên liệu</h2>
-                <p className="mt-0.5 text-sm text-ink-muted">Tìm, lọc và quản lý dữ liệu dinh dưỡng cùng trạng thái sử dụng.</p>
+                <h2 className="text-lg font-extrabold text-ink sm:text-xl">
+                  Danh sách nguyên liệu
+                </h2>
+                <p className="mt-0.5 text-sm text-ink-muted">
+                  Tìm, lọc và quản lý dữ liệu dinh dưỡng cùng trạng thái sử
+                  dụng.
+                </p>
               </div>
               <div className="flex items-center gap-2">
-                <Button type="button" onClick={openNewIngredient} aria-label="Mở biểu mẫu thêm nguyên liệu">
+                <Button
+                  type="button"
+                  onClick={openNewIngredient}
+                  aria-label="Mở biểu mẫu thêm nguyên liệu"
+                >
                   <CirclePlus className="h-4 w-4" /> Thêm mới
                 </Button>
               </div>
@@ -838,7 +1057,10 @@ export function AdminCatalogPage() {
               <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-600">
                 <Filter className="h-3.5 w-3.5" /> Bộ lọc tra cứu danh mục
               </div>
-              <form onSubmit={searchIngredients} className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr_auto]">
+              <form
+                onSubmit={searchIngredients}
+                className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr_auto]"
+              >
                 <label className="text-xs font-semibold text-ink-soft">
                   Từ khóa nguyên liệu
                   <span className="sr-only">Tìm tên nguyên liệu</span>
@@ -854,39 +1076,70 @@ export function AdminCatalogPage() {
                 </label>
                 <label className="text-xs font-semibold text-ink-soft">
                   Phân loại
-                  <select className={fieldClass} value={groupFilter} onChange={(event) => setGroupFilter(event.target.value)}>
-                    <option value="">Tất cả nhóm</option>
-                    {catalogOptions.groups.map((group) => (
-                      <option key={group} value={group} className="font-sans">
-                        {normalizeIngredientGroup(group)}
-                      </option>
-                    ))}
-                  </select>
+                  <ThemedSelect
+                    aria-label="Phân loại"
+                    className={fieldClass}
+                    value={groupFilter}
+                    onChange={(event) => setGroupFilter(event.target.value)}
+                    options={[
+                      { value: "", label: "Tất cả nhóm" },
+                      ...catalogOptions.groups.map((group) => ({
+                        value: group,
+                        label: normalizeIngredientGroup(group),
+                      })),
+                    ]}
+                  />
                 </label>
                 <label className="text-xs font-semibold text-ink-soft">
                   Trạng thái danh mục
-                  <select className={fieldClass} value={activeFilter} onChange={(event) => setActiveFilter(event.target.value)}>
-                    <option value="">Tất cả</option>
-                    <option value="true">Đang hoạt động</option>
-                    <option value="false">Ngừng hoạt động</option>
-                  </select>
+                  <ThemedSelect
+                    aria-label="Trạng thái danh mục"
+                    className={fieldClass}
+                    value={activeFilter}
+                    onChange={(event) => setActiveFilter(event.target.value)}
+                    options={[
+                      { value: "", label: "Tất cả" },
+                      { value: "true", label: "Đang hoạt động" },
+                      { value: "false", label: "Ngừng hoạt động" },
+                    ]}
+                  />
                 </label>
                 <label className="text-xs font-semibold text-ink-soft">
                   Hỗ trợ tính dinh dưỡng
-                  <select className={fieldClass} value={nutritionFilter} onChange={(event) => setNutritionFilter(event.target.value)}>
-                    <option value="">Tất cả</option>
-                    <option value="true">Có hỗ trợ</option>
-                    <option value="false">Chưa hỗ trợ</option>
-                  </select>
+                  <ThemedSelect
+                    aria-label="Hỗ trợ tính dinh dưỡng"
+                    className={fieldClass}
+                    value={nutritionFilter}
+                    onChange={(event) => setNutritionFilter(event.target.value)}
+                    options={[
+                      { value: "", label: "Tất cả" },
+                      { value: "true", label: "Có hỗ trợ" },
+                      { value: "false", label: "Chưa hỗ trợ" },
+                    ]}
+                  />
                 </label>
                 <div className="flex items-center gap-2">
-                  <Button type="submit" variant="outline" className="h-[42px] px-4">
+                  <Button
+                    type="submit"
+                    variant="outline"
+                    className="h-[42px] px-4"
+                  >
                     Tìm và lọc
                   </Button>
-                  {(query || groupFilter || activeFilter || nutritionFilter
-                    || ingredientFilters.query || ingredientFilters.ingredientGroup
-                    || ingredientFilters.active !== null || ingredientFilters.nutritionSupported !== null) && (
-                    <Button type="button" variant="ghost" className="h-[42px] px-3" onClick={clearIngredientFilters}>
+                  {(query ||
+                    groupFilter ||
+                    activeFilter ||
+                    nutritionFilter ||
+                    ingredientFilters.query ||
+                    ingredientFilters.ingredientGroup ||
+                    ingredientFilters.active !== null ||
+                    ingredientFilters.nutritionSupported !== null) && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-[42px] px-3"
+                      onClick={clearIngredientFilters}
+                    >
                       Xóa bộ lọc
                     </Button>
                   )}
@@ -895,7 +1148,10 @@ export function AdminCatalogPage() {
               <p className="mt-3.5 flex items-start gap-2 rounded-xl bg-brand-50/50 px-3.5 py-2.5 text-xs leading-5 text-ink-muted">
                 <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600" />
                 <span>
-                  “Đang hoạt động” quyết định nguyên liệu có thể được chọn cho công thức mới. “Hỗ trợ tính dinh dưỡng” là trạng thái riêng. Chỉ cần có ít nhất một chỉ tiêu, phần còn thiếu sẽ được cảnh báo.
+                  “Đang hoạt động” quyết định nguyên liệu có thể được chọn cho
+                  công thức mới. “Hỗ trợ tính dinh dưỡng” là trạng thái riêng.
+                  Chỉ cần có ít nhất một chỉ tiêu, phần còn thiếu sẽ được cảnh
+                  báo.
                 </span>
               </p>
             </Card>
@@ -922,8 +1178,12 @@ export function AdminCatalogPage() {
 
             <div className="space-y-8">
               {loading ? (
-                <Card role="status" className="flex items-center justify-center gap-3 p-12 text-sm text-ink-muted">
-                  <LoaderCircle className="h-5 w-5 animate-spin text-brand-600" /> Đang tải danh mục…
+                <Card
+                  role="status"
+                  className="flex items-center justify-center gap-3 p-12 text-sm text-ink-muted"
+                >
+                  <LoaderCircle className="h-5 w-5 animate-spin text-brand-600" />{" "}
+                  Đang tải danh mục…
                 </Card>
               ) : ingredients.length === 0 ? (
                 <EmptyState
@@ -937,12 +1197,42 @@ export function AdminCatalogPage() {
                     <table className="w-full text-left text-sm border-collapse">
                       <thead className="bg-gradient-to-r from-brand-50/90 via-cream-soft to-brand-50/70 text-xs font-bold uppercase tracking-wider text-brand-900 border-b border-brand-200/80">
                         <tr>
-                          <th scope="col" className="py-3.5 px-4 min-w-[200px] text-center">Nguyên liệu</th>
-                          <th scope="col" className="py-3.5 px-2 min-w-[105px] whitespace-nowrap">Phân loại</th>
-                          <th scope="col" className="py-3.5 px-3 text-center min-w-[130px]">Trạng thái</th>
-                          <th scope="col" className="py-3.5 px-3 text-center min-w-[150px]">Dinh dưỡng</th>
-                          <th scope="col" className="py-3.5 px-2 text-center min-w-[110px] whitespace-nowrap">Số công thức</th>
-                          <th scope="col" className="py-3.5 px-4 text-center min-w-[240px]">Thao tác quản trị</th>
+                          <th
+                            scope="col"
+                            className="py-3.5 px-4 min-w-[200px] text-center"
+                          >
+                            Nguyên liệu
+                          </th>
+                          <th
+                            scope="col"
+                            className="py-3.5 px-2 min-w-[105px] whitespace-nowrap"
+                          >
+                            Phân loại
+                          </th>
+                          <th
+                            scope="col"
+                            className="py-3.5 px-3 text-center min-w-[130px]"
+                          >
+                            Trạng thái
+                          </th>
+                          <th
+                            scope="col"
+                            className="py-3.5 px-3 text-center min-w-[150px]"
+                          >
+                            Dinh dưỡng
+                          </th>
+                          <th
+                            scope="col"
+                            className="py-3.5 px-2 text-center min-w-[110px] whitespace-nowrap"
+                          >
+                            Số công thức
+                          </th>
+                          <th
+                            scope="col"
+                            className="py-3.5 px-4 text-center min-w-[240px]"
+                          >
+                            Thao tác quản trị
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-brand-100/80">
@@ -950,13 +1240,19 @@ export function AdminCatalogPage() {
                           <IngredientTableRow
                             key={item.id}
                             item={item}
-                            supportedUnits={supportedUnitsByIngredient[item.id] ?? []}
+                            supportedUnits={
+                              supportedUnitsByIngredient[item.id] ?? []
+                            }
                             unitSupportLoading={unitSupportLoading}
                             unitSupportError={unitSupportError}
                             onRetryUnitSupport={() => void loadUnitSupport()}
                             saving={saving}
-                            onOpenNutritionDetails={(target) => void openNutritionDetails(target)}
-                            onShowRecipes={(target) => void showRecipeReferences(target)}
+                            onOpenNutritionDetails={(target) =>
+                              void openNutritionDetails(target)
+                            }
+                            onShowRecipes={(target) =>
+                              void showRecipeReferences(target)
+                            }
                             onEditInfo={editIngredient}
                             onToggleActive={toggleIngredient}
                             onManageUnits={setUnitManagerTarget}
@@ -969,10 +1265,35 @@ export function AdminCatalogPage() {
               )}
               {totalElements > 0 && (
                 <div className="mt-8 sm:mt-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-brand-200/80 bg-paper px-5 py-4 text-sm text-ink-muted shadow-xs">
-                  <span className="font-medium">{totalElements} nguyên liệu · Trang {ingredientFilters.page + 1}/{totalPages}</span>
+                  <span className="font-medium">
+                    {totalElements} nguyên liệu · Trang{" "}
+                    {ingredientFilters.page + 1}/{totalPages}
+                  </span>
                   <div className="flex gap-2.5">
-                    <Button type="button" variant="outline" size="sm" disabled={loading || ingredientFilters.page === 0} onClick={() => changeIngredientPage(ingredientFilters.page - 1)}>Trang trước</Button>
-                    <Button type="button" variant="outline" size="sm" disabled={loading || ingredientFilters.page + 1 >= totalPages} onClick={() => changeIngredientPage(ingredientFilters.page + 1)}>Trang sau</Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={loading || ingredientFilters.page === 0}
+                      onClick={() =>
+                        changeIngredientPage(ingredientFilters.page - 1)
+                      }
+                    >
+                      Trang trước
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={
+                        loading || ingredientFilters.page + 1 >= totalPages
+                      }
+                      onClick={() =>
+                        changeIngredientPage(ingredientFilters.page + 1)
+                      }
+                    >
+                      Trang sau
+                    </Button>
                   </div>
                 </div>
               )}
@@ -994,9 +1315,15 @@ export function AdminCatalogPage() {
               >
                 <div className="flex items-start justify-between gap-3 border-b border-brand-100 pb-4">
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-brand-600">Hồ sơ & Dinh dưỡng nguyên liệu</p>
-                    <h2 className="mt-0.5 text-lg sm:text-xl font-extrabold text-ink">Chi tiết · {nutritionTarget.name}</h2>
-                    <p className="mt-1 text-xs text-ink-muted">Thông tin dinh dưỡng trên 100 g và nguồn tham khảo.</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-brand-600">
+                      Hồ sơ & Dinh dưỡng nguyên liệu
+                    </p>
+                    <h2 className="mt-0.5 text-lg sm:text-xl font-extrabold text-ink">
+                      Chi tiết · {nutritionTarget.name}
+                    </h2>
+                    <p className="mt-1 text-xs text-ink-muted">
+                      Thông tin dinh dưỡng trên 100 g và nguồn tham khảo.
+                    </p>
                   </div>
                   <button
                     type="button"
@@ -1012,69 +1339,114 @@ export function AdminCatalogPage() {
                 <div className="mt-4 rounded-2xl border border-brand-100/80 bg-brand-50/40 p-4 text-xs sm:text-sm space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-2.5 gap-y-2.5">
                     <div>
-                      <span className="font-medium text-ink-muted">Nhóm nguyên liệu:</span>{' '}
-                      <strong className="text-ink">{normalizeIngredientGroup(nutritionTarget.ingredientGroup)}</strong>
+                      <span className="font-medium text-ink-muted">
+                        Nhóm nguyên liệu:
+                      </span>{" "}
+                      <strong className="text-ink">
+                        {normalizeIngredientGroup(
+                          nutritionTarget.ingredientGroup,
+                        )}
+                      </strong>
                     </div>
                     <div className="min-w-0">
-                      <span className="font-medium text-ink-muted">Nguồn:</span>{' '}
-                      <strong className="text-ink">{normalizeSourceName(nutritionTarget.sourceName)}</strong>
-                      {nutritionTarget.sourceUrl && <>
-                        {' '}
-                        <a
-                          href={nutritionTarget.sourceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          aria-label="Mở liên kết nguồn tham khảo"
-                          className="inline-flex translate-y-[-1px] align-middle text-brand-600 hover:text-brand-800"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
-                      </>}
+                      <span className="font-medium text-ink-muted">Nguồn:</span>{" "}
+                      <strong className="text-ink">
+                        {normalizeSourceName(nutritionTarget.sourceName)}
+                      </strong>
+                      {nutritionTarget.sourceUrl && (
+                        <>
+                          {" "}
+                          <a
+                            href={nutritionTarget.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Mở liên kết nguồn tham khảo"
+                            className="inline-flex translate-y-[-1px] align-middle text-brand-600 hover:text-brand-800"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        </>
+                      )}
                     </div>
                     <div>
-                      <span className="font-medium text-ink-muted">Ngày đối chiếu:</span>{' '}
-                      <span className="font-semibold text-ink">{nutritionTarget.referenceDate}</span>
+                      <span className="font-medium text-ink-muted">
+                        Ngày đối chiếu:
+                      </span>{" "}
+                      <span className="font-semibold text-ink">
+                        {nutritionTarget.referenceDate}
+                      </span>
                     </div>
                     <div>
-                      <span className="font-medium text-ink-muted">Công thức đang dùng:</span>{' '}
-                      <span className="font-semibold text-brand-700">{nutritionTarget.recipeUsageCount ?? 0} công thức</span>
+                      <span className="font-medium text-ink-muted">
+                        Công thức đang dùng:
+                      </span>{" "}
+                      <span className="font-semibold text-brand-700">
+                        {nutritionTarget.recipeUsageCount ?? 0} công thức
+                      </span>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-brand-100/70">
                     <div>
-                      <span className="font-medium text-ink-muted">Trạng thái danh mục:</span>{' '}
-                      <span className={`font-semibold ${nutritionTarget.active ? 'text-leaf-700' : 'text-ink-muted'}`}>
-                        {nutritionTarget.active ? 'Đang hoạt động' : 'Không hoạt động'}
+                      <span className="font-medium text-ink-muted">
+                        Trạng thái danh mục:
+                      </span>{" "}
+                      <span
+                        className={`font-semibold ${
+                          nutritionTarget.active
+                            ? "text-leaf-700"
+                            : "text-ink-muted"
+                        }`}
+                      >
+                        {nutritionTarget.active
+                          ? "Đang hoạt động"
+                          : "Không hoạt động"}
                       </span>
                     </div>
                     <div>
-                      <span className="font-medium text-ink-muted">Dữ liệu tính toán:</span>{' '}
-                      <span className={`font-semibold ${nutritionEnabled ? 'text-leaf-700' : 'text-ink-muted'}`}>
-                        {nutritionEnabled ? 'Hỗ trợ dinh dưỡng' : 'Chưa hỗ trợ'}
+                      <span className="font-medium text-ink-muted">
+                        Dữ liệu tính toán:
+                      </span>{" "}
+                      <span
+                        className={`font-semibold ${
+                          nutritionEnabled ? "text-leaf-700" : "text-ink-muted"
+                        }`}
+                      >
+                        {nutritionEnabled ? "Hỗ trợ dinh dưỡng" : "Chưa hỗ trợ"}
                       </span>
                     </div>
                   </div>
-
                 </div>
 
                 {/* Nutrition editing form with 9 inputs */}
                 <form onSubmit={submitNutrition} className="mt-5 space-y-4">
                   {nutritionDetailsLoading && (
-                    <p role="status" className="text-sm text-ink-muted">Đang tải số liệu dinh dưỡng…</p>
+                    <p role="status" className="text-sm text-ink-muted">
+                      Đang tải số liệu dinh dưỡng…
+                    </p>
                   )}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-brand-700">Số liệu dinh dưỡng (trên 100 g)</h3>
-                      <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
-                        nutritionEnabled
-                          ? 'border-leaf-200 bg-leaf-50 text-leaf-700'
-                          : 'border-brand-200 bg-brand-50 text-ink-muted'
-                      }`}>
-                        {nutritionEnabled ? 'Đang tính dữ liệu có sẵn' : 'Chưa đưa vào tính'}
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-brand-700">
+                        Số liệu dinh dưỡng (trên 100 g)
+                      </h3>
+                      <span
+                        className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+                          nutritionEnabled
+                            ? "border-leaf-200 bg-leaf-50 text-leaf-700"
+                            : "border-brand-200 bg-brand-50 text-ink-muted"
+                        }`}
+                      >
+                        {nutritionEnabled
+                          ? "Đang tính dữ liệu có sẵn"
+                          : "Chưa đưa vào tính"}
                       </span>
                     </div>
-                    <p className="text-xs text-ink-muted mb-3">Nhập số liệu trên 100 g. Nguồn có thể là USDA/NIH, nguồn khác hoặc AI estimate. Chỉ tiêu để trống sẽ không được tính và không bị xem là 0.</p>
+                    <p className="text-xs text-ink-muted mb-3">
+                      Nhập số liệu trên 100 g. Nguồn có thể là USDA/NIH, nguồn
+                      khác hoặc AI estimate. Chỉ tiêu để trống sẽ không được
+                      tính và không bị xem là 0.
+                    </p>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       {nutritionFields.map(({ key, label, unit, step }) => (
                         <Field key={key} label={`${label} (${unit}/100 g)`}>
@@ -1087,7 +1459,12 @@ export function AdminCatalogPage() {
                             aria-label={`${label} trên 100 g`}
                             value={nutritionForm[key]}
                             disabled={nutritionDetailsLoading || saving}
-                            onChange={(event) => setNutritionForm({ ...nutritionForm, [key]: event.target.value })}
+                            onChange={(event) =>
+                              setNutritionForm({
+                                ...nutritionForm,
+                                [key]: event.target.value,
+                              })
+                            }
                           />
                         </Field>
                       ))}
@@ -1096,14 +1473,29 @@ export function AdminCatalogPage() {
 
                   <div className="flex flex-wrap items-center justify-between gap-2 border-t border-brand-100 pt-4">
                     <div className="flex flex-wrap gap-2">
-                      <Button type="submit" disabled={saving || nutritionDetailsLoading}>
-                        {saving ? 'Đang lưu…' : 'Lưu chỉ tiêu'}
+                      <Button
+                        type="submit"
+                        disabled={saving || nutritionDetailsLoading}
+                      >
+                        {saving ? "Đang lưu…" : "Lưu chỉ tiêu"}
                       </Button>
-                      <Button type="button" variant="outline" disabled={saving || nutritionDetailsLoading} onClick={toggleNutritionSupport}>
-                        {nutritionEnabled ? 'Ngừng hỗ trợ tính' : 'Bật hỗ trợ tính'}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={saving || nutritionDetailsLoading}
+                        onClick={toggleNutritionSupport}
+                      >
+                        {nutritionEnabled
+                          ? "Ngừng hỗ trợ tính"
+                          : "Bật hỗ trợ tính"}
                       </Button>
                     </div>
-                    <Button type="button" variant="ghost" disabled={saving} onClick={closeActiveModal}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      disabled={saving}
+                      onClick={closeActiveModal}
+                    >
                       Đóng
                     </Button>
                   </div>
@@ -1111,7 +1503,18 @@ export function AdminCatalogPage() {
               </div>
             </div>
           )}
-          {unitManagerTarget && <IngredientUnitsManager ingredient={unitManagerTarget} onClose={() => setUnitManagerTarget(null)} onSaved={() => { setNotice('Đã cập nhật quy đổi đơn vị. Công thức cũ giữ nguyên định lượng; đơn vị bị ngừng sẽ không dùng được cho bài mới.'); void loadUnitSupport(); }} />}
+          {unitManagerTarget && (
+            <IngredientUnitsManager
+              ingredient={unitManagerTarget}
+              onClose={() => setUnitManagerTarget(null)}
+              onSaved={() => {
+                setNotice(
+                  "Đã cập nhật quy đổi đơn vị. Công thức cũ giữ nguyên định lượng; đơn vị bị ngừng sẽ không dùng được cho bài mới.",
+                )
+                void loadUnitSupport()
+              }}
+            />
+          )}
 
           {/* Floating Modal (Bảng nổi) - Công thức tham chiếu */}
           {referencesTarget && (
@@ -1128,9 +1531,16 @@ export function AdminCatalogPage() {
               >
                 <div className="flex items-start justify-between gap-3 border-b border-brand-100 pb-4">
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-brand-600">Kiểm tra tham chiếu</p>
-                    <h2 className="mt-0.5 text-lg sm:text-xl font-extrabold text-ink">Công thức dùng {referencesTarget.name}</h2>
-                    <p className="mt-1 text-xs text-ink-muted">Danh sách công thức đang sử dụng nguyên liệu này trong hệ thống.</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-brand-600">
+                      Kiểm tra tham chiếu
+                    </p>
+                    <h2 className="mt-0.5 text-lg sm:text-xl font-extrabold text-ink">
+                      Công thức dùng {referencesTarget.name}
+                    </h2>
+                    <p className="mt-1 text-xs text-ink-muted">
+                      Danh sách công thức đang sử dụng nguyên liệu này trong hệ
+                      thống.
+                    </p>
                   </div>
                   <button
                     type="button"
@@ -1144,7 +1554,8 @@ export function AdminCatalogPage() {
 
                 {referencesLoading ? (
                   <div className="flex items-center justify-center gap-2 p-10 text-sm text-ink-muted">
-                    <LoaderCircle className="h-5 w-5 animate-spin text-brand-600" /> Đang tải công thức…
+                    <LoaderCircle className="h-5 w-5 animate-spin text-brand-600" />{" "}
+                    Đang tải công thức…
                   </div>
                 ) : error ? null : recipeReferences.length === 0 ? (
                   <p className="mt-6 rounded-2xl border border-dashed border-brand-200 bg-cream-soft/40 p-6 text-center text-sm text-ink-muted">
@@ -1153,7 +1564,10 @@ export function AdminCatalogPage() {
                 ) : (
                   <ul className="mt-4 space-y-2.5">
                     {recipeReferences.map((recipe) => (
-                      <li key={recipe.recipeId} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand-100 bg-cream-soft/60 p-3.5 transition-colors hover:border-brand-200">
+                      <li
+                        key={recipe.recipeId}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand-100 bg-cream-soft/60 p-3.5 transition-colors hover:border-brand-200"
+                      >
                         <span>
                           <Link
                             to={`/cong-thuc/id/${recipe.recipeId}`}
@@ -1162,7 +1576,11 @@ export function AdminCatalogPage() {
                             {recipe.title}
                           </Link>
                           <span className="mt-1 block text-xs text-ink-muted">
-                            {recipe.publishedAt ? new Date(recipe.publishedAt).toLocaleDateString('vi-VN') : 'Chưa công khai'}
+                            {recipe.publishedAt
+                              ? new Date(recipe.publishedAt).toLocaleDateString(
+                                  "vi-VN",
+                                )
+                              : "Chưa công khai"}
                           </span>
                         </span>
                         <span className="rounded-full border border-brand-200/60 bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-800">
@@ -1175,16 +1593,50 @@ export function AdminCatalogPage() {
 
                 {recipeReferenceTotal > 0 && (
                   <div className="mt-5 flex items-center justify-between border-t border-brand-100 pt-3 text-xs text-ink-muted">
-                    <span>{recipeReferenceTotal} công thức · Trang {recipeReferencePage + 1}/{recipeReferencePages}</span>
+                    <span>
+                      {recipeReferenceTotal} công thức · Trang{" "}
+                      {recipeReferencePage + 1}/{recipeReferencePages}
+                    </span>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" disabled={referencesLoading || recipeReferencePage === 0} onClick={() => void changeRecipeReferencePage(recipeReferencePage - 1)}>Trang trước</Button>
-                      <Button size="sm" variant="outline" disabled={referencesLoading || recipeReferencePage + 1 >= recipeReferencePages} onClick={() => void changeRecipeReferencePage(recipeReferencePage + 1)}>Trang sau</Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={
+                          referencesLoading || recipeReferencePage === 0
+                        }
+                        onClick={() =>
+                          void changeRecipeReferencePage(
+                            recipeReferencePage - 1,
+                          )
+                        }
+                      >
+                        Trang trước
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={
+                          referencesLoading ||
+                          recipeReferencePage + 1 >= recipeReferencePages
+                        }
+                        onClick={() =>
+                          void changeRecipeReferencePage(
+                            recipeReferencePage + 1,
+                          )
+                        }
+                      >
+                        Trang sau
+                      </Button>
                     </div>
                   </div>
                 )}
 
                 <div className="mt-6 flex justify-end border-t border-brand-100 pt-3">
-                  <Button type="button" variant="ghost" onClick={closeActiveModal}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={closeActiveModal}
+                  >
                     Đóng
                   </Button>
                 </div>
@@ -1207,14 +1659,18 @@ export function AdminCatalogPage() {
               >
                 <div className="flex items-center justify-between border-b border-brand-100 pb-4">
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-brand-600">Thông tin chuẩn</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-brand-600">
+                      Thông tin chuẩn
+                    </p>
                     <h2 className="mt-0.5 text-lg sm:text-xl font-extrabold text-ink">
-                      {ingredientId === null ? 'Thêm nguyên liệu' : 'Sửa nguyên liệu'}
+                      {ingredientId === null
+                        ? "Thêm nguyên liệu"
+                        : "Sửa nguyên liệu"}
                     </h2>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="rounded-full border border-brand-200/60 bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
-                      {ingredientId === null ? 'Thêm mới' : 'Chỉnh sửa'}
+                      {ingredientId === null ? "Thêm mới" : "Chỉnh sửa"}
                     </span>
                     <button
                       type="button"
@@ -1245,9 +1701,9 @@ export function AdminCatalogPage() {
                     />
                   </Field>
                   <Field label="Nhóm nguyên liệu">
-                    <select
+                    <ThemedSelect
+                      aria-label="Nhóm nguyên liệu"
                       className={fieldClass}
-                      required
                       value={ingredientForm.ingredientGroup}
                       onChange={(event) =>
                         setIngredientForm({
@@ -1255,14 +1711,14 @@ export function AdminCatalogPage() {
                           ingredientGroup: event.target.value,
                         })
                       }
-                    >
-                      <option value="" disabled>Chọn nhóm nguyên liệu</option>
-                      {catalogOptions.groups.map((group) => (
-                        <option key={group} value={group} className="font-sans">
-                          {normalizeIngredientGroup(group)}
-                        </option>
-                      ))}
-                    </select>
+                      options={[
+                        { value: "", label: "Chọn nhóm nguyên liệu" },
+                        ...catalogOptions.groups.map((group) => ({
+                          value: group,
+                          label: normalizeIngredientGroup(group),
+                        })),
+                      ]}
+                    />
                   </Field>
                   <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                     <Field label="Ảnh minh họa">
@@ -1271,31 +1727,46 @@ export function AdminCatalogPage() {
                         className={fieldClass}
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
-                        onChange={(event) => selectIngredientImage(event.currentTarget.files?.[0], event.currentTarget)}
+                        onChange={(event) =>
+                          selectIngredientImage(
+                            event.currentTarget.files?.[0],
+                            event.currentTarget,
+                          )
+                        }
                         aria-describedby="ingredient-image-help"
                       />
                     </Field>
                     <IngredientImage
                       imageUrl={ingredientImagePreviewUrl ?? ingredientImageUrl}
-                      name={ingredientForm.name || 'nguyên liệu'}
+                      name={ingredientForm.name || "nguyên liệu"}
                       containerClassName="h-20 w-20 overflow-hidden rounded-xl border border-brand-200/80 bg-brand-50 shadow-2xs"
                       placeholderSize="large"
                     />
                   </div>
-                  <p id="ingredient-image-help" className="-mt-2 text-xs leading-5 text-ink-muted">
-                    Chọn ảnh JPEG, PNG hoặc WebP, tối đa 2 MB. Ảnh sẽ được tải lên và lưu khi bạn bấm lưu nguyên liệu.
-                    {ingredientImageUrl && ' Ảnh mới sẽ thay thế ảnh hiện tại.'}
+                  <p
+                    id="ingredient-image-help"
+                    className="-mt-2 text-xs leading-5 text-ink-muted"
+                  >
+                    Chọn ảnh JPEG, PNG hoặc WebP, tối đa 2 MB. Ảnh sẽ được tải
+                    lên và lưu khi bạn bấm lưu nguyên liệu.
+                    {ingredientImageUrl && " Ảnh mới sẽ thay thế ảnh hiện tại."}
                   </p>
                   {ingredientImageFile && (
                     <div className="-mt-2 flex flex-wrap items-center gap-2 text-xs text-ink-soft">
-                      <span className="max-w-full truncate" title={ingredientImageFile.name}>{ingredientImageFile.name}</span>
+                      <span
+                        className="max-w-full truncate"
+                        title={ingredientImageFile.name}
+                      >
+                        {ingredientImageFile.name}
+                      </span>
                       <button
                         type="button"
                         onClick={() => {
-                          setIngredientImageFile(null);
-                          setIngredientImagePreviewUrl(null);
-                          setIngredientImageError('');
-                          if (ingredientImageInputRef.current) ingredientImageInputRef.current.value = '';
+                          setIngredientImageFile(null)
+                          setIngredientImagePreviewUrl(null)
+                          setIngredientImageError("")
+                          if (ingredientImageInputRef.current)
+                            ingredientImageInputRef.current.value = ""
                         }}
                         className="font-semibold text-brand-700 underline hover:text-brand-900"
                       >
@@ -1304,13 +1775,28 @@ export function AdminCatalogPage() {
                     </div>
                   )}
                   {ingredientImageError && (
-                    <p role="alert" className="-mt-2 text-xs font-medium text-red-700">{ingredientImageError}</p>
+                    <p
+                      role="alert"
+                      className="-mt-2 text-xs font-medium text-red-700"
+                    >
+                      {ingredientImageError}
+                    </p>
                   )}
                   {error && (
-                    <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>
+                    <p
+                      role="alert"
+                      className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
+                    >
+                      {error}
+                    </p>
                   )}
                   {notice && (
-                    <p role="status" className="rounded-xl border border-leaf-200 bg-leaf-50 px-3 py-2 text-sm text-leaf-800">{notice}</p>
+                    <p
+                      role="status"
+                      className="rounded-xl border border-leaf-200 bg-leaf-50 px-3 py-2 text-sm text-leaf-800"
+                    >
+                      {notice}
+                    </p>
                   )}
                   <Field label="Nguồn dữ liệu hoặc cách ước tính">
                     <input
@@ -1329,7 +1815,10 @@ export function AdminCatalogPage() {
                     />
                     <datalist id="ingredient-source-suggestions">
                       {catalogOptions.sources.map((source) => (
-                        <option key={source} value={normalizeSourceName(source)} />
+                        <option
+                          key={source}
+                          value={normalizeSourceName(source)}
+                        />
                       ))}
                     </datalist>
                   </Field>
@@ -1349,7 +1838,9 @@ export function AdminCatalogPage() {
                     />
                   </Field>
                   <p className="-mt-2 text-xs leading-5 text-ink-muted">
-                    USDA/NIH và đường dẫn tham khảo không bắt buộc. Ghi rõ nguồn do người nhập hoặc AI tạo. Có thể bật tính khi đã có ít nhất một chỉ tiêu.
+                    USDA/NIH và đường dẫn tham khảo không bắt buộc. Ghi rõ nguồn
+                    do người nhập hoặc AI tạo. Có thể bật tính khi đã có ít nhất
+                    một chỉ tiêu.
                   </p>
                   <Field label="Ngày tham khảo">
                     <input
@@ -1369,13 +1860,13 @@ export function AdminCatalogPage() {
                   <div className="flex flex-wrap gap-2 border-t border-brand-100 pt-4">
                     <Button type="submit" disabled={saving}>
                       {saving ? (
-                        'Đang lưu…'
+                        "Đang lưu…"
                       ) : ingredientId === null ? (
                         <>
                           <CirclePlus className="h-4 w-4" /> Thêm nguyên liệu
                         </>
                       ) : (
-                        'Lưu thay đổi'
+                        "Lưu thay đổi"
                       )}
                     </Button>
                     <Button
@@ -1394,84 +1885,312 @@ export function AdminCatalogPage() {
         </section>
       )}
     </PageContainer>
-  );
+  )
 }
 
-function IngredientUnitsManager({ ingredient, onClose, onSaved }: { ingredient: CatalogIngredient; onClose: () => void; onSaved: () => void }) {
-  const [units, setUnits] = useState<CatalogUnit[]>([]);
-  const [conversions, setConversions] = useState<IngredientConversion[]>([]);
-  const [unitId, setUnitId] = useState<number | null>(null);
-  const [gramsPerUnit, setGramsPerUnit] = useState('');
-  const [gramsPerMl, setGramsPerMl] = useState('');
-  const [approximate, setApproximate] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+function IngredientUnitsManager({
+  ingredient,
+  onClose,
+  onSaved,
+}: {
+  ingredient: CatalogIngredient
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [units, setUnits] = useState<CatalogUnit[]>([])
+  const [conversions, setConversions] = useState<IngredientConversion[]>([])
+  const [unitId, setUnitId] = useState<number | null>(null)
+  const [gramsPerUnit, setGramsPerUnit] = useState("")
+  const [gramsPerMl, setGramsPerMl] = useState("")
+  const [approximate, setApproximate] = useState(true)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState("")
   const reload = async () => {
-    const [unitRows, conversionRows] = await Promise.all([adminCatalogApi.units(), adminCatalogApi.conversions(ingredient.id)]);
-    setUnits(unitRows); setConversions(conversionRows);
-    const ml = unitRows.find((unit) => unit.code === 'ml');
-    const mlConversion = conversionRows.find((item) => item.unitId === ml?.id);
-    if (mlConversion) setGramsPerMl(String(mlConversion.gramsPerUnit));
-  };
-  useEffect(() => { void reload().catch((cause: unknown) => setError(cause instanceof Error ? cause.message : 'Không tải được quy đổi.')); }, [ingredient.id]);
+    const [unitRows, conversionRows] = await Promise.all([
+      adminCatalogApi.units(),
+      adminCatalogApi.conversions(ingredient.id),
+    ])
+    setUnits(unitRows)
+    setConversions(conversionRows)
+    const ml = unitRows.find((unit) => unit.code === "ml")
+    const mlConversion = conversionRows.find((item) => item.unitId === ml?.id)
+    if (mlConversion) setGramsPerMl(String(mlConversion.gramsPerUnit))
+  }
+  useEffect(() => {
+    void reload().catch((cause: unknown) =>
+      setError(
+        cause instanceof Error ? cause.message : "Không tải được quy đổi.",
+      ),
+    )
+  }, [ingredient.id])
   const selectConversion = (id: number) => {
-    setUnitId(id);
-    const found = conversions.find((item) => item.unitId === id);
-    setGramsPerUnit(found ? String(found.gramsPerUnit) : '');
-    setApproximate(found?.approximate ?? true);
-  };
-  const conversionSettings = () => ({ approximate });
+    setUnitId(id)
+    const found = conversions.find((item) => item.unitId === id)
+    setGramsPerUnit(found ? String(found.gramsPerUnit) : "")
+    setApproximate(found?.approximate ?? true)
+  }
+  const conversionSettings = () => ({ approximate })
   const saveCount = async (event: FormEvent) => {
-    event.preventDefault(); if (!unitId) return;
-    setBusy(true); setError('');
+    event.preventDefault()
+    if (!unitId) return
+    setBusy(true)
+    setError("")
     try {
-      const existing = conversions.some((row) => row.unitId === unitId);
-      const body: ConversionDraft = { ...conversionSettings(), gramsPerUnit: Number(gramsPerUnit) };
-      if (existing) await adminCatalogApi.updateConversion(ingredient.id, unitId, body);
-      else await adminCatalogApi.createConversion(ingredient.id, unitId, body);
-      await reload(); onSaved();
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Không lưu được quy đổi.'); }
-    finally { setBusy(false); }
-  };
-  const saveVolume = async (event: FormEvent) => {
-    event.preventDefault(); setBusy(true); setError('');
-    try { await adminCatalogApi.saveVolumeConversions(ingredient.id, { ...conversionSettings(), gramsPerMl: Number(gramsPerMl) }); await reload(); onSaved(); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Không lưu được quy đổi thể tích.'); }
-    finally { setBusy(false); }
-  };
-  const toggle = async (unit: CatalogUnit) => {
-    const conversion = conversions.find((row) => row.unitId === unit.id); if (!conversion) return;
-    const disabling = conversion.active;
-    if (disabling && ingredient.recipeUsageCount && ingredient.recipeUsageCount > 0
-      && !window.confirm(`Đơn vị này đang được hỗ trợ cho ${ingredient.recipeUsageCount} công thức. Ngừng hỗ trợ sẽ chặn dùng cho bài mới và bỏ quy đổi khi tính/tổng hợp. Tiếp tục?`)) return;
-    setBusy(true); setError('');
-    try {
-      if (unit.dimension === 'VOLUME') await adminCatalogApi.setVolumeConversionsActive(ingredient.id, !conversion.active);
-      else await adminCatalogApi.setConversionActive(ingredient.id, unit.id, !conversion.active);
-      await reload();
+      const existing = conversions.some((row) => row.unitId === unitId)
+      const body: ConversionDraft = {
+        ...conversionSettings(),
+        gramsPerUnit: Number(gramsPerUnit),
+      }
+      if (existing)
+        await adminCatalogApi.updateConversion(ingredient.id, unitId, body)
+      else await adminCatalogApi.createConversion(ingredient.id, unitId, body)
+      await reload()
+      onSaved()
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Không lưu được quy đổi.",
+      )
+    } finally {
+      setBusy(false)
     }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Không cập nhật được trạng thái.'); }
-    finally { setBusy(false); }
-  };
-  const countUnits = units.filter((unit) => unit.dimension === 'COUNT' && ['quả', 'củ', 'miếng'].includes(unit.code));
-  const volumeUnits = units.filter((unit) => unit.dimension === 'VOLUME' && ['ml', 'L', 'tsp', 'tbsp', 'cup'].includes(unit.code));
-  return <div className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="ingredient-units-title">
-    <div className="my-auto w-full max-w-3xl rounded-2xl bg-paper p-5 shadow-xl sm:p-7">
-      <div className="flex items-start justify-between gap-4"><div><h2 id="ingredient-units-title" className="text-xl font-extrabold text-ink">Quản lý đơn vị · {ingredient.name}</h2><p className="mt-1 text-sm text-ink-muted">Quy đổi bị ngừng sẽ không xuất hiện ở công thức mới; bài đã lưu giữ nguyên lượng cũ.</p></div><Button type="button" variant="ghost" onClick={onClose} aria-label="Đóng">Đóng</Button></div>
-      {error && <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-      <section className="mt-5 rounded-xl border border-brand-100 p-4"><h3 className="font-bold">Khối lượng cố định</h3><p className="mt-1 text-sm text-ink-muted">mg · g · kg — hệ số chuẩn, không chỉnh theo nguyên liệu.</p></section>
-      <form onSubmit={saveVolume} className="mt-4 space-y-3 rounded-xl border border-brand-100 p-4"><h3 className="font-bold">Thể tích</h3><label className={labelClass}>1 ml tương đương bao nhiêu gram<input className={fieldClass} type="number" min="0.000000001" step="any" required value={gramsPerMl} onChange={(e) => setGramsPerMl(e.target.value)} /></label>
-        <p className="text-xs text-ink-muted">Tính tự động: L ×1000 · tsp ×5 · tbsp ×15 · cup ×240 ml.</p>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={approximate} onChange={(e) => setApproximate(e.target.checked)} /> Hệ số xấp xỉ</label>
-        <Button type="submit" disabled={busy || !gramsPerMl}>Lưu và đồng bộ 5 đơn vị thể tích</Button>
-        <div className="flex flex-wrap gap-2 text-xs">{volumeUnits.map((unit) => { const factor = Number(gramsPerMl || 0) * unit.baseFactor; return <span key={unit.id} className="rounded bg-brand-50 px-2 py-1">{unit.code}: {factor.toPrecision(5)} g</span>; })}</div>
-      </form>
-      <form onSubmit={saveCount} className="mt-4 space-y-3 rounded-xl border border-brand-100 p-4"><h3 className="font-bold">Số đếm theo nguyên liệu</h3><div className="grid gap-3 sm:grid-cols-2"><label className={labelClass}>Đơn vị<select className={fieldClass} required value={unitId ?? ''} onChange={(e) => selectConversion(Number(e.target.value))}><option value="">Chọn quả, củ hoặc miếng</option>{countUnits.map((unit) => <option key={unit.id} value={unit.id}>{unit.code}</option>)}</select></label><label className={labelClass}>Số gram trên đơn vị<input className={fieldClass} type="number" min="0.000000001" step="any" required value={gramsPerUnit} onChange={(e) => setGramsPerUnit(e.target.value)} /></label></div>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={approximate} onChange={(e) => setApproximate(e.target.checked)} /> Hệ số xấp xỉ</label>
-        <Button type="submit" disabled={busy || !unitId}>Lưu quy đổi đếm</Button>
-      </form>
-      <div className="mt-4 space-y-2">{conversions.filter((row) => countUnits.some((unit) => unit.id === row.unitId) || volumeUnits.some((unit) => unit.id === row.unitId)).map((row) => { const unit = units.find((item) => item.id === row.unitId); return <div key={row.unitId} className="flex items-center justify-between rounded-lg bg-brand-50 px-3 py-2 text-sm"><span>{unit?.code}: {row.gramsPerUnit} g{row.approximate ? ' · xấp xỉ' : ''}</span><Button type="button" size="sm" variant="ghost" disabled={busy} onClick={() => void toggle(unit!)}>{row.active ? 'Ngừng sử dụng' : 'Khôi phục'}</Button></div>; })}</div>
-      <p className="mt-4 text-xs text-ink-muted">Hệ số do Admin nhập; đánh dấu xấp xỉ nếu đây là giá trị ước lượng. Việc cập nhật quy đổi không thay đổi số lượng đã lưu trong công thức.</p>
+  }
+  const saveVolume = async (event: FormEvent) => {
+    event.preventDefault()
+    setBusy(true)
+    setError("")
+    try {
+      await adminCatalogApi.saveVolumeConversions(ingredient.id, {
+        ...conversionSettings(),
+        gramsPerMl: Number(gramsPerMl),
+      })
+      await reload()
+      onSaved()
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Không lưu được quy đổi thể tích.",
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+  const toggle = async (unit: CatalogUnit) => {
+    const conversion = conversions.find((row) => row.unitId === unit.id)
+    if (!conversion) return
+    const disabling = conversion.active
+    if (
+      disabling &&
+      ingredient.recipeUsageCount &&
+      ingredient.recipeUsageCount > 0 &&
+      !window.confirm(
+        `Đơn vị này đang được hỗ trợ cho ${ingredient.recipeUsageCount} công thức. Ngừng hỗ trợ sẽ chặn dùng cho bài mới và bỏ quy đổi khi tính/tổng hợp. Tiếp tục?`,
+      )
+    )
+      return
+    setBusy(true)
+    setError("")
+    try {
+      if (unit.dimension === "VOLUME")
+        await adminCatalogApi.setVolumeConversionsActive(
+          ingredient.id,
+          !conversion.active,
+        )
+      else
+        await adminCatalogApi.setConversionActive(
+          ingredient.id,
+          unit.id,
+          !conversion.active,
+        )
+      await reload()
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Không cập nhật được trạng thái.",
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+  const countUnits = units.filter(
+    (unit) =>
+      unit.dimension === "COUNT" && ["quả", "củ", "miếng"].includes(unit.code),
+  )
+  const volumeUnits = units.filter(
+    (unit) =>
+      unit.dimension === "VOLUME" &&
+      ["ml", "L", "tsp", "tbsp", "cup"].includes(unit.code),
+  )
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto bg-black/60 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ingredient-units-title"
+    >
+      <div className="my-auto w-full max-w-3xl rounded-2xl bg-paper p-5 shadow-xl sm:p-7">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2
+              id="ingredient-units-title"
+              className="text-xl font-extrabold text-ink"
+            >
+              Quản lý đơn vị · {ingredient.name}
+            </h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              Quy đổi bị ngừng sẽ không xuất hiện ở công thức mới; bài đã lưu
+              giữ nguyên lượng cũ.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onClose}
+            aria-label="Đóng"
+          >
+            Đóng
+          </Button>
+        </div>
+        {error && (
+          <p
+            role="alert"
+            className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800"
+          >
+            {error}
+          </p>
+        )}
+        <section className="mt-5 rounded-xl border border-brand-100 p-4">
+          <h3 className="font-bold">Khối lượng cố định</h3>
+          <p className="mt-1 text-sm text-ink-muted">
+            mg · g · kg — hệ số chuẩn, không chỉnh theo nguyên liệu.
+          </p>
+        </section>
+        <form
+          onSubmit={saveVolume}
+          className="mt-4 space-y-3 rounded-xl border border-brand-100 p-4"
+        >
+          <h3 className="font-bold">Thể tích</h3>
+          <label className={labelClass}>
+            1 ml tương đương bao nhiêu gram
+            <input
+              className={fieldClass}
+              type="number"
+              min="0.000000001"
+              step="any"
+              required
+              value={gramsPerMl}
+              onChange={(e) => setGramsPerMl(e.target.value)}
+            />
+          </label>
+          <p className="text-xs text-ink-muted">
+            Tính tự động: L ×1000 · tsp ×5 · tbsp ×15 · cup ×240 ml.
+          </p>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={approximate}
+              onChange={(e) => setApproximate(e.target.checked)}
+            />{" "}
+            Hệ số xấp xỉ
+          </label>
+          <Button type="submit" disabled={busy || !gramsPerMl}>
+            Lưu và đồng bộ 5 đơn vị thể tích
+          </Button>
+          <div className="flex flex-wrap gap-2 text-xs">
+            {volumeUnits.map((unit) => {
+              const factor = Number(gramsPerMl || 0) * unit.baseFactor
+              return (
+                <span key={unit.id} className="rounded bg-brand-50 px-2 py-1">
+                  {unit.code}: {factor.toPrecision(5)} g
+                </span>
+              )
+            })}
+          </div>
+        </form>
+        <form
+          onSubmit={saveCount}
+          className="mt-4 space-y-3 rounded-xl border border-brand-100 p-4"
+        >
+          <h3 className="font-bold">Số đếm theo nguyên liệu</h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className={labelClass}>
+              Đơn vị
+              <select
+                className={fieldClass}
+                required
+                value={unitId ?? ""}
+                onChange={(e) => selectConversion(Number(e.target.value))}
+              >
+                <option value="">Chọn quả, củ hoặc miếng</option>
+                {countUnits.map((unit) => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.code}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className={labelClass}>
+              Số gram trên đơn vị
+              <input
+                className={fieldClass}
+                type="number"
+                min="0.000000001"
+                step="any"
+                required
+                value={gramsPerUnit}
+                onChange={(e) => setGramsPerUnit(e.target.value)}
+              />
+            </label>
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={approximate}
+              onChange={(e) => setApproximate(e.target.checked)}
+            />{" "}
+            Hệ số xấp xỉ
+          </label>
+          <Button type="submit" disabled={busy || !unitId}>
+            Lưu quy đổi đếm
+          </Button>
+        </form>
+        <div className="mt-4 space-y-2">
+          {conversions
+            .filter(
+              (row) =>
+                countUnits.some((unit) => unit.id === row.unitId) ||
+                volumeUnits.some((unit) => unit.id === row.unitId),
+            )
+            .map((row) => {
+              const unit = units.find((item) => item.id === row.unitId)
+              return (
+                <div
+                  key={row.unitId}
+                  className="flex items-center justify-between rounded-lg bg-brand-50 px-3 py-2 text-sm"
+                >
+                  <span>
+                    {unit?.code}: {row.gramsPerUnit} g
+                    {row.approximate ? " · xấp xỉ" : ""}
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    disabled={busy}
+                    onClick={() => void toggle(unit!)}
+                  >
+                    {row.active ? "Ngừng sử dụng" : "Khôi phục"}
+                  </Button>
+                </div>
+              )
+            })}
+        </div>
+        <p className="mt-4 text-xs text-ink-muted">
+          Hệ số do Admin nhập; đánh dấu xấp xỉ nếu đây là giá trị ước lượng.
+          Việc cập nhật quy đổi không thay đổi số lượng đã lưu trong công thức.
+        </p>
+      </div>
     </div>
-  </div>;
+  )
 }

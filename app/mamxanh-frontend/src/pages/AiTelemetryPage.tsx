@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type FormEvent } from "react"
 
-import { Activity, RefreshCw } from "lucide-react"
+import { Activity, CircleDollarSign, Cpu, RefreshCw } from "lucide-react"
 
 import { useAuth } from "../components/AuthContext"
 
-import { Card, Button } from "../components/ui"
+import { Card, Button, AnimatedNumber } from "../components/ui"
 
 import {
   getAiTelemetry,
@@ -14,11 +14,15 @@ import {
 
 const features: Record<string, string> = {
   "FR-21": "Hỗ trợ viết bài",
+
   "FR-34": "Gợi ý công thức",
+
   "FR-36": "Thực đơn tuần",
 
   "FR-37": "Phân tích dinh dưỡng",
+
   "FR-47": "Món biến tấu",
+
   "FR-51": "Chatbot",
 }
 
@@ -26,16 +30,22 @@ const number = new Intl.NumberFormat("vi-VN")
 
 const money = new Intl.NumberFormat("vi-VN", {
   style: "currency",
+
   currency: "USD",
+
   minimumFractionDigits: 6,
+
   maximumFractionDigits: 6,
 })
 
 function localDate(date: Date) {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Ho_Chi_Minh",
+
     year: "numeric",
+
     month: "2-digit",
+
     day: "2-digit",
   }).format(date)
 }
@@ -49,8 +59,11 @@ export function AiTelemetryPage() {
 
   const [draft, setDraft] = useState<TelemetryQuery>({
     from: today,
+
     to: today,
+
     granularity: "DAY",
+
     feature: "",
   })
 
@@ -70,6 +83,7 @@ export function AiTelemetryPage() {
     const id = ++latest.current
 
     setReport(null)
+
     setError("")
 
     if (account?.role !== "ADMIN") return
@@ -79,14 +93,17 @@ export function AiTelemetryPage() {
     setLoading(true)
 
     getAiTelemetry(query, controller.signal)
+
       .then((result) => {
         if (id === latest.current && !controller.signal.aborted)
           setReport(result)
       })
+
       .catch((failure: Error) => {
         if (id === latest.current && !controller.signal.aborted)
           setError(failure.message)
       })
+
       .finally(() => {
         if (id === latest.current && !controller.signal.aborted)
           setLoading(false)
@@ -102,6 +119,7 @@ export function AiTelemetryPage() {
 
     if (draft.from > draft.to) {
       setError("Ngày bắt đầu không được sau ngày kết thúc.")
+
       return
     }
 
@@ -174,6 +192,7 @@ export function AiTelemetryPage() {
               onChange={(e) =>
                 setDraft({
                   ...draft,
+
                   granularity: e.target.value as TelemetryQuery["granularity"],
                 })
               }
@@ -232,18 +251,62 @@ export function AiTelemetryPage() {
         <>
           <div className="grid gap-4 sm:grid-cols-3">
             {[
-              ["Lượt gọi thành công", number.format(report.totals.calls)],
-              ["Tổng token", number.format(report.totals.totalTokens)],
-              [
-                "Chi phí quy đổi (USD)",
-                report.totals.estimatedCostUsd == null
-                  ? "Chưa tính đủ"
-                  : money.format(report.totals.estimatedCostUsd),
-              ],
-            ].map(([label, value]) => (
-              <Card key={label} className="p-5">
-                <p className="text-sm font-semibold text-ink-muted">{label}</p>
-                <p className="mt-3 break-words text-2xl font-extrabold text-leaf-700">
+              {
+                label: "Lượt gọi thành công",
+                value: <AnimatedNumber value={report.totals.calls} />,
+                icon: <Activity className="h-4 w-4" />,
+                iconClass: "bg-leaf-50 text-leaf-700 ring-1 ring-leaf-200/70",
+                accent: "from-leaf-500 via-leaf-400 to-transparent",
+              },
+              {
+                label: "Tổng token",
+                value: <AnimatedNumber value={report.totals.totalTokens} />,
+                icon: <Cpu className="h-4 w-4" />,
+                iconClass:
+                  "bg-brand-50 text-brand-600 ring-1 ring-brand-200/70",
+                accent: "from-brand-500 via-brand-400 to-transparent",
+              },
+              {
+                label: "Chi phí quy đổi (USD)",
+                value:
+                  report.totals.estimatedCostUsd == null ? (
+                    "Chưa tính đủ"
+                  ) : (
+                    <AnimatedNumber
+                      value={report.totals.estimatedCostUsd}
+                      decimals={6}
+                      formatter={(val) => money.format(val)}
+                    />
+                  ),
+                icon: <CircleDollarSign className="h-4 w-4" />,
+                iconClass:
+                  "bg-amber-50 text-amber-700 ring-1 ring-amber-200/70",
+                accent: "from-amber-500 via-amber-400 to-transparent",
+              },
+            ].map(({ label, value, icon, iconClass, accent }) => (
+              <Card
+                key={label}
+                className="group relative flex flex-col justify-between overflow-hidden border-brand-200/80 bg-paper p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-900/5"
+              >
+                <div
+                  className={
+                    "absolute inset-x-0 top-0 h-1 bg-gradient-to-r " + accent
+                  }
+                />
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
+                    {label}
+                  </p>
+                  <span
+                    className={
+                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl shadow-2xs transition-transform duration-200 group-hover:scale-110 " +
+                      iconClass
+                    }
+                  >
+                    {icon}
+                  </span>
+                </div>
+                <p className="mt-3 break-words text-2xl font-black tracking-tight text-leaf-700 sm:text-3xl">
                   {value}
                 </p>
               </Card>
@@ -301,13 +364,21 @@ export function AiTelemetryPage() {
                     <tr>
                       {[
                         "Đầu kỳ",
+
                         "Tính năng",
+
                         "Lượt gọi",
+
                         "Input",
+
                         "Response",
+
                         "Thinking",
+
                         "Cached",
+
                         "Tổng token",
+
                         "Ước tính USD",
                       ].map((label) => (
                         <th
@@ -331,10 +402,15 @@ export function AiTelemetryPage() {
                         </td>
                         {[
                           row.totals.calls,
+
                           row.totals.promptTokens,
+
                           row.totals.responseTokens,
+
                           row.totals.thinkingTokens,
+
                           row.totals.cachedTokens,
+
                           row.totals.totalTokens,
                         ].map((value, index) => (
                           <td className="p-4 tabular-nums" key={index}>
@@ -354,7 +430,8 @@ export function AiTelemetryPage() {
             </Card>
           )}
           <p className="text-xs leading-5 text-ink-muted">
-            Số liệu phục vụ theo dõi chi phí ước tính, không thu thập nội dung prompt hay dữ liệu nhạy cảm.
+            Số liệu phục vụ theo dõi chi phí ước tính, không thu thập nội dung
+            prompt hay dữ liệu nhạy cảm.
           </p>
         </>
       )}

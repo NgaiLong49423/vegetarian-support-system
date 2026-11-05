@@ -16,7 +16,11 @@ export function Layout({ children }: { children: ReactNode }) {
       "/dat-lai-mat-khau",
     ].includes(pathname)
   ) {
-    return <>{children}</>
+    return (
+      <div key={pathname} className="page-transition w-full min-h-screen">
+        {children}
+      </div>
+    )
   }
 
   // Pure Admin Workspace separation
@@ -27,7 +31,14 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="food-app flex min-h-screen flex-col bg-cream pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0">
       <AppHeader />
-      <main className="min-w-0 flex-1">{children}</main>
+      <main className="min-w-0 flex-1 flex flex-col">
+        <div
+          key={pathname}
+          className="page-transition w-full flex-1 flex flex-col"
+        >
+          {children}
+        </div>
+      </main>
       <AppFooter />
       <MobileBottomNav />
     </div>

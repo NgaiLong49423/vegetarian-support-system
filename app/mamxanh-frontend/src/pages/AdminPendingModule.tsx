@@ -1,5 +1,7 @@
-import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useMemo } from "react"
+
+import { Link } from "react-router-dom"
+
 import {
   ArrowLeft,
   Search,
@@ -18,76 +20,151 @@ import {
   AlertCircle,
   Clock,
   Check,
-} from 'lucide-react';
-import { Card, Badge, Button } from '../components/ui';
-import { AdminUserManagement } from './AdminUserManagement';
+} from "lucide-react"
 
-type PendingModuleType = 'users' | 'transactions';
+import { Card, Badge, Button, AnimatedNumber } from "../components/ui"
+
+import { AdminUserManagement } from "./AdminUserManagement"
+
+type PendingModuleType = "users" | "transactions"
 
 export function AdminPendingModule({ module }: { module: PendingModuleType }) {
-  if (module === 'users') return <AdminUserManagement />;
-  return <>
-    <div role="status" className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-      Giao diện minh họa · Dữ liệu mẫu. Thao tác tại đây chỉ thay đổi bản xem thử, chưa cập nhật giao dịch trên Backend.
-    </div>
-    <AdminTransactionAudit />
-  </>;
+  if (module === "users") return <AdminUserManagement />
+
+  return (
+    <>
+      <div
+        role="status"
+        className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+      >
+        Giao diện minh họa · Dữ liệu mẫu. Thao tác tại đây chỉ thay đổi bản xem
+        thử, chưa cập nhật giao dịch trên Backend.
+      </div>
+      <AdminTransactionAudit />
+    </>
+  )
 }
 
 /* ==========================================================================
  * 3. Module Giám sát giao dịch thanh toán gói AI hệ thống
  * ========================================================================== */
+
 interface MockTransaction {
-  id: string;
-  payOsCode: string;
-  customerName: string;
-  customerEmail: string;
-  tier: 'PLUS' | 'PRO';
-  amountVnd: number;
-  paymentGateway: string;
-  createdAt: string;
-  status: 'SUCCESS' | 'PENDING' | 'FAILED';
+  id: string
+
+  payOsCode: string
+
+  customerName: string
+
+  customerEmail: string
+
+  tier: "PLUS" | "PRO"
+
+  amountVnd: number
+
+  paymentGateway: string
+
+  createdAt: string
+
+  status: "SUCCESS" | "PENDING" | "FAILED"
 }
 
-type TransactionPreviewRow = [
-  id: string,
-  payOsCode: string,
-  customerName: string,
-  customerEmail: string,
-  tier: MockTransaction['tier'],
-  createdAt: string,
-  status: MockTransaction['status'],
-];
+type TransactionPreviewRow = [id: string, payOsCode: string, customerName: string, customerEmail: string, tier: MockTransaction["tier"], createdAt: string, status: MockTransaction["status"]]
 
 const TRANSACTION_PREVIEW_ROWS: TransactionPreviewRow[] = [
-  ['TX-883921', 'POS-774921', 'Nguyễn Thị Lan', 'lan.nguyen@gmail.com', 'PRO', '16/10/2026 15:30', 'SUCCESS'],
-  ['TX-883915', 'POS-774912', 'Trần Minh Đức', 'duc.tran@gmail.com', 'PLUS', '16/10/2026 12:15', 'SUCCESS'],
-  ['TX-883902', 'POS-774899', 'Đặng Quốc Huy', 'huy.dang@yahoo.com', 'PRO', '16/10/2026 10:45', 'PENDING'],
-  ['TX-883890', 'POS-774872', 'Vũ Thị Mai', 'mai.vu@outlook.com', 'PLUS', '15/10/2026 21:10', 'FAILED'],
-  ['TX-883854', 'POS-774840', 'Hoàng Gia Bảo', 'bao.chef@vegan.vn', 'PRO', '15/10/2026 14:02', 'SUCCESS'],
-  ['TX-883812', 'POS-774811', 'Phạm Thanh Sơn', 'son.pham@gmail.com', 'PLUS', '14/10/2026 09:20', 'SUCCESS'],
-];
+  [
+    "TX-883921",
+    "POS-774921",
+    "Nguyễn Thị Lan",
+    "lan.nguyen@gmail.com",
+    "PRO",
+    "16/10/2026 15:30",
+    "SUCCESS",
+  ],
+
+  [
+    "TX-883915",
+    "POS-774912",
+    "Trần Minh Đức",
+    "duc.tran@gmail.com",
+    "PLUS",
+    "16/10/2026 12:15",
+    "SUCCESS",
+  ],
+
+  [
+    "TX-883902",
+    "POS-774899",
+    "Đặng Quốc Huy",
+    "huy.dang@yahoo.com",
+    "PRO",
+    "16/10/2026 10:45",
+    "PENDING",
+  ],
+
+  [
+    "TX-883890",
+    "POS-774872",
+    "Vũ Thị Mai",
+    "mai.vu@outlook.com",
+    "PLUS",
+    "15/10/2026 21:10",
+    "FAILED",
+  ],
+
+  [
+    "TX-883854",
+    "POS-774840",
+    "Hoàng Gia Bảo",
+    "bao.chef@vegan.vn",
+    "PRO",
+    "15/10/2026 14:02",
+    "SUCCESS",
+  ],
+
+  [
+    "TX-883812",
+    "POS-774811",
+    "Phạm Thanh Sơn",
+    "son.pham@gmail.com",
+    "PLUS",
+    "14/10/2026 09:20",
+    "SUCCESS",
+  ],
+]
 
 const INITIAL_TRANSACTIONS: MockTransaction[] = TRANSACTION_PREVIEW_ROWS.map(
   ([id, payOsCode, customerName, customerEmail, tier, createdAt, status]) => ({
     id,
+
     payOsCode,
+
     customerName,
+
     customerEmail,
+
     tier,
-    amountVnd: tier === 'PRO' ? 99000 : 49000,
-    paymentGateway: 'VietQR (payOS)',
+
+    amountVnd: tier === "PRO" ? 99000 : 49000,
+
+    paymentGateway: "VietQR (payOS)",
+
     createdAt,
+
     status,
   }),
-);
+)
 
 function AdminTransactionAudit() {
-  const [transactions] = useState<MockTransaction[]>(INITIAL_TRANSACTIONS);
-  const [search, setSearch] = useState('');
-  const [tierFilter, setTierFilter] = useState('ALL');
-  const [statusFilter, setStatusFilter] = useState('ALL');
-  const [selectedTx, setSelectedTx] = useState<MockTransaction | null>(null);
+  const [transactions] = useState<MockTransaction[]>(INITIAL_TRANSACTIONS)
+
+  const [search, setSearch] = useState("")
+
+  const [tierFilter, setTierFilter] = useState("ALL")
+
+  const [statusFilter, setStatusFilter] = useState("ALL")
+
+  const [selectedTx, setSelectedTx] = useState<MockTransaction | null>(null)
 
   const filteredTx = useMemo(() => {
     return transactions.filter((tx) => {
@@ -95,18 +172,25 @@ function AdminTransactionAudit() {
         tx.id.toLowerCase().includes(search.toLowerCase()) ||
         tx.payOsCode.toLowerCase().includes(search.toLowerCase()) ||
         tx.customerName.toLowerCase().includes(search.toLowerCase()) ||
-        tx.customerEmail.toLowerCase().includes(search.toLowerCase());
-      const matchTier = tierFilter === 'ALL' || tx.tier === tierFilter;
-      const matchStatus = statusFilter === 'ALL' || tx.status === statusFilter;
-      return matchSearch && matchTier && matchStatus;
-    });
-  }, [transactions, search, tierFilter, statusFilter]);
+        tx.customerEmail.toLowerCase().includes(search.toLowerCase())
+
+      const matchTier = tierFilter === "ALL" || tx.tier === tierFilter
+
+      const matchStatus = statusFilter === "ALL" || tx.status === statusFilter
+
+      return matchSearch && matchTier && matchStatus
+    })
+  }, [transactions, search, tierFilter, statusFilter])
 
   const totalSuccessRevenue = transactions
-    .filter((tx) => tx.status === 'SUCCESS')
-    .reduce((sum, tx) => sum + tx.amountVnd, 0);
 
-  const successCount = transactions.filter((tx) => tx.status === 'SUCCESS').length;
+    .filter((tx) => tx.status === "SUCCESS")
+
+    .reduce((sum, tx) => sum + tx.amountVnd, 0)
+
+  const successCount = transactions.filter(
+    (tx) => tx.status === "SUCCESS",
+  ).length
 
   return (
     <div className="space-y-6 py-2">
@@ -121,13 +205,16 @@ function AdminTransactionAudit() {
               <ArrowLeft className="h-3.5 w-3.5" /> Dashboard
             </Link>
             <span className="text-xs text-ink-muted">/</span>
-            <span className="text-xs font-semibold text-brand-700">Giao dịch hệ thống</span>
+            <span className="text-xs font-semibold text-brand-700">
+              Giao dịch hệ thống
+            </span>
           </div>
           <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
             Giám sát giao dịch gói AI hệ thống
           </h1>
           <p className="mt-1 text-xs text-ink-muted sm:text-sm">
-            Theo dõi nhật ký thanh toán các gói PLUS và PRO qua cổng VietQR PayOS trên toàn hệ thống.
+            Theo dõi nhật ký thanh toán các gói PLUS và PRO qua cổng VietQR
+            PayOS trên toàn hệ thống.
           </p>
         </div>
 
@@ -140,52 +227,80 @@ function AdminTransactionAudit() {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-ink-muted">Doanh thu ghi nhận</span>
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-leaf-100 text-leaf-700">
+        <Card className="group relative flex flex-col justify-between overflow-hidden border-brand-200/80 bg-paper p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-900/5">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-leaf-500 via-leaf-400 to-transparent" />
+          <div className="flex items-start justify-between gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
+              Doanh thu ghi nhận
+            </span>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-leaf-50 text-leaf-700 ring-1 ring-leaf-200/70 shadow-2xs transition-transform duration-200 group-hover:scale-105">
               <CreditCard className="h-4 w-4" />
             </span>
           </div>
-          <p className="mt-2 text-2xl font-extrabold text-leaf-700">
-            {totalSuccessRevenue.toLocaleString('vi-VN')} đ
+          <p className="mt-3 text-2xl sm:text-3xl font-black tracking-tight text-leaf-700">
+            <AnimatedNumber value={totalSuccessRevenue} suffix=" đ" />
           </p>
-          <span className="text-[11px] text-ink-muted">Từ giao dịch hoàn tất</span>
+          <p className="mt-4 border-t border-brand-100/70 pt-2.5 text-[11px] text-ink-muted">
+            Từ giao dịch hoàn tất
+          </p>
         </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-ink-muted">Giao dịch thành công</span>
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-100 text-brand-700">
+        <Card className="group relative flex flex-col justify-between overflow-hidden border-brand-200/80 bg-paper p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-900/5">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-500 via-brand-400 to-transparent" />
+          <div className="flex items-start justify-between gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
+              Giao dịch thành công
+            </span>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 ring-1 ring-brand-200/70 shadow-2xs transition-transform duration-200 group-hover:scale-105">
               <CheckCircle2 className="h-4 w-4" />
             </span>
           </div>
-          <p className="mt-2 text-2xl font-extrabold text-ink">{successCount}</p>
-          <span className="text-[11px] text-leaf-700 font-medium">Tỷ lệ thành công 85%</span>
+          <p className="mt-3 text-2xl sm:text-3xl font-black tracking-tight text-ink">
+            <AnimatedNumber value={successCount} />
+          </p>
+          <p className="mt-4 border-t border-brand-100/70 pt-2.5 text-[11px] font-medium text-leaf-700">
+            Tỷ lệ thành công 85%
+          </p>
         </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-ink-muted">Đang chờ quét mã</span>
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-800">
+        <Card className="group relative flex flex-col justify-between overflow-hidden border-brand-200/80 bg-paper p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-900/5">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-500 via-amber-400 to-transparent" />
+          <div className="flex items-start justify-between gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
+              Đang chờ quét mã
+            </span>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700 ring-1 ring-amber-200/70 shadow-2xs transition-transform duration-200 group-hover:scale-105">
               <Clock className="h-4 w-4" />
             </span>
           </div>
-          <p className="mt-2 text-2xl font-extrabold text-amber-700">
-            {transactions.filter((tx) => tx.status === 'PENDING').length}
+          <p className="mt-3 text-2xl sm:text-3xl font-black tracking-tight text-amber-700">
+            <AnimatedNumber
+              value={
+                transactions.filter((tx) => tx.status === "PENDING").length
+              }
+            />
           </p>
-          <span className="text-[11px] text-ink-muted">Phiên thanh toán mở</span>
+          <p className="mt-4 border-t border-brand-100/70 pt-2.5 text-[11px] text-ink-muted">
+            Phiên thanh toán mở
+          </p>
         </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-ink-muted">Cổng thanh toán</span>
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-100 text-brand-700">
+        <Card className="group relative flex flex-col justify-between overflow-hidden border-brand-200/80 bg-paper p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-900/5">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-500 via-brand-400 to-transparent" />
+          <div className="flex items-start justify-between gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
+              Cổng thanh toán
+            </span>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-700 ring-1 ring-sky-200/70 shadow-2xs transition-transform duration-200 group-hover:scale-105">
               <CreditCard className="h-4 w-4" />
             </span>
           </div>
-          <p className="mt-2 text-lg font-extrabold text-brand-600">VietQR PayOS</p>
-          <span className="text-[11px] text-ink-muted">Hoạt động bình thường</span>
+          <p className="mt-3 text-xl sm:text-2xl font-black tracking-tight text-brand-600">
+            VietQR PayOS
+          </p>
+          <p className="mt-4 border-t border-brand-100/70 pt-2.5 text-[11px] text-ink-muted">
+            Hoạt động bình thường
+          </p>
         </Card>
       </div>
 
@@ -246,36 +361,46 @@ function AdminTransactionAudit() {
             <tbody className="divide-y divide-brand-100/60 text-ink">
               {filteredTx.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-ink-muted">
+                  <td
+                    colSpan={7}
+                    className="px-4 py-8 text-center text-ink-muted"
+                  >
                     Không tìm thấy giao dịch nào phù hợp với bộ lọc.
                   </td>
                 </tr>
               ) : (
                 filteredTx.map((tx) => (
-                  <tr key={tx.id} className="transition-colors hover:bg-brand-50/30">
+                  <tr
+                    key={tx.id}
+                    className="transition-colors hover:bg-brand-50/30"
+                  >
                     <td className="px-4 py-3">
                       <p className="font-mono font-bold text-ink">{tx.id}</p>
-                      <p className="font-mono text-[11px] text-ink-muted">{tx.payOsCode}</p>
+                      <p className="font-mono text-[11px] text-ink-muted">
+                        {tx.payOsCode}
+                      </p>
                     </td>
                     <td className="px-4 py-3">
                       <p className="font-bold text-ink">{tx.customerName}</p>
-                      <p className="text-[11px] text-ink-muted">{tx.customerEmail}</p>
+                      <p className="text-[11px] text-ink-muted">
+                        {tx.customerEmail}
+                      </p>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge tone={tx.tier === 'PRO' ? 'brand' : 'neutral'}>
+                      <Badge tone={tx.tier === "PRO" ? "brand" : "neutral"}>
                         Gói {tx.tier}
                       </Badge>
                     </td>
                     <td className="px-4 py-3 font-bold text-ink">
-                      {tx.amountVnd.toLocaleString('vi-VN')} đ
+                      {tx.amountVnd.toLocaleString("vi-VN")} đ
                     </td>
                     <td className="px-4 py-3 text-ink-muted">{tx.createdAt}</td>
                     <td className="px-4 py-3">
-                      {tx.status === 'SUCCESS' ? (
+                      {tx.status === "SUCCESS" ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-leaf-100 px-2.5 py-0.5 text-[11px] font-bold text-leaf-800">
                           Thành công
                         </span>
-                      ) : tx.status === 'PENDING' ? (
+                      ) : tx.status === "PENDING" ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
                           Chờ thanh toán
                         </span>
@@ -286,7 +411,11 @@ function AdminTransactionAudit() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Button size="sm" variant="outline" onClick={() => setSelectedTx(tx)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setSelectedTx(tx)}
+                      >
                         Xem hóa đơn
                       </Button>
                     </td>
@@ -304,8 +433,12 @@ function AdminTransactionAudit() {
           <Card className="w-full max-w-md p-6 shadow-xl animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between border-b border-brand-100 pb-3">
               <div>
-                <span className="font-mono text-xs font-bold text-brand-600">Hóa đơn điện tử</span>
-                <h3 className="text-base font-bold text-ink">Chi tiết giao dịch {selectedTx.id}</h3>
+                <span className="font-mono text-xs font-bold text-brand-600">
+                  Hóa đơn điện tử
+                </span>
+                <h3 className="text-base font-bold text-ink">
+                  Chi tiết giao dịch {selectedTx.id}
+                </h3>
               </div>
               <button
                 type="button"
@@ -319,29 +452,39 @@ function AdminTransactionAudit() {
             <div className="mt-4 space-y-3 text-xs">
               <div className="flex justify-between py-1.5 border-b border-brand-100/60">
                 <span className="text-ink-muted">Khách hàng:</span>
-                <span className="font-bold text-ink">{selectedTx.customerName}</span>
+                <span className="font-bold text-ink">
+                  {selectedTx.customerName}
+                </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-brand-100/60">
                 <span className="text-ink-muted">Email:</span>
-                <span className="font-mono text-ink">{selectedTx.customerEmail}</span>
+                <span className="font-mono text-ink">
+                  {selectedTx.customerEmail}
+                </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-brand-100/60">
                 <span className="text-ink-muted">Gói dịch vụ AI:</span>
-                <span className="font-bold text-brand-600">Gói {selectedTx.tier}</span>
+                <span className="font-bold text-brand-600">
+                  Gói {selectedTx.tier}
+                </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-brand-100/60">
                 <span className="text-ink-muted">Số tiền thanh toán:</span>
                 <span className="text-sm font-extrabold text-ink">
-                  {selectedTx.amountVnd.toLocaleString('vi-VN')} đ
+                  {selectedTx.amountVnd.toLocaleString("vi-VN")} đ
                 </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-brand-100/60">
                 <span className="text-ink-muted">Cổng thanh toán:</span>
-                <span className="font-medium text-ink">{selectedTx.paymentGateway}</span>
+                <span className="font-medium text-ink">
+                  {selectedTx.paymentGateway}
+                </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-brand-100/60">
                 <span className="text-ink-muted">Mã chuẩn chi PayOS:</span>
-                <span className="font-mono font-bold text-ink">{selectedTx.payOsCode}</span>
+                <span className="font-mono font-bold text-ink">
+                  {selectedTx.payOsCode}
+                </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-brand-100/60">
                 <span className="text-ink-muted">Thời gian:</span>
@@ -350,7 +493,11 @@ function AdminTransactionAudit() {
               <div className="flex justify-between py-1.5">
                 <span className="text-ink-muted">Trạng thái:</span>
                 <span className="font-bold text-leaf-700">
-                  {selectedTx.status === 'SUCCESS' ? 'Hoàn tất giao dịch' : selectedTx.status === 'PENDING' ? 'Chờ thanh toán' : 'Giao dịch hết hạn'}
+                  {selectedTx.status === "SUCCESS"
+                    ? "Hoàn tất giao dịch"
+                    : selectedTx.status === "PENDING"
+                      ? "Chờ thanh toán"
+                      : "Giao dịch hết hạn"}
                 </span>
               </div>
             </div>
@@ -364,5 +511,5 @@ function AdminTransactionAudit() {
         </div>
       )}
     </div>
-  );
+  )
 }

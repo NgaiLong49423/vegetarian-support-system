@@ -21,7 +21,7 @@ import {
   Users,
 } from "lucide-react"
 
-import { Card, Button, Badge } from "../components/ui"
+import { Card, Button, Badge, AnimatedNumber } from "../components/ui"
 
 import { useAuth } from "../components/AuthContext"
 
@@ -180,38 +180,46 @@ export function AdminDashboard() {
       {/* 2. Live KPI Cards (Backed by real API values) */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* KPI 1: Pending Expert Applications */}
-        <Card className="flex flex-col justify-between p-5 transition-shadow hover:shadow-md">
+        <Card className="group relative flex flex-col justify-between overflow-hidden border-brand-200/80 bg-paper p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-900/5">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-500 via-brand-400 to-transparent" />
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
                 Đơn Chuyên gia chờ duyệt
               </p>
-              <p className="mt-2 text-3xl font-black text-ink">
+              <p className="mt-2 text-3xl font-black text-ink sm:text-4xl">
                 {loading ? (
                   <LoaderCircle className="h-8 w-8 animate-spin text-brand-600" />
                 ) : (
-                  pendingCount
+                  <AnimatedNumber value={pendingCount} />
                 )}
               </p>
             </div>
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-100 text-brand-600">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-600 shadow-xs ring-1 ring-brand-200/70 transition-transform duration-200 group-hover:scale-105">
               <Award className="h-6 w-6" />
             </span>
           </div>
-          <div className="mt-4 flex items-center justify-between border-t border-brand-100/70 pt-3">
+          <div className="mt-5 flex items-center justify-between border-t border-brand-100/70 pt-3">
             <span
-              className={`inline-flex items-center gap-1 text-xs font-semibold ${
-                pendingCount > 0 ? "text-amber-700" : "text-leaf-700"
-              }`}
+              className={
+                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold " +
+                (pendingCount > 0
+                  ? "border border-amber-200/80 bg-amber-50 text-amber-800"
+                  : "border border-leaf-200/80 bg-leaf-50 text-leaf-800")
+              }
             >
               <Clock className="h-3.5 w-3.5" />{" "}
-              {pendingCount > 0
-                ? `${pendingCount} đơn cần xử lý`
-                : "Đã xử lý xong"}
+              {pendingCount > 0 ? (
+                <>
+                  <AnimatedNumber value={pendingCount} /> đơn cần xử lý
+                </>
+              ) : (
+                "Đã xử lý xong"
+              )}
             </span>
             <Link
               to="/admin/xet-duyet-chuyen-gia"
-              className="inline-flex items-center gap-1 text-xs font-bold text-brand-600 hover:text-brand-700"
+              className="inline-flex items-center gap-1 text-xs font-bold text-brand-600 transition-colors hover:text-brand-700 hover:underline"
             >
               Xem hàng đợi <ArrowRight className="h-3 w-3" />
             </Link>
@@ -219,31 +227,32 @@ export function AdminDashboard() {
         </Card>
 
         {/* KPI 2: Total Ingredients */}
-        <Card className="flex flex-col justify-between p-5 transition-shadow hover:shadow-md">
+        <Card className="group relative flex flex-col justify-between overflow-hidden border-brand-200/80 bg-paper p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-900/5">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-leaf-500 via-leaf-400 to-transparent" />
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
                 Nguyên liệu chuẩn hóa
               </p>
-              <p className="mt-2 text-3xl font-black text-ink">
+              <p className="mt-2 text-3xl font-black text-ink sm:text-4xl">
                 {loading ? (
                   <LoaderCircle className="h-8 w-8 animate-spin text-brand-600" />
                 ) : (
-                  ingredientTotal
+                  <AnimatedNumber value={ingredientTotal} />
                 )}
               </p>
             </div>
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-leaf-100 text-leaf-700">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-leaf-50 text-leaf-700 shadow-xs ring-1 ring-leaf-200/70 transition-transform duration-200 group-hover:scale-105">
               <Boxes className="h-6 w-6" />
             </span>
           </div>
-          <div className="mt-4 flex items-center justify-between border-t border-brand-100/70 pt-3">
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-leaf-700">
+          <div className="mt-5 flex items-center justify-between border-t border-brand-100/70 pt-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-leaf-200/80 bg-leaf-50 px-2.5 py-0.5 text-xs font-semibold text-leaf-800">
               <CheckCircle2 className="h-3.5 w-3.5" /> Chuẩn 9 chỉ tiêu vi chất
             </span>
             <Link
               to="/quan-tri/danh-muc"
-              className="inline-flex items-center gap-1 text-xs font-bold text-brand-600 hover:text-brand-700"
+              className="inline-flex items-center gap-1 text-xs font-bold text-brand-600 transition-colors hover:text-brand-700 hover:underline"
             >
               Quản lý kho <ArrowRight className="h-3 w-3" />
             </Link>
@@ -251,53 +260,56 @@ export function AdminDashboard() {
         </Card>
 
         {/* KPI 3: Food Groups */}
-        <Card className="flex flex-col justify-between p-5 transition-shadow hover:shadow-md">
+        <Card className="group relative flex flex-col justify-between overflow-hidden border-brand-200/80 bg-paper p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-900/5">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-500 via-amber-400 to-transparent" />
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
                 Nhóm thực phẩm
               </p>
-              <p className="mt-2 text-3xl font-black text-ink">
+              <p className="mt-2 text-3xl font-black text-ink sm:text-4xl">
                 {loading ? (
                   <LoaderCircle className="h-8 w-8 animate-spin text-brand-600" />
                 ) : (
-                  (catalogOptions?.groups?.length ?? 0)
+                  <AnimatedNumber value={catalogOptions?.groups?.length ?? 0} />
                 )}
               </p>
             </div>
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-raised text-ink-soft">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-700 shadow-xs ring-1 ring-amber-200/70 transition-transform duration-200 group-hover:scale-105">
               <Layers className="h-6 w-6" />
             </span>
           </div>
-          <div className="mt-4 flex items-center justify-between border-t border-brand-100/70 pt-3">
+          <div className="mt-5 flex items-center justify-between border-t border-brand-100/70 pt-3">
             <span className="text-xs text-ink-muted">
-              {catalogOptions?.sources?.length ?? 0} nguồn kiểm định
+              <AnimatedNumber value={catalogOptions?.sources?.length ?? 0} />{" "}
+              nguồn kiểm định
             </span>
-            <span className="text-xs font-semibold text-ink-soft">
+            <span className="rounded-full border border-brand-200/60 bg-cream-soft px-2.5 py-0.5 text-xs font-semibold text-ink-soft">
               Danh mục chuẩn
             </span>
           </div>
         </Card>
 
         {/* KPI 4: Security & Role status */}
-        <Card className="flex flex-col justify-between p-5 transition-shadow hover:shadow-md">
+        <Card className="group relative flex flex-col justify-between overflow-hidden border-brand-200/80 bg-paper p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-900/5">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-leaf-600 via-brand-500 to-transparent" />
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
                 Phiên quản trị viên
               </p>
-              <p className="mt-2 truncate text-base font-extrabold text-ink">
+              <p className="mt-2 truncate text-base font-extrabold text-ink sm:text-lg">
                 {account?.displayName || "Administrator"}
               </p>
               <p className="truncate text-xs text-ink-muted">
                 {account?.email || "admin@mamxanh.local"}
               </p>
             </div>
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-leaf-100 text-leaf-800">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-leaf-50 text-leaf-800 shadow-xs ring-1 ring-leaf-200/70 transition-transform duration-200 group-hover:scale-105">
               <ShieldCheck className="h-6 w-6" />
             </span>
           </div>
-          <div className="mt-4 flex items-center justify-between border-t border-brand-100/70 pt-3">
+          <div className="mt-5 flex items-center justify-between border-t border-brand-100/70 pt-3">
             <Badge tone="leaf">Quyền: ADMIN</Badge>
             <span className="text-xs font-medium text-leaf-700">
               Xác thực hợp lệ
@@ -328,7 +340,7 @@ export function AdminDashboard() {
               to="/admin/xet-duyet-chuyen-gia"
               className="text-xs font-bold text-brand-600 hover:text-brand-700"
             >
-              Xem tất cả ({pendingCount}) →
+              Xem tất cả (<AnimatedNumber value={pendingCount} />) →
             </Link>
           </div>
 
