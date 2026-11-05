@@ -233,13 +233,14 @@ test('shows and retries account history without losing the selected account', as
   const row = page.getByRole('row').filter({ hasText: 'Nguyễn An' });
   await row.getByRole('button', { name: 'Xem chi tiết và lịch sử' }).click();
 
-  await expect(page.getByRole('dialog')).toBeVisible();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
   await expect(page.getByRole('alert')).toContainText('Chưa tải được lịch sử tài khoản.');
   await dialog.getByRole('button', { name: 'Thử lại' }).click();
   await expect(dialog.getByText('+100 AI Credit')).toBeVisible();
   await expect(dialog.getByText('Mã tài khoản')).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Sau' })).toBeEnabled();
   await dialog.getByRole('button', { name: 'Sau' }).click();
-  await dialog.getByRole('button', { name: 'Đóng' }).click();
+  await dialog.getByLabel('Đóng').click();
   await expect(dialog).toHaveCount(0);
 });
