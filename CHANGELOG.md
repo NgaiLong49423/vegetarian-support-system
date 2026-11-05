@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-11-05 — Email Moderation Outcomes to Reporters and Authors (Issue #51)
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `b49ab125`.
 
 **Scope:** Complete FR-49 (UC-49.3) by emailing the result of an Administrator's report decision to the reporter and to the author who is warned, has the post hidden or has the account locked.
 
