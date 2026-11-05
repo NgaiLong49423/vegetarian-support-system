@@ -1,8 +1,8 @@
 > **Document:** Non-Functional Requirements Specification
 > **File:** `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.1.5
+> **Version:** v2.6.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-21
+> **Last Updated:** 2026-11-05
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`
 
@@ -268,8 +268,11 @@ This document contains only requirements included in Requirements / Implementati
 - **Mô tả yêu cầu:** Xử lý lỗi linh hoạt khi dịch vụ Google Gemini bên ngoài gặp sự cố mạng, timeout hoặc trả về lỗi HTTP 429/500.
 - **Nghiệp vụ liên quan:** `FR-02`, `FR-10`, `FR-51`, `BR-04`.
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
-  - *Threshold:* Thiết lập timeout tối đa 10 giây; khi vượt ngưỡng hoặc lỗi provider, hệ thống trả về thông báo lỗi thân thiện, cho phép người dùng thử lại và ghi log lỗi kỹ thuật theo quy tắc `BR-04`; không làm gián đoạn các tính năng phi AI của ứng dụng.
-- **Phương pháp kiểm chứng (Verification Method):** Kiểm thử mô phỏng mock lỗi timeout hoặc lỗi 429 từ Gemini API và kiểm tra hệ thống trả về thông báo lỗi chuẩn xác, ghi vết error log và cho phép người dùng thao tác bình thường.
+  - *Operational timeout:* Gemini answer-generation model call dùng 20 giây; classifier tối đa 10 giây; query embedding giữ giới hạn vận hành hiện hành 10 giây. Các lần gọi riêng không được vượt trần tuyệt đối 30 giây/call, bao gồm retry trong cùng call. Mỗi lần xử lý hoặc resume của AI Assistant có operational deadline 45 giây và hard cap tuyệt đối 60 giây; khoảng chờ xác nhận giữa các request không tính vào lượt đang chạy.
+  - Deadline toàn lượt bắt đầu khi Backend nhận request và dùng đồng hồ monotonic. Mỗi model call bị giới hạn bởi `min(operational timeout, thời gian còn lại của lượt)`. HTTP transport, ADK, Backend và SSE không được gia hạn deadline; token streaming liên tục không được kéo dài deadline. Hết deadline hoặc Stop/disconnect phải ngăn các bước Agent tiếp theo trong khả năng SDK hỗ trợ; thao tác đã commit giữ nguyên, không chạy lại write đã hoàn tất.
+  - Query embedding không tự retry; khi lỗi hoặc timeout, retrieval dùng keyword với trạng thái degraded rõ ràng, không tự đổi model/provider. Khi vượt ngưỡng hoặc lỗi provider, hệ thống trả về thông báo lỗi thân thiện, cho phép người dùng thử lại theo quyền và xác nhận hiện hành, ghi log lỗi kỹ thuật theo `BR-04` và không làm gián đoạn các tính năng phi AI.
+- **Căn cứ cấu hình:** Trước đây generation bị dừng tại 10 giây dù classifier hoàn tất trong khoảng 2,5 giây; Gemini thật trên `gemini-3.8-flash` sau đó ghi nhận ba model call 3,094 ms, 5,139 ms và 2,427 ms. Timeout vận hành 20 giây tạo khoảng dự phòng so với lần thành công chậm nhất, đồng thời vượt giới hạn cũ gây timeout; 30/60 giây là trần an toàn, không phải timeout mặc định hoặc mục tiêu NFR-03. Mẫu live nhỏ không chứng minh P90 hay tải cao.
+- **Phương pháp kiểm chứng (Verification Method):** Fake-model tests cho deadline, timeout, partial/final stream, lỗi giữa stream, Stop/disconnect và token liên tục; live Gemini tuần tự để đo classifier/RAG/model/TTFT/total/token usage; kiểm tra response terminal qua Playwright trên Frontend, Backend và SQL Server thật. Báo cáo phải phân biệt telemetry token/cost estimate với billing provider thực tế.
 
 ---
 
@@ -316,15 +319,15 @@ This document contains only requirements included in Requirements / Implementati
 ---
 
 <a id="nfr-22"></a>
-#### NFR-22 — Giới hạn lưu trữ Prompt và Lịch sử trò chuyện AI
+#### NFR-22 — Bảo vệ dữ liệu hội thoại AI và lưu trữ usage
 
 - **Mã yêu cầu:** NFR-22
 - **Nhóm chất lượng:** Privacy
 - **Mô tả yêu cầu:** Bảo vệ sự riêng tư của các cuộc trò chuyện tư vấn dinh dưỡng giữa người dùng và AI.
 - **Nghiệp vụ liên quan:** `FR-02`, `FR-51` (Chatbot AI).
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
-  - *Threshold:* MVP không lưu lịch sử hội thoại AI theo account; telemetry không giữ raw prompt content và được xóa sau 90 ngày. Người dùng được thông báo câu hỏi sẽ được chuyển tới Google Gemini API để xử lý.
-- **Phương pháp kiểm chứng (Verification Method):** Kiểm tra schema, log/telemetry configuration và retention job để xác nhận không có raw prompt, không có account chat history và dữ liệu telemetry quá 90 ngày được loại bỏ.
+  - *Threshold:* MVP giữ transcript và session hội thoại tạm thời trong cùng tab để tiếp tục tác vụ qua điều hướng, đóng/mở khung chat và tải lại trang; thời hạn không hoạt động được cấu hình, mặc định 30 phút. Người dùng có thể chủ động xóa transcript cùng consent/action đang chờ bằng cách bắt đầu phiên mới; thao tác này không hoàn tác thay đổi nghiệp vụ đã hoàn tất. Không lưu lịch sử hội thoại dài hạn theo tài khoản hoặc đồng bộ sang thiết bị khác. Khi consent bị thu hồi, các lần gửi dữ liệu thuộc consent đó phải dừng; session/context được dọn theo chính sách hết hạn hoặc khi người dùng xóa. Cache query vector cho knowledge pilot chỉ nằm trong RAM của session tối đa 30 phút; không lưu query thật hoặc lịch sử hội thoại vào index, build/startup không tự gọi embedding API. Telemetry không giữ raw prompt content và được xóa sau 90 ngày. Người dùng được thông báo loại dữ liệu, mục đích và bên nhận trước khi đồng ý gửi dữ liệu cá nhân tới Google Gemini API. Usage/credit ledger lưu dữ liệu kế toán tối thiểu riêng với telemetry; không lưu nội dung prompt.
+- **Phương pháp kiểm chứng (Verification Method):** Kiểm tra schema, log/telemetry configuration và retention job để xác nhận không có raw prompt, session/context tuân thời hạn đã cấu hình; không lưu raw prompt trong telemetry; ledger không chứa nội dung hội thoại; telemetry quá 90 ngày được loại bỏ.
 
 ---
 

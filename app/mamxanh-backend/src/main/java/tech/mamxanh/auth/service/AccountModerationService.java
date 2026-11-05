@@ -1,13 +1,14 @@
 package tech.mamxanh.auth.service;
 
-import java.time.Clock;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.mamxanh.auth.repository.UserRepository;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
+
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 /**
  * Administrative account locks stay owned by auth and are exposed to moderation as a service.

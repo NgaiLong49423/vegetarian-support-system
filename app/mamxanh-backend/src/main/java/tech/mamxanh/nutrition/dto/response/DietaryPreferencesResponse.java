@@ -1,11 +1,11 @@
 package tech.mamxanh.nutrition.dto.response;
 
-import java.util.List;
-
 import tech.mamxanh.nutrition.entity.CookingDifficulty;
 import tech.mamxanh.nutrition.entity.OnboardingStatus;
 import tech.mamxanh.nutrition.entity.VegetarianType;
 import tech.mamxanh.nutrition.service.DietaryRequirement;
+
+import java.util.List;
 
 /** FR-31 private dietary-preference profile of the signed-in Member (never shown to others). */
 public record DietaryPreferencesResponse(

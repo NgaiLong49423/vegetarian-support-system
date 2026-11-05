@@ -7,6 +7,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import java.util.UUID;
+import java.util.List;
+import com.google.adk.models.BaseLlm;
+import com.google.adk.models.BaseLlmConnection;
+import com.google.adk.models.LlmRequest;
+import com.google.adk.models.LlmResponse;
+import com.google.genai.types.Content;
+import com.google.genai.types.GenerateContentResponseUsageMetadata;
+import com.google.genai.types.Part;
+import io.reactivex.rxjava3.core.Flowable;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -15,12 +24,32 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 import tech.mamxanh.AbstractIntegrationTest;
 import tech.mamxanh.integration.ai.AiClient;
+import tech.mamxanh.recipe.service.AdkAssistantEngine;
 
 /** Real application, SQL Server and published-context query; Gemini alone is controlled. */
 @Transactional
 class GuestAiChatIntegrationTest extends AbstractIntegrationTest {
     @Autowired JdbcTemplate jdbc;
     @MockitoBean AiClient ai;
+    @MockitoBean AdkAssistantEngine.LlmFactory llmFactory;
+
+    private final List<LlmRequest> modelRequests = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+    @org.junit.jupiter.api.BeforeEach
+    void configureModel() {
+        when(llmFactory.create(anyString())).thenAnswer(invocation -> new BaseLlm(invocation.getArgument(0)) {
+            @Override public Flowable<LlmResponse> generateContent(LlmRequest request, boolean stream) {
+                modelRequests.add(request);
+                return Flowable.just(LlmResponse.builder()
+                        .content(Content.fromParts(Part.fromText("Công thức ghi 10 phút.")))
+                        .usageMetadata(GenerateContentResponseUsageMetadata.builder()
+                                .promptTokenCount(1).candidatesTokenCount(1).totalTokenCount(2).build())
+                        .build());
+            }
+
+            @Override public BaseLlmConnection connect(LlmRequest request) { throw new UnsupportedOperationException(); }
+        });
+    }
 
     @Test
     void guestReadsOnlyCurrentPublicRecipeAndDoesNotCreateAnAccountOrChangeRecipeData() throws Exception {
@@ -36,13 +65,15 @@ class GuestAiChatIntegrationTest extends AbstractIntegrationTest {
         Long usersBefore = jdbc.queryForObject("SELECT COUNT_BIG(*) FROM [USER]", Long.class);
         when(ai.classifyChatScope(anyString(), anyString())).thenReturn(
                 new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 1, 1, 2));
-        when(ai.answerChat(anyString(), anyString())).thenReturn(new AiClient.ChatResult("Công thức ghi 10 phút.", 1, 2, 3));
-        String body = "{\"contextType\":\"RECIPE\",\"recipeId\":" + recipeId + ",\"question\":\"Nấu bao lâu?\"}";
+        when(ai.classifyChatScope(anyString(), anyString(), anyString())).thenReturn(
+                new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 1, 1, 2));
         String id = UUID.randomUUID().toString();
+        String body = "{\"contextType\":\"RECIPE\",\"recipeId\":" + recipeId + ",\"question\":\"Nấu bao lâu?\"}";
         mockMvc.perform(post("/api/v1/recipes/ai/chat").header("X-Guest-Chat-Id", id)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.answer").value("Công thức ghi 10 phút."));
-        verify(ai).answerChat(anyString(), contains("Nấu rau trong 10 phút."));
+        assertThat(modelRequests).isNotEmpty();
+        assertThat(modelRequests.toString()).contains("Nấu rau trong 10 phút.");
         assertThat(jdbc.queryForObject("SELECT COUNT_BIG(*) FROM [USER]", Long.class)).isEqualTo(usersBefore);
         assertThat(jdbc.queryForObject("SELECT instructions FROM [RECIPE_POST] WHERE recipe_id=?", String.class, recipeId))
                 .isEqualTo("Nấu rau trong 10 phút.");
@@ -50,6 +81,7 @@ class GuestAiChatIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/recipes/ai/chat").header("X-Guest-Chat-Id", id)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isNotFound());
-        verify(ai, times(1)).answerChat(anyString(), anyString());
+        verify(ai, times(2)).classifyChatScope(anyString(), anyString(), anyString());
+        verify(llmFactory, times(1)).create(anyString());
     }
 }

@@ -1,19 +1,10 @@
 package tech.mamxanh.auth.service;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.time.Clock;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
-
 import tech.mamxanh.auth.dto.request.UpdateProfileRequest;
 import tech.mamxanh.auth.dto.response.MemberProfileResponse;
 import tech.mamxanh.auth.entity.AccountStatus;
@@ -23,6 +14,14 @@ import tech.mamxanh.auth.repository.MemberProfileRepository;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.integration.storage.StorageClient;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 
 /**
  * FR-23 member profile: UC-23.2 public profile (Q55, Q56) and UC-23.3 own profile settings with

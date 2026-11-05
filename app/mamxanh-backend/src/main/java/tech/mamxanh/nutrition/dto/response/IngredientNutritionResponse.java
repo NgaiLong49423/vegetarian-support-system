@@ -1,7 +1,8 @@
 package tech.mamxanh.nutrition.dto.response;
 
-import java.math.BigDecimal;
 import io.swagger.v3.oas.annotations.media.Schema;
+
+import java.math.BigDecimal;
 
 public record IngredientNutritionResponse(
         @Schema(nullable = true, description = "Energy in kcal per 100 g; null means unknown.") BigDecimal energyKcalPer100g,

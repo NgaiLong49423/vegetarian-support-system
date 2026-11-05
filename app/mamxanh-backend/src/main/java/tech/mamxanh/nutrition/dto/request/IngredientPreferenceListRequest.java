@@ -1,9 +1,9 @@
 package tech.mamxanh.nutrition.dto.request;
 
-import java.util.List;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+
+import java.util.List;
 
 /**
  * One FR-31 list (ingredients to avoid, or disliked dishes/ingredients): either names, or the

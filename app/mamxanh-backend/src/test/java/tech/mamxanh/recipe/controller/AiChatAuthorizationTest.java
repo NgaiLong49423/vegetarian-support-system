@@ -46,17 +46,17 @@ class AiChatAuthorizationTest {
         verifyNoInteractions(service);
     }
 
-    @Test void guestsCanChatThreeTimesThenReceive429BeforeTheChatService() throws Exception {
+    @Test void guestsCanChatTenTimesThenReceive429BeforeTheChatService() throws Exception {
         when(service.answer(any())).thenReturn(new AiChatResponse(ContextType.GENERAL, null, "Nấu nhỏ lửa.", List.of()));
         String body = MEMBER_BODY.replace("\"history\":[]", "\"history\":[],\"anonymousViewerId\":\"" + UUID.randomUUID() + "\"");
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 10; i++) {
             mvc.perform(post(PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.answer").value("Nấu nhỏ lửa."));
         }
         mvc.perform(post(PATH).header("X-Forwarded-For", "1.2.3.4").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isTooManyRequests()).andExpect(header().exists("Retry-After"))
                 .andExpect(jsonPath("$.code").value("AI_GUEST_RATE_LIMITED"));
-        verify(service, times(3)).answer(any());
+        verify(service, times(10)).answer(any());
     }
 
     @Test void authenticatedMembersAreNotSubjectToTheGuestCounter() throws Exception {
@@ -66,6 +66,14 @@ class AiChatAuthorizationTest {
                     .andExpect(status().isOk());
         }
         verify(service, times(12)).answer(any());
+    }
+
+    @Test void guestCanDeleteOnlyTheTemporarySessionIdentifiedByItsViewerCookie() throws Exception {
+        UUID sessionId = UUID.randomUUID();
+        String viewerId = UUID.randomUUID().toString();
+        mvc.perform(delete(PATH + "/sessions/" + sessionId).param("anonymousViewerId", viewerId))
+                .andExpect(status().isNoContent());
+        verify(service).deleteSession(sessionId, viewerId);
     }
 
     @Test void invalidBearerCannotFallBackToGuestEvenWithAValidCookie() throws Exception {

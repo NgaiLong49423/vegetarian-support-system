@@ -1,11 +1,11 @@
 package tech.mamxanh.auth.entity;
 
-import java.time.LocalDateTime;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+
+import java.time.LocalDateTime;
 
 /**
  * Directed follow relation of {@code USER_FOLLOW} (FR-59, BR-75): {@code follower} follows

@@ -7,26 +7,90 @@ import {
   type KeyboardEvent,
   type PointerEvent,
 } from "react"
-import { Link } from "react-router-dom"
+
+import { Link, useLocation, useNavigate } from "react-router-dom"
+
 import {
   Bot,
+  Check,
+  ChevronDown,
   Clock3,
+  Gauge,
   LoaderCircle,
+  MessageSquarePlus,
   Send,
+  Settings2,
   ShieldAlert,
+  Sparkles,
   UserRound,
   X,
 } from "lucide-react"
 import { useAuth } from "../components/AuthContext"
-import { useAiChat } from "../components/AiChatContext"
-import { recipesApi, type AiChatTurn } from "../api/recipes"
-import { asApiError } from "../lib/apiClient"
-import { anonymousRecipeViewer } from "../lib/recipeViewer"
+import { AiMessageContent } from "../components/AiMessageContent"
+import { AiHumanInputCard } from "../components/AiHumanInputCard"
 
-interface ChatMessage extends AiChatTurn {
-  id: number
-  recommendations?: Awaited<ReturnType<typeof recipesApi.chat>>["recommendations"]
-  workflowUrl?: string | null
+import { useAiChat } from "../components/AiChatContext"
+
+import { recipesApi, type AiChatRequest, type AiExecutionMode } from "../api/recipes"
+import { subscriptionApi, type AiChatSettingsResponse } from "../api/subscription"
+
+import { ApiError, asApiError } from "../lib/apiClient"
+import { anonymousRecipeViewer } from "../lib/recipeViewer"
+import {
+  clearAiChatSession,
+  pendingAiChatRequest,
+  readAiChatSession,
+  writeAiChatSession,
+  type PersistedAiChatMessage,
+} from "../lib/aiChatSession"
+
+type ChatMessage = PersistedAiChatMessage
+
+const AI_WORKFLOW_ROUTES = [
+  "/trang-chu", "/kham-pha", "/ke-hoach", "/ke-hoach?view=for-you", "/di-cho",
+  "/goi-ai", "/nap-ai-credit", "/ho-so", "/ho-so/so-thich-an-uong",
+  "/ho-so/dinh-duong", "/dang-cong-thuc", "/chuyen-gia", "/cong-dong", "/giao-dich",
+] as const
+
+function trustedWorkflowUrl(value: string | null | undefined): string | null {
+  if (!value) return null
+  if (AI_WORKFLOW_ROUTES.includes(value as (typeof AI_WORKFLOW_ROUTES)[number])) return value
+
+  const recipeDetailMatch = /^\/cong-thuc\/id\/([1-9]\d*)$/.exec(value)
+  if (!recipeDetailMatch || !Number.isSafeInteger(Number(recipeDetailMatch[1]))) return null
+  return value
+}
+
+function workflowAccessNotice(url: string, isAuthenticated: boolean, role?: string): string | null {
+  if (!isAuthenticated && ["/di-cho", "/ho-so", "/ho-so/so-thich-an-uong", "/ho-so/dinh-duong", "/giao-dich", "/dang-cong-thuc", "/nap-ai-credit"].includes(url))
+    return "Bạn cần đăng nhập để truy cập trang này."
+  if (url === "/dang-cong-thuc" && role !== "EXPERT") return "Trang đăng công thức chỉ dành cho tài khoản Chuyên gia."
+  if (url === "/nap-ai-credit" && !isAuthenticated) return "Bạn cần đăng nhập để xem và nạp AI Credit."
+  if (url === "/nap-ai-credit" && role !== "CUSTOMER" && role !== "EXPERT")
+    return "Tính năng nạp AI Credit dành cho tài khoản Khách hàng và Chuyên gia."
+  return null
+}
+
+function workflowPageName(url: string): string {
+  const names: Record<string, string> = {
+    "/trang-chu": "Trang chủ", "/kham-pha": "Khám phá", "/ke-hoach": "Lịch ăn",
+    "/di-cho": "Danh sách mua sắm", "/goi-ai": "Gói AI", "/nap-ai-credit": "Nạp AI Credit",
+    "/ho-so": "Hồ sơ", "/ho-so/so-thich-an-uong": "Sở thích ăn uống",
+    "/ho-so/dinh-duong": "Hồ sơ dinh dưỡng", "/dang-cong-thuc": "Đăng công thức",
+    "/chuyen-gia": "Chuyên gia", "/cong-dong": "Cộng đồng", "/giao-dich": "Lịch sử giao dịch",
+  }
+  return names[url] ?? (url.startsWith("/cong-thuc/id/") ? "Chi tiết công thức" : "trang yêu cầu")
+}
+
+function requestsNavigation(question: string): boolean {
+  return /(mở|chuyển|đi đến|đưa tôi đến|đưa bạn đến|navigate|go to)/i.test(question)
+    && /(trang|màn hình|công thức|lịch ăn|danh sách|hồ sơ|khám phá|home|explore)/i.test(question)
+}
+
+function safeUnverifiedAnswer(answer: string): string {
+  return /đã mở trang|đã chuyển bạn|mình đã chuyển|đang mở trang|đã đưa bạn đến|đã điều hướng bạn/i.test(answer)
+    ? "Mình chưa xác nhận được việc mở trang. Hãy yêu cầu mở một trang cụ thể để hệ thống kiểm tra và điều hướng."
+    : answer
 }
 
 function formatResetDateTime(timestamp: number): string {
@@ -40,16 +104,51 @@ function formatResetDateTime(timestamp: number): string {
   return `${hours}:${minutes} ngày ${day}/${month}/${year}`
 }
 
+function chatGuestViewer(): string {
+  try {
+    return anonymousRecipeViewer()
+  } catch {
+    throw new ApiError("Vui lòng cho phép cookie của trang để dùng Chatbot.", 400, "GUEST_CHAT_COOKIE_REQUIRED")
+  }
+}
+
 export function AiChatPage() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const locationRef = useRef({ pathname: location.pathname, search: location.search })
+  locationRef.current = { pathname: location.pathname, search: location.search }
   const { account, isAuthenticated } = useAuth()
-  const { isOpen, recipeId, recipeTitle, recipeArticle, closeChat } =
+
+  const { isOpen, recipeId, recipeTitle, recipeArticle, closeChat, startNewChat } =
     useAiChat()
+  let ownerKey = isAuthenticated && account?.id != null ? `member-${account.id}` : "guest-cookie-unavailable"
+  if (!isAuthenticated) {
+    try { ownerKey = `guest-${chatGuestViewer()}` } catch { /* Show cookie guidance on send. */ }
+  }
+
   const hasRecipeContext = recipeId !== null
   const requestVersion = useRef(0)
+  const navigationAttempt = useRef<{
+    target: string
+    source: string
+    assistantId: number
+    blockedNotice: string | null
+    timer: number
+  } | null>(null)
   const activeRecipeTitle =
     recipeTitle?.trim() || (recipeId === null ? "" : `công thức #${recipeId}`)
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [executionMode, setExecutionMode] = useState<AiExecutionMode>("CHATBOT")
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [sessionExpiry, setSessionExpiry] = useState(Date.now() + 30 * 60 * 1000)
+  const previousOwner = useRef(ownerKey)
+  const activeRequest = useRef<string | null>(null)
+  const privateContext = useRef(false)
+  const [recoveryRequest, setRecoveryRequest] = useState<string | null>(null)
+  const [hydratedOwnerKey, setHydratedOwnerKey] = useState<string | null>(null)
+
   const [question, setQuestion] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -58,8 +157,18 @@ export function AiChatPage() {
   const [retryQuestion, setRetryQuestion] = useState("")
   const [retryAt, setRetryAt] = useState(0)
   const [retrySeconds, setRetrySeconds] = useState(0)
-  const contextVersion = useRef(0)
+  const [chatSettings, setChatSettings] = useState<AiChatSettingsResponse | null>(null)
+  const [settingsLoading, setSettingsLoading] = useState(false)
+  const [settingsError, setSettingsError] = useState("")
+  const [modelSaving, setModelSaving] = useState(false)
+  const [modelMenuOpen, setModelMenuOpen] = useState(false)
+  const [modeMenuOpen, setModeMenuOpen] = useState(false)
+  const [usageOpen, setUsageOpen] = useState(false)
+  const modelMenuRef = useRef<HTMLDivElement>(null)
+
   const [sequence, setSequence] = useState(0)
+  const sequenceRef = useRef(0)
+
   const [windowSize, setWindowSize] = useState({ width: 420, height: 620 })
   const resizeStart = useRef<{
     x: number
@@ -69,6 +178,94 @@ export function AiChatPage() {
   } | null>(null)
 
   const contextType = hasRecipeContext ? "RECIPE" : "GENERAL"
+
+  useEffect(() => {
+    const attempt = navigationAttempt.current
+    if (!attempt) return
+    const current = `${location.pathname}${location.search}`
+    if (current === attempt.target) {
+      window.clearTimeout(attempt.timer)
+      navigationAttempt.current = null
+      const content = attempt.blockedNotice
+        ?? `Đã mở ${workflowPageName(attempt.target)} trên Mâm Xanh.`
+      setMessages((items) => items.map((message) => message.id === attempt.assistantId
+        ? { ...message, content, workflowUrl: undefined }
+        : message))
+      if (!attempt.blockedNotice) closeChat()
+      return
+    }
+    if (current === "/dang-nhap" || current === "/dang-ky") {
+      window.clearTimeout(attempt.timer)
+      navigationAttempt.current = null
+      setMessages((items) => items.map((message) => message.id === attempt.assistantId
+        ? { ...message, content: "Bạn cần đăng nhập để truy cập trang này.", workflowUrl: undefined }
+        : message))
+      return
+    }
+    if (current !== attempt.source) {
+      // A different location may be a user's own navigation or an application guard.
+      // Do not overwrite it with a rollback; also do not claim the requested page opened.
+      window.clearTimeout(attempt.timer)
+      navigationAttempt.current = null
+      setMessages((items) => items.map((message) => message.id === attempt.assistantId
+        ? { ...message, content: "Ứng dụng đã chuyển sang một trang khác; chưa thể xác nhận trang yêu cầu đã mở.", workflowUrl: undefined }
+        : message))
+    }
+  }, [location.pathname, location.search, closeChat])
+
+  useEffect(() => () => {
+    if (navigationAttempt.current) window.clearTimeout(navigationAttempt.current.timer)
+  }, [])
+
+  useEffect(() => {
+    if (previousOwner.current !== ownerKey) {
+      clearAiChatSession(previousOwner.current)
+      pendingAiChatRequest(previousOwner.current, null)
+      previousOwner.current = ownerKey
+    }
+    privateContext.current = false
+    requestVersion.current += 1
+    setLoading(false)
+    const saved = readAiChatSession(ownerKey)
+    privateContext.current = saved?.messages.some((message) => message.sensitive) ?? false
+    setSessionExpiry(saved?.expiresAt ?? Date.now() + 30 * 60 * 1000)
+    setRecoveryRequest(pendingAiChatRequest(ownerKey))
+    setMessages(saved?.messages ?? [])
+    const canonicalMode: AiExecutionMode = (saved?.executionMode === "AGENT" || saved?.executionMode === "CONFIRM" || saved?.executionMode === "AUTO") ? "AGENT" : "CHATBOT"
+    setExecutionMode(canonicalMode)
+    setSessionId(saved?.sessionId ?? null)
+    sequenceRef.current = saved?.sequence ?? saved?.messages.reduce((max, item) => Math.max(max, item.id), 0) ?? 0
+    setSequence(sequenceRef.current)
+    setQuestion("")
+    setError("")
+    setErrorAction(null)
+    setRetryQuestion("")
+    setRetryAt(0)
+    setRetrySeconds(0)
+    setHydratedOwnerKey(ownerKey)
+  }, [ownerKey])
+
+  useEffect(() => {
+    if (hydratedOwnerKey !== ownerKey) return
+    if (messages.length === 0 && !sessionId) {
+      clearAiChatSession(ownerKey)
+      return
+    }
+    writeAiChatSession(ownerKey, { sessionId, messages, executionMode, sequence, expiresAt: sessionExpiry })
+    const expiryTimer = window.setTimeout(() => {
+      clearAiChatSession(ownerKey)
+      pendingAiChatRequest(ownerKey, null)
+      setRecoveryRequest(null)
+      privateContext.current = false
+      setSessionExpiry(Date.now() + 30 * 60 * 1000)
+      setLoading(false)
+      setMessages([])
+      setSessionId(null)
+      setExecutionMode("CHATBOT")
+      setSequence(0)
+    }, Math.max(0, sessionExpiry - Date.now()))
+    return () => window.clearTimeout(expiryTimer)
+  }, [ownerKey, hydratedOwnerKey, messages, sessionId, executionMode, sequence, sessionExpiry])
 
   const chatWindowStyle = {
     width: `min(${windowSize.width}px, calc(100vw - 1rem))`,
@@ -166,22 +363,70 @@ export function AiChatPage() {
     </button>
   )
 
-  useEffect(() => {
-    requestVersion.current += 1
-    setLoading(false)
-    setMessages([])
-    setQuestion("")
-    setError("")
-    setErrorAction(null)
-    setRetryQuestion("")
-    setSequence(0)
-    setLoading(false)
-    setRetryAt(0)
-    setRetrySeconds(0)
-    return () => {
+  async function startFreshConversation() {
+    if (messages.length > 0 && !window.confirm(
+      "Xóa nội dung cuộc trò chuyện hiện tại và bắt đầu phiên mới? Thao tác ghi đã bắt đầu vẫn có thể hoàn tất; cuộc trò chuyện mới không hoàn tác thay đổi trong hệ thống.",
+    )) return
+    try {
+      if (loading) await stopRun()
+      if (sessionId) {
+        await recipesApi.clearChatSession(
+          sessionId,
+          isAuthenticated ? undefined : anonymousRecipeViewer(),
+        )
+      }
       requestVersion.current += 1
+      clearAiChatSession(ownerKey)
+      setMessages([])
+      setExecutionMode("CONFIRM")
+      setSessionId(null)
+      setQuestion("")
+      setError("")
+      setErrorAction(null)
+      setRetryQuestion("")
+      setSequence(0)
+      startNewChat()
+    } catch (cause) {
+      setError(`Chưa thể xóa phiên trò chuyện trên máy chủ: ${asApiError(cause).message}`)
     }
-  }, [recipeId, account?.id, isAuthenticated])
+  }
+
+  useEffect(() => {
+    if (!isOpen || account?.role === "ADMIN") return
+    let active = true
+    setSettingsLoading(true)
+    setSettingsError("")
+    let anonymousViewerId: string | undefined
+    try { anonymousViewerId = isAuthenticated ? undefined : chatGuestViewer() }
+    catch (cause) { setSettingsError(asApiError(cause).message); setSettingsLoading(false); return }
+    subscriptionApi.getChatSettings(anonymousViewerId)
+      .then((settings) => { if (active) setChatSettings(settings) })
+      .catch((cause) => { if (active) setSettingsError(asApiError(cause).message) })
+      .finally(() => { if (active) setSettingsLoading(false) })
+    return () => { active = false }
+  }, [isOpen, account?.id, account?.role, isAuthenticated])
+
+  useEffect(() => {
+    if (!modelMenuOpen && !modeMenuOpen) return
+    const dismiss = (event: Event) => {
+      if (event.target instanceof Node && !modelMenuRef.current?.contains(event.target)) {
+        setModelMenuOpen(false)
+        setModeMenuOpen(false)
+      }
+    }
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setModelMenuOpen(false)
+        setModeMenuOpen(false)
+      }
+    }
+    document.addEventListener("pointerdown", dismiss)
+    document.addEventListener("keydown", onKeyDown)
+    return () => {
+      document.removeEventListener("pointerdown", dismiss)
+      document.removeEventListener("keydown", onKeyDown)
+    }
+  }, [modelMenuOpen, modeMenuOpen])
 
   useEffect(() => {
     if (!retryAt) return
@@ -213,38 +458,124 @@ export function AiChatPage() {
     )
   }
 
+  async function stopRun() {
+    const clientRequestId = activeRequest.current ?? pendingAiChatRequest(ownerKey)
+    const cancellation = clientRequestId
+      ? recipesApi.chatCancel(sessionId ?? undefined, !isAuthenticated ? chatGuestViewer() : undefined, clientRequestId)
+          .catch(() => undefined)
+      : Promise.resolve()
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
+    await cancellation
+    setLoading(false)
+    if (clientRequestId && isAuthenticated) {
+      setRecoveryRequest(clientRequestId)
+    }
+    setError("Đã yêu cầu dừng. Thao tác ghi đã bắt đầu có thể hoàn tất; hãy kiểm tra kết quả.")
+  }
+
+  async function recoverExecution() {
+    if (!recoveryRequest || !isAuthenticated) return
+    const version = requestVersion.current
+    try {
+      const result = await recipesApi.chatExecution(recoveryRequest)
+      if (version !== requestVersion.current) return
+      if (result.state === "SUCCEEDED" && result.shoppingListId) {
+        setSessionId(null)
+        privateContext.current = false
+        setMessages((current) => [...current.map((message) => ({ ...message, displayOnly: true, pendingConfirmation: null, consentRequest: null })), { id: Date.now(), speaker: "ASSISTANT", sensitive: true, displayOnly: true,
+          content: `Backend xác nhận đã tạo danh sách #${result.shoppingListId}. Không gửi lại thao tác tạo.`,
+          steps: [{ sequence: 1, tool: "create_shopping_list", status: "SUCCEEDED", summary: "Đã khôi phục kết quả từ Backend.", result: { id: result.shoppingListId } }] }])
+        pendingAiChatRequest(ownerKey, null)
+        setRecoveryRequest(null)
+        setError("")
+      } else setError(result.state === "UNKNOWN"
+        ? "Chưa có kết quả ghi được xác nhận. Không tự gửi lại thao tác; hãy kiểm tra danh sách mua sắm."
+        : `Trạng thái thao tác: ${result.state}. Không tự chạy lại thao tác ghi.`)
+    } catch (cause) { if (version === requestVersion.current) setError(asApiError(cause).message) }
+  }
+
   async function send(
     questionText: string,
     previous: ChatMessage[],
     addQuestion: boolean,
+    continuation: Pick<AiChatRequest, "consentDecision" | "confirmationId" | "confirmationDecision"> = {},
   ) {
     const normalized = questionText.trim()
     if (!normalized || loading || retrySeconds > 0) return
 
+    const sourceLocation = `${locationRef.current.pathname}${locationRef.current.search}`
     const version = requestVersion.current
+    const clientRequestId = globalThis.crypto.randomUUID()
+    activeRequest.current = clientRequestId
+    pendingAiChatRequest(ownerKey, clientRequestId)
+    const revoked = continuation.consentDecision?.action === "REVOKE"
+    const sensitive = privateContext.current || /danh\s*sách|mua\s*sắm|đi\s*chợ|shopping|hồ sơ|sức khỏe/i.test(normalized)
+      || continuation.consentDecision?.action === "GRANT"
+    if (sensitive) privateContext.current = true
+    if (revoked) {
+      privateContext.current = false
+      setMessages((current) => current.map((message) => message.sensitive || (message.sensitive === undefined && message.engine === "ADK_SHOPPING_PILOT")
+        ? { id: message.id, speaker: message.speaker, content: "[Nội dung đã được ẩn sau khi thu hồi consent]" }
+        : { ...message, pendingConfirmation: null, consentRequest: null }))
+    }
     setLoading(true)
     setError("")
     setErrorAction(null)
     setRetryQuestion(normalized)
 
-    const currentId = sequence + 1
+    // A free-text revision submits reject + new instruction sequentially in one handler.
+    // Reserve IDs immediately so both calls remain unique across React renders.
+    const currentId = Math.max(sequenceRef.current, sequence) + 1
+    sequenceRef.current = currentId + 1
+
     setSequence(currentId)
     if (addQuestion) {
       setMessages((current) => [
         ...current,
-        { id: currentId, speaker: "USER", content: normalized },
+        { id: currentId, speaker: "USER", content: normalized, sensitive },
       ])
     }
 
+    const assistantId = currentId + 1
+    const navigationIntent = requestsNavigation(normalized)
+    const abortController = new AbortController()
+    abortControllerRef.current = abortController
+    let streamedTokens = ""
+
+    setMessages((current) => [
+      ...current.map((message) => ({
+        ...message,
+        ...(continuation.confirmationDecision ? { pendingConfirmation: null } : {}),
+        ...(continuation.consentDecision ? { consentRequest: null } : {}),
+      })),
+      {
+        id: assistantId,
+        speaker: "ASSISTANT",
+        content: "",
+        sensitive: revoked ? false : sensitive,
+        recommendations: [],
+        steps: [],
+        sources: [],
+      },
+    ])
+
     try {
-      const response = await recipesApi.chat({
+      const response = await recipesApi.chatStream({
         contextType,
+        clientRequestId,
+        executionMode,
+        ...(sessionId ? { sessionId } : {}),
+        ...continuation,
         ...(!isAuthenticated
-          ? { anonymousViewerId: anonymousRecipeViewer() }
+          ? { anonymousViewerId: chatGuestViewer() }
           : {}),
         ...(hasRecipeContext ? { recipeId } : {}),
         question: normalized,
         history: previous
+          .filter((message) => !message.displayOnly)
           .slice(-8)
           .map(({ speaker, content, recommendations }) => ({
             speaker,
@@ -257,24 +588,119 @@ export function AiChatPage() {
                 }
               : {}),
           })),
-      })
-      if (version !== requestVersion.current) return
-      setMessages((current) => [
-        ...current,
-        {
-          id: currentId + 1,
-          speaker: "ASSISTANT",
-          content: response.answer,
-          recommendations: response.recommendations ?? [],
-          workflowUrl: response.workflowUrl,
+      }, {
+        onDelta: (delta) => {
+          streamedTokens += delta
+          if (navigationIntent) return
+          setMessages((current) => current.map((msg) =>
+            msg.id === assistantId ? { ...msg, content: streamedTokens } : msg
+          ))
         },
-      ])
+        onStep: (step) => {
+          setMessages((current) => current.map((msg) =>
+            msg.id === assistantId ? { ...msg, steps: [...(msg.steps ?? []), step] } : msg
+          ))
+        },
+        onConfirmation: (conf) => {
+          setMessages((current) => current.map((msg) =>
+            msg.id === assistantId ? { ...msg, pendingConfirmation: conf } : msg
+          ))
+        },
+      }, abortController.signal)
+
+      if (version !== requestVersion.current) return
+      if (response.sessionId) setSessionId(response.sessionId)
+      pendingAiChatRequest(ownerKey, null)
+      setRecoveryRequest(null)
+      setSessionExpiry(response.sessionExpiresAt ? Date.parse(response.sessionExpiresAt) : Date.now() + 30 * 60 * 1000)
+      setMessages((current) => current.map((msg) =>
+        msg.id === assistantId
+          ? {
+              ...msg,
+              content: trustedWorkflowUrl(response.workflowUrl)
+                ? "Đang mở trang bạn yêu cầu…"
+                : safeUnverifiedAnswer(response.answer || streamedTokens),
+              recommendations: response.recommendations ?? [],
+              workflowUrl: trustedWorkflowUrl(response.workflowUrl) ? undefined : response.workflowUrl,
+              steps: response.steps ?? msg.steps ?? [],
+              pendingConfirmation: response.pendingConfirmation ?? msg.pendingConfirmation,
+              consentRequest: response.consentRequest,
+              sources: response.sources ?? [],
+              engine: response.engine ?? null,
+              runStatus: response.runStatus ?? null,
+              knowledgeRevision: response.knowledgeRevision ?? null,
+              requestQuestion: normalized,
+            }
+          : msg
+      ))
+
+      const workflowUrl = trustedWorkflowUrl(response.workflowUrl)
+      if (workflowUrl) {
+        const current = `${locationRef.current.pathname}${locationRef.current.search}`
+        const roleNotice = workflowAccessNotice(workflowUrl, isAuthenticated, account?.role)
+        if (current !== sourceLocation) {
+          setMessages((items) => items.map((message) => message.id === assistantId
+            ? { ...message, content: "Bạn đã chuyển sang trang khác trong lúc trợ lý xử lý; hệ thống giữ nguyên trang bạn chọn.", workflowUrl: undefined }
+            : message))
+        } else if (!isAuthenticated && roleNotice) {
+          const navTranscript = [
+            ...previous.filter((message) => !message.displayOnly),
+            ...(addQuestion ? [{ id: currentId, speaker: "USER" as const, content: normalized, sensitive }] : []),
+            { id: assistantId, speaker: "ASSISTANT" as const, content: roleNotice, recommendations: [], steps: [], sources: [], sensitive },
+          ]
+          writeAiChatSession(ownerKey, {
+            sessionId: response.sessionId ?? sessionId,
+            messages: navTranscript,
+            executionMode,
+            sequence: assistantId,
+            expiresAt: response.sessionExpiresAt ? Date.parse(response.sessionExpiresAt) : sessionExpiry,
+          })
+          setMessages((items) => items.map((message) => message.id === assistantId
+            ? { ...message, content: roleNotice, workflowUrl: undefined }
+            : message))
+          navigate("/dang-nhap", { state: { workflowNotice: roleNotice } })
+        } else
+        if (current === workflowUrl) {
+          setMessages((items) => items.map((message) => message.id === assistantId
+            ? { ...message, content: roleNotice ?? `Bạn đang ở ${workflowPageName(workflowUrl)} trên Mâm Xanh.`, workflowUrl: undefined }
+            : message))
+          if (!roleNotice) closeChat()
+        } else {
+          const attempt = {
+            target: workflowUrl,
+            source: current,
+            assistantId,
+            blockedNotice: roleNotice,
+            timer: 0,
+          }
+          attempt.timer = window.setTimeout(() => {
+            if (navigationAttempt.current !== attempt) return
+            navigationAttempt.current = null
+            setMessages((items) => items.map((message) => message.id === assistantId
+              ? { ...message, content: "Không thể xác nhận việc mở trang yêu cầu. Trang hiện tại và cuộc trò chuyện vẫn được giữ.", workflowUrl: undefined }
+              : message))
+          }, 2500)
+          navigationAttempt.current = attempt
+          navigate(workflowUrl)
+        }
+      }
+
       setSequence(currentId + 1)
       setRetryQuestion("")
+      void subscriptionApi.getChatSettings(isAuthenticated ? undefined : anonymousRecipeViewer())
+        .then(setChatSettings)
+        .catch(() => undefined)
+      return true
     } catch (cause) {
+      if (abortControllerRef.current?.signal.aborted) return false
       if (version !== requestVersion.current) return
+      setMessages((current) => current.map((message) => message.id === assistantId
+        ? { ...message, runStatus: streamedTokens ? "PARTIAL_FAILURE" : "FAILED" }
+        : message))
+      if (isAuthenticated && sensitive) setRecoveryRequest(clientRequestId)
+      else pendingAiChatRequest(ownerKey, null)
       const apiError = asApiError(cause)
-      if (apiError.status === 429) {
+      if (apiError.code === "AI_GUEST_RATE_LIMITED" && apiError.retryAfter) {
         const wait = Math.ceil(apiError.retryAfter ?? 60)
         setRetryAt(Date.now() + wait * 1000)
         setRetrySeconds(wait)
@@ -287,11 +713,41 @@ export function AiChatPage() {
             ? "login"
             : null,
       )
-      if (apiError.status === 401 || apiError.status === 403)
+      if (apiError.code === "AI_TOKEN_QUOTA_EXCEEDED") setRetryQuestion("")
+      if (apiError.code === "AI_TOKEN_QUOTA_EXCEEDED") {
+        void subscriptionApi.getChatSettings(isAuthenticated ? undefined : anonymousRecipeViewer())
+          .then(setChatSettings)
+          .catch(() => undefined)
+      }
+      if (apiError.code === "AI_MODEL_SELECTION_REQUIRED") {
+        setError("Model đang chọn không còn được gói của bạn hỗ trợ. Hãy chọn model khác rồi gửi lại câu hỏi.")
+        setModelMenuOpen(true)
+        setUsageOpen(false)
+        void subscriptionApi.getChatSettings(isAuthenticated ? undefined : anonymousRecipeViewer())
+          .then(setChatSettings)
+          .catch(() => undefined)
+      }
+      if (apiError.status === 401 || apiError.status === 403 || apiError.status === 0 || (isAuthenticated && sensitive))
         setRetryQuestion("")
-      setError(
-        apiError.code === "AI_SUBSCRIPTION_REQUIRED"
+      const expiredSession = apiError.code === "VALIDATION_FAILED"
+        && apiError.message.toLocaleLowerCase("vi").includes("phiên trợ lý")
+      if (expiredSession) {
+        privateContext.current = false
+        setSessionId(null)
+        setMessages((current) => current.map((message) => ({
+          ...message,
+          pendingConfirmation: null,
+          consentRequest: null,
+          displayOnly: true,
+        })))
+      }
+      if (apiError.code !== "AI_MODEL_SELECTION_REQUIRED") setError(
+        expiredSession
+          ? "Phiên AI đã hết hạn; lịch sử trò chuyện vẫn được giữ. Hãy thử lại để tiếp tục trong phiên mới."
+          : apiError.code === "AI_SUBSCRIPTION_REQUIRED"
           ? aiUpgradeMessage(apiError, "PLUS", "Tính năng AI bạn yêu cầu")
+          : apiError.code === "AI_TOKEN_QUOTA_EXCEEDED" && !isAuthenticated
+          ? "Bạn đã dùng hết 20.000 token dùng thử trong phiên này. Đăng ký tài khoản để tiếp tục sử dụng AI."
           : apiError.status === 429
           ? "Bạn đã gửi nhiều câu hỏi trong thời gian ngắn. Thử lại sau; bạn cũng có thể đăng ký tài khoản để tiếp tục."
           : apiError.status === 0 ||
@@ -310,11 +766,45 @@ export function AiChatPage() {
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const normalized = question.trim()
-    if (!normalized || loading || retrySeconds > 0) return
+
+    if (!normalized || hasUnresolvedAssistantAction) return
+
     const previous = messages
     setQuestion("")
     void send(normalized, previous, true)
   }
+
+  const remainingQuotaPercent = chatSettings && chatSettings.quotaTokens > 0
+    ? Math.round(Math.max(0, Math.min(100, chatSettings.remainingTokens / chatSettings.quotaTokens * 100)))
+    : 0
+  const usedQuotaPercent = 100 - remainingQuotaPercent
+  const humanInputMessage = [...messages].reverse().find((message) =>
+    !message.displayOnly && message.speaker === "ASSISTANT" && (message.pendingConfirmation || message.consentRequest),
+  )
+  const hasUnresolvedAssistantAction = Boolean(humanInputMessage)
+
+  async function decideHumanInput(approved: boolean) {
+    const message = humanInputMessage
+    if (!message) return false
+    const previous = messages.slice(0, messages.indexOf(message))
+    if (message.consentRequest) {
+      if (!approved) {
+        setMessages(current => current.map(item => item.id === message.id ? { ...item, consentRequest: null } : item))
+        return true
+      }
+      return await send(message.requestQuestion ?? "", previous, false,
+        { consentDecision: { action: "GRANT", scopes: message.consentRequest.scopes } }) === true
+    }
+    if (!message.pendingConfirmation) return false
+    return await send(approved ? "Tiếp tục với thay đổi đã xem trước" : "Hủy thay đổi đang chờ", previous, false,
+      { confirmationId: message.pendingConfirmation.confirmationId, confirmationDecision: approved ? "APPROVE" : "REJECT" }) === true
+  }
+
+  async function replyToHumanInput(text: string) {
+    // An edit is a new instruction, never a grant or an approval of the old action.
+    if (await decideHumanInput(false)) await send(text, messages, true)
+  }
+  const modeLabel = (executionMode === "CHATBOT" || executionMode === "QA") ? "Chatbot" : "AI Agent"
 
   return (
     <div className="pointer-events-none fixed inset-2 z-50 flex items-end justify-end sm:inset-0 sm:p-5">
@@ -345,14 +835,27 @@ export function AiChatPage() {
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={closeChat}
-            aria-label="Đóng khung chat"
-            className="rounded-full p-2 text-ink-muted hover:bg-paper hover:text-ink"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => void startFreshConversation()}
+              aria-label="Bắt đầu cuộc trò chuyện mới"
+              title="Cuộc trò chuyện mới"
+              className="rounded-full p-2 text-ink-muted hover:bg-paper hover:text-ink disabled:opacity-50"
+            >
+              <MessageSquarePlus className="h-4 w-4" aria-hidden="true" />
+            </button>
+            {loading && isAuthenticated && <button type="button" onClick={() => void stopRun().catch((cause) => setError(asApiError(cause).message))} className="rounded-full px-2 py-1 text-xs">Dừng</button>}
+            {recoveryRequest && isAuthenticated && <button type="button" onClick={() => void recoverExecution()} className="rounded-full px-2 py-1 text-xs">Kiểm tra kết quả</button>}
+            <button
+              type="button"
+              onClick={closeChat}
+              aria-label="Đóng khung chat"
+              className="rounded-full p-2 text-ink-muted hover:bg-paper hover:text-ink"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </header>
 
         {!isAuthenticated && (
@@ -372,8 +875,8 @@ export function AiChatPage() {
             className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-700"
             aria-hidden="true"
           />
-          Câu trả lời do AI tạo và chỉ mang tính tham khảo. Câu hỏi được chuyển
-          tới Google Gemini để xử lý. Hội thoại chỉ giữ trong phiên này.
+          Câu trả lời do AI tạo và chỉ mang tính tham khảo. Hội thoại được giữ
+          trong tab này tối đa 30 phút không hoạt động; bạn có thể chủ động tạo phiên mới.
         </p>
 
         <div
@@ -575,7 +1078,79 @@ export function AiChatPage() {
                 <p className="mb-1 text-[11px] font-bold opacity-75">
                   {message.speaker === "USER" ? "Bạn" : "AI"}
                 </p>
-                <p className="whitespace-pre-wrap">{message.content}</p>
+                {message.speaker === "ASSISTANT"
+                  ? <AiMessageContent content={message.content} />
+                  : <p className="whitespace-pre-wrap [overflow-wrap:anywhere]">{message.content}</p>}
+                {message.speaker === "ASSISTANT" && message.engine !== "ADK_SHOPPING_PILOT" &&
+                  ["PARTIAL_FAILURE", "FAILED", "TIMEOUT", "STOPPED"].includes(message.runStatus ?? "") && (
+                    <p role="status" className="mt-2 border-t border-red-200 pt-2 text-xs font-semibold text-red-800">
+                      {({ PARTIAL_FAILURE: "Phản hồi chưa hoàn tất", FAILED: "Câu trả lời chưa hoàn tất",
+                        TIMEOUT: "Hết thời gian chờ", STOPPED: "Đã dừng" } as Record<string, string>)[message.runStatus ?? ""]}
+                    </p>
+                  )}
+                {message.steps?.some(step => step.status !== "AWAITING_CONFIRMATION") ? (
+                  <div className="mt-3 space-y-2" aria-label="Các bước AI đã xử lý">
+                    {message.steps.filter(step => step.status !== "AWAITING_CONFIRMATION").map((step) => {
+                      const preview = step.result?.preview
+                      const previewEntries = preview && typeof preview === "object"
+                        ? Object.entries(preview as Record<string, unknown>)
+                        : []
+                      return (
+                        <section key={`${step.sequence}-${step.tool}`} className="rounded-xl border border-brand-100 bg-paper p-3 text-xs text-ink">
+                          <p className="font-semibold">{step.sequence}. {({ search_business_knowledge: "Tìm hướng dẫn", get_business_knowledge: "Đọc hướng dẫn", create_shopping_list: "Tạo danh sách mua sắm", get_shopping_list: "Đọc lại danh sách mua sắm" } as Record<string,string>)[step.tool] ?? step.tool.replace(/_/g, " ")} <span className="ml-1 rounded bg-brand-50 px-1.5 py-0.5 text-[10px] font-bold text-brand-700">{({ SUCCEEDED: "Hoàn tất", FAILED: "Chưa hoàn tất", AWAITING_CONFIRMATION: "Chờ xác nhận", BLOCKED_BUDGET: "Hết ngân sách", SKIPPED_MODE: "Chỉ xem trước", CLARIFICATION_REQUIRED: "Cần thông tin", SKIPPED_INTENT: "Chưa thực hiện" } as Record<string,string>)[step.status] ?? step.status}</span></p>
+                          <p className="mt-1 text-ink-muted">{step.summary}</p>
+                          {previewEntries.length > 0 && (
+                            <dl className="mt-2 space-y-1 border-t border-brand-50 pt-2">
+                              {previewEntries.map(([key, value]) => (
+                                <div key={key} className="flex gap-2">
+                                  <dt className="shrink-0 font-medium">{key}:</dt>
+                                  <dd className="min-w-0 break-words text-ink-muted">{typeof value === "string" ? value : JSON.stringify(value)}</dd>
+                                </div>
+                              ))}
+                            </dl>
+                          )}
+                        </section>
+                      )
+                    })}
+                  </div>
+                ) : null}
+                {message.speaker === "ASSISTANT" && message.engine === "ADK_SHOPPING_PILOT" && (
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-brand-100/70 pt-2 text-[11px] text-ink-muted">
+                    <span>
+                      <strong className="text-ink">Danh sách mua sắm · thử nghiệm</strong>
+                      {message.runStatus ? ` · ${({ COMPLETED: "Hoàn tất", AWAITING_CONFIRMATION: "Chờ xác nhận", PREVIEW_ONLY: "Chỉ xem trước", PARTIAL_FAILURE: "Phản hồi chưa hoàn tất", FAILED: "Chưa hoàn tất", TIMEOUT: "Hết thời gian chờ", STOPPED: "Đã dừng", CANCELLED: "Đã hủy", BLOCKED_BUDGET: "Hết ngân sách", CONSENT_REVOKED: "Đã thu hồi đồng ý", CLARIFICATION_REQUIRED: "Cần thêm thông tin", AWAITING_CONSENT: "Chờ đồng ý" } as Record<string,string>)[message.runStatus] ?? "Đang xử lý"}` : ""}
+                      {message.knowledgeRevision ? ` · Tri thức: ${message.knowledgeRevision}` : ""}
+                    </span>
+                    {!message.consentRequest && message.runStatus !== "CONSENT_REVOKED" && (
+                      <button
+                        type="button"
+                        disabled={loading}
+                        onClick={() => void send("Thu hồi đồng ý dữ liệu danh sách mua sắm", messages, false, {
+                          consentDecision: {
+                            action: "REVOKE",
+                            scopes: [
+                              { category: "SHOPPING_LIST", purpose: "AI_CHAT" },
+                              { category: "SHOPPING_LIST", purpose: "SHOPPING_LIST_READ" },
+                              { category: "SHOPPING_LIST", purpose: "SHOPPING_LIST_WRITE" },
+                            ],
+                          },
+                        })}
+                        className="font-semibold text-brand-700 underline disabled:opacity-50"
+                      >
+                        Thu hồi đồng ý dữ liệu
+                      </button>
+                    )}
+                  </div>
+                )}
+                {message.speaker === "ASSISTANT" && Boolean(message.sources?.length) && (
+                  <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-ink-muted" aria-label="Nguồn hướng dẫn nội bộ">
+                    {message.sources?.map((source) => (
+                      <span key={source.id} className="rounded-full bg-paper px-2 py-0.5 font-medium text-ink">
+                        {source.title || source.id}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 {message.speaker === "ASSISTANT" &&
                   Boolean(message.recommendations?.length) && (
                     <div
@@ -635,18 +1210,13 @@ export function AiChatPage() {
                       ))}
                     </div>
                   )}
-                {message.workflowUrl &&
-                  ["/ke-hoach?view=for-you", "/dang-cong-thuc"].includes(
-                    message.workflowUrl,
-                  ) && (
+                {trustedWorkflowUrl(message.workflowUrl) && (
                     <Link
-                      to={message.workflowUrl}
+                      to={trustedWorkflowUrl(message.workflowUrl)!}
                       onClick={closeChat}
                       className="mt-3 inline-flex font-semibold text-brand-700 underline"
                     >
-                      {message.workflowUrl === "/dang-cong-thuc"
-                        ? "Mở biểu mẫu soạn công thức"
-                        : "Mở chức năng lập thực đơn"}
+                      Mở trang được đề xuất
                     </Link>
                   )}
               </div>
@@ -733,49 +1303,215 @@ export function AiChatPage() {
             )}
         </div>
 
-        <form
+        {humanInputMessage ? (
+          <div className="shrink-0 border-t border-brand-100 bg-paper p-3 sm:p-4">
+            <AiHumanInputCard key={`${humanInputMessage.id}-${humanInputMessage.pendingConfirmation?.confirmationId ?? "consent"}`}
+              message={humanInputMessage} busy={loading}
+              onDecision={async approved => { await decideHumanInput(approved) }} onReply={replyToHumanInput} />
+          </div>
+        ) : <form
           onSubmit={submit}
           className="border-t border-brand-100 bg-paper p-3 sm:p-4"
         >
           <label htmlFor="ai-chat-question" className="sr-only">
             Câu hỏi của bạn
           </label>
-          <div className="flex items-end gap-2 rounded-2xl border border-brand-200 bg-cream-soft p-2 focus-within:ring-2 focus-within:ring-brand-300">
+          <div ref={modelMenuRef} className="relative rounded-2xl border border-brand-200 bg-paper shadow-sm transition focus-within:border-brand-300 focus-within:ring-2 focus-within:ring-brand-100">
+            {modeMenuOpen && (
+              <section id="ai-execution-mode-menu" role="dialog" aria-label="Chọn chế độ AI" className="absolute bottom-[calc(100%+0.65rem)] left-2 z-30 w-[min(20rem,calc(100vw-3rem))] overflow-hidden rounded-2xl border border-brand-100 bg-paper p-2 text-ink shadow-xl">
+                <p className="px-3 py-2 text-xs font-bold uppercase tracking-wide text-ink-muted">Chế độ thực hiện</p>
+                <div role="radiogroup" aria-label="Chế độ thực hiện">
+                {([
+                  { value: "CHATBOT", label: "Chatbot", description: "Hỏi đáp thông minh, trả lời và tra cứu kiến thức không thay đổi dữ liệu." },
+                  { value: "AGENT", label: "AI Agent", description: "Trợ lý tác vụ thông minh, có thể thao tác hệ thống và luôn yêu cầu xác nhận khi ghi dữ liệu." },
+                ] as const).map((mode) => {
+                  const selected = executionMode === mode.value
+                  return (
+                    <button key={mode.value} type="button" role="radio" aria-checked={selected} disabled={loading || hasUnresolvedAssistantAction} onClick={() => { setExecutionMode(mode.value); setModeMenuOpen(false) }} className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-cream-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600 disabled:opacity-60">
+                      <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${selected ? "border-brand-700" : "border-stone-300"}`}>{selected && <span className="h-2 w-2 rounded-full bg-brand-700" />}</span>
+                      <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{mode.label}</span><span className="mt-0.5 block text-xs leading-4 text-ink-muted">{mode.description}</span></span>
+                      {selected && <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-700" aria-hidden="true" />}
+                    </button>
+                  )
+                })}
+                </div>
+              </section>
+            )}
+            {modelMenuOpen && (
+              <section
+                id="chat-model-popover"
+                aria-label="Model Gemini và hạn mức sử dụng"
+                className="absolute bottom-[calc(100%+0.65rem)] left-0 z-30 w-[min(22rem,calc(100vw-3rem))] overflow-hidden rounded-2xl border border-brand-100 bg-paper text-ink shadow-xl"
+              >
+                <div className="border-b border-brand-50 px-4 py-3">
+                  <p className="text-sm font-bold">Model Gemini</p>
+                  <p className="mt-0.5 text-xs text-ink-muted">
+                    {chatSettings ? `Các model khả dụng trong gói ${chatSettings.tier === "GUEST" ? "dùng thử" : chatSettings.tier}` : "Model được quản lý theo gói AI của bạn"}
+                  </p>
+                </div>
+                {settingsLoading ? (
+                  <div className="flex items-center gap-2 px-4 py-4 text-xs text-ink-muted" role="status">
+                    <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" /> Đang tải model…
+                  </div>
+                ) : settingsError && !chatSettings ? (
+                  <div className="px-4 py-3">
+                    <p className="text-xs text-red-700">Không tải được danh sách model hoặc hạn mức.</p>
+                    <button
+                      type="button"
+                      className="mt-2 text-xs font-semibold text-brand-700 underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600"
+                      onClick={() => {
+                        setSettingsLoading(true)
+                        setSettingsError("")
+                        subscriptionApi.getChatSettings(isAuthenticated ? undefined : anonymousRecipeViewer())
+                          .then(setChatSettings)
+                          .catch((cause) => setSettingsError(asApiError(cause).message))
+                          .finally(() => setSettingsLoading(false))
+                      }}
+                    >Thử tải lại</button>
+                  </div>
+                ) : chatSettings ? (
+                  <>
+                    <div id="chat-model-menu" role="listbox" aria-label="Model được gói hỗ trợ" className="p-2">
+                      {chatSettings.models.map((model) => {
+                        const selected = chatSettings.selectedModelId === model.modelId
+                        return (
+                          <button
+                            key={model.modelId}
+                            type="button"
+                            role="option"
+                            aria-selected={selected}
+                            disabled={modelSaving || loading}
+                            onClick={() => {
+                              if (selected) return
+                              setModelSaving(true)
+                              setSettingsError("")
+                              subscriptionApi.selectChatModel(model.modelId)
+                                .then((settings) => {
+                                  setChatSettings(settings)
+                                  setModelMenuOpen(false)
+                                  setUsageOpen(false)
+                                })
+                                .catch((cause) => {
+                                  setSettingsError(asApiError(cause).message)
+                                  void subscriptionApi.getChatSettings(isAuthenticated ? undefined : anonymousRecipeViewer())
+                                    .then(setChatSettings)
+                                    .catch(() => undefined)
+                                })
+                                .finally(() => setModelSaving(false))
+                            }}
+                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-cream-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600 disabled:opacity-60"
+                          >
+                            <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${selected ? "bg-brand-50 text-brand-700" : "bg-stone-50 text-ink-muted"}`}>
+                              <Sparkles className="h-4 w-4" aria-hidden="true" />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-sm font-semibold">{model.displayName}</span>
+                              <span className="mt-0.5 block truncate text-[11px] text-ink-muted">{model.modelId}</span>
+                            </span>
+                            {model.isDefault && <span className="rounded-full bg-brand-50 px-2 py-1 text-[10px] font-semibold text-brand-700">Mặc định</span>}
+                            {selected && <Check className="h-4 w-4 shrink-0 text-brand-700" aria-label="Đang chọn" />}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {settingsError && <p className="mx-3 mb-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700" role="alert">{settingsError}</p>}
+                    <div className="border-t border-brand-50 p-2">
+                      <button
+                        type="button"
+                        aria-expanded={usageOpen}
+                        aria-controls="chat-ai-usage"
+                        onClick={() => setUsageOpen((open) => !open)}
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-ink-muted hover:bg-cream-soft hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600"
+                      >
+                        <Gauge className="h-4 w-4" aria-hidden="true" />
+                        <span className="flex-1">Xem hạn mức sử dụng</span>
+                        <ChevronDown className={`h-4 w-4 transition-transform ${usageOpen ? "rotate-180" : ""}`} aria-hidden="true" />
+                      </button>
+                      {usageOpen && (
+                        <div id="chat-ai-usage" className="mt-1 rounded-xl bg-cream-soft p-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-xs font-semibold text-ink">{chatSettings.tier === "GUEST" ? "Hạn mức dùng thử" : `Gói ${chatSettings.tier}`}</p>
+                              <p className="mt-1 text-[11px] text-ink-muted">Đã sử dụng {usedQuotaPercent}%</p>
+                            </div>
+                            <p className="shrink-0 text-right text-xs font-bold text-brand-700">Còn<br />{remainingQuotaPercent}%</p>
+                          </div>
+                          <div className="mt-3 h-2 overflow-hidden rounded-full bg-paper" role="progressbar" aria-label="Phần trăm hạn mức token còn lại trong kỳ hiện tại" aria-valuemin={0} aria-valuemax={100} aria-valuenow={remainingQuotaPercent}>
+                            <div className="h-full rounded-full bg-brand-600 transition-[width]" style={{ width: `${remainingQuotaPercent}%` }} />
+                          </div>
+                          <div className="mt-2 flex justify-between gap-2 text-[10px] text-ink-muted">
+                            <span>{chatSettings.tier === "GUEST" ? "Tính theo phiên khách" : "Hạn mức theo tháng"}</span>
+                            {chatSettings.resetsAt && <span>Cấp lại {new Date(chatSettings.resetsAt).toLocaleDateString("vi-VN")}</span>}
+                          </div>
+                          {chatSettings.tier === "GUEST" && <Link to="/dang-ky" onClick={closeChat} className="mt-3 inline-flex text-xs font-semibold text-brand-700 underline">Đăng ký để có hạn mức tháng</Link>}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : null}
+              </section>
+            )}
             <textarea
               id="ai-chat-question"
               value={question}
               onChange={(event) => setQuestion(event.target.value)}
               onKeyDown={(event) => {
-                if (
-                  event.key !== "Enter" ||
-                  event.shiftKey ||
-                  event.nativeEvent.isComposing
-                )
-                  return
-
+                if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return
                 event.preventDefault()
-
                 event.currentTarget.form?.requestSubmit()
               }}
               maxLength={1000}
               rows={2}
               placeholder="Nhập câu hỏi của bạn…"
-              className="max-h-36 min-h-12 flex-1 resize-y bg-transparent px-2 py-2 text-sm text-ink outline-none placeholder:text-ink-muted"
-              disabled={loading}
+              className="block max-h-36 min-h-20 w-full resize-y bg-transparent px-4 py-3 text-sm text-ink outline-none placeholder:text-ink-muted"
+              disabled={loading || hasUnresolvedAssistantAction}
             />
-            <button
-              type="submit"
-              aria-label="Gửi câu hỏi"
-              disabled={loading || retrySeconds > 0 || !question.trim()}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-on-brand enabled:hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Send className="h-4 w-4" aria-hidden="true" />
-            </button>
+            <div className="flex items-center justify-between gap-2 border-t border-brand-50 px-2 py-2">
+              <div className="flex min-w-0 items-center gap-2">
+                <button type="button" aria-label={`Chế độ AI: ${modeLabel}`} aria-haspopup="dialog" aria-expanded={modeMenuOpen} aria-controls="ai-execution-mode-menu" onClick={() => { setModeMenuOpen((open) => !open); setModelMenuOpen(false) }} disabled={loading || hasUnresolvedAssistantAction} title={`Chế độ AI: ${modeLabel}`} className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-2 text-xs text-ink-muted transition hover:bg-cream-soft hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600 disabled:opacity-50">
+                  <Settings2 className="h-4 w-4" aria-hidden="true" />
+                  <span className="hidden sm:inline">{modeLabel}</span>
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${modeMenuOpen ? "rotate-180" : ""}`} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  aria-haspopup="dialog"
+                  aria-expanded={modelMenuOpen}
+                  aria-controls="chat-model-menu"
+                  onClick={() => { setModelMenuOpen((open) => !open); setModeMenuOpen(false) }}
+                  disabled={settingsLoading}
+                  className="flex min-w-0 items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs text-ink-muted transition hover:bg-cream-soft hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600 disabled:opacity-60"
+                >
+                  <Sparkles className="h-4 w-4 shrink-0 text-brand-700" aria-hidden="true" />
+                  <span className="min-w-0 truncate font-semibold text-ink">{chatSettings?.models.find((model) => model.modelId === chatSettings.selectedModelId)?.displayName ?? (settingsLoading ? "Đang tải model" : "Chọn model")}</span>
+                  <span className="hidden shrink-0 sm:inline">· {chatSettings?.tier === "GUEST" ? "Guest" : chatSettings?.tier ?? "AI"}</span>
+                  <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform ${modelMenuOpen ? "rotate-180" : ""}`} aria-hidden="true" />
+                </button>
+                <span className="text-[10px] text-ink-muted">{question.length}/1.000</span>
+              </div>
+              {loading ? (
+                <button
+                  type="button"
+                  onClick={() => void stopRun()}
+                  aria-label="Dừng câu trả lời"
+                  title="Dừng câu trả lời"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-stone-200 text-stone-700 hover:bg-stone-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-500"
+                >
+                  <span className="h-3 w-3 rounded-sm bg-stone-700" aria-hidden="true" />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  aria-label="Gửi câu hỏi"
+                  disabled={hasUnresolvedAssistantAction || !question.trim()}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-on-brand enabled:hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+                >
+                  <Send className="h-4 w-4" aria-hidden="true" />
+                </button>
+              )}
+            </div>
           </div>
-          <p className="mt-1 text-right text-[11px] text-ink-muted">
-            {question.length}/1.000 ký tự
-          </p>
-        </form>
+        </form>}
       </section>
     </div>
   )

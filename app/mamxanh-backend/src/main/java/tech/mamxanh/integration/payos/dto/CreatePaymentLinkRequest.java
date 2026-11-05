@@ -9,6 +9,11 @@ public record CreatePaymentLinkRequest(
         String description,
         String cancelUrl,
         String returnUrl,
+        Integer expiredAt,
         String signature
 ) {
+    public CreatePaymentLinkRequest(long orderCode, int amount, String description,
+            String cancelUrl, String returnUrl, String signature) {
+        this(orderCode, amount, description, cancelUrl, returnUrl, null, signature);
+    }
 }

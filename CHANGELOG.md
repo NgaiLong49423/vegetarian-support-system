@@ -1,13 +1,496 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.129.0
+> **Version:** v2.148.1
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-30
+> **Last Updated:** 2026-11-05
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-11-05 — Verify AI Assistant Navigation Results
+
+**Status:** Committed — `f3101bff`.
+
+**Scope:** Make Agent navigation responses reflect the route actually selected by the Backend and verified by the Frontend.
+
+### Added
+
+- Add coverage for the 14 supported navigation destinations, route access outcomes, user navigation races, data loading errors, and a real Gemini + ADK workflow.
+
+### Changed
+
+- Keep the chat transcript and session behavior intact while the Frontend validates and renders a requested destination.
+- Update the API guide to distinguish Backend tool success from a rendered destination and from access or data-loading outcomes.
+
+### Fixed
+
+- Preserve `workflowUrl` from nested ADK tool results and prevent Gemini from claiming a navigation succeeded before the Frontend confirms the route.
+
+## 2026-11-05 — Increase AI Response Emoji Use
+
+**Status:** Committed — `889fbc7d`.
+
+**Scope:** Make longer Chatbot and Agent explanations more lively and easier to scan while keeping short and sensitive responses restrained.
+
+### Added
+
+- None.
+
+### Changed
+
+- Ask ordinary explanatory, instructional, and list responses to use around four to eight context-appropriate emoji distributed across the introduction, headings, and key points; very short replies may use one or two or none.
+
+### Fixed
+
+- Align the synthesized system prompt, response-style policy, and loader test with the user's preference for more visible emoji.
+
+## 2026-11-05 — Navigate AI Assistant to Public Recipe Details
+
+**Status:** Committed — `889fbc7d`.
+
+**Scope:** Let the AI Assistant open a selected published recipe directly from its public recipe search results.
+
+### Added
+
+- Add `RECIPE_DETAIL` navigation with a validated positive recipe ID and automated Backend and Playwright coverage.
+
+### Changed
+
+- Extend the ADK navigation tool schema and Frontend workflow route allowlist for published recipe detail pages.
+
+### Fixed
+
+- Prevent the Assistant from claiming it opened a selected recipe while only navigating to the general Explore page.
+
+## 2026-11-05 — Harden AI Chat Deadlines and Response Handling
+
+**Status:** Committed — `4f8bea14`.
+
+**Scope:** Bound Gemini model calls and assistant turns by monotonic deadlines, preserve incomplete stream state, and reinforce user-facing response style.
+
+### Added
+
+- Add automated fake-model coverage for absolute deadlines during continuous streaming, cancellation, partial-stream failures, and single-count usage.
+
+### Changed
+
+- Set separate operational timeouts and hard caps for Gemini calls and full assistant turns; stream partial and final Gemini responses through the existing SSE flow.
+- Require one to three context-appropriate emoji in ordinary explanatory, instructional, and list responses, with safety and confirmation exceptions.
+- Update NFR-18 while retaining NFR-03 and the independent FR-51 classifier.
+
+### Fixed
+
+- Prevent streaming tokens from extending a model-call or assistant-turn deadline and prevent incomplete SSE output from appearing complete in the UI.
+- Reinforce the response-style requirement in the synthesized system prompt so Gemini receives an explicit instruction.
+
+## 2026-11-04 — Eliminate Legacy Gemini Components and Complete ADK Cutover
+
+**Status:** Committed — `df0a8622`.
+
+**Scope:** Remove deprecated Gemini legacy classes, eliminate compiler warnings, isolate ephemeral model validation, and transition chat routing exclusively to Google ADK.
+
+### Added
+
+- Add `AiProviderException` as an independent exception class preserving `FailureKind` and HTTP error code mappings across all AI services.
+- Add `GeminiModelValidator` with try-with-resources closing of ephemeral Google GenAI client during admin model verification.
+
+### Changed
+
+- Transition `AiChatService` routing completely to `AdkAssistantEngine`, preserving session affinity and shopping pilot G3 routing.
+- Standardize `AiClient` contract with abstract `generateRecipeContent` and non-recursive default `generateRecipeText`.
+- Modernize deprecated API calls in `AdkSpikeSession` (`immutableEvents()`) and `KnowledgeCatalog` (`asString()`).
+
+### Removed
+
+- Remove deprecated `AiChatIntent` and its associated tests.
+- Remove legacy `GeminiAiClient` and its associated tests.
+- Remove dead `executeLegacy` routing and legacy context records from `AiChatService`.
+
+### Fixed
+
+- Fix guest model resolution in `AdkAssistantEngine` by correctly forwarding `anonymousViewerId` to prevent validation errors on unauthenticated chat sessions.
+## 2026-11-04 — Persist AI Action Journal and Standardize Test Suites
+
+**Status:** Committed — `79b7a0d8`.
+
+**Scope:** Add persistent SQL Server action journal for multi-action idempotency, recover interrupted actions on startup, add Tier 2 integration tests for all 28 domain tools, and standardize assistant test suite naming.
+
+### Added
+
+- Add `V41__ai_assistant_action_journal.sql` migration creating `AI_ASSISTANT_ACTION_JOURNAL` with atomic state transitions and expiry indexing.
+- Add `AiAssistantToolIntegrationTest` covering input mapping, validation, and domain service delegation for all 28 domain tools.
+- Add automated compose management and health checking to `run-ai-e2e.ps1`.
+
+### Changed
+
+- Transition `AiAssistantExecutionJournal` from in-memory fallback to persistent JDBC table storage with startup recovery for abandoned reservations.
+- Standardize test filenames and fixtures across backend and frontend away from legacy G-gate prefixes to semantic identifiers.
+
+### Fixed
+
+- Prevent unhandled timeout errors on chat scope classification by configuring low thinking level and adequate token limits.
+
+## 2026-11-02 — Correct G5 Token Accounting and FR-21 Access ([PR #226](https://github.com/NgaiLong49423/vegetarian-support-system/pull/226))
+
+**Status:** Committed — `49a2bfb0`.
+
+**Scope:** Keep one accounting owner for ADK single-step business calls and preserve role-based recipe assistance across AI tiers.
+
+### Added
+
+- Add focused regression coverage for pre-call budget checks, single-owner usage settlement, and model selection for Expert recipe assistance.
+
+### Changed
+
+- Resolve the account's allowed Gemini model and preference for non-chat ADK tasks.
+- Allow eligible Experts to use FR-21 regardless of paid tier when token budget and model access permit.
+
+### Fixed
+
+- Prevent duplicate token ledger and telemetry writes for ADK single-step business calls.
+
+## 2026-11-02 — Migrate Business AI Flows to Google ADK (Gate G5)
+
+**Status:** Committed — `3f52906b`.
+
+**Scope:** Unify all business generation and classification AI capabilities under the Google ADK Java Runtime without adding a secondary orchestration engine or microservice.
+
+### Added
+
+- Add `AdkSingleStepTaskRunner` wrapping `com.google.adk.agents.LlmAgent` and `InMemoryRunner` with structured schema enforcement, run timeout, byte budget cap (64KB), and usage metadata extraction.
+- Add `AdkAiClient` (`@Component`, `@Primary`) routing 100% of business call-sites (`CS-01` through `CS-09`) to Google ADK.
+- Add `AdkConfiguration` providing Spring Boot beans for `AdkModelGateway` and task runners with dynamic model selection.
+- Add `mamxanh.ai.migration.mode` (`ADK_PRIMARY` / `LEGACY_FALLBACK`) feature flag supporting seamless rollback.
+
+### Changed
+
+- Deprecate direct legacy invocation methods in `AiClient` and the legacy `GeminiAiClient` implementation.
+- Align `RecipeAiAssistanceService` entitlement requirement to PRO tier matching current product baseline.
+
+### Fixed
+
+- Stabilize integration test fixtures by clearing `AI_TOKEN_USAGE_LEDGER` and `AI_CREDIT_WALLET` foreign keys before deleting users.
+- Provide token quota snapshots in test fixtures to prevent false-positive 429 quota exhaustion errors.
+
+## 2026-11-01 — Redesign Assistant Human Input
+
+**Status:** Committed — `81ead809`.
+
+**Scope:** Present pending confirmations and personal-data consent in a dedicated, Codex-inspired question panel using the existing Mâm Xanh visual style.
+
+### Added
+
+- Add numbered choices, explicit Send, Skip, keyboard selection and an optional free-text response in a docked panel.
+- Add responsive UI tests covering explicit approval, skipping consent and rejecting an old proposal before submitting a revised instruction.
+
+### Changed
+
+- Replace nested confirmation/consent cards with one active question panel above the chat footer.
+- Hide duplicate waiting-step cards and update pilot browser interactions to select a choice before sending.
+
+### Fixed
+
+- Keep free-text replies separate from consent grants and write approvals.
+
+## 2026-11-01 — Add G4 Session and Shopping Write Recovery
+
+**Status:** Committed — `81ead809`.
+
+**Scope:** Stabilize the opt-in ADK Shopping List pilot across reload, cancellation and response loss without adding a workflow engine.
+
+### Added
+
+- Add a seven-day SQL write journal, separate reservation transaction, conditional write claim and atomic Shopping List/result commit.
+- Add owner-scoped result lookup by client request ID and test-only deterministic ADK fixtures for real-stack verification.
+
+### Changed
+
+- Bound native ADK history separately from model input, preserve confirmed parameters and pending mode snapshots, and retain same-tab transcript with Backend expiry.
+- Persist request IDs before transport and provide explicit cancellation and result recovery controls; defer task-scoped model replacement.
+
+### Fixed
+
+- Route cancellation before the chat busy guard and preserve committed writes when cancellation or later processing fails.
+- Purge owner/consent context and prevent expired-session display history from being resent as a new conversation.
+
+## 2026-11-01 — Add Opt-In ADK Shopping List Chat Pilot
+
+**Status:** Committed — `67eacd04`.
+
+**Scope:** Connect local Member chat to native ADK, G3 hybrid knowledge and existing Shopping List services, preserving default routing.
+
+### Added
+
+- Add shared Customer/Expert Shopping List consent, QA previews, native confirmation, AUTO guards and real-ID create/read sequencing.
+- Add call-start accounting snapshots, transactional quota-to-Credit completion, exact system-absorbed Credit migration V39 and a cumulative live-evaluation budget guard.
+- Add native fault/authorization tests, SQL accounting/ownership tests and isolated real-stack live/browser scenarios.
+
+### Changed
+
+- Extend chat metadata and legacy-compatible request identifiers; show source versions, proposed names and Backend step results, with a 35-second HTTP deadline.
+- Add a separate G3 corpus/index revision using embedding-2/768, preserving G2.
+- Clarify exhausted-budget checks before writes and Shopping List consent, including query embeddings.
+
+### Fixed
+
+- Preserve sources across clarification/cancellation, reject forged history and stale/foreign actions, and prevent duplicate creates or incorrect read-back IDs.
+- Preserve committed create results on later failure and roll back usage with Credit when accounting persistence fails.
+
+## 2026-11-01 — Implement AI Agent Knowledge Base and Behavioral Policies
+
+**Status:** Committed — 900d000f.
+
+**Scope:** Packaged business knowledge base, core behavioral policies, and dynamic classpath prompt loader for Mâm Xanh AI Agent.
+
+### Added
+
+- Add structured business Knowledge Base in Spring classpath resources (`knowledge-base/`) with 38 domain topic guides across 8 user-oriented categories and verified `catalog.json` manifest.
+- Add foundational system instructions (`ai/prompts/system.md`) and four core behavioral policies (`ai/policies/`: `scope-policy.md`, `safety-policy.md`, `security-policy.md`, `response-style.md`).
+- Add `AiPromptLoader` component in `tech.mamxanh.integration.ai` to dynamically load, strip YAML front matter, synthesize, and cache prompts in memory from classpath resources with safe fallback.
+- Add comprehensive unit test suite in `AiPromptLoaderTest` verifying classpath loading, front matter stripping, memory caching, fallback handling, and secret protection.
+
+### Changed
+
+- Update `AiChatService` and `AiAssistantExecutionService` to dynamically load system instructions and behavioral policies from classpath via `AiPromptLoader`.
+- Update system architecture (`ARCHITECTURE.md`), technology stack (`TECHNOLOGY-STACK.md`), backend workspace guide (`app/mamxanh-backend/README.md`), API integration guide (`API.md`), and repository overview (`README.md`) to reflect the transition from a passive chatbot to an active AI Agent backed by an internal Knowledge Base and Behavioral Policies.
+
+### Fixed
+
+- None.
+
+## 2026-11-01 — Add Isolated ADK Knowledge and Hybrid Retrieval Pilot
+
+**Status:** Committed — `64444508`.
+
+**Scope:** Add the G2 read-only knowledge pilot without connecting public chat or business writes.
+
+### Added
+
+- Add five derived Vietnamese playbooks, an allowlisted catalog, heading-aware chunks, validated versioned JSON vectors, atomic publication, BM25/cosine retrieval, equal-weight RRF, and two bounded native ADK knowledge tools.
+- Add explicit four-configuration embedding evaluation, stratified development/holdout datasets, persistent operational budget guards, synthetic agent/safety evaluation, and an offline packaged-resource smoke entry point.
+
+### Changed
+
+- Clarify that indexing and query embeddings are system operating costs excluded from user quota and Credit; distinguish missing provider usage from cost estimates.
+- Select `gemini-embedding-2` at 768 dimensions from development results; preserve explicit degraded keyword retrieval, the selected provider, and shared Customer/Expert capabilities.
+- Allow a trusted isolated pilot to use a 1,024-token output cap after live diagnostics confirmed truncation at the G1 default; preserve the existing G1 default and deadlines.
+
+### Fixed
+
+- Normalize Markdown line endings before hashing so Windows CRLF checkouts preserve packaged index compatibility.
+
+## 2026-11-01 — Add Isolated Google ADK Java G1 Spike
+
+**Status:** Committed — `64444508`.
+
+**Scope:** Verify ADK Java integration without switching the existing chat endpoint or connecting prototype accounting to production wallets.
+
+### Added
+
+- Add ADK 1.13.0, a bounded model gateway, native session/tool confirmation verification, and opt-in Gemini live tests using synthetic read-only fixtures.
+- Add shared Customer/Expert capability checks, scoped worker authentication, stop-on-error/cancellation guards, call-start accounting context, and explicit missing/invalid usage statuses.
+
+### Changed
+
+- Clarify NFR-18 as a ten-second deadline per model call including retries and a thirty-second deadline per Assistant execution or resume.
+- Document the spike boundary, execution commands, privacy requirements, and outstanding production accounting dependency.
+
+### Fixed
+
+- Exclude the older duplicate Swagger annotations introduced transitively by ADK to preserve Springdoc's Jakarta annotations.
+- Disable ADK message-content tracing in tests and reject runner construction when content tracing has not been disabled.
+
+## 2026-10-31 — Add AI Assistant Orchestration and Approved Knowledge Retrieval
+
+**Status:** Committed — `64444508`.
+
+**Scope:** Implement Issue #214 orchestration with role-scoped tools, consent and confirmation boundaries, bounded temporary sessions, source-attributed retrieval, and a chat interface for execution modes.
+
+### Added
+
+- Add the AI tool registry and sequential execution flow for profile, interaction, Expert recipe, meal plan, Shopping List, public recipe search, and approved internal knowledge workflows.
+- Add session-scoped consent and single-use pending confirmations, with local personal-data gating before Gemini and no raw prompt persistence.
+- Add a bounded approved-document retriever and return tool steps and source references to API clients.
+- Add an allowlisted page-navigation tool; the chat opens a trusted internal route returned by the Backend.
+- Add a chat mode selector for QA, confirmation, and automatic execution, with pending-action previews and consent/confirmation controls.
+- Keep the short-lived transcript through chat close/reopen, internal workflow navigation, and same-tab reload; allow users to clear the current transcript and pending session state when starting a new conversation.
+
+### Changed
+
+- Keep legacy chat requests from automatically reading Member dietary preferences into Gemini prompts.
+- Add a dedicated Gemini structured-output schema for ordered tool plans.
+
+### Fixed
+
+- None.
+
+## 2026-10-31 — Fix Demo Expert Pro Token Quota
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Ensure the local demo Expert's annual Pro subscription receives the currently configured Pro quota.
+
+### Added
+
+- None.
+
+### Changed
+
+- None.
+
+### Fixed
+
+- Repair the local demo Pro quota snapshot when it is zero, without changing monthly subscriptions or existing nonzero snapshots.
+
+## 2026-10-31 — Add AI Credit Top-Up Checkout
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Implement the member purchase flow already specified by FR-64, using the existing payOS checkout and AI Credit wallet ledger.
+
+### Added
+
+- Add a dedicated `/nap-ai-credit` page for wallet balance, live conversion, Admin-configured limits, and payOS checkout, with a **Nạp tiền** entry button from the AI plans overview; show the current AI Credit balance on the overview for Customer/Expert accounts.
+- Add snapshotted top-up order data, idempotent wallet/ledger settlement, and a reconciliation state with an in-app notice for late or unverified payment times.
+- Show AI Credit top-ups and reconciliation status in member and Admin transaction history.
+
+### Changed
+
+- Distinguish subscription purchases from AI Credit purchases in payment transaction records and generated API responses.
+
+### Fixed
+
+- None.
+
+## 2026-10-31 — Extend Admin AI Account Management
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Extend Issue #212 with customer and expert package gifts, per-account gift history, in-app recipient notices, and AI Credit grants under the user-confirmed FR-65/BR-78 behavior.
+
+### Added
+
+- Add Administrator-only endpoints to gift AI packages to eligible members and grant AI Credit, with account history, wallet ledger updates, and in-app recipient notifications.
+- Add separate package-gift and AI Credit grant screens from an account-level action selector.
+- Add Flyway V37 audit fields for gifted AI tiers and package expiry.
+
+### Changed
+
+- Show the AI configuration page as a read-only overview, with one editable section at a time and an explicit change summary before saving.
+- Replace direct AI tier changes with package gifts for CUSTOMER and EXPERT accounts, including EXPERT eligibility; ADMIN accounts remain ineligible.
+- Update FR-65 and BR-78 to define package gifts for CUSTOMER and EXPERT accounts, immediate replacement, new 30-day Plus/Pro periods, no payment order or refund, and required transaction history.
+- Show AI Credit grant ledger entries in the recipient's account history with amount, resulting balance, administrator, reason, and time.
+- Synchronize the database snapshot and Admin API/database guidance with the new operations.
+
+### Fixed
+
+- Separate new audit-column creation from constraint replacement with a SQL Server batch boundary so Flyway can resolve the added columns.
+
+## 2026-10-31 — Implement Admin AI Configuration Foundation
+
+**Status:** Committed — `f5e026d1`.
+
+**Scope:** Add persisted Admin configuration for AI plans, Gemini model access, AI Credit conversion, and customer notifications under Issue #212.
+
+### Added
+
+- Add the V33 configuration migration, Admin-only configuration API, Gemini model validation, asynchronous email notices, and an Admin configuration page.
+- Add V34 order snapshots so payment settlement activates the tier and monthly quota captured at checkout.
+- Add validation coverage for rejecting a tier without exactly one enabled default model.
+- Display Admin-configured monthly prices, token quotas, and Gemini model access on the AI plans page.
+
+### Changed
+
+- Keep Free quota changes pending until the next Vietnam calendar month; retain current paid subscription snapshots.
+- Synchronize the database schema snapshot with the new migration.
+- Align package benefits with role-based capabilities and monthly token/model entitlements.
+
+### Fixed
+
+- None.
+
+## 2026-10-30 — Define Admin AI Configuration Requirements
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Refine the AI administration requirements for configurable Gemini access, package limits, AI Credit grants, and customer notifications.
+
+### Added
+
+- Define pilot defaults and validation rules for Admin-managed Gemini catalog access by tier.
+- Define AI Credit-only grants, configuration-change notifications, and package-setting effective dates.
+
+### Changed
+
+- Clarify that Guest follows Free model configuration, Free remains a zero-price tier, and package grants are excluded from Admin operations.
+- Align the PRD and FR-10 interaction flow with Admin-managed model access for each tier.
+
+### Fixed
+
+- None.
+
+## 2026-10-30 — Clarify Gemini Model Preference Requirements
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Align the detailed AI requirements and interaction flows with the approved per-account Gemini model selection behavior.
+
+### Added
+
+- Define account-scoped model preference, chatbox selection, stale-preference handling, and a single consented retry using an allowed alternative model.
+
+### Changed
+
+- Clarify that user role and the underlying capability govern AI function access, while the current subscription governs token quota and Gemini model access.
+- Replace the outdated use-case description that restricted AI functions by subscription tier.
+- Align nutrition, recipe assistance/discovery, chat routing, and package comparison flows with role-based capabilities and quota/model-based packages.
+
+### Fixed
+
+- None.
+
+## 2026-10-30 — Add AI Token Quota Tracking
+
+**Status:** Committed — `0302a970`.
+
+**Scope:** Track Gemini token usage against Guest sessions and Member subscription periods, and show Members their current quota.
+
+### Added
+
+- Add an idempotent token usage ledger, quota checks before Gemini calls, a Member usage endpoint, and token usage details on the AI plans page.
+- Set initial Free, Plus, and Pro subscription quotas while preserving the quota snapshot for active subscriptions.
+
+### Changed
+
+- Record provider-reported usage for successful Gemini calls, including calls whose generated content later fails application validation.
+- Keep usage records for 90 days after the associated quota period ends and exclude incomplete or failed provider calls from token totals.
+
+### Fixed
+
+- None.
+
+## 2026-10-30 — Define AI Credit and Feature-First MVP Scope
+
+**Status:** Committed — `e6201ab5`.
+
+**Scope:** Synchronize the active AI requirements with the approved token-quota and AI Credit model, then create linked implementation Issues for the MVP.
+
+### Added
+
+- Add FR-63–FR-66 and BR-77–BR-79 for token usage, AI Credit overage, Admin configuration and grants, and feature-first AI Assistant orchestration.
+- Create parent Issue #208 and seven linked Task sub-issues; update the SRS-managed scope in Issue #16.
+
+### Changed
+
+- Set the pilot Guest/Free/Plus/Pro token limits, model access, subscription prices, top-up conversion, and overage rate in the active requirements.
+- Make role, ownership, eligibility, and business validation govern AI capabilities; subscription tier governs token quota and Gemini model access.
+
+### Fixed
+
+- Reconcile older package feature gates and always-confirm menu wording with the accepted Execution Mode policy.
+
 
 ## 2026-10-30 — Enforce AI Pro Entitlement in Recipe Assistant Modal
 
@@ -2935,7 +3418,7 @@ None.
 
 ## 2026-10-04 — Correct GitHub CLI Authentication Checks in Codex
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `f3101bff`.
 
 **Scope:** Prevent Codex from reporting a failed GitHub CLI login solely because its Windows sandbox cannot access the user's keyring or network.
 
@@ -4000,7 +4483,7 @@ None.
 
 ## 2026-09-16 — Harden Promptfoo Acceptance Checks
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `f3101bff`.
 
 **Scope:** Correct evaluator safety checks and evidence semantics while preserving external isolated SUT workspaces and existing business requirements.
 
@@ -4023,7 +4506,7 @@ None.
 
 ## 2026-09-16 — Standardize English for Changelog and Commit Messages
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `f3101bff`.
 
 **Scope:** Establish English as the mandatory language for all new or edited `CHANGELOG.md` content and all Git commit messages while retaining Vietnamese as the default prose language for other internal development documentation.
 
@@ -4043,7 +4526,7 @@ None.
 
 ## 2026-09-16 — Finalize Requirements Baseline v1.0.0
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `f3101bff`.
 
 **Scope:** Standardize and promote the PRD and Modular SRS document set to the active Requirements Baseline v1.0.0, including synchronized metadata, document registration, and downstream design and verification guidance.
 
@@ -4066,7 +4549,7 @@ None.
 
 ## 2026-09-16 — Remove Google Maps Restaurant Discovery from the Implementation Baseline
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `f3101bff`.
 
 **Scope:** Reclassify the entire M11 restaurant-discovery capability from `DEFERRED` to `OUT_OF_SCOPE` because it does not serve the core meal-planning flow and the application does not intend to manage or verify external restaurant data.
 
@@ -4086,7 +4569,7 @@ None.
 
 ## 2026-09-15 — Unified AI Chatbot Model & Recipe Instruction Step Baseline Alignment
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `f3101bff`.
 
 **Scope:** Unify AI Chatbot into a single multi-capability assistant under FR-51 per approved Product Decision, align AI Chatbot performance with NFR-03, expand NFR-25 AI quality and compliance evaluation, clarify BR-51 authority boundaries, enforce mandatory 1–30 cooking steps across Recipe Post requirements, and update Root SRS Draft status definition.
 
@@ -4191,7 +4674,7 @@ None.
 
 ## 2026-09-14 — NFR Decomposition & ISO/IEC 25010 Quality Categorization
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `f3101bff`.
 
 **Scope:** Standardize and decompose 27 non-functional requirements (`NFR-01` through `NFR-27`) into six core project quality categories based on ISO/IEC 25010, including quantitative criteria and confirmed architecture boundaries.
 
@@ -4215,7 +4698,7 @@ None.
 
 ## 2026-09-14 — Modular SRS Architecture & Field-Specific Authority Model
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `f3101bff`.
 
 **Scope:** Restructure the Software Requirements Specification into a multi-file Modular SRS, separating the root `SRS.md` authoritative registry from three specialized detailed specifications: `FUNCTIONAL-REQUIREMENTS.md`, `BUSINESS-RULES.md`, and `NON-FUNCTIONAL-REQUIREMENTS.md`.
 
@@ -4240,7 +4723,7 @@ None.
 
 ## 2026-09-14 — Personal Pantry & Inventory-based Recommendation Scope
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `f3101bff`.
 
 **Scope:** Decompose Personal Pantry/Inventory management, pantry-based recipe or post discovery, and AI-assisted recipe creation from available ingredients; classify the capability as `OUT_OF_SCOPE` for the initial MVP.
 
@@ -4260,7 +4743,7 @@ None.
 
 ## 2026-09-14 — Basic Shopping List MVP Adoption
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `f3101bff`.
 
 **Scope:** Move the basic Shopping List capability into the official MVP under Module M05 with three functional requirements (`FR-53`, `FR-54`, `FR-55`) and safe ingredient-aggregation rules.
 
@@ -4280,7 +4763,7 @@ None.
 
 ## 2026-09-14 — Restaurant Discovery Review and True Blog Scope
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `f3101bff`.
 
 **Scope:** Move vegetarian restaurant discovery to lecturer review, decompose a Samsung Food-style long-form Blog with embedded Recipe Cards, and classify the Blog capability outside the initial MVP.
 
@@ -4301,7 +4784,7 @@ None.
 
 ## 2026-09-14 — Documentation Language Policy
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `f3101bff`.
 
 **Scope:** Establish Vietnamese as the primary prose language for internal development documentation, preserve necessary English technical terms, and require fully English content only for documents explicitly classified as academic submissions.
 
@@ -4321,7 +4804,7 @@ None.
 
 ## 2026-09-13 — Controlled Documentation Baseline Migration
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `f3101bff`.
 
 **Scope:** Separate product requirements, software requirements, architecture, technology selection and verification strategy into maintained sources with explicit ownership, while preserving existing requirement meaning and holding unresolved lifecycle assignments for decision.
 
@@ -4344,7 +4827,7 @@ None.
 
 ## 2026-09-13 — Recipe Publishing and AI Scope Simplification
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `f3101bff`.
 
 **Scope:** Align the requirements baseline with the team's confirmed simplification of Recipe Post publishing and deferred AI features.
 
@@ -4368,7 +4851,7 @@ None.
 
 ## 2026-09-13 — Changelog Format and Contribution Authority
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `f3101bff`.
 
 **Scope:** Standardize the English project history and separate shared contribution rules from AI-specific instructions.
 
@@ -4390,7 +4873,7 @@ None.
 
 ## 2026-09-12 — Repository Layout and Agent Onboarding
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `f3101bff`.
 
 **Scope:** Establish predictable document placement and targeted onboarding for new agents.
 
@@ -4413,7 +4896,7 @@ None.
 
 ## 2026-09-12 — Project Documentation and Five-Member Team Setup
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `f3101bff`.
 
 **Scope:** Adapt repository guidance to the Vegetarian Support System and the five-member SWP391 team.
 

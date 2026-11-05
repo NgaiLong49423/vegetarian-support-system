@@ -1,10 +1,11 @@
 package tech.mamxanh.shopping.entity;
 
-import java.time.LocalDateTime;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "\"SHOPPING_LIST\"")

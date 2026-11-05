@@ -1,58 +1,35 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertCircle, Calendar, Check, Loader2, Sparkles } from 'lucide-react';
+import { AlertCircle, Calendar, Check, Loader2, Sparkles, Wallet } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Badge, Button, Card } from '../components/ui';
 import { useAuth } from '../components/AuthContext';
 import {
   subscriptionApi,
   type MySubscriptionResponse,
+  type MyAiUsageResponse,
   type PlanResponse,
   type SubscriptionTier,
 } from '../api/subscription';
 import { formatVnd } from '../utils/date';
 import { formatSubscriptionDate as formatDate } from '../utils/subscriptionDate';
 
-const DEFAULT_PLANS: PlanResponse[] = [
-  {
-    tier: 'FREE',
-    name: 'FREE',
-    priceVnd: 0,
-    billingPeriod: 'Hàng tháng',
-    description: 'Trải nghiệm các tính năng AI cơ bản',
-    features: ['AI Chatbot cơ bản', 'Gợi ý món chay cơ bản'],
-  },
-  {
-    tier: 'PLUS',
-    name: 'PLUS',
-    priceVnd: 49000,
-    billingPeriod: 'Hàng tháng',
-    description: 'Dành cho người ăn chay chuyên sâu & tối ưu dinh dưỡng',
-    features: ['Toàn bộ quyền của FREE', 'AI lập thực đơn tuần 7 ngày', 'AI lập thực đơn theo dinh dưỡng cá nhân'],
-  },
-  {
-    tier: 'PRO',
-    name: 'PRO',
-    priceVnd: 99000,
-    billingPeriod: 'Hàng tháng',
-    description: 'Dành cho người ăn chay muốn sáng tạo thực đơn',
-    features: [
-      'Toàn bộ quyền của PLUS',
-      'AI hỗ trợ soạn bài viết và công thức',
-      'AI gợi ý biến tấu món chay sáng tạo',
-    ],
-  },
-];
-
 export function AiPlans() {
   const navigate = useNavigate();
-  const { isAuthenticated: isLoggedIn } = useAuth();
+  const { account, isAuthenticated: isLoggedIn } = useAuth();
+  const canUseAiCredit = isLoggedIn && (account?.role === 'CUSTOMER' || account?.role === 'EXPERT');
 
-  const [plans, setPlans] = useState<PlanResponse[]>(DEFAULT_PLANS);
+  const [plans, setPlans] = useState<PlanResponse[]>([]);
+  const [plansError, setPlansError] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<MySubscriptionResponse | null>(null);
+  const [usage, setUsage] = useState<MyAiUsageResponse | null>(null);
+  const [usageError, setUsageError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [subscribingTier, setSubscribingTier] = useState<SubscriptionTier | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [aiCreditBalance, setAiCreditBalance] = useState<number | null>(null);
+  const [aiCreditLoading, setAiCreditLoading] = useState(false);
+  const [aiCreditError, setAiCreditError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -62,9 +39,10 @@ export function AiPlans() {
         const fetchedPlans = await subscriptionApi.getPlans();
         if (active && fetchedPlans.length > 0) {
           setPlans(fetchedPlans);
+          setPlansError(null);
         }
       } catch {
-        // Fall back to DEFAULT_PLANS if API is unreachable
+        if (active) setPlansError('Không tải được giá và quyền lợi hiện hành. Thử tải lại trang để tránh xem thông tin cũ.');
       }
 
       if (isLoggedIn) {
@@ -76,6 +54,34 @@ export function AiPlans() {
         } catch {
           // If not authenticated or session expired, ignore
         }
+        try {
+          const currentUsage = await subscriptionApi.getMyAiUsage();
+          if (active) setUsage(currentUsage);
+        } catch (cause) {
+          if (active) setUsageError(cause instanceof Error ? cause.message : 'Chưa tải được mức sử dụng AI.');
+        }
+      }
+
+      if (canUseAiCredit) {
+        if (active) {
+          setAiCreditBalance(null);
+          setAiCreditLoading(true);
+        }
+        try {
+          const wallet = await subscriptionApi.getMyAiCredit();
+          if (active) {
+            setAiCreditBalance(wallet.balance);
+            setAiCreditError(null);
+          }
+        } catch (cause) {
+          if (active) setAiCreditError(cause instanceof Error ? cause.message : 'Chưa tải được số dư AI Credit.');
+        } finally {
+          if (active) setAiCreditLoading(false);
+        }
+      } else if (active) {
+        setAiCreditBalance(null);
+        setAiCreditError(null);
+        setAiCreditLoading(false);
       }
 
       if (active) {
@@ -88,10 +94,14 @@ export function AiPlans() {
     return () => {
       active = false;
     };
-  }, [isLoggedIn]);
+  }, [canUseAiCredit, isLoggedIn]);
 
   const currentTier: SubscriptionTier =
     isLoggedIn && subscription?.status === 'ACTIVE' ? subscription.tier : 'FREE';
+  const remainingQuotaPercent = usage && usage.quotaTokens > 0
+    ? Math.round(Math.max(0, Math.min(100, usage.remainingTokens / usage.quotaTokens * 100)))
+    : 0;
+  const usedQuotaPercent = 100 - remainingQuotaPercent;
 
   async function handleSubscribe(tier: 'PLUS' | 'PRO') {
     if (!isLoggedIn) {
@@ -161,9 +171,43 @@ export function AiPlans() {
         )}
 
         <p className="mt-2 text-xs text-ink-muted">
-          Giá theo tháng, thanh toán từng kỳ qua VietQR (payOS) và không tự động gia hạn.
+          Gói quyết định hạn mức token và model Gemini; quyền dùng chức năng AI theo vai trò và quyền nghiệp vụ của tài khoản. Free tính theo tháng dương lịch, Plus/Pro theo tháng gói. Guest có 20.000 token dùng thử mỗi phiên. Plus/Pro thanh toán từng tháng qua payOS, không tự động gia hạn.
         </p>
       </div>
+
+      {isLoggedIn && (
+        <section aria-labelledby="ai-usage-heading" className="mb-8 w-full">
+          <Card className="p-5 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 id="ai-usage-heading" className="text-lg font-bold text-ink">Mức sử dụng token AI</h2>
+                <p className="mt-1 text-sm text-ink-muted">
+                  {usage ? `Gói ${usage.tier} · cấp lại ${formatDate(usage.resetsAt)}` : 'Đang tải hạn mức của kỳ hiện tại.'}
+                </p>
+              </div>
+              {usage && <Badge tone={remainingQuotaPercent === 0 ? 'neutral' : 'brand'}>
+                Còn {remainingQuotaPercent}%
+              </Badge>}
+            </div>
+            {usage ? (
+              <>
+                <div className="mt-5 flex justify-between gap-3 text-sm">
+                  <span className="font-semibold text-ink">Đã sử dụng {usedQuotaPercent}%</span>
+                  <span className="text-ink-muted">Còn lại {remainingQuotaPercent}%</span>
+                </div>
+                <div className="mt-2 h-3 overflow-hidden rounded-full bg-brand-50" role="progressbar"
+                  aria-label="Phần trăm hạn mức token còn lại trong kỳ hiện tại" aria-valuemin={0}
+                  aria-valuemax={100} aria-valuenow={remainingQuotaPercent}>
+                  <div className="h-full rounded-full bg-brand-600 transition-[width]"
+                    style={{ width: `${remainingQuotaPercent}%` }} />
+                </div>
+              </>
+            ) : usageError ? (
+              <p role="alert" className="mt-4 text-sm text-red-700">{usageError}</p>
+            ) : null}
+          </Card>
+        </section>
+      )}
 
       {errorMsg && (
         <div role="alert" className="mx-auto mb-6 flex max-w-2xl items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -172,12 +216,43 @@ export function AiPlans() {
         </div>
       )}
 
+      <section aria-labelledby="ai-credit-top-up-heading" className="mb-8 w-full">
+        <Card className="flex flex-col items-start justify-between gap-5 border-brand-200 p-5 sm:flex-row sm:items-center sm:p-6">
+          <div className="flex items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700"><Wallet className="h-5 w-5" /></span>
+            <div>
+              <h2 id="ai-credit-top-up-heading" className="text-lg font-bold text-ink">Cần thêm AI Credit?</h2>
+              <p className="mt-1 text-sm text-ink-muted">Xem số dư, chọn số tiền và thanh toán an toàn trên trang nạp AI Credit.</p>
+              {canUseAiCredit && (
+                <p className="mt-2 text-sm text-ink-muted" aria-live="polite">
+                  Số dư AI Credit:{' '}
+                  {aiCreditLoading ? <span>Đang tải…</span> : aiCreditError ? (
+                    <span className="text-red-700">{aiCreditError}</span>
+                  ) : (
+                    <strong className="font-bold text-brand-700">
+                      {(aiCreditBalance ?? 0).toLocaleString('vi-VN', { maximumFractionDigits: 9 })} Credit
+                    </strong>
+                  )}
+                </p>
+              )}
+            </div>
+          </div>
+          <Link to={isLoggedIn ? '/nap-ai-credit' : '/dang-nhap'} state={!isLoggedIn ? { returnTo: '/nap-ai-credit' } : undefined}>
+            <Button as="span" className="w-full sm:w-auto"><Wallet className="mr-2 h-4 w-4" />Nạp tiền</Button>
+          </Link>
+        </Card>
+      </section>
+
       {loading ? (
         <div className="flex justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
         </div>
+      ) : plansError || plans.length === 0 ? (
+        <div role="alert" className="mx-auto max-w-2xl rounded-xl border border-amber-200 bg-amber-50 p-4 text-center text-sm text-amber-900">
+          {plansError ?? 'Chưa có cấu hình gói AI để hiển thị.'}
+        </div>
       ) : (
-        /* AC-13.1: Exactly 3 tiers: FREE 0 VNĐ/tháng, PLUS 49.000 VNĐ/tháng, PRO 99.000 VNĐ/tháng */
+        /* Current prices, token quotas, and model entitlements come from the Backend Admin configuration. */
         <div className="grid gap-6 lg:grid-cols-3">
           {plans.map((plan) => {
             const isCurrent = plan.tier === currentTier;

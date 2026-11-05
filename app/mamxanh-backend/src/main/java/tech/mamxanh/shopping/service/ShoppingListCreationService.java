@@ -1,16 +1,5 @@
 package tech.mamxanh.shopping.service;
 
-import java.math.BigDecimal;
-import java.math.MathContext;
-import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.time.Clock;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
 import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +17,17 @@ import tech.mamxanh.shopping.entity.ShoppingListItemEntity;
 import tech.mamxanh.shopping.entity.ShoppingRecipeContributionEntity;
 import tech.mamxanh.shopping.repository.ShoppingListItemRepository;
 import tech.mamxanh.shopping.repository.ShoppingListRepository;
+
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.UUID;
 
 /** FR-53 AC-53.1: create a new, independent checklist from the current Member's meal plan. */
 @Service

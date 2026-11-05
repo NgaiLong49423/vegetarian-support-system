@@ -1,0 +1,172 @@
+[
+  {
+    "id": "g3-assistant-scope-1",
+    "split": "development",
+    "category": "supported",
+    "query": "CUSTOMER và EXPERT có cùng quyền Member trong pilot không?",
+    "expectedSources": [
+      "assistant-scope"
+    ]
+  },
+  {
+    "id": "g3-assistant-scope-2",
+    "split": "development",
+    "category": "supported",
+    "query": "G3 có hỗ trợ thêm nguyên liệu hoặc xóa danh sách không?",
+    "expectedSources": [
+      "assistant-scope"
+    ]
+  },
+  {
+    "id": "g3-assistant-scope-3",
+    "split": "holdout",
+    "category": "supported",
+    "query": "Assistant G3 có được tạo bài công thức thay người dùng không?",
+    "expectedSources": [
+      "assistant-scope"
+    ]
+  },
+  {
+    "id": "g3-execution-confirmation-1",
+    "split": "development",
+    "category": "supported",
+    "query": "Chế độ QA có ghi danh sách vào cơ sở dữ liệu không?",
+    "expectedSources": [
+      "execution-confirmation"
+    ]
+  },
+  {
+    "id": "g3-execution-confirmation-2",
+    "split": "development",
+    "category": "supported",
+    "query": "Chế độ CONFIRM cần làm gì trước khi tạo danh sách?",
+    "expectedSources": [
+      "execution-confirmation"
+    ]
+  },
+  {
+    "id": "g3-execution-confirmation-3",
+    "split": "holdout",
+    "category": "supported",
+    "query": "AUTO có được bỏ qua ownership không?",
+    "expectedSources": [
+      "execution-confirmation"
+    ]
+  },
+  {
+    "id": "g3-session-consent-budget-1",
+    "split": "development",
+    "category": "supported",
+    "query": "Consent Shopping List gửi những dữ liệu gì tới Google Gemini?",
+    "expectedSources": [
+      "session-consent-budget"
+    ]
+  },
+  {
+    "id": "g3-session-consent-budget-2",
+    "split": "development",
+    "category": "supported",
+    "query": "Hết cả quota và Credit ngay trước bước ghi thì sao?",
+    "expectedSources": [
+      "session-consent-budget"
+    ]
+  },
+  {
+    "id": "g3-session-consent-budget-3",
+    "split": "holdout",
+    "category": "supported",
+    "query": "Nếu session mất sau khi Backend restart thì có tự chạy lại thao tác không?",
+    "expectedSources": [
+      "session-consent-budget"
+    ]
+  },
+  {
+    "id": "g3-shopping-create-1",
+    "split": "development",
+    "category": "supported",
+    "query": "Tên danh sách mua sắm tối đa bao nhiêu ký tự?",
+    "expectedSources": [
+      "shopping-create"
+    ]
+  },
+  {
+    "id": "g3-shopping-create-2",
+    "split": "development",
+    "category": "supported",
+    "query": "Khi chưa nêu tên danh sách thì Assistant cần làm gì?",
+    "expectedSources": [
+      "shopping-create"
+    ]
+  },
+  {
+    "id": "g3-shopping-create-3",
+    "split": "holdout",
+    "category": "supported",
+    "query": "Có cần Meal Plan hay Recipe trước khi tạo danh sách rỗng không?",
+    "expectedSources": [
+      "shopping-create"
+    ]
+  },
+  {
+    "id": "g3-shopping-read-1",
+    "split": "development",
+    "category": "supported",
+    "query": "Sau tạo danh sách rỗng phải dùng ID nào để đọc lại?",
+    "expectedSources": [
+      "shopping-read"
+    ]
+  },
+  {
+    "id": "g3-shopping-read-2",
+    "split": "development",
+    "category": "supported",
+    "query": "Biết ID danh sách của tài khoản khác có được đọc không?",
+    "expectedSources": [
+      "shopping-read"
+    ]
+  },
+  {
+    "id": "g3-shopping-read-3",
+    "split": "holdout",
+    "category": "supported",
+    "query": "Danh sách vừa tạo rỗng thì items đọc lại như thế nào?",
+    "expectedSources": [
+      "shopping-read"
+    ]
+  },
+  {
+    "id": "g3-no-source-1",
+    "split": "development",
+    "category": "unsupported",
+    "query": "Tỷ giá đô la hôm nay là bao nhiêu?",
+    "expectedSources": []
+  },
+  {
+    "id": "g3-no-source-2",
+    "split": "development",
+    "category": "unsupported",
+    "query": "Dự báo thời tiết ở Huế ngày mai?",
+    "expectedSources": []
+  },
+  {
+    "id": "g3-no-source-3",
+    "split": "development",
+    "category": "unsupported",
+    "query": "Đặt vé tàu đi Đà Lạt giúp tôi.",
+    "expectedSources": []
+  },
+  {
+    "id": "g3-no-source-4",
+    "split": "development",
+    "category": "unsupported",
+    "query": "Lịch thi IELTS tháng sau ở đâu?",
+    "expectedSources": []
+  },
+  {
+    "id": "g3-no-source-5",
+    "split": "holdout",
+    "category": "unsupported",
+    "query": "Tính thuế nhập khẩu xe điện giúp tôi.",
+    "expectedSources": []
+  }
+]

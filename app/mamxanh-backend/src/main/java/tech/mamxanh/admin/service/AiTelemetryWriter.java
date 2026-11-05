@@ -1,9 +1,5 @@
 package tech.mamxanh.admin.service;
 
-import java.time.Clock;
-import java.time.Duration;
-import java.util.Set;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,9 +7,16 @@ import tech.mamxanh.admin.repository.AiTelemetryRepository;
 import tech.mamxanh.integration.ai.AiTokenUsage;
 import tech.mamxanh.integration.ai.AiUsageEvent;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.util.Set;
+import java.util.UUID;
+import java.util.regex.Pattern;
+
 @Service
 public class AiTelemetryWriter {
     public static final Set<String> FEATURES = Set.of("FR-21", "FR-34", "FR-36", "FR-37", "FR-47", "FR-51");
+    private static final Pattern GEMINI_MODEL_ID = Pattern.compile("gemini-[a-z0-9][a-z0-9.-]{0,72}");
     private final AiTelemetryRepository repository;
     private final AiTelemetryPricing pricing;
     private final Clock clock;
@@ -30,7 +33,7 @@ public class AiTelemetryWriter {
         if ((event.userId() == null) == (event.anonymousSessionId() == null)) throw new IllegalArgumentException("Invalid telemetry actor");
         if (event.anonymousSessionId() != null) UUID.fromString(event.anonymousSessionId());
         var raw = event.usage();
-        if (!AiTokenUsage.MODEL.equals(raw.model()) || !"STANDARD".equals(raw.serviceTier())) {
+        if (raw.model() == null || !GEMINI_MODEL_ID.matcher(raw.model()).matches() || !"STANDARD".equals(raw.serviceTier())) {
             throw new IllegalArgumentException("Unsupported telemetry source");
         }
         String status = status(raw);

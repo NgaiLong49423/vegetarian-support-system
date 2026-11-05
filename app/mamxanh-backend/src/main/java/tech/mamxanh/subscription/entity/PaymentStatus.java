@@ -6,6 +6,7 @@ package tech.mamxanh.subscription.entity;
 public enum PaymentStatus {
     PENDING,
     PAID,
+    NEEDS_RECONCILIATION,
     FAILED,
     CANCELLED
 }

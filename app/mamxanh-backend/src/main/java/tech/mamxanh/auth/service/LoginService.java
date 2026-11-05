@@ -1,16 +1,8 @@
 package tech.mamxanh.auth.service;
 
-import java.nio.charset.StandardCharsets;
-import java.time.Clock;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.UUID;
-
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import tech.mamxanh.auth.dto.request.LoginRequest;
 import tech.mamxanh.auth.dto.response.AccountSummary;
 import tech.mamxanh.auth.dto.response.AuthResponse;
@@ -22,6 +14,13 @@ import tech.mamxanh.auth.security.AccessTokenService.IssuedAccessToken;
 import tech.mamxanh.auth.security.AuthProperties;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
+
+import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * UC-03.4 — log in with email and password (AC-03.6–AC-03.9, NFR-07).

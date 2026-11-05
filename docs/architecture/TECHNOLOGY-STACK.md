@@ -1,8 +1,8 @@
 > **Document:** Technology Stack  
 > **File:** `docs/architecture/TECHNOLOGY-STACK.md`  
-> **Version:** v1.9.0
+> **Version:** v1.11.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-11-01
 > **Status:** Active  
 > **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `docs/requirements/SRS.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -75,8 +75,10 @@ Baseline schema hiện được triển khai tại `database/schema.sql` và Fly
 | Upload Blob qua Backend | Xác thực, validate và upload ảnh Recipe Post | Confirmed initial path | Tập trung kiểm soát truy cập và validation cho triển khai ban đầu | Cần cấu hình timeout và dọn dẹp file rác khi tạo bài viết thất bại |
 | Upload trực tiếp bằng scoped SAS URL | Khả năng upload từ client tới Blob khi xuất hiện nhu cầu scaling đã được đo | Future option | Có thể giảm tải truyền file qua Backend | Tăng độ phức tạp về CORS, expiry, upload chưa hoàn tất và verification; chưa có ngưỡng áp dụng |
 | YouTube embed | Phát video được liên kết trong Recipe Post mà không sao chép video | Confirmed | Dùng player của provider và tránh phải vận hành video pipeline | Khả năng embed phụ thuộc setting của video nguồn và hành vi của provider |
-| Google Gemini (`gemini-3.8-flash`) | AI model phục vụ gợi ý món ăn, thực đơn và hỗ trợ giải đáp | Confirmed model | Model Flash mới, tốc độ phản hồi nhanh, hỗ trợ reasoning và native JSON Structured Outputs | Khóa cứng model ID `gemini-3.8-flash`, không dùng alias `latest` để đảm bảo tính ổn định |
+| Google Gemini (`gemini-3.8-flash`) | AI model phục vụ AI Agent Orchestrator, gợi ý món ăn, thực đơn và hỗ trợ giải đáp | Confirmed model | Model Flash mới, tốc độ phản hồi nhanh, hỗ trợ reasoning và native JSON Structured Outputs | Khóa cứng model ID `gemini-3.8-flash`. AI Agent sử dụng dynamic system prompt và behavioral policies nạp từ classpath (`src/main/resources/ai/`), kết hợp kho tri thức đóng gói (`src/main/resources/knowledge-base/`) |
 | Google Gen AI Java SDK (`com.google.genai:google-genai`) | SDK chính thức gọi Gemini API từ Backend | Confirmed integration | Thuần Java 21, không cần dựng Python microservice hoặc dùng framework AI nặng | Bọc qua interface `AiClient` để dễ dàng mock trong Unit/Integration Test |
+| Google ADK Java (`com.google.adk:google-adk:1.13.0`) | Pilot G1/G2 cho model/tool loop, session, confirmation, Model Gateway và knowledge tools trong Backend Java | Confirmed cho pilot; chưa cutover chat production | Một agent dùng chung capability Member/Expert; Gateway kiểm soát model calls, không Automatic Fallback | Tích hợp nằm trong `integration.ai.adk` và `integration.ai.knowledge`, không đăng ký bean/endpoint mặc định. Giữ Gen AI SDK 1.76.0; loại Swagger annotations cũ trùng Springdoc. Tắt content tracing; accounting production vẫn cần hoàn thiện trước cutover |
+| Gemini Embedding 2 (`gemini-embedding-2`, 768 dimensions) + JSON index trong resources | Knowledge pilot G2: Markdown allowlist, BM25/cosine và RRF `k=60`, đọc qua native ADK tools | Đã chọn bằng development benchmark bốn cấu hình; không phải thay đổi model chat mặc định | Hybrid development Recall@3 1,00/MRR 0,98; holdout Recall@3 1,00/MRR 1,00; dimension nhỏ hơn thắng khi bằng nhau. SQL Server tiếp tục giữ nghiệp vụ, không thêm vector database | Corpus chỉ năm playbook/60 câu tổng hợp; holdout còn 1/5 câu ngoài nguồn nhận retrieval result. Embedding lỗi chuyển keyword có degraded, không đổi model/provider. Chi phí embedding do hệ thống chịu; build/startup không gọi API |
 | Google Maps Platform | Không thuộc capability hiện hành | Không được chọn | Ứng dụng không quản lý dữ liệu nhà hàng bên ngoài | Không chọn dependency hoặc tích hợp trong baseline hiện tại |
 | payOS | Cổng thanh toán VietQR cho gói PLUS (49.000) và PRO (99.000) | Confirmed provider | Hỗ trợ thanh toán VND qua VietQR, link thanh toán, webhook tức thì và sandbox miễn phí | Tích hợp qua Spring `RestClient`; webhook yêu cầu verify chữ ký HMAC-SHA256 và xử lý idempotent theo `order_code` |
 | Brevo (Sendinblue) | Transactional email service cho verify account, reset password và thông báo | Confirmed provider | Gói miễn phí 300 email/ngày, hỗ trợ SMTP chuẩn; tích hợp qua `spring-boot-starter-mail` | Xử lý bất đồng bộ qua `@Async`; lỗi email không rollback transaction nghiệp vụ |

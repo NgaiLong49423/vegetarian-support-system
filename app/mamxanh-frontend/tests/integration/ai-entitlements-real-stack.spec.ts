@@ -40,14 +40,6 @@ test('FR-10: real JWT and SQL subscription changes select the correct upgrade an
     const source = await (await request.get(`${backend}/recipes/${recipe}`)).json();
     const ingredients = source.ingredients.filter((line: { ingredientId: number | null }) => line.ingredientId != null);
     expect(ingredients.length).toBeGreaterThan(0);
-    const assistance = { contentType: 'DESCRIPTION', title: source.title, dishCategory: source.dishCategory,
-      vegetarianType: source.vegetarianType, servings: source.servings,
-      ingredients: ingredients.map((line: { ingredientId: number; unitId: number; quantity: number }) => ({
-        ingredientId: line.ingredientId, unitId: line.unitId, quantity: line.quantity,
-      })) };
-    const denied = await request.post(`${backend}/recipes/ai-assistance`, { headers, data: assistance });
-    expect(denied.status()).toBe(403);
-    expect(await denied.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PRO', upgradeUrl: '/goi-ai' });
     const chatMenu = () => request.post(`${backend}/recipes/ai/chat`, { headers,
       data: { contextType: 'GENERAL', question: 'Lập thực đơn tuần 7 ngày theo dinh dưỡng cá nhân', history: [] } });
     const freeChat = await chatMenu();
@@ -92,27 +84,6 @@ test('FR-10: real JWT and SQL subscription changes select the correct upgrade an
     await expect(section.getByRole('alert')).toContainText('gói AI PRO');
     await expect(section.getByRole('link', { name: 'Nâng cấp gói AI PRO' })).toHaveAttribute('href', '/goi-ai');
     await page.screenshot({ path: testInfo.outputPath('fr10-upgrade.png') });
-    // The inline Gemini action must still reach the server guard after paid entitlement expires.
-    await page.goto('/dang-cong-thuc');
-    await page.getByLabel('Tên món *').waitFor({ state: 'visible', timeout: 30_000 });
-    await page.getByLabel('Tên món *').fill(source.title);
-    await page.getByLabel('Thể loại món').selectOption(source.dishCategory);
-    await page.getByLabel('Loại ăn chay').selectOption(source.vegetarianType);
-    await page.getByLabel('Khẩu phần').fill(String(source.servings));
-    await page.getByLabel('Chọn nguyên liệu 1').fill(ingredients[0].name);
-    await page.getByRole('button', { name: ingredients[0].name, exact: true }).click();
-    await page.getByLabel('Số lượng nguyên liệu 1').fill(String(ingredients[0].quantity));
-    await page.getByLabel('Đơn vị nguyên liệu 1').selectOption(String(ingredients[0].unitId));
-    const rejectedAssistance = page.waitForResponse(response => response.url().endsWith('/recipes/ai-assistance')
-      && response.request().method() === 'POST');
-    await page.getByRole('button', { name: 'AI gợi ý viết mô tả' }).click();
-    const rejection = await rejectedAssistance;
-    expect(rejection.status()).toBe(403);
-    expect(await rejection.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PRO' });
-    await expect(page.getByRole('link', { name: 'Nâng cấp gói AI PRO' })).toHaveAttribute('href', '/goi-ai');
-    await page.screenshot({ path: testInfo.outputPath('fr10-inline-upgrade.png'), animations: 'disabled' });
-    await expect(page.getByRole('textbox', { name: 'Mô tả' })).toHaveValue('');
-    await expect(page.getByLabel('Số lượng nguyên liệu 1')).toHaveValue(String(ingredients[0].quantity));
     expect(sql(`SELECT COUNT(*) FROM [SUBSCRIPTION] WHERE user_id=${member} AND tier='PLUS'`)).toBe('1');
     expect(sql(`SELECT COUNT(*) FROM [RECIPE_POST] WHERE author_id=${member}`)).toBe('0');
   } finally {

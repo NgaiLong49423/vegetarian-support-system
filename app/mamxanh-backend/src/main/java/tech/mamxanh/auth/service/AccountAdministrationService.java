@@ -1,8 +1,5 @@
 package tech.mamxanh.auth.service;
 
-import java.time.Clock;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,6 +7,10 @@ import tech.mamxanh.auth.entity.AccountStatus;
 import tech.mamxanh.auth.entity.Role;
 import tech.mamxanh.auth.repository.UserRepository;
 import tech.mamxanh.common.exception.ApiException;
+
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 /** Auth-module boundary for Administrator changes to account role and status. */
 @Service

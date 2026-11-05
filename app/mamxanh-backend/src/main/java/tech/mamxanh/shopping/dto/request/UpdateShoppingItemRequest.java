@@ -1,7 +1,8 @@
 package tech.mamxanh.shopping.dto.request;
 
-import java.math.BigDecimal;
 import jakarta.validation.constraints.*;
+
+import java.math.BigDecimal;
 
 /** Quantity/unit edits never replace the ingredient identity or bought state. */
 public record UpdateShoppingItemRequest(

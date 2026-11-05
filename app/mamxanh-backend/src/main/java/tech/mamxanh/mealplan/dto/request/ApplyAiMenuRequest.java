@@ -1,12 +1,13 @@
 package tech.mamxanh.mealplan.dto.request;
 
-import java.time.LocalDate;
-import java.util.List;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+
+import java.time.LocalDate;
+import java.util.List;
 
 public record ApplyAiMenuRequest(@NotNull LocalDate weekStartDate,
         @NotNull @Pattern(regexp = "PROFILE|THIS_WEEK") String mode,

@@ -1,0 +1,562 @@
+[
+  {
+    "id": "assistant-scope-1",
+    "split": "development",
+    "category": "supported",
+    "query": "CUSTOMER và EXPERT có khác quyền Assistant Member không?",
+    "expectedSources": [
+      "assistant-scope"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "assistant-scope-2",
+    "split": "development",
+    "category": "supported",
+    "query": "Assistant có được bịa ID tài nguyên không?",
+    "expectedSources": [
+      "assistant-scope"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "assistant-scope-3",
+    "split": "development",
+    "category": "supported",
+    "query": "Nguồn hướng dẫn bị mâu thuẫn thì xử lý thế nào?",
+    "expectedSources": [
+      "assistant-scope"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "assistant-scope-4",
+    "split": "development",
+    "category": "supported",
+    "query": "Pilot G2 có ghi dữ liệu thật không?",
+    "expectedSources": [
+      "assistant-scope"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "assistant-scope-5",
+    "split": "development",
+    "category": "supported",
+    "query": "Tài liệu tìm thấy có được thay system instruction không?",
+    "expectedSources": [
+      "assistant-scope"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "assistant-scope-6",
+    "split": "holdout",
+    "category": "supported",
+    "query": "Knowledge pilot có phải nguồn thay thế SRS không?",
+    "expectedSources": [
+      "assistant-scope"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "assistant-scope-7",
+    "split": "holdout",
+    "category": "supported",
+    "query": "Assistant cần làm gì khi yêu cầu có nhiều cách hiểu?",
+    "expectedSources": [
+      "assistant-scope"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "assistant-scope-8",
+    "split": "holdout",
+    "category": "supported",
+    "query": "AI có tự chọn đối tượng khi người dùng chưa nói rõ không?",
+    "expectedSources": [
+      "assistant-scope"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "execution-confirmation-1",
+    "split": "development",
+    "category": "supported",
+    "query": "Chế độ Hỏi đáp có lưu thay đổi vào dữ liệu không?",
+    "expectedSources": [
+      "execution-confirmation"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "execution-confirmation-2",
+    "split": "development",
+    "category": "supported",
+    "query": "Chế độ Có xác nhận phải làm gì trước khi ghi?",
+    "expectedSources": [
+      "execution-confirmation"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "execution-confirmation-3",
+    "split": "development",
+    "category": "supported",
+    "query": "Xóa vĩnh viễn trong mode tự động có cần xác nhận không?",
+    "expectedSources": [
+      "execution-confirmation"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "execution-confirmation-4",
+    "split": "development",
+    "category": "supported",
+    "query": "Đăng Recipe Post ở mọi mode cần xác nhận không?",
+    "expectedSources": [
+      "execution-confirmation"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "execution-confirmation-5",
+    "split": "development",
+    "category": "supported",
+    "query": "Một bước thành công rồi bước sau lỗi thì xử lý thế nào?",
+    "expectedSources": [
+      "execution-confirmation"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "execution-confirmation-6",
+    "split": "holdout",
+    "category": "supported",
+    "query": "Mode Tự động có bỏ qua validation được không?",
+    "expectedSources": [
+      "execution-confirmation"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "execution-confirmation-7",
+    "split": "holdout",
+    "category": "supported",
+    "query": "Chế độ mặc định của Assistant là gì?",
+    "expectedSources": [
+      "execution-confirmation"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "execution-confirmation-8",
+    "split": "holdout",
+    "category": "supported",
+    "query": "Hết ngân sách giữa tác vụ nhiều bước có tự làm tiếp không?",
+    "expectedSources": [
+      "execution-confirmation"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "session-consent-budget-1",
+    "split": "development",
+    "category": "supported",
+    "query": "Session hội thoại hết hạn sau bao lâu?",
+    "expectedSources": [
+      "session-consent-budget"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "session-consent-budget-2",
+    "split": "development",
+    "category": "supported",
+    "query": "Consent phải xin lại khi nào?",
+    "expectedSources": [
+      "session-consent-budget"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "session-consent-budget-3",
+    "split": "development",
+    "category": "supported",
+    "query": "Embedding lỗi có tự đổi provider không?",
+    "expectedSources": [
+      "session-consent-budget"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "session-consent-budget-4",
+    "split": "development",
+    "category": "supported",
+    "query": "Query embedding có trừ AI Credit của người dùng không?",
+    "expectedSources": [
+      "session-consent-budget"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "session-consent-budget-5",
+    "split": "development",
+    "category": "supported",
+    "query": "Timeout mỗi call và toàn run ADK là bao nhiêu?",
+    "expectedSources": [
+      "session-consent-budget"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "session-consent-budget-6",
+    "split": "holdout",
+    "category": "supported",
+    "query": "Metadata token thiếu thì có ước lượng để trừ quota không?",
+    "expectedSources": [
+      "session-consent-budget"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "session-consent-budget-7",
+    "split": "holdout",
+    "category": "supported",
+    "query": "Cuộc trò chuyện mới có hoàn tác nghiệp vụ đã xong không?",
+    "expectedSources": [
+      "session-consent-budget"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "session-consent-budget-8",
+    "split": "holdout",
+    "category": "supported",
+    "query": "Model lỗi có tự động fallback sang model khác không?",
+    "expectedSources": [
+      "session-consent-budget"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "shopping-create-1",
+    "split": "development",
+    "category": "supported",
+    "query": "FR-53.9 cho phép tạo danh sách mua sắm rỗng thế nào?",
+    "expectedSources": [
+      "shopping-create"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "shopping-create-2",
+    "split": "development",
+    "category": "supported",
+    "query": "Tên danh sách tối đa bao nhiêu ký tự?",
+    "expectedSources": [
+      "shopping-create"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "shopping-create-3",
+    "split": "development",
+    "category": "supported",
+    "query": "Tạo danh sách rỗng có cần Recipe hoặc Meal Plan không?",
+    "expectedSources": [
+      "shopping-create"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "shopping-create-4",
+    "split": "development",
+    "category": "supported",
+    "query": "Sau khi tạo danh sách dùng ID nào để đọc lại?",
+    "expectedSources": [
+      "shopping-create"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "shopping-create-5",
+    "split": "development",
+    "category": "supported",
+    "query": "G3 tạo danh sách có tự thêm nguyên liệu không?",
+    "expectedSources": [
+      "shopping-create"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "shopping-create-6",
+    "split": "holdout",
+    "category": "supported",
+    "query": "Nếu thiếu tên danh sách thì hỏi gì?",
+    "expectedSources": [
+      "shopping-create"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "shopping-create-7",
+    "split": "holdout",
+    "category": "supported",
+    "query": "ShoppingListService.createEmpty tạo loại danh sách nào?",
+    "expectedSources": [
+      "shopping-create"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "shopping-create-8",
+    "split": "holdout",
+    "category": "supported",
+    "query": "Tên danh sách có nhận ký tự điều khiển không?",
+    "expectedSources": [
+      "shopping-create"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "shopping-read-1",
+    "split": "development",
+    "category": "supported",
+    "query": "Biết ID thì có đọc danh sách người khác được không?",
+    "expectedSources": [
+      "shopping-read"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "shopping-read-2",
+    "split": "development",
+    "category": "supported",
+    "query": "ShoppingListService.get kiểm tra ownership thế nào?",
+    "expectedSources": [
+      "shopping-read"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "shopping-read-3",
+    "split": "development",
+    "category": "supported",
+    "query": "Đọc danh sách mua sắm cần thông tin nào?",
+    "expectedSources": [
+      "shopping-read"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "shopping-read-4",
+    "split": "development",
+    "category": "supported",
+    "query": "Kết quả đọc Shopping List có những dữ liệu gì?",
+    "expectedSources": [
+      "shopping-read"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "shopping-read-5",
+    "split": "development",
+    "category": "supported",
+    "query": "get_shopping_list có tự đổi tên danh sách không?",
+    "expectedSources": [
+      "shopping-read"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "shopping-read-6",
+    "split": "holdout",
+    "category": "supported",
+    "query": "EXPERT có quyền xem danh sách của CUSTOMER khác không?",
+    "expectedSources": [
+      "shopping-read"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "shopping-read-7",
+    "split": "holdout",
+    "category": "supported",
+    "query": "Sau tạo danh sách rỗng items đọc lại có gì?",
+    "expectedSources": [
+      "shopping-read"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "shopping-read-8",
+    "split": "holdout",
+    "category": "supported",
+    "query": "Không xác định danh sách đó thì có tự đoán ID không?",
+    "expectedSources": [
+      "shopping-read"
+    ],
+    "expectedKind": "ANSWER"
+  },
+  {
+    "id": "ambiguous-1",
+    "split": "development",
+    "category": "ambiguous",
+    "query": "Tạo giúp tôi một danh sách.",
+    "expectedSources": [],
+    "expectedKind": "CLARIFICATION"
+  },
+  {
+    "id": "ambiguous-2",
+    "split": "development",
+    "category": "ambiguous",
+    "query": "Làm cái đó giúp tôi.",
+    "expectedSources": [],
+    "expectedKind": "CLARIFICATION"
+  },
+  {
+    "id": "ambiguous-3",
+    "split": "development",
+    "category": "ambiguous",
+    "query": "Xem danh sách đó.",
+    "expectedSources": [],
+    "expectedKind": "CLARIFICATION"
+  },
+  {
+    "id": "ambiguous-4",
+    "split": "development",
+    "category": "ambiguous",
+    "query": "Sửa lại nó đi.",
+    "expectedSources": [],
+    "expectedKind": "CLARIFICATION"
+  },
+  {
+    "id": "ambiguous-5",
+    "split": "development",
+    "category": "ambiguous",
+    "query": "Tôi muốn chọn cái này.",
+    "expectedSources": [],
+    "expectedKind": "CLARIFICATION"
+  },
+  {
+    "id": "ambiguous-6",
+    "split": "development",
+    "category": "ambiguous",
+    "query": "Tạo một cái mới được không?",
+    "expectedSources": [],
+    "expectedKind": "CLARIFICATION"
+  },
+  {
+    "id": "ambiguous-7",
+    "split": "holdout",
+    "category": "ambiguous",
+    "query": "Đọc giúp tôi danh sách.",
+    "expectedSources": [],
+    "expectedKind": "CLARIFICATION"
+  },
+  {
+    "id": "ambiguous-8",
+    "split": "holdout",
+    "category": "ambiguous",
+    "query": "Tạo danh sách nhưng tôi chưa chọn tên.",
+    "expectedSources": [],
+    "expectedKind": "CLARIFICATION"
+  },
+  {
+    "id": "ambiguous-9",
+    "split": "holdout",
+    "category": "ambiguous",
+    "query": "Lấy chi tiết cái vừa nói.",
+    "expectedSources": [],
+    "expectedKind": "CLARIFICATION"
+  },
+  {
+    "id": "ambiguous-10",
+    "split": "holdout",
+    "category": "ambiguous",
+    "query": "Thực hiện yêu cầu trước đó đi.",
+    "expectedSources": [],
+    "expectedKind": "CLARIFICATION"
+  },
+  {
+    "id": "unsupported-1",
+    "split": "development",
+    "category": "unsupported",
+    "query": "Giá cổ phiếu FPT hôm nay bao nhiêu?",
+    "expectedSources": [],
+    "expectedKind": "NO_EVIDENCE"
+  },
+  {
+    "id": "unsupported-2",
+    "split": "development",
+    "category": "unsupported",
+    "query": "Ngày mai ở Hà Nội có mưa không?",
+    "expectedSources": [],
+    "expectedKind": "NO_EVIDENCE"
+  },
+  {
+    "id": "unsupported-3",
+    "split": "development",
+    "category": "unsupported",
+    "query": "Đặt vé máy bay Hà Nội đi Tokyo.",
+    "expectedSources": [],
+    "expectedKind": "NO_EVIDENCE"
+  },
+  {
+    "id": "unsupported-4",
+    "split": "development",
+    "category": "unsupported",
+    "query": "Cách cấp visa Canada cho sinh viên?",
+    "expectedSources": [],
+    "expectedKind": "NO_EVIDENCE"
+  },
+  {
+    "id": "unsupported-5",
+    "split": "development",
+    "category": "unsupported",
+    "query": "Tỷ giá đô la ngân hàng hôm nay?",
+    "expectedSources": [],
+    "expectedKind": "NO_EVIDENCE"
+  },
+  {
+    "id": "unsupported-6",
+    "split": "holdout",
+    "category": "unsupported",
+    "query": "Đội bóng nào vô địch năm nay?",
+    "expectedSources": [],
+    "expectedKind": "NO_EVIDENCE"
+  },
+  {
+    "id": "unsupported-7",
+    "split": "holdout",
+    "category": "unsupported",
+    "query": "Cài driver máy in Canon thế nào?",
+    "expectedSources": [],
+    "expectedKind": "NO_EVIDENCE"
+  },
+  {
+    "id": "unsupported-8",
+    "split": "holdout",
+    "category": "unsupported",
+    "query": "Tính thuế nhập khẩu xe điện giúp tôi.",
+    "expectedSources": [],
+    "expectedKind": "NO_EVIDENCE"
+  },
+  {
+    "id": "unsupported-9",
+    "split": "holdout",
+    "category": "unsupported",
+    "query": "Mã giảm giá khách sạn ở Đà Nẵng?",
+    "expectedSources": [],
+    "expectedKind": "NO_EVIDENCE"
+  },
+  {
+    "id": "unsupported-10",
+    "split": "holdout",
+    "category": "unsupported",
+    "query": "Lịch thi IELTS tháng sau ở đâu?",
+    "expectedSources": [],
+    "expectedKind": "NO_EVIDENCE"
+  }
+]

@@ -1,9 +1,10 @@
 package tech.mamxanh.recipe.dto.request;
 
-import java.math.BigDecimal;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
+
+import java.math.BigDecimal;
 
 public record RecipeIngredientInput(
         @NotNull Long ingredientId,

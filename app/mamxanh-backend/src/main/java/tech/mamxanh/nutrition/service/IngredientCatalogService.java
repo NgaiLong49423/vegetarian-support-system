@@ -1,11 +1,5 @@
 package tech.mamxanh.nutrition.service;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.sql.SQLException;
-import java.util.Optional;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -14,31 +8,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.mamxanh.common.exception.ApiException;
 import tech.mamxanh.common.response.PageResponse;
-import tech.mamxanh.nutrition.dto.request.CatalogStatusUpdateRequest;
-import tech.mamxanh.nutrition.dto.request.ConversionSaveRequest;
-import tech.mamxanh.nutrition.dto.request.IngredientNutritionRequest;
-import tech.mamxanh.nutrition.dto.request.IngredientSaveRequest;
-import tech.mamxanh.nutrition.dto.request.NutritionSupportUpdateRequest;
-import tech.mamxanh.nutrition.dto.request.UnitSaveRequest;
-import tech.mamxanh.nutrition.dto.request.VolumeConversionSaveRequest;
-import tech.mamxanh.nutrition.dto.response.ConversionResponse;
-import tech.mamxanh.nutrition.dto.response.IngredientNutritionResponse;
-import tech.mamxanh.nutrition.dto.response.IngredientResponse;
-import tech.mamxanh.nutrition.dto.response.PublicIngredientGroupResponse;
-import tech.mamxanh.nutrition.dto.response.PublicIngredientDetailResponse;
-import tech.mamxanh.nutrition.dto.response.PublicIngredientResponse;
-import tech.mamxanh.nutrition.dto.response.UnitResponse;
-import tech.mamxanh.nutrition.dto.response.IngredientUnitOptionResponse;
-import tech.mamxanh.nutrition.entity.IngredientEntity;
-import tech.mamxanh.nutrition.entity.IngredientUnitConversionEntity;
-import tech.mamxanh.nutrition.entity.IngredientUnitConversionId;
-import tech.mamxanh.nutrition.entity.MeasurementDimension;
-import tech.mamxanh.nutrition.entity.CatalogStatus;
-import tech.mamxanh.nutrition.entity.UnitEntity;
 import tech.mamxanh.nutrition.config.NutritionCatalogProperties;
+import tech.mamxanh.nutrition.dto.request.*;
+import tech.mamxanh.nutrition.dto.response.*;
+import tech.mamxanh.nutrition.entity.*;
 import tech.mamxanh.nutrition.repository.IngredientRepository;
 import tech.mamxanh.nutrition.repository.IngredientUnitConversionRepository;
 import tech.mamxanh.nutrition.repository.UnitRepository;
+
+import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class IngredientCatalogService implements IngredientCatalogLookupService, IngredientConversionLookupService {

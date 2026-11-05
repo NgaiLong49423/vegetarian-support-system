@@ -1,11 +1,12 @@
 package tech.mamxanh.mealplan.dto.request;
 
-import java.math.BigDecimal;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
-import io.swagger.v3.oas.annotations.media.Schema;
+
+import java.math.BigDecimal;
 
 public record UpdateMealPlanServingsRequest(
         @NotNull @DecimalMin("0.5") @DecimalMax("10") @Digits(integer = 2, fraction = 1)

@@ -1,18 +1,15 @@
 package tech.mamxanh.recipe.service;
 
-import java.text.Normalizer;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.nutrition.dto.response.IngredientResponse;
+
+import java.text.Normalizer;
+import java.util.*;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 final class AiIngredientMentionGuard {
     private static final Logger LOG = LoggerFactory.getLogger(AiIngredientMentionGuard.class);

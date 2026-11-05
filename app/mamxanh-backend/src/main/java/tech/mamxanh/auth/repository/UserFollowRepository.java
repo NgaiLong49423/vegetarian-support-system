@@ -1,15 +1,15 @@
 package tech.mamxanh.auth.repository;
 
-import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
 import tech.mamxanh.auth.entity.UserFollow;
 import tech.mamxanh.auth.entity.UserFollowId;
+
+import java.util.List;
 
 /** FR-59 queries. Counts and lists include only ACTIVE counterpart accounts (AC-59.7). */
 public interface UserFollowRepository extends JpaRepository<UserFollow, UserFollowId> {

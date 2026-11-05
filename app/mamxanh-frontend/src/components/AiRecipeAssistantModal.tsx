@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import {
   Sparkles,
   ArrowDownToLine,
@@ -45,7 +44,6 @@ interface AiRecipeAssistantModalProps {
   onClose: () => void;
   options: RecipeFormOptions | null;
   onApplyRecipe: (recipe: GeneratedRecipeData) => void;
-  isPro?: boolean;
 }
 
 // Bảng phân bổ 3 buổi ăn chính + bữa phụ theo khuyến nghị dinh dưỡng (chuẩn 2.000 kcal/ngày)
@@ -305,15 +303,7 @@ export function AiRecipeAssistantModal({
   onClose,
   options: _options,
   onApplyRecipe,
-  isPro,
 }: AiRecipeAssistantModalProps) {
-  const effectiveIsPro = Boolean(isPro);
-
-  useEffect(() => {
-    if (!effectiveIsPro) {
-      setGeneratedResult(null);
-    }
-  }, [effectiveIsPro]);
 
   const [selectedMeal, setSelectedMeal] = useState<MealSession>('BREAKFAST');
   const [dishIdea, setDishIdea] = useState('Xào cà chua với trứng');
@@ -343,7 +333,6 @@ export function AiRecipeAssistantModal({
 
   // Thuật toán AI phân giải nguyên liệu & tối ưu hóa calo chuẩn xác cao
   const generateRecipe = () => {
-    if (!effectiveIsPro) return;
     setIsGenerating(true);
 
     setTimeout(() => {
@@ -684,32 +673,6 @@ export function AiRecipeAssistantModal({
   return (
     <Modal open={open} onClose={onClose} title="Trợ lý AI đồng hành cùng Chuyên gia ẩm thực" size="lg">
       <div className="space-y-5">
-        {!effectiveIsPro && (
-          <div
-            role="alert"
-            className="flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 shadow-sm dark:border-amber-700 dark:bg-amber-950/60 dark:text-amber-100"
-          >
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-            <div className="flex-1 space-y-1">
-              <p className="font-bold text-amber-950 dark:text-amber-200">
-                Tính năng Trợ lý AI yêu cầu gói AI PRO còn hiệu lực
-              </p>
-              <p className="text-xs text-amber-900/90 dark:text-amber-100/90">
-                Trợ lý AI phân tích nguyên liệu, gợi ý định lượng chuẩn và tối ưu hóa calo là tính năng cao cấp dành riêng cho Chuyên gia sở hữu gói AI PRO. Tài khoản của bạn hiện chưa kích hoạt gói PRO.
-              </p>
-              <div className="pt-1.5">
-                <Link
-                  to="/goi-ai"
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-md hover:from-amber-600 hover:to-orange-700 transition"
-                >
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Nâng cấp lên gói AI PRO
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Lời dẫn & Tuyên bố miễn trừ chuyên môn: Không khẳng định AI luôn đúng, tôn trọng chuyên môn chuyên gia */}
         <div className="flex items-start gap-2.5 rounded-xl border border-amber-300 bg-amber-50 p-3.5 text-xs leading-relaxed text-amber-950 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-100">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
@@ -878,19 +841,11 @@ export function AiRecipeAssistantModal({
           <Button
             type="button"
             onClick={generateRecipe}
-            disabled={isGenerating || !rawIngredients.trim() || !effectiveIsPro}
-            className={`flex items-center gap-2 font-bold px-4 py-2.5 rounded-xl shadow-sm transition ${
-              !effectiveIsPro
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400'
-                : 'bg-gradient-to-r from-brand-600 to-amber-600 hover:from-brand-700 hover:to-amber-700 text-white'
-            }`}
+            disabled={isGenerating || !rawIngredients.trim()}
+            className="flex items-center gap-2 bg-gradient-to-r from-brand-600 to-amber-600 hover:from-brand-700 hover:to-amber-700 text-white font-bold px-4 py-2.5 rounded-xl shadow-sm"
           >
             <Sparkles className="h-4 w-4" />
-            {!effectiveIsPro
-              ? 'Yêu cầu gói AI PRO để phân tích'
-              : isGenerating
-                ? 'Đang giải bài toán định lượng calo...'
-                : 'Phân tích nguyên liệu & gợi ý định lượng'}
+            {isGenerating ? 'Đang giải bài toán định lượng calo...' : 'Phân tích nguyên liệu & gợi ý định lượng'}
           </Button>
         </div>
 

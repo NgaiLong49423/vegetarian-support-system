@@ -1,11 +1,5 @@
 package tech.mamxanh.auth.service;
 
-import java.util.List;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,6 +10,13 @@ import tech.mamxanh.auth.entity.User;
 import tech.mamxanh.auth.repository.UserRepository;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /** Public auth-module boundary for resolving the authenticated account from the security context. */
 @Service

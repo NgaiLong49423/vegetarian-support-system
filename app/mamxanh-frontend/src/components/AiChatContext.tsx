@@ -24,12 +24,13 @@ export type AiChatContextValue = {
   recipeArticle: RecipeArticleContext | null;
   openChat: (recipe?: RecipeArticleContext) => void;
   closeChat: () => void;
+  startNewChat: () => void;
 };
 
 export const AiChatContext = createContext<AiChatContextValue | null>(null);
 
 export function useAiChat() {
   const context = useContext(AiChatContext);
-  if (!context) throw new Error('useAiChat must be used inside the application layout');
+  if (!context) throw new Error('useAiChat must be used inside the AI chat host');
   return context;
 }
