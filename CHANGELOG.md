@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.149.0
+> **Version:** v2.150.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-11-05
 > **Status:** Active
@@ -8,6 +8,25 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-11-05 — Email Moderation Outcomes to Reporters and Authors (Issue #51)
+
+**Status:** Working tree — not committed.
+
+**Scope:** Complete FR-49 (UC-49.3) by emailing the result of an Administrator's report decision to the reporter and to the author who is warned, has the post hidden or has the account locked.
+
+### Added
+
+- Email each moderation outcome after the decision commits, on an async thread, using the same title and message as the in-app notification so no reporter identity appears (BR-28, AC-49.4).
+- Add SQL Server integration tests for the reporter and author emails, a locked author, an unverified address, a rejected decision and an email server failure.
+
+### Changed
+
+- Send moderation outcome emails to verified addresses regardless of the reply email preference, because FR-49 gives moderation results priority. Document this in `docs/api/API.md` sections 21 and 23 and the Backend README; no API or migration change.
+
+### Fixed
+
+- Stop linking the reporter's `REPORT_RESULT` notification and email to a post the decision has hidden, which opened on a "not found" page.
 
 ## 2026-11-05 — Verify AI Assistant Navigation Results
 
