@@ -1,7 +1,5 @@
 package tech.mamxanh.common.config;
 
-import java.util.List;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -10,6 +8,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 /**
  * CORS allowlist for the browser client (docs/api/API.md section 6). Origins come from
@@ -35,6 +35,10 @@ public class CorsConfig {
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        CorsConfiguration guestChat = new CorsConfiguration(configuration);
+        guestChat.setAllowedHeaders(new java.util.ArrayList<>(configuration.getAllowedHeaders()));
+        guestChat.addAllowedHeader("X-Guest-Chat-Id");
+        source.registerCorsConfiguration("/api/v1/recipes/ai/chat", guestChat);
         source.registerCorsConfiguration("/api/**", configuration);
         return source;
     }

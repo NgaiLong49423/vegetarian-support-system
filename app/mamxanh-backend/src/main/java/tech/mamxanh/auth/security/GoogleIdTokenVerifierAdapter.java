@@ -1,11 +1,11 @@
 package tech.mamxanh.auth.security;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Optional;
-
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 
 /**
  * Q25: verifies Google ID Tokens with Google API Client's {@link GoogleIdTokenVerifier}, which checks

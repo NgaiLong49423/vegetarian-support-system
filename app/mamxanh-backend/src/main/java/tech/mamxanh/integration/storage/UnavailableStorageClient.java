@@ -1,10 +1,11 @@
 package tech.mamxanh.integration.storage;
 
-import java.io.InputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
+
+import java.io.InputStream;
 
 /** Keeps unrelated application features available without fabricating successful uploads. */
 public class UnavailableStorageClient implements StorageClient {

@@ -1,8 +1,5 @@
 package tech.mamxanh.auth.security;
 
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -10,6 +7,9 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 /** Creates local-only BCrypt credentials for all 25 Flyway demo accounts after seed data is loaded. */
 @Component

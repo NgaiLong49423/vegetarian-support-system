@@ -1,4 +1,5 @@
-import { apiClient, asApiError } from '../lib/apiClient';
+import { apiClient, asApiError, API_BASE_URL, ApiError } from '../lib/apiClient';
+import { loadSession } from '../lib/authStorage';
 
 export type Choice = { code: string; label: string };
 export type RecipeUnitOption = { unitId: number; code: string; name: string; dimension: string };
@@ -267,9 +268,35 @@ export interface RecipeReferenceData {
 }
 
 export type AiChatContext = 'GENERAL' | 'RECIPE';
+export type AiExecutionMode = 'QA' | 'CONFIRM' | 'AUTO' | 'CHATBOT' | 'AGENT';
+export interface AiConsentScope {
+  category: 'BASIC_PROFILE' | 'DIETARY_PREFERENCES' | 'HEALTH_PROFILE' | 'SHOPPING_LIST';
+  purpose: 'AI_CHAT' | 'PROFILE_READ' | 'PROFILE_UPDATE' | 'DIETARY_READ' | 'DIETARY_UPDATE' | 'HEALTH_PROFILE_READ' | 'HEALTH_PROFILE_UPDATE' | 'SHOPPING_LIST_READ' | 'SHOPPING_LIST_WRITE';
+}
+export interface AiAssistantStep {
+  sequence: number;
+  tool: string;
+  status: string;
+  summary: string;
+  result: Record<string, unknown> | null;
+}
+export interface AiPendingConfirmation {
+  confirmationId: string;
+  summary: string;
+  expiresAt: string;
+  requiresExplicitConfirmation: boolean;
+  proposedListName?: string | null;
+}
 export interface AiChatTurn { speaker: 'USER' | 'ASSISTANT'; content: string; recommendedRecipeIds?: number[] }
 export interface AiChatRequest {
   anonymousViewerId?: string;
+  executionMode?: AiExecutionMode;
+  sessionId?: string;
+  clientRequestId?: string;
+  controlAction?: 'CANCEL';
+  consentDecision?: { action: 'GRANT' | 'REVOKE'; scopes: AiConsentScope[] };
+  confirmationId?: string;
+  confirmationDecision?: 'APPROVE' | 'REJECT';
   contextType: AiChatContext;
   recipeId?: number;
   question: string;
@@ -280,6 +307,17 @@ export interface AiChatResponse {
   recipeId: number | null;
   answer: string;
   workflowUrl?: string | null;
+  sessionId?: string | null;
+  executionMode?: AiExecutionMode;
+  runId?: string | null;
+  engine?: string | null;
+  runStatus?: string | null;
+  sessionExpiresAt?: string | null;
+  knowledgeRevision?: string | null;
+  steps?: AiAssistantStep[];
+  consentRequest?: { scopes: AiConsentScope[]; recipient: string } | null;
+  pendingConfirmation?: AiPendingConfirmation | null;
+  sources?: Array<{ type: string; id: string; title: string; excerpt: string; uri: string | null; version?: string | null }>;
   recommendations: Array<{
     id: number;
     title: string;
@@ -319,9 +357,158 @@ export const recipeReactionApi = {
   remove: (id: number) => request(() => apiClient.delete<RecipeReactionResponse>(`/recipes/${id}/reaction`)),
 };
 
+
+export interface AiChatStreamCallbacks {
+  onStep?: (step: AiAssistantStep) => void;
+  onDelta?: (delta: string) => void;
+  onConfirmation?: (confirmation: AiPendingConfirmation) => void;
+}
+
+export async function streamAiChat(
+  payload: AiChatRequest,
+  callbacks: AiChatStreamCallbacks = {},
+  signal?: AbortSignal,
+): Promise<AiChatResponse> {
+  const token = loadSession()?.accessToken;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'text/event-stream',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  if (payload.anonymousViewerId) {
+    headers['X-Anonymous-Viewer'] = payload.anonymousViewerId;
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/recipes/ai/chat/stream`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+      signal,
+    });
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    return recipesApi.chat(payload);
+  }
+
+  if (response.status === 404) {
+    return recipesApi.chat(payload);
+  }
+
+  if (response.headers.get('content-type')?.includes('application/json')) {
+    if (!response.ok) {
+      let errorData: any;
+      try {
+        errorData = await response.json();
+      } catch {
+        // not json
+      }
+      const message = errorData?.message || errorData?.detail || `HTTP ${response.status}`;
+      throw new ApiError(message, response.status, errorData?.code);
+    }
+    return (await response.json()) as AiChatResponse;
+  }
+
+  if (!response.ok) {
+    let errorData: any;
+    try {
+      errorData = await response.json();
+    } catch {
+      // not json
+    }
+    const message = errorData?.message || errorData?.detail || `HTTP ${response.status}`;
+    throw new ApiError(message, response.status, errorData?.code);
+  }
+
+  if (!response.body) {
+    throw new ApiError('No response body for streaming', 500);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+  let finalResponse: AiChatResponse | null = null;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const blocks = buffer.split('\n\n');
+      buffer = blocks.pop() ?? '';
+
+      for (const block of blocks) {
+        if (!block.trim()) continue;
+        const lines = block.split('\n');
+        let eventType = 'message';
+        let dataStr = '';
+
+        for (const line of lines) {
+          if (line.startsWith('event:')) {
+            eventType = line.slice(6).trim();
+          } else if (line.startsWith('data:')) {
+            dataStr += line.slice(5).trim();
+          }
+        }
+
+        if (!dataStr) continue;
+
+        try {
+          const parsed = JSON.parse(dataStr);
+          if (eventType === 'delta') {
+            callbacks.onDelta?.(parsed.delta ?? '');
+          } else if (eventType === 'step') {
+            callbacks.onStep?.(parsed as AiAssistantStep);
+          } else if (eventType === 'confirmation') {
+            callbacks.onConfirmation?.(parsed as AiPendingConfirmation);
+          } else if (eventType === 'complete') {
+            finalResponse = parsed as AiChatResponse;
+          } else if (eventType === 'error') {
+            throw new ApiError(parsed.message || 'Lỗi streaming', 500, parsed.status);
+          }
+        } catch (parseErr) {
+          if (parseErr instanceof ApiError) throw parseErr;
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  if (!finalResponse) {
+    throw new ApiError('Luồng trả lời kết thúc trước khi có sự kiện hoàn tất.', 502, 'AI_STREAM_INCOMPLETE');
+  }
+
+  return finalResponse;
+}
+
 export const recipesApi = {
+  chatExecution: (clientRequestId: string) => request(
+    () => apiClient.get<{ clientRequestId: string; actionId: string; state: string; shoppingListId: number | null }>(
+      `/recipes/ai/chat/executions/${clientRequestId}`),
+  ),
   chat: (payload: AiChatRequest) => request(
-    () => apiClient.post<AiChatResponse>('/recipes/ai/chat', payload, { timeout: 12_000 }),
+    () => apiClient.post<AiChatResponse>('/recipes/ai/chat', payload, { timeout: 35_000 }),
+  ),
+  chatStream: streamAiChat,
+  chatCancel: (sessionId: string | undefined, anonymousViewerId?: string, clientRequestId?: string) => request(
+    () => apiClient.post<AiChatResponse>('/recipes/ai/chat/cancel', {
+      contextType: 'GENERAL',
+      question: 'Dừng',
+      history: [],
+      ...(sessionId ? { sessionId } : {}),
+      anonymousViewerId,
+      ...(clientRequestId ? { clientRequestId } : {}),
+      controlAction: 'CANCEL',
+    }),
+  ),
+  clearChatSession: (sessionId: string, anonymousViewerId?: string) => request(
+    () => apiClient.delete<void>(`/recipes/ai/chat/sessions/${sessionId}`, {
+      params: anonymousViewerId ? { anonymousViewerId } : undefined,
+    }),
   ),
   recommendByIngredients: (ingredientIds: number[]) => request(
     () => apiClient.post<AiRecipeSuggestion>('/recipes/ai/recommendations', { ingredientIds }, { timeout: 60_000 }),

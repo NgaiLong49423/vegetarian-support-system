@@ -1,10 +1,11 @@
 package tech.mamxanh.shopping.dto.request;
 
-import java.time.LocalDate;
-import java.util.List;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import io.swagger.v3.oas.annotations.media.Schema;
+
+import java.time.LocalDate;
+import java.util.List;
 
 public record CreateMealPlanShoppingListRequest(
         @NotNull LocalDate weekStartDate,

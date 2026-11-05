@@ -1,12 +1,12 @@
 package tech.mamxanh.common.config;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneId;
-
 import org.springframework.boot.validation.autoconfigure.ValidationConfigurationCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 
 /**
  * Single UTC time source. Services take the time from this {@link Clock} instead of calling

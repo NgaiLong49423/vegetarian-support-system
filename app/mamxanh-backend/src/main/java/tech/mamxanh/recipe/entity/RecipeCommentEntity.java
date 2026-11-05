@@ -1,18 +1,12 @@
 package tech.mamxanh.recipe.entity;
 
-import java.time.LocalDateTime;
-
-import org.hibernate.annotations.Nationalized;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Nationalized;
+
+import java.time.LocalDateTime;
 
 /**
  * FR-46 comment or reply on a Recipe Post ({@code COMMENT}). A reply copies its parent's recipe and

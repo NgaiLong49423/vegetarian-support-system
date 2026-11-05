@@ -1,16 +1,11 @@
 package tech.mamxanh.auth.service;
 
-import java.time.Clock;
-import java.time.LocalDateTime;
-import java.util.Optional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
-
 import tech.mamxanh.auth.dto.response.AccountSummary;
 import tech.mamxanh.auth.dto.response.AuthResponse;
 import tech.mamxanh.auth.entity.AccountStatus;
@@ -24,6 +19,10 @@ import tech.mamxanh.auth.security.GoogleVerificationUnavailableException;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.common.validation.EmailAddress;
+
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 /**
  * UC-03.5 — log in with Google (AC-03.10, Q26, Q39–Q42).

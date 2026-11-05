@@ -1,10 +1,10 @@
 package tech.mamxanh.auth.security;
 
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
+
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 
 /**
  * FR-03 timing, hashing and token parameters ({@code mamxanh.auth.*}).

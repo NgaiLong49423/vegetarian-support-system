@@ -5,6 +5,8 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 import org.junit.jupiter.api.AfterEach;
@@ -50,8 +52,46 @@ class PaymentVerificationIntegrationTest extends AbstractIntegrationTest {
         for (long id : createdUsers) {
             jdbc.update("DELETE FROM PAYMENT_TRANSACTION WHERE user_id=?", id);
             jdbc.update("DELETE FROM SUBSCRIPTION WHERE user_id=?", id);
+            jdbc.update("DELETE FROM AI_CREDIT_LEDGER WHERE user_id=?", id);
+            jdbc.update("DELETE FROM AI_CREDIT_WALLET WHERE user_id=?", id);
             jdbc.update("DELETE FROM [USER] WHERE user_id=?", id);
         }
+    }
+
+    @Test void concurrentVerifiedCreditTopUpUpdatesWalletAndLedgerExactlyOnce() throws Exception {
+        String creditOrder = Long.toString(1 + Math.floorMod(UUID.randomUUID().getMostSignificantBits(), 8_000_000_000_000_000L));
+        LocalDateTime now = LocalDateTime.now(clock);
+        LocalDateTime expiresAt = now.minusMinutes(1);
+        LocalDateTime paidAt = expiresAt.minusSeconds(1);
+        var payment = new PaymentTransactionEntity(owner, creditOrder, 10_000);
+        payment.setCreatedAt(now.minusMinutes(20));
+        payment.setProductType(PaymentTransactionEntity.ProductType.AI_CREDIT);
+        payment.setCreditAmountSnapshot(new BigDecimal("10000"));
+        payment.setCreditsPer1000VndSnapshot(new BigDecimal("1000"));
+        payment.setExpiresAt(expiresAt);
+        payments.saveAndFlush(payment);
+
+        CountDownLatch start = new CountDownLatch(1);
+        try (var executor = Executors.newFixedThreadPool(4)) {
+            List<Future<?>> futures = new ArrayList<>();
+            for (int i = 0; i < 4; i++) futures.add(executor.submit(() -> {
+                try { assertThat(start.await(5, TimeUnit.SECONDS)).isTrue(); }
+                catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException(ex);
+                }
+                settlement.settle(creditOrder, 10_000, PaymentStatus.PAID, paidAt);
+            }));
+            start.countDown();
+            for (var future : futures) future.get(20, TimeUnit.SECONDS);
+        }
+
+        assertThat(jdbc.queryForObject("SELECT balance FROM AI_CREDIT_WALLET WHERE user_id=?", BigDecimal.class, owner))
+                .isEqualByComparingTo("10000");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM AI_CREDIT_LEDGER WHERE user_id=? AND transaction_type='TOP_UP' AND reference_id=?",
+                Integer.class, owner, creditOrder)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM SUBSCRIPTION WHERE user_id=?", Integer.class, owner)).isZero();
+        assertThat(payments.findByOrderCode(creditOrder).orElseThrow().getStatus()).isEqualTo(PaymentStatus.PAID);
     }
 
     @Test void duplicateConcurrentDeliveriesActivateExactlyOnce() throws Exception {

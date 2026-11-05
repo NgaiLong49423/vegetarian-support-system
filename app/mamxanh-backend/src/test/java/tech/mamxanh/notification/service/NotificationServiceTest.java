@@ -12,17 +12,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationServiceTest {
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 29, 12, 0);
     @Mock private JdbcTemplate jdbc;
+    @Mock private ApplicationEventPublisher events;
 
     @Test
     void notifiesApplicantWhenAnAdministratorEndsPendingApplicationAfterDirectGrant() {
         NotificationService service = new NotificationService(jdbc,
-                Clock.fixed(Instant.parse("2026-10-29T12:00:00Z"), ZoneOffset.UTC));
+                Clock.fixed(Instant.parse("2026-10-29T12:00:00Z"), ZoneOffset.UTC), events);
 
         service.expertApplicationCancelled(42L, 91L);
 

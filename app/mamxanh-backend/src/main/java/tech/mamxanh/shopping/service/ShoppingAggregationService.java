@@ -1,17 +1,5 @@
 package tech.mamxanh.shopping.service;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.mamxanh.common.exception.AppException;
@@ -26,6 +14,11 @@ import tech.mamxanh.shopping.dto.response.ShoppingAggregationResult;
 import tech.mamxanh.shopping.dto.response.ShoppingAggregationResult.Group;
 import tech.mamxanh.shopping.dto.response.ShoppingAggregationResult.Item;
 import tech.mamxanh.shopping.dto.response.ShoppingAggregationResult.Warning;
+
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * FR-54. Internal calculation boundary; the FR-53 caller must authenticate, check list ownership

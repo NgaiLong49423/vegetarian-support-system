@@ -1,8 +1,9 @@
 package tech.mamxanh.recipe.repository;
 
+import tech.mamxanh.recipe.service.RecipeSortMode;
+
 import java.time.LocalDateTime;
 import java.util.List;
-import tech.mamxanh.recipe.service.RecipeSortMode;
 
 public interface RecipeBrowseRepository {
     BrowsePage findPublished(String keyword, String vegetarianType, String dishCategory,

@@ -1,7 +1,7 @@
 import { apiClient } from "../lib/apiClient"
 import type { PageResponse } from "./expertApplications"
 
-export type TransactionState = "PENDING" | "PAID" | "FAILED" | "CANCELLED"
+export type TransactionState = "PENDING" | "PAID" | "FAILED" | "CANCELLED" | "NEEDS_RECONCILIATION"
 export type TransactionFilters = {
   query: string
   tier: "" | "PLUS" | "PRO"
@@ -24,6 +24,10 @@ export type AdminTransaction = {
   subscriptionStartsAt: string | null
   subscriptionEndsAt: string | null
   subscriptionStatus: string | null
+  productType: "SUBSCRIPTION" | "AI_CREDIT"
+  creditAmount: number | null
+  creditsPer1000VndSnapshot: number | null
+  expiresAt: string | null
 }
 export type TransactionReport = {
   transactions: PageResponse<AdminTransaction>
@@ -33,6 +37,7 @@ export type TransactionReport = {
     pending: number
     failed: number
     cancelled: number
+    needsReconciliation: number
     revenueVnd: number
   }
 }

@@ -1,13 +1,14 @@
 package tech.mamxanh.nutrition.service;
 
+import org.springframework.stereotype.Service;
+import tech.mamxanh.nutrition.dto.response.NutritionProfileResponse.Target;
+
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.List;
-import org.springframework.stereotype.Service;
-import tech.mamxanh.nutrition.dto.response.NutritionProfileResponse.Target;
 
 @Service
 public class NutritionCalculationService {

@@ -1,6 +1,6 @@
 > **Document:** Use Case Specifications — M03
 > **File:** `docs/requirements/use-cases/recipe-contribution-and-community.md`
-> **Version:** v2.6.0
+> **Version:** v2.7.0
 > **Created:** 2026-09-26
 > **Last Updated:** 2026-10-30
 > **Status:** Active
@@ -86,18 +86,18 @@ Detailed interaction flows for current-baseline requirements. Stable UC IDs are 
 
 <a id="uc-21-1"></a>
 ### UC-21.1 — AI gợi ý đoạn giới thiệu
-- **Goal / Primary Actor:** Expert gói Pro nhận draft text cho description; Gemini là supporting system.
+- **Goal / Primary Actor:** Expert đủ quyền đăng bài nhận draft text cho description; Gemini là supporting system. Gói không khóa capability.
 - **Trigger / Preconditions:** Actor chủ động bấm gợi ý và có input tên/nguyên liệu phù hợp.
-- **Main Flow:** Backend kiểm tra entitlement, gọi AI và đưa text vào form để actor chỉnh sửa.
+- **Main Flow:** Backend kiểm tra role/ownership, dữ liệu gửi, model, consent và quota/Credit; gọi AI rồi đưa text vào form để actor chỉnh sửa.
 - **Alternative / Security:** Free/AI lỗi không chặn soạn bài; không lưu server draft. AI được nhắc ưu tiên ingredient đã nhập nhưng có thể gợi ý thêm để Expert rà soát trước khi đăng.
 - **Postconditions:** Text chỉ tồn tại trong form tới khi actor gửi bài.
 - **Traceability / Acceptance Coverage:** FR-21; BR-03, BR-04; [AC-21.1–AC-21.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-21).
 
 <a id="uc-21-2"></a>
 ### UC-21.2 — AI gợi ý hướng dẫn chế biến
-- **Goal / Primary Actor:** Expert gói Pro nhận draft `instructions` có thể chỉnh sửa.
+- **Goal / Primary Actor:** Expert đủ quyền đăng bài nhận draft `instructions` có thể chỉnh sửa; gói không khóa capability.
 - **Trigger / Preconditions:** Actor chủ động yêu cầu; ingredient/title context hợp lệ.
-- **Main Flow:** Backend kiểm tra entitlement, gọi AI và chèn kết quả vào form client.
+- **Main Flow:** Backend kiểm tra role/ownership, dữ liệu gửi, model, consent và quota/Credit; gọi AI và chèn kết quả vào form client.
 - **Alternative / Security:** Provider lỗi/timeout trả fallback; không auto-publish, không lưu nháp server.
 - **Postconditions:** Actor chịu trách nhiệm review và gửi nội dung cuối.
 - **Traceability / Acceptance Coverage:** FR-21; BR-03, BR-04; [AC-21.1–AC-21.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-21).
@@ -273,7 +273,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-21).
 #### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
 - **Tiền điều kiện:**
   - Người dùng đã đăng nhập tài khoản Chuyên gia hợp lệ (FR-03, FR-04).
-  - Tài khoản Chuyên gia đang đăng ký gói Pro còn hiệu lực (FR-10, BR-02, BR-03).
+  - Chuyên gia có quyền tạo bài; gói chỉ quyết định quota/model access, không khóa chức năng AI (FR-10, BR-02, BR-03).
   - Tác giả đã nhập ít nhất Tên món ăn và danh sách Nguyên liệu trong biểu mẫu (FR-16, FR-19).
 - **Kích hoạt (Trigger):**
   - Tác giả nhấn nút "Nhờ AI gợi ý giới thiệu" hoặc "Nhờ AI gợi ý hướng dẫn chế biến" trong trình soạn thảo.
@@ -281,7 +281,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-21).
 #### 4. Luồng xử lý chi tiết (Flows)
 - **Luồng chính (Main Flow):**
   - Bước 1: Tác giả nhấn nút "Nhờ AI gợi ý hướng dẫn chế biến" (hoặc "gợi ý giới thiệu").
-  - Bước 2: Hệ thống kiểm tra quyền tính năng (Feature Entitlement) của tài khoản (FR-10, BR-02, BR-03).
+  - Bước 2: Hệ thống kiểm tra role/ownership, quyền dữ liệu, model access, consent và ngân sách AI của tài khoản (FR-10, BR-02, BR-03).
   - Bước 3: Hệ thống trích xuất thông tin tác giả đã nhập: Tên món ăn, Loại ăn chay, Thể loại món `dish_category`, Khẩu phần, và Danh sách tên các nguyên liệu kèm định lượng số dương (FR-19).
   - Bước 4: Hệ thống gửi prompt tới Google Gemini qua API bảo mật phía server (BR-06, đáp ứng NFR-03). Prompt hướng AI ưu tiên nguyên liệu và định lượng tác giả đã nhập; nếu phù hợp, AI có thể gợi ý thêm nguyên liệu phụ và nêu rõ để tác giả rà soát, chỉnh sửa trước khi đăng. Backend không từ chối nội dung AI chỉ vì nhắc đến nguyên liệu ngoài danh sách đã nhập.
     - Định dạng kết quả trả về: hướng dẫn chế biến là 6–10 bước tuần tự (10–5.000 ký tự) từ chuẩn bị dụng cụ/nguyên liệu, sơ chế, làm nóng nồi/chảo, thứ tự cho nguyên liệu vào, nấu và dấu hiệu chín, nêm nếm đến hoàn thiện thành phẩm; ingredientIds tham chiếu nguyên liệu đã nhập, còn nguyên liệu gợi ý thêm được nêu trong phần text. Mô tả giới thiệu vẫn súc tích (tối đa 2.000 ký tự).
@@ -294,7 +294,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-21).
   - Bước 10: Hệ thống không cung cấp persistent server-side Recipe Post draft trong baseline hiện tại.
 - **Luồng thay thế (Alternative Flows):**
   - *AF-21.1 (Tác giả không hài lòng với nội dung AI gợi ý):* Tác giả có thể nhấn nút "Xóa gợi ý" để quay về trạng thái trống hoặc tự gõ lại bằng tay.
-  - *AF-21.2 (Tài khoản thuộc gói Free hoặc Plus):* Nếu tài khoản chưa nâng cấp lên gói Pro, hệ thống hiển thị thông báo hướng dẫn nâng cấp gói dịch vụ để mở khóa tính năng AI hỗ trợ soạn bài (FR-10, BR-02), đồng thời gợi ý tác giả tự nhập nội dung bằng tay để tiếp tục đăng bài bình thường (BR-16).
+  - *AF-21.2 (AI không khả dụng):* Nếu quota/Credit không đủ, model không còn được phép hoặc provider lỗi, hệ thống thông báo và giữ nguyên nội dung form; Expert vẫn tự nhập, chỉnh sửa và đăng bài bình thường nếu bài hợp lệ (FR-10, BR-02, BR-16).
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
   - *EF-21.1 (Lỗi kết nối dịch vụ AI hoặc timeout):* Nếu dịch vụ AI gặp sự cố hoặc quá thời gian phản hồi quy định tại NFR-03, hệ thống thông báo lỗi kỹ thuật thân thiện và giữ nguyên toàn bộ dữ liệu tác giả đã nhập trên form (BR-04, BR-16).
   - *SF-21.1 (Không lưu nháp Recipe Post trên máy chủ):* Hệ thống không cung cấp persistent server-side Recipe Post draft trong baseline hiện tại; nếu tác giả rời khỏi biểu mẫu trước khi bấm công khai, dữ liệu dở dang không được bảo đảm lưu trữ bền vững trên máy chủ.

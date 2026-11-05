@@ -304,6 +304,7 @@ export function AiRecipeAssistantModal({
   options: _options,
   onApplyRecipe,
 }: AiRecipeAssistantModalProps) {
+
   const [selectedMeal, setSelectedMeal] = useState<MealSession>('BREAKFAST');
   const [dishIdea, setDishIdea] = useState('Xào cà chua với trứng');
   const [rawIngredients, setRawIngredients] = useState('cà chua, trứng gà, hành lá, dầu thực vật, gia vị chay');
@@ -888,13 +889,13 @@ export function AiRecipeAssistantModal({
 
             {/* BẢNG 2 THỨ CỐT LÕI: NGUYÊN LIỆU & ĐỊNH LƯỢNG */}
             <div>
-              <div className="mb-2 flex items-center justify-between">
+              <div className="mb-2.5 space-y-1">
                 <h4 className="text-xs font-extrabold uppercase text-ink flex items-center gap-1.5">
                   <Utensils className="h-4 w-4 text-brand-600" /> 2 Yếu tố cốt lõi: Nguyên liệu & Định lượng chuẩn xác
                 </h4>
-                <span className="text-[11px] text-ink-muted">
+                <div className="text-[11px] text-ink-muted">
                   Tổng calo: <strong className="text-brand-700 font-bold">{generatedResult.totalCalories} kcal</strong> / Mục tiêu: {generatedResult.targetCaloriesPerServing * generatedResult.servings} kcal
-                </span>
+                </div>
               </div>
 
               <div className="overflow-hidden rounded-xl border border-brand-200">
@@ -925,7 +926,7 @@ export function AiRecipeAssistantModal({
                               aria-label={`Định lượng ${item.name}`}
                               className="w-20 rounded-lg border border-brand-300 bg-paper px-2 py-1 text-right text-xs font-bold text-brand-800 outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-200"
                             />
-                            <span className="text-[11px] font-medium text-ink-muted">{item.unitCode}</span>
+                            <span className="w-8 text-left text-[11px] font-medium text-ink-muted shrink-0">{item.unitCode}</span>
                           </div>
                         </td>
                         <td className="p-3 text-right font-medium text-ink-soft">

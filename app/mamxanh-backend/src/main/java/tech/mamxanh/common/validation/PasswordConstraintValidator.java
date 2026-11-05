@@ -1,11 +1,11 @@
 package tech.mamxanh.common.validation;
 
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
+
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-
-import jakarta.validation.ConstraintValidator;
-import jakarta.validation.ConstraintValidatorContext;
 
 public class PasswordConstraintValidator implements ConstraintValidator<ValidPassword, String> {
 

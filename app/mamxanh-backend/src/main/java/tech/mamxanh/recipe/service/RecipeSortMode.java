@@ -1,8 +1,9 @@
 package tech.mamxanh.recipe.service;
 
-import java.util.Locale;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
+
+import java.util.Locale;
 
 /** Public recipe ordering options shared by the guest browse API and FR-08 consumers. */
 public enum RecipeSortMode {

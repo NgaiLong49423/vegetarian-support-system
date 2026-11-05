@@ -1,9 +1,10 @@
 package tech.mamxanh.mealplan.dto.request;
 
-import java.time.LocalDate;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Min;
+
+import java.time.LocalDate;
 
 public record AddMealPlanEntryRequest(
         @NotNull LocalDate mealDate,

@@ -1,13 +1,13 @@
 package tech.mamxanh.auth.security;
 
+import org.springframework.stereotype.Component;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.HexFormat;
-
-import org.springframework.stereotype.Component;
 
 /**
  * Issues single-use tokens for email links (verification, password reset). The raw token is
