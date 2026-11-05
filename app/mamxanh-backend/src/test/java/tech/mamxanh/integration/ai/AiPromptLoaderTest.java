@@ -15,7 +15,7 @@ class AiPromptLoaderTest {
         String prompt = new AiPromptLoader().loadSystemPrompt();
         assertThat(prompt).contains("Định dạng phần lời trả lời", "dòng trống", "Không xuất HTML",
                 "Giữ nguyên schema JSON", "consent, confirmation",
-                "BẮT BUỘC dùng 1–3 emoji phù hợp ngữ cảnh");
+                "BẮT BUỘC dùng khoảng 4–8 emoji phù hợp ngữ cảnh");
     }
 
     @Test

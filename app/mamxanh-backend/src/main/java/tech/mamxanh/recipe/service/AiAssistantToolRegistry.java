@@ -96,8 +96,8 @@ public class AiAssistantToolRegistry {
                 "{\"recipeId\":1}", RiskTier.READ_ONLY, Set.of()));
         definitions.add(def("get_ingredient_detail", "Read public vegetarian ingredient details including name, group, and nutritional information.",
                 "{\"ingredientId\":1}", RiskTier.READ_ONLY, Set.of()));
-        definitions.add(def("navigate_to_page", "Navigate the user to an existing Mâm Xanh page only when they explicitly ask to open, go to, or switch to that page. Use only one page key from the allowed list.",
-                "{\"page\":\"HOME|EXPLORE|MEAL_PLAN|SHOPPING_LIST|AI_PLANS|AI_CREDIT_TOP_UP|PROFILE|DIETARY_PREFERENCES|HEALTH_PROFILE|RECIPE_CREATE|EXPERT_DIRECTORY|COMMUNITY|TRANSACTION_HISTORY\"}", RiskTier.READ_ONLY, Set.of()));
+        definitions.add(def("navigate_to_page", "Navigate the user to an existing Mâm Xanh page only when they explicitly ask to open, go to, or switch to that page. To open a specific public recipe, use page RECIPE_DETAIL and the recipeId returned by search_public_recipes.",
+                "{\"page\":\"HOME|EXPLORE|MEAL_PLAN|SHOPPING_LIST|AI_PLANS|AI_CREDIT_TOP_UP|PROFILE|DIETARY_PREFERENCES|HEALTH_PROFILE|RECIPE_CREATE|EXPERT_DIRECTORY|COMMUNITY|TRANSACTION_HISTORY|RECIPE_DETAIL\",\"recipeId\":\"optional positive integer; required for RECIPE_DETAIL\"}", RiskTier.READ_ONLY, Set.of()));
         definitions.add(def("search_approved_knowledge", "Search only approved Mâm Xanh knowledge and policies; never use the Internet.",
                 "{\"query\":\"string\"}", RiskTier.READ_ONLY, Set.of()));
         if (!member) return List.copyOf(definitions);
@@ -136,7 +136,7 @@ public class AiAssistantToolRegistry {
             case "search_public_recipes" -> searchRecipes(text(args, "query"));
             case "get_recipe_detail" -> data("Đã đọc chi tiết công thức.", recipeService.getPublishedRecipe(longValue(args, "recipeId")));
             case "get_ingredient_detail" -> data("Đã đọc chi tiết nguyên liệu.", ingredientCatalog.getPublicIngredient(longValue(args, "ingredientId")));
-            case "navigate_to_page" -> navigate(text(args, "page"));
+            case "navigate_to_page" -> navigate(args);
             case "search_approved_knowledge" -> searchKnowledge(text(args, "query"));
             case "get_own_profile" -> data("Đã đọc hồ sơ tài khoản của bạn.", profiles.getOwnProfile());
             case "update_own_profile" -> data("Đã cập nhật hồ sơ tài khoản của bạn.", profiles.updateOwnProfile(validated(args, UpdateProfileRequest.class)));
@@ -180,7 +180,22 @@ public class AiAssistantToolRegistry {
                 : "Đã tìm trong tài liệu nội bộ được duyệt.", matches, matches);
     }
 
-    private ToolResult navigate(String page) {
+    private ToolResult navigate(Map<String, Object> args) {
+        String page = text(args, "page");
+        Long recipeId = optionalLongValue(args, "recipeId");
+        if ("RECIPE_DETAIL".equals(page)) {
+            if (recipeId == null) {
+                throw new AppException(ErrorCode.VALIDATION_FAILED,
+                        "Cần mã công thức công khai để mở trang chi tiết.");
+            }
+            recipeService.getPublishedRecipe(recipeId);
+            String url = "/cong-thuc/id/" + recipeId;
+            return data("Đang mở chi tiết công thức #" + recipeId + " trên Mâm Xanh.", Map.of("workflowUrl", url));
+        }
+        if (recipeId != null) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED,
+                    "Chỉ truyền mã công thức khi mở trang chi tiết công thức.");
+        }
         String url = switch (page) {
             case "HOME" -> "/trang-chu";
             case "EXPLORE" -> "/kham-pha";
@@ -303,6 +318,20 @@ public class AiAssistantToolRegistry {
         Object value = args.get(key);
         if (value instanceof Number number && number.longValue() > 0) return number.longValue();
         throw new AppException(ErrorCode.VALIDATION_FAILED, "Thiếu mã tài nguyên hợp lệ.");
+    }
+
+    private static Long optionalLongValue(Map<String, Object> args, String key) {
+        Object value = args.get(key);
+        if (value == null) return null;
+        if (value instanceof Number number) {
+            try {
+                long parsed = new java.math.BigDecimal(number.toString()).longValueExact();
+                if (parsed > 0) return parsed;
+            } catch (NumberFormatException | ArithmeticException ignored) {
+                // Reject fractional, non-finite, out-of-range, or non-positive identifiers below.
+            }
+        }
+        throw new AppException(ErrorCode.VALIDATION_FAILED, "Mã công thức phải là số nguyên dương.");
     }
 
     private static String text(Map<String, Object> args, String key) {

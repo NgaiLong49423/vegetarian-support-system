@@ -163,10 +163,14 @@ public class AdkDomainTools {
         return wrapResult("get_ingredient_detail", Map.of("ingredientId", ingredientId));
     }
 
-    @Schema(description = "Navigate the user to an existing Mâm Xanh page only when they explicitly ask to open, go to, or switch to that page.")
+    @Schema(description = "Navigate the user to an existing Mâm Xanh page only when they explicitly ask to open, go to, or switch to that page. To open a specific public recipe, use RECIPE_DETAIL and the recipeId returned by search_public_recipes.")
     public Map<String, Object> navigate_to_page(
-            @Schema(name = "page", description = "Allowed page key: HOME|EXPLORE|MEAL_PLAN|SHOPPING_LIST|AI_PLANS|AI_CREDIT_TOP_UP|PROFILE|DIETARY_PREFERENCES|HEALTH_PROFILE|RECIPE_CREATE|EXPERT_DIRECTORY|COMMUNITY|TRANSACTION_HISTORY") String page) {
-        return wrapResult("navigate_to_page", Map.of("page", page == null ? "" : page));
+            @Schema(name = "page", description = "Allowed page key: HOME|EXPLORE|MEAL_PLAN|SHOPPING_LIST|AI_PLANS|AI_CREDIT_TOP_UP|PROFILE|DIETARY_PREFERENCES|HEALTH_PROFILE|RECIPE_CREATE|EXPERT_DIRECTORY|COMMUNITY|TRANSACTION_HISTORY|RECIPE_DETAIL") String page,
+            @Schema(name = "recipeId", description = "Required only for RECIPE_DETAIL; use an ID returned by search_public_recipes", optional = true) Long recipeId) {
+        Map<String, Object> args = new LinkedHashMap<>();
+        args.put("page", page == null ? "" : page);
+        if (recipeId != null) args.put("recipeId", recipeId);
+        return wrapResult("navigate_to_page", args);
     }
 
     @Schema(description = "Search only approved Mâm Xanh knowledge and policies; never use the Internet.")

@@ -1,6 +1,7 @@
 package tech.mamxanh.recipe.service;
 
 import com.google.adk.tools.FunctionTool;
+import com.google.adk.tools.Annotations.Schema;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -110,6 +111,19 @@ class AdkDomainToolsTest {
 
         List<AiAssistantToolRegistry.ToolDefinition> definitions = domainTools.definitionsFor("GUEST");
         assertThat(definitions).hasSize(5);
+    }
+
+    @Test
+    @DisplayName("Recipe detail navigation declares an optional recipe ID for the ADK model")
+    void navigateToPageDeclaresOptionalRecipeId() throws NoSuchMethodException {
+        var declaration = domainTools.getDeclaration("navigate_to_page");
+        var method = AdkDomainTools.class.getMethod("navigate_to_page", String.class, Long.class);
+        var recipeId = method.getParameters()[1].getAnnotation(Schema.class);
+
+        assertThat(declaration).isNotNull();
+        assertThat(recipeId).isNotNull();
+        assertThat(recipeId.name()).isEqualTo("recipeId");
+        assertThat(recipeId.optional()).isTrue();
     }
 
     @Test

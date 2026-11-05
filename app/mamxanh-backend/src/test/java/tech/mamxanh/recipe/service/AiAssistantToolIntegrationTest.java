@@ -57,6 +57,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -148,6 +149,30 @@ class AiAssistantToolIntegrationTest {
 
         assertThatThrownBy(() -> registry.execute("navigate_to_page", Map.of("page", "HACK_PAGE")))
                 .isInstanceOf(AppException.class);
+    }
+
+    @Test
+    @DisplayName("Tool 4 opens a published recipe detail using its real search result ID")
+    void tool4_navigateToPublishedRecipeDetail() {
+        when(recipeService.getPublishedRecipe(56L)).thenReturn(mock(RecipeDetailResponse.class));
+
+        var result = registry.execute("navigate_to_page", Map.of("page", "RECIPE_DETAIL", "recipeId", 56L));
+
+        assertThat(result.status()).isEqualTo("SUCCEEDED");
+        assertThat(result.result()).isEqualTo(Map.of("workflowUrl", "/cong-thuc/id/56"));
+        verify(recipeService).getPublishedRecipe(56L);
+    }
+
+    @Test
+    @DisplayName("Tool 4 requires a positive integer public recipe ID for recipe detail navigation")
+    void tool4_rejectsInvalidRecipeDetailId() {
+        assertThatThrownBy(() -> registry.execute("navigate_to_page", Map.of("page", "RECIPE_DETAIL")))
+                .isInstanceOf(AppException.class);
+        assertThatThrownBy(() -> registry.execute("navigate_to_page", Map.of("page", "RECIPE_DETAIL", "recipeId", 0L)))
+                .isInstanceOf(AppException.class);
+        assertThatThrownBy(() -> registry.execute("navigate_to_page", Map.of("page", "EXPLORE", "recipeId", 56L)))
+                .isInstanceOf(AppException.class);
+        verify(recipeService, never()).getPublishedRecipe(56L);
     }
 
     @Test

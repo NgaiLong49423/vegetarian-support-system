@@ -53,9 +53,12 @@ const AI_WORKFLOW_ROUTES = [
 ] as const
 
 function trustedWorkflowUrl(value: string | null | undefined): string | null {
-  return value && AI_WORKFLOW_ROUTES.includes(value as (typeof AI_WORKFLOW_ROUTES)[number])
-    ? value
-    : null
+  if (!value) return null
+  if (AI_WORKFLOW_ROUTES.includes(value as (typeof AI_WORKFLOW_ROUTES)[number])) return value
+
+  const recipeDetailMatch = /^\/cong-thuc\/id\/([1-9]\d*)$/.exec(value)
+  if (!recipeDetailMatch || !Number.isSafeInteger(Number(recipeDetailMatch[1]))) return null
+  return value
 }
 
 function formatResetDateTime(timestamp: number): string {

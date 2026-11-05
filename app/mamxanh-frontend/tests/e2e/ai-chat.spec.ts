@@ -186,6 +186,40 @@ test('authoring handoff for an Expert navigates to the editable recipe form', as
   await expect(page).toHaveURL(/\/dang-cong-thuc$/);
 });
 
+test('Agent workflow handoff opens the selected public recipe detail only for a valid internal ID route', async ({ page }) => {
+  await signInAsMember(page);
+  await page.route('**/api/v1/recipes/56', route => route.fulfill({ json: {
+    recipeId: 56, title: 'Đậu hũ sốt cà chua', description: 'Món chay dễ nấu.',
+    instructions: 'Sốt cà chua rồi rim đậu hũ.', dishCategory: 'BRAISED', dishCategoryLabel: 'Món kho',
+    vegetarianType: 'VEGAN', vegetarianTypeLabel: 'Thuần chay', difficulty: 'EASY', difficultyLabel: 'Dễ',
+    servings: 2, prepTimeMinutes: 10, cookTimeMinutes: 15, youtubeUrl: null,
+    publishedAt: '2026-11-05T08:00:00', author: { userId: 8, displayName: 'Tác giả', avatarUrl: null },
+    ingredients: [], nutritionComplete: false, ingredientsWithoutNutrition: [],
+    nutrition: { complete: false, ingredientsMissingData: [], total: {}, perServing: {} },
+    statistics: { likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null, viewCount: 0 }, media: [],
+  } }));
+  let calls = 0;
+  await page.route('**/api/v1/recipes/ai/chat', route => route.fulfill({ json: {
+    contextType: 'GENERAL', recipeId: null,
+    answer: ++calls === 1 ? 'Mở công thức Đậu hũ sốt cà chua.' : 'Không chuyển hướng đến URL không hợp lệ.',
+    recommendations: [],
+    workflowUrl: calls === 1 ? '/cong-thuc/id/56' : '/cong-thuc/id/57?redirect=https://example.invalid/',
+  } }));
+
+  await page.goto('/trang-chu');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Mở trang chi tiết công thức Đậu hũ sốt cà chua');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await expect(page).toHaveURL('/cong-thuc/id/56');
+  await expect(page.getByRole('heading', { name: 'Đậu hũ sốt cà chua' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Câu tiếp theo');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await expect(page.getByText('Không chuyển hướng đến URL không hợp lệ.')).toBeVisible();
+  await expect(page).toHaveURL('/cong-thuc/id/56');
+});
+
 test('provider throttling shows the server guidance without suggesting Guest registration', async ({ page }) => {
   const detail = 'Dịch vụ AI đang tạm giới hạn yêu cầu. Vui lòng thử lại sau.';
   await page.route('**/api/v1/recipes/ai/chat', (route) => route.fulfill({ status: 503,

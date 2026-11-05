@@ -327,7 +327,7 @@ Danh sách 54 công thức mẫu có seed gia vị/định lượng riêng cho h
 
 Khi Flyway nạp seed trong profile `local`, Backend tạo 25 tài khoản đã xác minh email: 20 Customer (`demo-customer@mamxanh.local`, `demo-new-member@mamxanh.local`, `demo-applicant@mamxanh.local` và `demo-customer-04` đến `demo-customer-20`), 4 Expert (`demo-expert@mamxanh.local` và `demo-expert-02` đến `demo-expert-04`) cùng `demo-admin@mamxanh.local`. Bốn Expert demo có ảnh chân dung tổng hợp do Frontend host trong `public/avatars/experts/`; seed chỉ gán avatar cục bộ khi hồ sơ chưa có avatar hoặc vẫn dùng avatar demo, không ghi đè ảnh đã tải lên storage. Tất cả Customer có hồ sơ hoàn chỉnh, BMI hiện tại từ chiều cao/cân nặng và bốn tuần lịch ăn; Expert chính có hồ sơ dinh dưỡng tổng hợp để trình diễn form FR-35 trong profile `local`. Fixture này dùng dữ liệu giả lập, đặt consent/eligibility cho tài khoản demo và chỉ điền hồ sơ khi các trường còn trống, không ghi đè hồ sơ đã nhập. Hai tài khoản onboarding cũ nay cũng là Customer hoàn chỉnh. Seed có thêm công thức, nguyên liệu chưa xác minh dinh dưỡng và hoạt động Like/Dislike/View/Follow để trình diễn các bảng xếp hạng. Tài khoản Expert đầu tiên quản lý bộ công thức hiện có và có gói Pro demo hiệu lực một năm tính từ lần seed thiết lập subscription. Đặt `MAMXANH_DEMO_PASSWORD` trong file `.env` local; một mật khẩu được BCrypt hóa riêng khi ứng dụng khởi động và gán cho cả 25 tài khoản.
 
-Seed repeatable chỉ dùng với profile `local`. Trong IntelliJ/Maven, profile `local,local-reset` mặc định xóa và dựng lại `MamXanhDB` trước khi chạy migration; Docker Compose giữ volume/database khi `down`/`up`, và chạy lại seed an toàn. Reset SQL volume Compose sẽ dựng lại toàn bộ schema và fixture. Không dùng tài khoản hoặc mật khẩu demo ngoài máy local.
+Seed repeatable chỉ dùng với profile `local`. Trong IntelliJ/Maven, mặc định chỉ bật `local`, giữ nguyên `MamXanhDB` và chạy migration/seed; `local-reset` chỉ được bật tường minh khi chấp nhận xóa toàn bộ database. Docker Compose giữ volume/database khi `down`/`up`, và chạy lại seed an toàn. Reset SQL volume Compose sẽ dựng lại toàn bộ schema và fixture. Không dùng tài khoản hoặc mật khẩu demo ngoài máy local.
 
 ### 3. Compile và chạy
 
@@ -356,13 +356,15 @@ Sau lần tải dependency đầu tiên, các lần mở dự án tiếp theo ch
 
 IntelliJ vẫn sử dụng cùng cấu hình Spring profile `local`; nút Run không thay thế yêu cầu SQL Server phải sẵn sàng.
 
-### Tùy chọn reset schema mỗi lần chạy local
+### Tùy chọn reset schema local
 
-Mặc định khi chạy local, Backend bật profile phá hủy dữ liệu `local-reset` cùng với `local`. Mỗi lần khởi động, Backend xác minh JDBC URL trỏ tới SQL Server loopback, kết nối đúng database `MamXanhDB`, và tài khoản có quyền tạo/xóa database; sau đó app kết nối `master`, drop rồi tạo lại database `MamXanhDB`, và chạy toàn bộ migration hiện hành. Database này bị xóa hoàn toàn mỗi lần chạy; không dùng profile này với database dùng chung, staging hoặc production. Docker Compose truyền profile `local` tường minh nên không reset database container.
+Mặc định khi chạy local, Backend chỉ bật profile an toàn `local`; profile này chạy migration/seed nhưng giữ database và dữ liệu hiện có. Docker Compose cũng truyền profile `local` tường minh.
 
-- **IntelliJ IDEA:** Để trống **Active profiles** để dùng mặc định `local,local-reset`. Nếu cấu hình đã đặt profile tường minh, đặt thành `local,local-reset` để reset mỗi lần chạy. Muốn giữ database, đặt thành `local`. Không lưu credential trong Run Configuration.
-- **Maven (PowerShell):** `.\mvnw.cmd spring-boot:run` dùng mặc định reset. Đặt `$env:SPRING_PROFILES_ACTIVE='local'` trước lệnh để giữ database.
-- Việc reset drop database vật lý, nên mọi bảng và dữ liệu trong `MamXanhDB` bị xóa. Database được tạo lại với collation `SQL_Latin1_General_CP1_CI_AS` và compatibility level `150`. Nếu preflight không xác nhận đúng local server, database hoặc quyền SQL Server, ứng dụng dừng trước khi drop.
+Chỉ khi chủ động muốn xóa toàn bộ dữ liệu local mới bật thêm profile phá hủy `local-reset`. Mỗi lần khởi động, Backend xác minh JDBC URL trỏ tới SQL Server loopback, kết nối đúng database `MamXanhDB`, và tài khoản có quyền tạo/xóa database; sau đó app kết nối `master`, drop rồi tạo lại database `MamXanhDB`, và chạy toàn bộ migration hiện hành. Không dùng profile này với database dùng chung, staging hoặc production.
+
+- **IntelliJ IDEA:** Để trống **Active profiles** để dùng mặc định `local`; đặt `local,local-reset` chỉ cho lần chạy có chủ đích reset. Không lưu credential trong Run Configuration.
+- **Maven (PowerShell):** `.\mvnw.cmd spring-boot:run` mặc định giữ database. Đặt `$env:SPRING_PROFILES_ACTIVE='local,local-reset'` chỉ khi chủ động reset.
+- Khi được bật, `local-reset` drop database vật lý và xóa mọi bảng/dữ liệu trong `MamXanhDB`; database được tạo lại với collation `SQL_Latin1_General_CP1_CI_AS` và compatibility level `150`. Preflight từ chối nếu không xác nhận đúng local server/database/quyền SQL Server.
 
 ## Cách 2 — Chạy toàn hệ thống bằng Docker Compose
 

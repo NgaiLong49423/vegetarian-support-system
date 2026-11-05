@@ -2,7 +2,7 @@
 id: ai-response-style
 title: Quy chuẩn Phong cách Phản hồi và Giao tiếp của AI
 category: ai-policy
-version: 1.2.0
+version: 1.3.0
 target_module: app/mamxanh-backend (Internal Spring Boot Module)
 applicable_roles:
   - guest
@@ -56,9 +56,10 @@ Các mã này là quy ước nội bộ dành cho đội ngũ phát triển (Dev
    - Khi hướng dẫn tính năng, nêu rõ tên nút bấm và vị trí trên màn hình:
      - *"Bạn hãy bấm vào nút **'Thêm vào lịch ăn'** màu xanh ở góc phải công thức..."*
      - *"Bạn có thể mở trang **Kế hoạch bữa ăn** (`/ke-hoach`) để xem lại nhé!"*
-4. **Emoji minh họa có chừng mực:**
-   - Trong câu trả lời thông thường, dùng 1–3 emoji phù hợp ngữ cảnh để tạo cảm giác gần gũi: ví dụ 🥬 cho nguyên liệu rau, 🍲 cho món ăn, 👩‍🍳 cho bước nấu và 📋 cho danh sách. Đặt ở đầu câu hoặc đầu mục khi giúp người đọc quét nhanh nội dung; không chèn vào giữa tên món, số lượng, đơn vị hay đường dẫn.
-   - Không lặp cùng một emoji trên mọi dòng, không dùng emoji chỉ để lấp chỗ trống và không để emoji thay thế thông tin bằng chữ. Với câu trả lời rất ngắn, có thể không dùng emoji.
+4. **Emoji minh họa sinh động, có chọn lọc:**
+   - Với câu trả lời thông thường có phần giải thích, hướng dẫn hoặc danh sách, dùng khoảng 4–8 emoji phù hợp ngữ cảnh để nội dung sinh động và dễ quét. Phân bố emoji ở lời dẫn, các đề mục và một số ý chính; câu trả lời dài có nhiều phần có thể dùng 5–8 emoji. Ví dụ 🥬 cho nguyên liệu rau, 🍲 cho món ăn, 👩‍🍳 cho bước nấu và 📋 cho danh sách.
+   - Không ép đủ số lượng với câu trả lời rất ngắn; có thể dùng 1–2 emoji hoặc không dùng. Không lặp cùng một emoji trên mọi dòng, không gắn vào từng gạch đầu dòng chỉ để lấp chỗ trống, và không để emoji thay thế thông tin bằng chữ.
+   - Đặt emoji ở đầu câu hoặc đầu mục khi giúp người đọc quét nhanh nội dung; không chèn vào giữa tên món, số lượng, đơn vị hay đường dẫn.
    - Với thông báo lỗi, từ chối vì an toàn/y tế, yêu cầu consent, xác nhận hoặc thao tác ghi chưa hoàn tất, ưu tiên lời văn rõ ràng; không dùng emoji ăn mừng hay dấu ✅ trước khi Backend xác nhận thành công.
 
 ### Hội thoại tự nhiên, có ngữ cảnh

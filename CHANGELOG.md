@@ -9,6 +9,42 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-11-05 — Increase AI Response Emoji Use
+
+**Status:** Working tree — not committed.
+
+**Scope:** Make longer Chatbot and Agent explanations more lively and easier to scan while keeping short and sensitive responses restrained.
+
+### Added
+
+- None.
+
+### Changed
+
+- Ask ordinary explanatory, instructional, and list responses to use around four to eight context-appropriate emoji distributed across the introduction, headings, and key points; very short replies may use one or two or none.
+
+### Fixed
+
+- Align the synthesized system prompt, response-style policy, and loader test with the user's preference for more visible emoji.
+
+## 2026-11-05 — Navigate AI Assistant to Public Recipe Details
+
+**Status:** Working tree — not committed.
+
+**Scope:** Let the AI Assistant open a selected published recipe directly from its public recipe search results.
+
+### Added
+
+- Add `RECIPE_DETAIL` navigation with a validated positive recipe ID and automated Backend and Playwright coverage.
+
+### Changed
+
+- Extend the ADK navigation tool schema and Frontend workflow route allowlist for published recipe detail pages.
+
+### Fixed
+
+- Prevent the Assistant from claiming it opened a selected recipe while only navigating to the general Explore page.
+
 ## 2026-11-05 — Harden AI Chat Deadlines and Response Handling
 
 **Status:** Committed — `4f8bea14`.

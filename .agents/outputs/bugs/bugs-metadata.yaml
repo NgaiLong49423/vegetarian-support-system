@@ -6,7 +6,7 @@ last_updated: 2026-11-05
 # BUG-066 được cấp khi đồng bộ PR #161 ngày 2026-10-25 vì BUG-065 đã được dùng cho lỗi OpenAPI.
 # BUG-078–080 đã được cấp trên nhánh feature/17-ai-usage-telemetry, tránh cấp trùng khi tích hợp.
 # Đồng bộ PR #227: bản ghi quyền FR-21 của nhánh feature đổi BUG-086 → BUG-095; BUG-086 trên develop được giữ nguyên.
-next_id: 107
+next_id: 108
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -16,6 +16,15 @@ status_definitions:
 # Đồng bộ PR #194: mã gốc FR-10 → mã sau tích hợp: BUG-054 → BUG-070, BUG-055 → BUG-071, BUG-056 → BUG-072, BUG-057 → BUG-073, BUG-058 → BUG-074, BUG-059 → BUG-075, BUG-060 → BUG-076, BUG-066 → BUG-077.
 # Bản ghi BUG-060 của FR-11 tại 79394340 trùng lỗi privacy đã hợp nhất dưới BUG-076; giữ BUG-060 của develop.
 bugs:
+  - id: BUG-107
+    title: Agent không mở được trang chi tiết công thức công khai
+    status: TRACKING
+    severity: High
+    area: Backend/AI Assistant/Điều hướng công thức
+    file: .agents/outputs/bugs/BUG-107.md
+    created: 2026-11-05
+    updated: 2026-11-05
+    related_issue: Unknown
   - id: BUG-106
     title: Chatbot trả lời câu hỏi nấu ăn phổ quát bị timeout
     status: TRACKING
