@@ -1337,6 +1337,61 @@ public class AdkAssistantEngine implements AutoCloseable {
         return new MenuPreviewSnapshot(id, Map.of("previewId", id.toString(), "request", Map.copyOf(apply)));
     }
 
+    /** Keep completed tool call pairs and menu identifiers while reducing old tool data. */
+    static List<Content> compactPreviousMenuCandidates(List<Content> contents) {
+        int lastUserMessage = -1;
+        for (int i = 0; i < contents.size(); i++) {
+            Content content = contents.get(i);
+            if ("user".equals(content.role().orElse(null)) && content.parts().orElse(List.of()).stream()
+                    .anyMatch(part -> part.text().isPresent())) lastUserMessage = i;
+        }
+        if (lastUserMessage < 0) return contents;
+        List<Content> result = new ArrayList<>(contents);
+        for (int i = 0; i < lastUserMessage; i++) {
+            Content content = result.get(i);
+            List<Part> parts = new ArrayList<>(content.parts().orElse(List.of()));
+            boolean changed = false;
+            for (int j = 0; j < parts.size(); j++) {
+                Part part = parts.get(j);
+                FunctionResponse response = part.functionResponse().orElse(null);
+                if (response != null && "get_ai_menu_candidates".equals(response.name().orElse(null))
+                        && "SUCCEEDED".equals(response.response().orElse(Map.of()).get("status"))) {
+                    FunctionResponse compact = response.toBuilder().response(Map.of("status", "SUCCEEDED",
+                            "message", "Earlier candidate pool omitted; load candidates again for a new preview.")).build();
+                    parts.set(j, part.toBuilder().functionResponse(compact).build());
+                    changed = true;
+                } else if (response != null && "create_ai_menu_preview".equals(response.name().orElse(null))
+                        && "SUCCEEDED".equals(response.response().orElse(Map.of()).get("status"))
+                        && response.response().orElseThrow().get("data") instanceof Map<?, ?> data
+                        && data.get("previewId") instanceof String && data.get("meals") instanceof List<?> meals) {
+                    Map<String, Object> compactData = new LinkedHashMap<>();
+                    for (String key : List.of("previewId", "weekStartDate", "mode", "goal")) {
+                        if (data.get(key) != null) compactData.put(key, data.get(key));
+                    }
+                    List<Map<String, Object>> compactMeals = new ArrayList<>();
+                    boolean valid = true;
+                    for (Object item : meals) {
+                        if (!(item instanceof Map<?, ?> meal)) { valid = false; break; }
+                        Map<String, Object> compactMeal = new LinkedHashMap<>();
+                        for (String key : List.of("mealDate", "mealType", "recipeId", "recipeTitle")) {
+                            if (meal.get(key) != null) compactMeal.put(key, meal.get(key));
+                        }
+                        compactMeals.add(compactMeal);
+                    }
+                    if (valid) {
+                        compactData.put("meals", compactMeals);
+                        Map<String, Object> compactResult = new LinkedHashMap<>(response.response().orElseThrow());
+                        compactResult.put("data", compactData);
+                        parts.set(j, part.toBuilder().functionResponse(response.toBuilder().response(compactResult).build()).build());
+                        changed = true;
+                    }
+                }
+            }
+            if (changed) result.set(i, content.toBuilder().parts(parts).build());
+        }
+        return result;
+    }
+
     private final class EngineSessionState implements AutoCloseable {
         private final UUID sessionId;
         private final Long userId;
@@ -1452,6 +1507,7 @@ public class AdkAssistantEngine implements AutoCloseable {
                             .thinkingConfig(ModelThinkingPolicy.resolveConfig(modelId, canonicalMode).orElseGet(ModelThinkingPolicy::fallbackConfig))
                             .build())
                     .beforeModelCallback((context, req) -> {
+                        req.contents(compactPreviousMenuCandidates(req.build().contents()));
                         if (req.build().contents().toString().getBytes(StandardCharsets.UTF_8).length > MAX_CONTEXT_BYTES) {
                             return Maybe.error(new IllegalStateException("Model context exceeds byte budget (64 KB)"));
                         }
@@ -1757,9 +1813,9 @@ public class AdkAssistantEngine implements AutoCloseable {
                 return resultMap;
             })).doOnSuccess(result -> LOG.info("ADK tool completed sessionId={} tool={} elapsedMs={} status={}",
                     sessionState.sessionId, definition.name(), elapsedMillis(toolStarted), result.get("status")))
-                    .doOnError(failure -> LOG.warn("ADK tool failed sessionId={} tool={} elapsedMs={} cause={}",
+                    .doOnError(failure -> LOG.warn("ADK tool failed sessionId={} tool={} elapsedMs={} cause={} errorCode={}",
                             sessionState.sessionId, definition.name(), elapsedMillis(toolStarted),
-                            failure.getClass().getSimpleName()));
+                            failure.getClass().getSimpleName(), failure instanceof AppException app ? app.errorCode() : "NONE"));
         }
 
         private <T> T asCaller(Authentication callerAuth, Callable<T> action) throws Exception {

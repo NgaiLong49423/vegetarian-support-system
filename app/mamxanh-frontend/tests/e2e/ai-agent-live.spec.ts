@@ -272,10 +272,12 @@ test('P0-C: eligible Customer Free creates two ADK previews and applies the conf
     for (const [index, prompt] of prompts.entries()) {
       await askInChat(page, prompt);
       await grantPendingDataConsents(page);
+      await expect(page.getByText('Dịch vụ AI đang gặp sự cố khi xử lý lượt chạy. Vui lòng thử lại sau.', { exact: true })).toHaveCount(0);
       await expect(page.getByRole('region', { name: 'Xem trước thực đơn AI' })).toHaveCount(index + 1, { timeout: 90_000 });
       await expect(page.getByRole('region', { name: 'Xem trước thực đơn AI' }).last())
         .toContainText('Đây là bản xem trước; chưa lưu vào lịch ăn.');
       await expect(page.getByText('Đã tạo bản xem trước thực đơn; chưa lưu vào lịch ăn.', { exact: true })).toHaveCount(index + 1);
+      if (index === 1) await expect(page.getByRole('region', { name: 'Xem trước thực đơn AI' }).last()).not.toContainText(/nấm/i);
       expect(await readMealPlanWeek(page, weekStartDate)).toEqual(mealPlanBefore);
     }
 
@@ -285,13 +287,20 @@ test('P0-C: eligible Customer Free creates two ADK previews and applies the conf
     await askInChat(page, 'Bản xem trước mới nhất ổn rồi, hãy áp dụng bản đó vào Lịch ăn của mình.');
     const confirmation = page.getByRole('heading', { name: 'Xem lại trước khi thực hiện' }).locator('xpath=ancestor::form');
     await expect(confirmation).toBeVisible();
-    await confirmation.getByText('Xác nhận thay đổi', { exact: true }).click();
+    await confirmation.getByRole('radio', { name: 'Xác nhận thay đổi' }).check();
     await confirmation.getByRole('button', { name: 'Gửi', exact: true }).click();
     await expect(page.getByText('Đã áp dụng thực đơn được xác nhận vào lịch ăn.')).toBeVisible({ timeout: 30_000 });
     expect(legacyPreviewCalls).toBe(0);
     expect(legacyApplyCalls).toBe(0);
 
     const appliedWeek = await readMealPlanWeek(page, weekStartDate);
+    for (const recipeId of new Set(appliedWeek.entries.map(entry => entry.recipeId))) {
+      const recipeResponse = await authenticatedApiGet(page, `/recipes/${recipeId}`);
+      expect(recipeResponse.status()).toBe(200);
+      const recipe = await recipeResponse.json() as { ingredients: Array<{ name: string }> };
+      expect(recipe.ingredients.map(ingredient => ingredient.name).join(' '),
+        `Recipe ${recipeId} must respect the requested mushroom avoidance.`).not.toMatch(/nấm/i);
+    }
     const mealTypeByLabel: Record<string, string> = { Sáng: 'BREAKFAST', Trưa: 'LUNCH', Tối: 'DINNER' };
     for (const item of previewItems) {
       const match = item.match(/^(\d{4}-\d{2}-\d{2}) · (Sáng|Trưa|Tối): (.+)$/);

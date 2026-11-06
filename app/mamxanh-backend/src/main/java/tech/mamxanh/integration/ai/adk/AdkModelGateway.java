@@ -187,6 +187,7 @@ public final class AdkModelGateway extends BaseLlm {
     private void validate(LlmRequest request, LlmResponse response) {
         String invalidResponse = invalidResponseReason(request, response);
         if (invalidResponse != null) {
+            LOG.warn("ADK unusable model response reason={}", invalidResponse);
             throw new IllegalArgumentException("Unusable model response: " + invalidResponse);
         }
         var parts = response.content().orElseThrow().parts().orElseThrow();

@@ -9,6 +9,27 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-11-06 — Bound AI Menu Follow-up Context
+
+**Status:** Working tree — not committed.
+
+**Scope:** Reduce repeated menu candidate data in later ADK model requests while preserving the active preview and confirmation flow.
+
+### Added
+
+- Add offline checks for candidate history compaction and session-bound preview confirmation.
+
+### Changed
+
+- Omit completed candidate pools from earlier turns in model requests while retaining tool response identifiers and current-turn data.
+- Keep prior preview identifiers and meal summaries in model history while retaining the complete preview snapshot for confirmation and apply.
+- Raise the authorized cumulative Gemini evaluation guard to $50 while preserving the existing ledger and preflight enforcement.
+
+### Fixed
+
+- Reduce repeated menu candidate context on follow-up requests; a live P0-C follow-up still hit the input-size guard after preview creation.
+- Strengthen the live P0-C check to reject an error response or a preview whose displayed dish names contradict the requested mushroom avoidance. The existing live result exposed a remaining ingredient-constraint defect and is not full acceptance.
+
 ## 2026-11-06 — Context-Aware AI Agent Actions
 
 **Status:** Committed — d5bad54.

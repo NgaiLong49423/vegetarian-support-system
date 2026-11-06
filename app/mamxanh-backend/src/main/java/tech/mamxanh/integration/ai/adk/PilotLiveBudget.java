@@ -15,9 +15,9 @@ import tools.jackson.databind.ObjectMapper;
 public final class PilotLiveBudget implements GeminiEmbeddingClient.Observer {
     // Verified against the Gemini Developer API pricing page for this evaluation date.
     public static final String PRICING_DATE="2026-11-06";
-    public static final double MAX_RESERVED_UPPER_USD = 20.0;
+    public static final double MAX_RESERVED_UPPER_USD = 50.0;
     public static final int MAX_GENERATION_INPUT_BYTES = 160_000;
-    public static final int MAX_GENERATION_ATTEMPTS = 175;
+    public static final int MAX_GENERATION_ATTEMPTS = 250;
     private static final Object PROCESS_BUDGET_LOCK=new Object();
     private final Path path;
     private final int embeddingCeiling;

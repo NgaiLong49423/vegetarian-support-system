@@ -47,6 +47,35 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 class AdkAssistantEngineTest {
+    @Test
+    void compactsOnlyCompletedCandidatePoolsBeforeCurrentUserTurn() {
+        var oldCandidate = com.google.genai.types.FunctionResponse.builder().id("c1")
+                .name("get_ai_menu_candidates").response(Map.of("status", "SUCCEEDED", "data", Map.of("candidates", "old pool"))).build();
+        var preview = com.google.genai.types.FunctionResponse.builder().id("p1")
+                .name("create_ai_menu_preview").response(Map.of("status", "SUCCEEDED", "data", Map.of("previewId", "preview-1",
+                        "meals", List.of(Map.of("mealDate", "2026-11-03", "mealType", "LUNCH", "recipeId", 57,
+                                "recipeTitle", "Bánh canh", "nutritionPerServing", Map.of("energy", 400)))))).build();
+        var currentCandidate = oldCandidate.toBuilder().id("c2")
+                .response(Map.of("status", "SUCCEEDED", "data", Map.of("candidates", "current pool"))).build();
+        var input = List.of(Content.builder().role("user").parts(Part.fromText("Tạo thực đơn")).build(),
+                Content.builder().role("user").parts(Part.builder().functionResponse(oldCandidate).build(),
+                        Part.builder().functionResponse(preview).build()).build(),
+                Content.builder().role("user").parts(Part.fromText("Tạo lại thực đơn")).build(),
+                Content.builder().role("user").parts(Part.builder().functionResponse(currentCandidate).build()).build());
+
+        var compacted = AdkAssistantEngine.compactPreviousMenuCandidates(input);
+        var oldResponse = compacted.get(1).parts().orElseThrow().get(0).functionResponse().orElseThrow();
+        assertThat(oldResponse.id()).contains("c1");
+        assertThat(oldResponse.response().orElseThrow()).doesNotContainKey("data");
+        var compactPreview = compacted.get(1).parts().orElseThrow().get(1).functionResponse().orElseThrow();
+        assertThat(compactPreview.id()).contains("p1");
+        assertThat(compactPreview.response().toString()).contains("preview-1", "2026-11-03", "LUNCH", "57", "Bánh canh")
+                .doesNotContain("nutritionPerServing");
+        assertThat(compacted.get(3).parts().orElseThrow().get(0).functionResponse()).contains(currentCandidate);
+        assertThat(input.get(1).parts().orElseThrow().get(0).functionResponse()).contains(oldCandidate);
+        assertThat(input.get(1).parts().orElseThrow().get(1).functionResponse()).contains(preview);
+    }
+
     private CurrentUserService users;
     private AiTokenQuotaService aiQuota;
     private AiChatSettingsService chatSettings;
@@ -306,7 +335,9 @@ class AdkAssistantEngineTest {
                         "candidates", List.of(Map.of("recipeId", 57, "title", "Bánh canh"))), List.of()));
         when(toolRegistry.execute(eq("create_ai_menu_preview"), any())).thenReturn(
                 new AiAssistantToolRegistry.ToolResult("SUCCEEDED", "Preview", Map.of(
-                        "weekStartDate", "2026-11-02", "meals", List.of(Map.of("mealDate", "2026-11-03", "mealType", "LUNCH", "recipeId", 57))), List.of()));
+                        "weekStartDate", "2026-11-02", "meals", List.of(Map.of("mealDate", "2026-11-03", "mealType", "LUNCH", "recipeId", 57))), List.of()),
+                new AiAssistantToolRegistry.ToolResult("SUCCEEDED", "Preview", Map.of(
+                        "weekStartDate", "2026-11-02", "meals", List.of(Map.of("mealDate", "2026-11-04", "mealType", "DINNER", "recipeId", 58))), List.of()));
         when(toolRegistry.execute(eq("apply_ai_menu_preview"), any())).thenReturn(
                 new AiAssistantToolRegistry.ToolResult("SUCCEEDED", "Applied", Map.of("ok", true), List.of()));
         var previewId = new java.util.concurrent.atomic.AtomicReference<String>();
@@ -315,7 +346,10 @@ class AdkAssistantEngineTest {
             case 1 -> functionCall("get_ai_menu_candidates", "candidate-call", Map.of("request", Map.of("weekStartDate", "2026-11-02", "mode", "PROFILE")));
             case 2 -> functionCall("create_ai_menu_preview", "preview-call", Map.of("request", Map.of("weekStartDate", "2026-11-02", "mode", "PROFILE"), "rankedRecipeIds", List.of(57)));
             case 3 -> textResponse("Đây là bản xem trước.");
-            case 4 -> functionCall("apply_ai_menu_preview", "apply-call", Map.of("previewId", previewId.get(), "request", Map.of("recipeId", 999)));
+            case 4 -> functionCall("get_ai_menu_candidates", "candidate-call-2", Map.of("request", Map.of("weekStartDate", "2026-11-02", "mode", "PROFILE")));
+            case 5 -> functionCall("create_ai_menu_preview", "preview-call-2", Map.of("request", Map.of("weekStartDate", "2026-11-02", "mode", "PROFILE"), "rankedRecipeIds", List.of(58)));
+            case 6 -> textResponse("Đây là bản xem trước mới.");
+            case 7 -> functionCall("apply_ai_menu_preview", "apply-call", Map.of("previewId", previewId.get(), "request", Map.of("recipeId", 999)));
             default -> textResponse("Đã xử lý.");
         });
         var engine = createEngine(llm);
@@ -333,6 +367,15 @@ class AdkAssistantEngineTest {
         @SuppressWarnings("unchecked") var data = (Map<String, Object>) first.steps().getLast().result().get("data");
         previewId.set((String) data.get("previewId"));
         assertThat(previewId.get()).isNotBlank();
+        String firstPreviewId = previewId.get();
+        var second = engine.execute(new AiChatRequest(ContextType.GENERAL, null, "Tạo lại thực đơn", List.of(),
+                null, first.sessionId(), ExecutionMode.AGENT, null, null, null, UUID.randomUUID()));
+        assertThat(second.steps()).extracting(step -> step.status()).containsExactly("SUCCEEDED", "SUCCEEDED");
+        assertThat(llm.requests.get(3).contents().toString()).contains("Earlier candidate pool omitted", firstPreviewId)
+                .doesNotContain("Bánh canh");
+        @SuppressWarnings("unchecked") var secondData = (Map<String, Object>) second.steps().getLast().result().get("data");
+        previewId.set((String) secondData.get("previewId"));
+        assertThat(previewId.get()).isNotBlank().isNotEqualTo(firstPreviewId);
         var foreignCalls = new java.util.concurrent.atomic.AtomicInteger();
         ScriptedLlm foreignLlm = new ScriptedLlm(request -> foreignCalls.incrementAndGet() == 1
                 ? functionCall("apply_ai_menu_preview", "foreign-apply", Map.of("previewId", previewId.get()))
@@ -344,13 +387,15 @@ class AdkAssistantEngineTest {
         var staged = engine.execute(new AiChatRequest(ContextType.GENERAL, null, "Áp dụng preview", List.of(),
                 null, first.sessionId(), ExecutionMode.AGENT, null, null, null, UUID.randomUUID()));
         assertThat(staged.pendingConfirmation()).isNotNull();
+        assertThat(llm.requests.get(6).contents().toString()).contains("Earlier candidate pool omitted", previewId.get())
+                .doesNotContain("Bánh canh");
         verify(toolRegistry, never()).execute(eq("apply_ai_menu_preview"), any());
         engine.execute(new AiChatRequest(ContextType.GENERAL, null, "Xác nhận", List.of(), null, first.sessionId(),
                 ExecutionMode.AGENT, null, staged.pendingConfirmation().confirmationId(), ConfirmationDecision.APPROVE, UUID.randomUUID()));
         @SuppressWarnings("unchecked") var captured = ArgumentCaptor.forClass(Map.class);
         verify(toolRegistry).execute(eq("apply_ai_menu_preview"), captured.capture());
         assertThat(captured.getValue()).containsEntry("previewId", previewId.get());
-        assertThat(captured.getValue().get("request").toString()).contains("57").doesNotContain("999");
+        assertThat(captured.getValue().get("request").toString()).contains("58").doesNotContain("57", "999");
     }
 
     @Test
