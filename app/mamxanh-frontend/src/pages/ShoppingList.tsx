@@ -563,7 +563,7 @@ function ShoppingWorkspace() {
           <div
             key={item.id}
             data-testid={`shopping-item-${item.id}`}
-            className={`grid grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] items-center gap-1 rounded-lg px-1 py-4 sm:gap-2.5 ${item.bought ? "bg-cream-soft/50" : ""}`}
+            className={`grid grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] items-center gap-1 rounded-lg px-1 py-2 sm:gap-2.5 sm:py-2.5 ${item.bought ? "bg-cream-soft/50" : ""}`}
           >
             <SpringCheck
               checked={item.bought}
@@ -586,9 +586,9 @@ function ShoppingWorkspace() {
                   <IngredientImage
                     imageUrl={item.imageUrl ?? null}
                     name={item.name}
-                    containerClassName="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-brand-100 bg-cream-soft md:h-16 md:w-16"
+                    containerClassName="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-brand-100 bg-cream-soft sm:h-11 sm:w-11 md:h-12 md:w-12"
                   />
-                  <span className="break-words text-base font-medium leading-6 text-ink">{item.name}</span>
+                  <span className="break-words text-sm font-medium leading-5 text-ink sm:text-base">{item.name}</span>
                 </span>
               }
               boxSize={24}
@@ -596,43 +596,43 @@ function ShoppingWorkspace() {
               fillColor="#f97316"
               className="min-w-0 w-full"
             />
-            <span className={`text-base font-medium ${item.bought ? "text-ink-muted line-through" : "text-ink-soft"}`}>
+            <span className={`text-sm font-medium sm:text-base ${item.bought ? "text-ink-muted line-through" : "text-ink-soft"}`}>
               {quantityText(item)}
             </span>
             {item.sources?.length ? (
               <Button
                 variant="outline"
                 size="sm"
-                className="!h-9 !w-9 !p-0 md:!h-10 md:!w-10"
+                className="!h-8 !w-8 !p-0 sm:!h-9 sm:!w-9"
                 aria-label={`Xem món đã dùng ${item.name}`}
                 title={`Xem món đã dùng ${item.name}`}
                 disabled={busy}
                 onClick={() => openDialog(() => setSourceDetails(item))}
               >
-                <Info className="h-4 w-4 md:h-5 md:w-5" />
+                <Info className="h-4 w-4" />
               </Button>
-            ) : <span aria-hidden="true" className="h-9 w-9 md:h-10 md:w-10" />}
+            ) : <span aria-hidden="true" className="h-8 w-8 sm:h-9 sm:w-9" />}
             <Button
               variant="outline"
               size="sm"
-              className="!h-9 !w-9 !p-0 md:!h-10 md:!w-10"
+              className="!h-8 !w-8 !p-0 sm:!h-9 sm:!w-9"
               aria-label={`Sửa ${item.name} ${item.unitCode}`}
               title={`Sửa số lượng ${item.name}`}
               disabled={busy}
               onClick={() => openDialog(() => setEditor(item))}
             >
-              <Pencil className="h-4 w-4 md:h-5 md:w-5" />
+              <Pencil className="h-4 w-4" />
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="!h-9 !w-9 !p-0 md:!h-10 md:!w-10"
+              className="!h-8 !w-8 !p-0 sm:!h-9 sm:!w-9"
               aria-label={`Xoá ${item.name} ${item.unitCode}`}
               title={`Xóa ${item.name}`}
               disabled={busy}
               onClick={() => openDialog(() => setRemoval(item))}
             >
-              <Trash2 className="h-4 w-4 md:h-5 md:w-5" />
+              <Trash2 className="h-4 w-4" />
             </Button>
             {separate(item) && (
               <p className="col-span-5 pl-8 text-xs text-ink-muted">
@@ -815,14 +815,14 @@ function ShoppingWorkspace() {
             )
           ) : (
             <div aria-busy={busy}>
-              <header className="mb-5 rounded-2xl border border-brand-200 bg-gradient-to-r from-orange-50 via-brand-50/70 to-paper px-4 py-4 shadow-sm sm:px-5 sm:py-5">
-                <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-orange-100 text-orange-600 sm:h-12 sm:w-12">
-                    <ShoppingBasket className="h-5 w-5 sm:h-6 sm:w-6" />
+              <header className="mb-4 rounded-xl border border-brand-200 bg-gradient-to-r from-orange-50 via-brand-50/70 to-paper px-3.5 py-2.5 shadow-sm sm:px-4 sm:py-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-600 sm:h-10 sm:w-10">
+                    <ShoppingBasket className="h-4 w-4 sm:h-5 sm:w-5" />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-brand-700 sm:text-xs">Danh sách đang mở</p>
-                    <h2 className="mt-0.5 break-words text-xl font-extrabold leading-tight tracking-tight text-ink sm:text-2xl">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-brand-700 sm:text-[11px]">Danh sách đang mở</p>
+                    <h2 className="break-words text-lg font-bold leading-tight tracking-tight text-ink sm:text-xl">
                       {list.name}
                     </h2>
                   </div>
