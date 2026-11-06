@@ -2116,19 +2116,21 @@ function IngredientUnitsManager({
           <div className="grid gap-3 sm:grid-cols-2">
             <label className={labelClass}>
               Đơn vị
-              <select
-                className={fieldClass}
-                required
-                value={unitId ?? ""}
-                onChange={(e) => selectConversion(Number(e.target.value))}
-              >
-                <option value="">Chọn quả, củ hoặc miếng</option>
-                {countUnits.map((unit) => (
-                  <option key={unit.id} value={unit.id}>
-                    {unit.code}
-                  </option>
-                ))}
-              </select>
+              <ThemedSelect
+                className="mt-1.5 w-full"
+                aria-label="Đơn vị"
+                value={String(unitId ?? "")}
+                onChange={(e) =>
+                  selectConversion(e.target.value ? Number(e.target.value) : 0)
+                }
+                options={[
+                  { value: "", label: "Chọn quả, củ hoặc miếng" },
+                  ...countUnits.map((unit) => ({
+                    value: String(unit.id),
+                    label: unit.code,
+                  })),
+                ]}
+              />
             </label>
             <label className={labelClass}>
               Số gram trên đơn vị

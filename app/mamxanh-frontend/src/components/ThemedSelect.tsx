@@ -61,11 +61,37 @@ export function ThemedSelect({
     setOpen(false)
   }
 
+  const selectedOption = options.find((o) => o.value === value) || options[0]
+
   return (
-    <div ref={containerRef} className="relative inline-block text-left">
+    <div
+      ref={containerRef}
+      className={`relative inline-block text-left ${className}`}
+      onClick={() => {
+        if (!disabled) setOpen((prev) => !prev)
+      }}
+    >
+      {/* Visual styled trigger that real users see and click */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className={`flex w-full cursor-pointer select-none items-center justify-between gap-2.5 rounded-xl border border-brand-200/90 bg-paper px-3.5 py-2 text-xs text-ink shadow-2xs transition-all hover:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 ${
+          disabled ? "cursor-not-allowed opacity-50" : ""
+        }`}
+      >
+        <span className="truncate">{selectedOption?.label ?? value}</span>
+        <ChevronDown
+          className={`h-3.5 w-3.5 shrink-0 text-ink-muted transition-transform duration-200 ${
+            open ? "rotate-180 text-brand-600" : ""
+          }`}
+        />
+      </div>
+
       {/* 
-        Native Select: Rendered in the DOM for automated tests (Playwright .selectOption()) 
-        and accessibility. We intercept mousedown so a real user never sees the ugly OS popup.
+        Native Select: Kept in DOM for automated tests (Playwright .selectOption()) 
+        and form submissions. Pointer-events are disabled so real users never see the OS popup.
       */}
       <select
         ref={selectRef}
@@ -75,6 +101,7 @@ export function ThemedSelect({
         aria-labelledby={ariaLabelledBy}
         value={value}
         disabled={disabled}
+        tabIndex={-1}
         onChange={(e) => onChange(e)}
         onMouseDown={(e) => {
           e.preventDefault()
@@ -86,7 +113,7 @@ export function ThemedSelect({
             if (!disabled) setOpen((prev) => !prev)
           }
         }}
-        className={`cursor-pointer appearance-none transition-all ${className}`}
+        className="pointer-events-none absolute inset-0 -z-10 h-full w-full opacity-0"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>

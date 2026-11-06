@@ -4,7 +4,7 @@ import { Activity, CircleDollarSign, Cpu, RefreshCw } from "lucide-react"
 
 import { useAuth } from "../components/AuthContext"
 
-import { Card, Button, AnimatedNumber } from "../components/ui"
+import { Card, Button, AnimatedNumber, ThemedSelect } from "../components/ui"
 
 import {
   getAiTelemetry,
@@ -186,36 +186,38 @@ export function AiTelemetryPage() {
           </label>
           <label className="space-y-2 text-sm text-ink-soft">
             <span>Chu kỳ</span>
-            <select
-              className={input}
+            <ThemedSelect
+              aria-label="Chu kỳ"
+              className="w-full"
               value={draft.granularity}
               onChange={(e) =>
                 setDraft({
                   ...draft,
-
                   granularity: e.target.value as TelemetryQuery["granularity"],
                 })
               }
-            >
-              <option value="DAY">Theo ngày</option>
-              <option value="WEEK">Theo tuần</option>
-              <option value="MONTH">Theo tháng</option>
-            </select>
+              options={[
+                { value: "DAY", label: "Theo ngày" },
+                { value: "WEEK", label: "Theo tuần" },
+                { value: "MONTH", label: "Theo tháng" },
+              ]}
+            />
           </label>
           <label className="space-y-2 text-sm text-ink-soft">
             <span>Tính năng</span>
-            <select
-              className={input}
+            <ThemedSelect
+              aria-label="Tính năng"
+              className="w-full"
               value={draft.feature}
               onChange={(e) => setDraft({ ...draft, feature: e.target.value })}
-            >
-              <option value="">Tất cả tính năng</option>
-              {Object.entries(features).map(([id, label]) => (
-                <option key={id} value={id}>
-                  {label}
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: "", label: "Tất cả tính năng" },
+                ...Object.entries(features).map(([id, label]) => ({
+                  value: id,
+                  label,
+                })),
+              ]}
+            />
           </label>
           <Button
             type="submit"

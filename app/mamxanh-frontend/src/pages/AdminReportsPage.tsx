@@ -12,7 +12,7 @@ import {
   ShieldAlert,
 } from "lucide-react"
 
-import { Button, Card, AnimatedNumber } from "../components/ui"
+import { Button, Card, AnimatedNumber, ThemedSelect } from "../components/ui"
 
 import { Modal } from "../components/Modal"
 
@@ -480,20 +480,20 @@ export function AdminReportsPage() {
           </form>
           <label className="text-xs font-semibold text-ink-soft sm:w-52">
             Sắp xếp
-            <select
+            <ThemedSelect
+              aria-label="Sắp xếp"
               value={sort}
               onChange={(event) => {
                 setError("")
-
                 setPage(0)
-
                 setSort(event.target.value as ReportGroupSort)
               }}
-              className={`${fieldClass} mt-1.5`}
-            >
-              <option value="NEWEST">Báo cáo mới nhất</option>
-              <option value="MOST_REPORTED">Nhiều báo cáo nhất</option>
-            </select>
+              className="mt-1.5 w-full"
+              options={[
+                { value: "NEWEST", label: "Báo cáo mới nhất" },
+                { value: "MOST_REPORTED", label: "Nhiều báo cáo nhất" },
+              ]}
+            />
           </label>
         </div>
       )}
