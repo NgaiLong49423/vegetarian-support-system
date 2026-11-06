@@ -26,7 +26,6 @@ import {
   Button,
   Card,
   AnimatedNumber,
-  ThemedSelect,
 } from "../components/ui"
 
 import {
@@ -461,35 +460,33 @@ export function AdminUserManagement() {
             />
           </div>
           <div className="flex gap-2">
-            <ThemedSelect
+            <select
               aria-label="Lọc vai trò"
               value={role}
               onChange={(event) => {
                 setRole(event.target.value)
                 setPage(0)
               }}
-              className="rounded-xl border border-brand-200/90 bg-paper px-3.5 py-2 text-xs text-ink shadow-2xs"
-              options={[
-                { value: "", label: "Tất cả vai trò" },
-                { value: "CUSTOMER", label: "Thành viên" },
-                { value: "EXPERT", label: "Chuyên gia" },
-                { value: "ADMIN", label: "Quản trị viên" },
-              ]}
-            />
-            <ThemedSelect
+              className="rounded-xl border border-brand-200 bg-paper px-3 py-2 text-xs text-ink focus:border-brand-500 focus:outline-none"
+            >
+              <option value="">Tất cả vai trò</option>
+              <option value="CUSTOMER">Thành viên</option>
+              <option value="EXPERT">Chuyên gia</option>
+              <option value="ADMIN">Quản trị viên</option>
+            </select>
+            <select
               aria-label="Lọc trạng thái"
               value={status}
               onChange={(event) => {
                 setStatus(event.target.value)
                 setPage(0)
               }}
-              className="rounded-xl border border-brand-200/90 bg-paper px-3.5 py-2 text-xs text-ink shadow-2xs"
-              options={[
-                { value: "", label: "Tất cả trạng thái" },
-                { value: "ACTIVE", label: "Đang hoạt động" },
-                { value: "LOCKED", label: "Đang bị khóa" },
-              ]}
-            />
+              className="rounded-xl border border-brand-200 bg-paper px-3 py-2 text-xs text-ink focus:border-brand-500 focus:outline-none"
+            >
+              <option value="">Tất cả trạng thái</option>
+              <option value="ACTIVE">Đang hoạt động</option>
+              <option value="LOCKED">Đang bị khóa</option>
+            </select>
           </div>
         </div>
       </Card>
@@ -937,19 +934,18 @@ export function AdminUserManagement() {
                       </div>
                       <label className="block font-bold">
                         Gói muốn tặng
-                        <ThemedSelect
+                        <select
                           aria-label="Gói AI muốn tặng"
                           value={nextAiTier}
                           onChange={(event) =>
                             setNextAiTier(event.target.value as AdminAiTier)
                           }
-                          className="mt-1 w-full rounded-xl border border-brand-200/90 bg-paper p-2.5 text-xs font-normal text-ink shadow-2xs"
-                          options={[
-                            { value: "FREE", label: "Free" },
-                            { value: "PLUS", label: "Plus" },
-                            { value: "PRO", label: "Pro" },
-                          ]}
-                        />
+                          className="mt-1 w-full rounded-xl border border-brand-200 bg-paper p-2.5 text-xs font-normal text-ink focus:border-brand-500 focus:outline-none"
+                        >
+                          <option value="FREE">Free</option>
+                          <option value="PLUS">Plus</option>
+                          <option value="PRO">Pro</option>
+                        </select>
                       </label>
                       <p className="text-ink-muted">
                         Plus/Pro bắt đầu chu kỳ 30 ngày mới. Không tạo payment
@@ -1080,7 +1076,7 @@ export function AdminUserManagement() {
                 {mode === "ROLE" && (
                   <label className="block font-bold">
                     Vai trò mới
-                    <ThemedSelect
+                    <select
                       aria-label="Vai trò mới"
                       value={nextRole}
                       onChange={(event) =>
@@ -1088,12 +1084,11 @@ export function AdminUserManagement() {
                           event.target.value as Exclude<AdminUserRole, "ADMIN">,
                         )
                       }
-                      className="mt-1 w-full rounded-xl border border-brand-200/90 bg-paper p-2.5 text-xs font-normal text-ink shadow-2xs"
-                      options={[
-                        { value: "CUSTOMER", label: "Thành viên (CUSTOMER)" },
-                        { value: "EXPERT", label: "Chuyên gia (EXPERT)" },
-                      ]}
-                    />
+                      className="mt-1 w-full rounded-xl border border-brand-200 bg-paper p-2.5 text-xs font-normal text-ink focus:border-brand-500 focus:outline-none"
+                    >
+                      <option value="CUSTOMER">Thành viên (CUSTOMER)</option>
+                      <option value="EXPERT">Chuyên gia (EXPERT)</option>
+                    </select>
                   </label>
                 )}
                 <label className="block font-bold">

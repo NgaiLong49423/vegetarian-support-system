@@ -18,7 +18,6 @@ import {
   Badge,
   Button,
   AnimatedNumber,
-  ThemedSelect,
 } from "../components/ui"
 
 import { useAuth } from "../components/AuthContext"
@@ -310,7 +309,7 @@ export function AdminTransactionsPage() {
           </label>
           <label className="space-y-2 text-sm text-ink-soft">
             <span id="transaction-tier-label">Gói dịch vụ</span>
-            <ThemedSelect
+            <select
               aria-labelledby="transaction-tier-label"
               className={input}
               value={draft.tier}
@@ -320,16 +319,15 @@ export function AdminTransactionsPage() {
                   tier: e.target.value as TransactionFilters["tier"],
                 })
               }
-              options={[
-                { value: "", label: "Tất cả gói" },
-                { value: "PLUS", label: "Plus" },
-                { value: "PRO", label: "Pro" },
-              ]}
-            />
+            >
+              <option value="">Tất cả gói</option>
+              <option value="PLUS">Plus</option>
+              <option value="PRO">Pro</option>
+            </select>
           </label>
           <label className="space-y-2 text-sm text-ink-soft">
             <span id="transaction-status-label">Trạng thái</span>
-            <ThemedSelect
+            <select
               aria-labelledby="transaction-status-label"
               className={input}
               value={draft.status}
@@ -339,14 +337,14 @@ export function AdminTransactionsPage() {
                   status: e.target.value as TransactionFilters["status"],
                 })
               }
-              options={[
-                { value: "", label: "Tất cả trạng thái" },
-                ...Object.entries(statuses).map(([val, lbl]) => ({
-                  value: val,
-                  label: lbl,
-                })),
-              ]}
-            />
+            >
+              <option value="">Tất cả trạng thái</option>
+              {Object.entries(statuses).map(([val, lbl]) => (
+                <option key={val} value={val}>
+                  {lbl}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="space-y-2 text-sm text-ink-soft">
             <span>Từ ngày tạo</span>

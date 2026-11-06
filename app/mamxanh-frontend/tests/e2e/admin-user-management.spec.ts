@@ -99,41 +99,20 @@ test('loads real account API data and sends server-side filters', async ({ page 
   await expect(page.getByRole('button', { name: 'Xuất danh sách' })).toHaveCount(0);
 });
 
-test('filters users by status using ThemedSelect', async ({ page }) => {
+test('filters users by status', async ({ page }) => {
   const { listRequests } = await mockAccountApi(page);
   await page.goto('/admin/nguoi-dung');
   await page.getByRole('combobox', { name: 'Lọc trạng thái' }).selectOption('LOCKED');
   await expect.poll(() => listRequests.some((url) => url.searchParams.get('status') === 'LOCKED')).toBe(true);
 });
 
-test('ThemedSelect supports mouse click open, keyboard navigation, Escape and click outside', async ({ page }) => {
-  await mockAccountApi(page);
+test('filters users by role using native select dropdown', async ({ page }) => {
+  const { listRequests } = await mockAccountApi(page);
   await page.goto('/admin/nguoi-dung');
 
   const select = page.getByRole('combobox', { name: 'Lọc vai trò' });
-
-  // 1. Mouse click opens dropdown popup
-  await select.dispatchEvent('mousedown');
-  const listbox = page.getByRole('listbox');
-  await expect(listbox).toBeVisible();
-
-  // 2. Escape closes dropdown
-  await page.keyboard.press('Escape');
-  await expect(listbox).toHaveCount(0);
-
-  // 3. ArrowDown opens dropdown
-  await select.dispatchEvent('keydown', { key: 'ArrowDown' });
-  await expect(listbox).toBeVisible();
-
-  // 4. Click option selects value
-  await listbox.getByRole('option', { name: 'Chuyên gia' }).click();
-  await expect(listbox).toHaveCount(0);
-
-  // 5. Enter opens dropdown, click outside closes
-  await select.dispatchEvent('keydown', { key: 'Enter' });
-  await expect(listbox).toBeVisible();
-  await page.mouse.click(10, 10);
-  await expect(listbox).toHaveCount(0);
+  await select.selectOption('EXPERT');
+  await expect.poll(() => listRequests.some((url) => url.searchParams.get('role') === 'EXPERT')).toBe(true);
 });
 
 test('role changes require a reason and update only from the API response', async ({ page }) => {

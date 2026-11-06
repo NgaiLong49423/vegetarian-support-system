@@ -4,7 +4,7 @@ import { Activity, CircleDollarSign, Cpu, RefreshCw } from "lucide-react"
 
 import { useAuth } from "../components/AuthContext"
 
-import { Card, Button, AnimatedNumber, ThemedSelect } from "../components/ui"
+import { Card, Button, AnimatedNumber } from "../components/ui"
 
 import {
   getAiTelemetry,
@@ -186,9 +186,9 @@ export function AiTelemetryPage() {
           </label>
           <label className="space-y-2 text-sm text-ink-soft">
             <span>Chu kỳ</span>
-            <ThemedSelect
+            <select
               aria-label="Chu kỳ"
-              className="w-full"
+              className="w-full rounded-2xl border border-brand-200 bg-cream-soft px-4 py-2.5 text-sm text-ink outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
               value={draft.granularity}
               onChange={(e) =>
                 setDraft({
@@ -196,28 +196,27 @@ export function AiTelemetryPage() {
                   granularity: e.target.value as TelemetryQuery["granularity"],
                 })
               }
-              options={[
-                { value: "DAY", label: "Theo ngày" },
-                { value: "WEEK", label: "Theo tuần" },
-                { value: "MONTH", label: "Theo tháng" },
-              ]}
-            />
+            >
+              <option value="DAY">Theo ngày</option>
+              <option value="WEEK">Theo tuần</option>
+              <option value="MONTH">Theo tháng</option>
+            </select>
           </label>
           <label className="space-y-2 text-sm text-ink-soft">
             <span>Tính năng</span>
-            <ThemedSelect
+            <select
               aria-label="Tính năng"
-              className="w-full"
+              className="w-full rounded-2xl border border-brand-200 bg-cream-soft px-4 py-2.5 text-sm text-ink outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
               value={draft.feature}
               onChange={(e) => setDraft({ ...draft, feature: e.target.value })}
-              options={[
-                { value: "", label: "Tất cả tính năng" },
-                ...Object.entries(features).map(([id, label]) => ({
-                  value: id,
-                  label,
-                })),
-              ]}
-            />
+            >
+              <option value="">Tất cả tính năng</option>
+              {Object.entries(features).map(([id, label]) => (
+                <option key={id} value={id}>
+                  {label}
+                </option>
+              ))}
+            </select>
           </label>
           <Button
             type="submit"

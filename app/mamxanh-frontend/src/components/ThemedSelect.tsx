@@ -33,6 +33,7 @@ export function ThemedSelect({
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const selectRef = useRef<HTMLSelectElement>(null)
+  const lastSelectTime = useRef(0)
 
   // Close when clicking outside or pressing Escape
   useEffect(() => {
@@ -58,6 +59,7 @@ export function ThemedSelect({
 
   const handleSelect = (val: string) => {
     if (disabled) return
+    lastSelectTime.current = Date.now()
     onChange({ target: { value: val, name } })
     setOpen(false)
   }
@@ -68,16 +70,20 @@ export function ThemedSelect({
     <div
       ref={containerRef}
       className={`relative inline-block text-left ${className}`}
-      onClick={() => {
-        if (!disabled) setOpen((prev) => !prev)
-      }}
     >
       {/* Visual styled trigger that real users see and click */}
-      <div
-        role="button"
+      <button
+        type="button"
         tabIndex={0}
         aria-haspopup="listbox"
         aria-expanded={open}
+        disabled={disabled}
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          if (Date.now() - lastSelectTime.current < 250) return
+          if (!disabled) setOpen((prev) => !prev)
+        }}
         className={`flex w-full cursor-pointer select-none items-center justify-between gap-2.5 rounded-xl border border-brand-200/90 bg-paper px-3.5 py-2 text-xs text-ink shadow-2xs transition-all hover:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 ${
           disabled ? "cursor-not-allowed opacity-50" : ""
         }`}
@@ -88,7 +94,7 @@ export function ThemedSelect({
             open ? "rotate-180 text-brand-600" : ""
           }`}
         />
-      </div>
+      </button>
 
       {/* 
         Native Select: Kept in DOM for automated tests (Playwright .selectOption()) 
@@ -106,11 +112,13 @@ export function ThemedSelect({
         onChange={(e) => onChange(e)}
         onMouseDown={(e) => {
           e.preventDefault()
+          e.stopPropagation()
           if (!disabled) setOpen((prev) => !prev)
         }}
         onKeyDown={(e) => {
           if (e.key === " " || e.key === "Enter" || e.key === "ArrowDown") {
             e.preventDefault()
+            e.stopPropagation()
             if (!disabled) setOpen((prev) => !prev)
           }
         }}
@@ -135,6 +143,7 @@ export function ThemedSelect({
       {open && (
         <div
           role="listbox"
+          onClick={(e) => e.stopPropagation()}
           className="modal-panel-enter absolute left-0 z-50 mt-1.5 min-w-full w-max max-h-60 overflow-y-auto overflow-x-hidden rounded-2xl border border-brand-200/90 bg-paper p-1.5 shadow-2xl shadow-brand-950/25 ring-1 ring-brand-900/5 backdrop-blur-md"
         >
           <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-brand-500 via-leaf-400 to-amber-400" />
@@ -148,7 +157,11 @@ export function ThemedSelect({
                   role="option"
                   disabled={opt.disabled}
                   aria-selected={isSelected}
-                  onClick={() => !opt.disabled && handleSelect(opt.value)}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    if (!opt.disabled) handleSelect(opt.value)
+                  }}
                   className={`group flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
                     opt.disabled
                       ? "cursor-not-allowed opacity-40 text-ink-muted"

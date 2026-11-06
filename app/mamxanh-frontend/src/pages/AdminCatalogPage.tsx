@@ -31,7 +31,6 @@ import {
   Card,
   EmptyState,
   AnimatedNumber,
-  ThemedSelect,
 } from "../components/ui"
 import { IngredientImage } from "../components/IngredientImage"
 import { getIngredientGroupVisual } from "../utils/ingredientImage"
@@ -1076,47 +1075,45 @@ export function AdminCatalogPage() {
                 </label>
                 <label className="text-xs font-semibold text-ink-soft">
                   Phân loại
-                  <ThemedSelect
+                  <select
                     aria-label="Phân loại"
                     className={fieldClass}
                     value={groupFilter}
                     onChange={(event) => setGroupFilter(event.target.value)}
-                    options={[
-                      { value: "", label: "Tất cả nhóm" },
-                      ...catalogOptions.groups.map((group) => ({
-                        value: group,
-                        label: normalizeIngredientGroup(group),
-                      })),
-                    ]}
-                  />
+                  >
+                    <option value="">Tất cả nhóm</option>
+                    {catalogOptions.groups.map((group) => (
+                      <option key={group} value={group} className="font-sans">
+                        {normalizeIngredientGroup(group)}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label className="text-xs font-semibold text-ink-soft">
                   Trạng thái danh mục
-                  <ThemedSelect
+                  <select
                     aria-label="Trạng thái danh mục"
                     className={fieldClass}
                     value={activeFilter}
                     onChange={(event) => setActiveFilter(event.target.value)}
-                    options={[
-                      { value: "", label: "Tất cả" },
-                      { value: "true", label: "Đang hoạt động" },
-                      { value: "false", label: "Ngừng hoạt động" },
-                    ]}
-                  />
+                  >
+                    <option value="">Tất cả</option>
+                    <option value="true">Đang hoạt động</option>
+                    <option value="false">Ngừng hoạt động</option>
+                  </select>
                 </label>
                 <label className="text-xs font-semibold text-ink-soft">
                   Hỗ trợ tính dinh dưỡng
-                  <ThemedSelect
+                  <select
                     aria-label="Hỗ trợ tính dinh dưỡng"
                     className={fieldClass}
                     value={nutritionFilter}
                     onChange={(event) => setNutritionFilter(event.target.value)}
-                    options={[
-                      { value: "", label: "Tất cả" },
-                      { value: "true", label: "Có hỗ trợ" },
-                      { value: "false", label: "Chưa hỗ trợ" },
-                    ]}
-                  />
+                  >
+                    <option value="">Tất cả</option>
+                    <option value="true">Có hỗ trợ</option>
+                    <option value="false">Chưa hỗ trợ</option>
+                  </select>
                 </label>
                 <div className="flex items-center gap-2">
                   <Button
@@ -1701,7 +1698,8 @@ export function AdminCatalogPage() {
                     />
                   </Field>
                   <Field label="Nhóm nguyên liệu">
-                    <ThemedSelect
+                    <select
+                      id="ingredient-group"
                       aria-label="Nhóm nguyên liệu"
                       className={fieldClass}
                       value={ingredientForm.ingredientGroup}
@@ -1711,14 +1709,14 @@ export function AdminCatalogPage() {
                           ingredientGroup: event.target.value,
                         })
                       }
-                      options={[
-                        { value: "", label: "Chọn nhóm nguyên liệu", disabled: true },
-                        ...catalogOptions.groups.map((group) => ({
-                          value: group,
-                          label: normalizeIngredientGroup(group),
-                        })),
-                      ]}
-                    />
+                    >
+                      <option value="" disabled>Chọn nhóm nguyên liệu</option>
+                      {catalogOptions.groups.map((group) => (
+                        <option key={group} value={group}>
+                          {normalizeIngredientGroup(group)}
+                        </option>
+                      ))}
+                    </select>
                   </Field>
                   <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                     <Field label="Ảnh minh họa">
@@ -2116,21 +2114,22 @@ function IngredientUnitsManager({
           <div className="grid gap-3 sm:grid-cols-2">
             <label className={labelClass}>
               Đơn vị
-              <ThemedSelect
-                className="mt-1.5 w-full"
+              <select
                 aria-label="Đơn vị"
-                value={String(unitId ?? "")}
+                className={fieldClass}
+                required
+                value={unitId ?? ""}
                 onChange={(e) =>
                   selectConversion(e.target.value ? Number(e.target.value) : 0)
                 }
-                options={[
-                  { value: "", label: "Chọn quả, củ hoặc miếng", disabled: true },
-                  ...countUnits.map((unit) => ({
-                    value: String(unit.id),
-                    label: unit.code,
-                  })),
-                ]}
-              />
+              >
+                <option value="" disabled>Chọn quả, củ hoặc miếng</option>
+                {countUnits.map((unit) => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.code}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className={labelClass}>
               Số gram trên đơn vị

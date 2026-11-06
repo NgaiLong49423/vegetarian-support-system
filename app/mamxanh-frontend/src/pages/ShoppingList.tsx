@@ -557,13 +557,13 @@ function ShoppingWorkspace() {
   }
   const renderGroup = ([group, entries]: [string, ShoppingItem[]], showHeading = true) => (
     <section key={group}>
-      {showHeading && <h3 className="mb-3 text-base font-bold text-ink">{group}</h3>}
+      {showHeading && <h3 className="mb-2.5 text-base font-bold text-ink">{group}</h3>}
       <div className="divide-y divide-brand-100">
         {[...entries].sort((a, b) => Number(b.id === lastChangedItemId) - Number(a.id === lastChangedItemId) || b.id - a.id).map((item) => (
           <div
             key={item.id}
             data-testid={`shopping-item-${item.id}`}
-            className={`grid grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] items-center gap-1 rounded-lg px-1 py-2 sm:gap-2.5 sm:py-2.5 ${item.bought ? "bg-cream-soft/50" : ""}`}
+            className={`grid grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] items-center gap-1 rounded-lg px-1 py-1.5 sm:gap-2 sm:py-2 ${item.bought ? "bg-cream-soft/50" : ""}`}
           >
             <SpringCheck
               checked={item.bought}
@@ -586,24 +586,24 @@ function ShoppingWorkspace() {
                   <IngredientImage
                     imageUrl={item.imageUrl ?? null}
                     name={item.name}
-                    containerClassName="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-brand-100 bg-cream-soft sm:h-11 sm:w-11 md:h-12 md:w-12"
+                    containerClassName="h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-brand-100 bg-cream-soft sm:h-10 sm:w-10"
                   />
-                  <span className="break-words text-sm font-medium leading-5 text-ink sm:text-base">{item.name}</span>
+                  <span className="break-words text-sm font-medium leading-tight text-ink">{item.name}</span>
                 </span>
               }
-              boxSize={24}
+              boxSize={22}
               color="#f97316"
               fillColor="#f97316"
               className="min-w-0 w-full"
             />
-            <span className={`text-sm font-medium sm:text-base ${item.bought ? "text-ink-muted line-through" : "text-ink-soft"}`}>
+            <span className={`text-xs font-semibold sm:text-sm ${item.bought ? "text-ink-muted line-through" : "text-ink-soft"}`}>
               {quantityText(item)}
             </span>
             {item.sources?.length ? (
               <Button
                 variant="outline"
                 size="sm"
-                className="!h-8 !w-8 !p-0 sm:!h-9 sm:!w-9"
+                className="!h-8 !w-8 !p-0"
                 aria-label={`Xem món đã dùng ${item.name}`}
                 title={`Xem món đã dùng ${item.name}`}
                 disabled={busy}
@@ -611,11 +611,11 @@ function ShoppingWorkspace() {
               >
                 <Info className="h-4 w-4" />
               </Button>
-            ) : <span aria-hidden="true" className="h-8 w-8 sm:h-9 sm:w-9" />}
+            ) : <span aria-hidden="true" className="h-8 w-8" />}
             <Button
               variant="outline"
               size="sm"
-              className="!h-8 !w-8 !p-0 sm:!h-9 sm:!w-9"
+              className="!h-8 !w-8 !p-0"
               aria-label={`Sửa ${item.name} ${item.unitCode}`}
               title={`Sửa số lượng ${item.name}`}
               disabled={busy}
@@ -626,7 +626,7 @@ function ShoppingWorkspace() {
             <Button
               variant="outline"
               size="sm"
-              className="!h-8 !w-8 !p-0 sm:!h-9 sm:!w-9"
+              className="!h-8 !w-8 !p-0"
               aria-label={`Xoá ${item.name} ${item.unitCode}`}
               title={`Xóa ${item.name}`}
               disabled={busy}
@@ -645,7 +645,7 @@ function ShoppingWorkspace() {
     </section>
   )
   return (
-    <PageContainer className="py-6">
+    <PageContainer className="max-w-6xl py-6">
       <div className="grid items-start gap-5 md:grid-cols-[225px_minmax(0,1fr)]">
         <aside className="space-y-4 md:sticky md:top-20">
           <h1
@@ -961,7 +961,7 @@ function ShoppingWorkspace() {
               {Object.entries(grouped).length ? (
                 <div className="grid grid-cols-1 gap-y-5 lg:grid-cols-2">
                   {groupedColumns.map((column, index) => (
-                    <div key={index} className={`min-w-0 space-y-5 ${index === 0 ? "lg:border-r lg:border-brand-200 lg:pr-7" : "lg:pl-7"}`}>
+                    <div key={index} className={`min-w-0 space-y-5 ${index === 0 ? "lg:border-r lg:border-brand-200 lg:pr-6" : "lg:pl-6"}`}>
                       {column.map((group) => renderGroup(group))}
                     </div>
                   ))}
@@ -973,10 +973,10 @@ function ShoppingWorkspace() {
               ) : null}
               {boughtItems.length > 0 && (
                 <section aria-label="Đồ đã mua" className="mt-6 border-t border-brand-200 pt-5">
-                  <h3 className="mb-3 text-base font-bold text-ink-muted">Đã mua ({boughtItems.length})</h3>
+                  <h3 className="mb-2.5 text-base font-bold text-ink-muted">Đã mua ({boughtItems.length})</h3>
                   <div className="grid grid-cols-1 gap-y-5 lg:grid-cols-2">
                     {boughtColumns.map((column, index) => column.length > 0 && (
-                      <div key={index} className={`min-w-0 ${index === 0 ? "lg:border-r lg:border-brand-200 lg:pr-7" : "lg:pl-7"}`}>
+                      <div key={index} className={`min-w-0 ${index === 0 ? "lg:border-r lg:border-brand-200 lg:pr-6" : "lg:pl-6"}`}>
                         {renderGroup(["Đã mua", column], false)}
                       </div>
                     ))}
