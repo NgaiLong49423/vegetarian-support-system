@@ -125,6 +125,7 @@ class AiAssistantSecurityGuardIntegrationTest extends AbstractIntegrationTest {
         return new AiChatRequest.ConsentDecision(
                 AiChatRequest.ConsentAction.GRANT,
                 List.of(
+                        new AiChatRequest.ConsentScope(AiChatRequest.ConsentCategory.SHOPPING_LIST, AiChatRequest.ConsentPurpose.SHOPPING_LIST_READ),
                         new AiChatRequest.ConsentScope(AiChatRequest.ConsentCategory.SHOPPING_LIST, AiChatRequest.ConsentPurpose.SHOPPING_LIST_WRITE),
                         new AiChatRequest.ConsentScope(AiChatRequest.ConsentCategory.SHOPPING_LIST, AiChatRequest.ConsentPurpose.AI_CHAT)
                 )
