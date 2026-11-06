@@ -54,13 +54,13 @@ export function OnboardingPage() {
     }
   }
   return (
-    <PageContainer className="py-8 md:py-10">
+    <PageContainer className="py-5 sm:py-8 md:py-10">
       <div className="mx-auto max-w-2xl">
         <p className="mb-2 inline-flex items-center gap-2 rounded-full bg-leaf-50 px-3 py-1 text-xs font-bold text-leaf-700">
           <Sparkles aria-hidden="true" className="h-4 w-4" /> CHÀO MỪNG ĐẾN MÂM
           XANH
         </p>
-        <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-4xl">
+        <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl md:text-4xl">
           Cho Mâm Xanh biết khẩu vị của bạn
         </h1>
         <p className="mt-2 text-sm leading-6 text-ink-muted">

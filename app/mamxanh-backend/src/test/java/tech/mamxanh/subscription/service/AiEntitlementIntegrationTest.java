@@ -111,8 +111,8 @@ class AiEntitlementIntegrationTest extends AbstractIntegrationTest {
 
     private void subscribe(String tier, String status, int starts, int ends) {
         var now = LocalDateTime.now(clock);
-        jdbc.update("INSERT INTO [SUBSCRIPTION] (user_id,tier,status,starts_at,ends_at) VALUES (?,?,?,?,?)",
-                member, tier, status, now.plusDays(starts), now.plusDays(ends));
+        jdbc.update("INSERT INTO [SUBSCRIPTION] (user_id,tier,status,starts_at,ends_at,token_quota) VALUES (?,?,?,?,?,?)",
+                member, tier, status, now.plusDays(starts), now.plusDays(ends), 600000);
     }
 
     private void check(Runnable call, boolean allowed) {

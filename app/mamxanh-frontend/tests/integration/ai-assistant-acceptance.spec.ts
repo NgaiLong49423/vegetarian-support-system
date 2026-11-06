@@ -132,6 +132,7 @@ test.use({
 });
 
 test.describe('E2E Acceptance AI Assistant Suite', () => {
+  test.skip(project !== 'mamxanh-ai-e2e', 'Requires dedicated mamxanh-ai-e2e Compose project launched via run-ai-e2e.ps1');
   test.setTimeout(450_000); // 7.5 mins total
 
   const marker = randomUUID().slice(0, 8);

@@ -200,7 +200,7 @@ export function Profile() {
         </Card>
         <nav
           aria-label="Nội dung hồ sơ"
-          className="mb-6 mt-5 flex gap-6 border-b border-brand-100/80 dark:border-brand-900/40"
+          className="mobile-scroll-x mb-6 mt-5 flex flex-nowrap gap-5 whitespace-nowrap border-b border-brand-100/80 sm:gap-6 dark:border-brand-900/40"
         >
           <button
             type="button"

@@ -3,6 +3,7 @@ import { expect, test } from './baseFixtures';
 const liveEnabled = process.env.MAMXANH_LIVE_AI_TEST === 'true';
 
 test('live Gemini + ADK finds a public recipe and opens its rendered detail page', async ({ page }, testInfo) => {
+  test.skip(!liveEnabled, 'Live AI test disabled without MAMXANH_LIVE_AI_TEST=true');
   test.setTimeout(70_000); // The application enforces a 60-second absolute turn deadline.
 
   let selectedModel = 'unknown';

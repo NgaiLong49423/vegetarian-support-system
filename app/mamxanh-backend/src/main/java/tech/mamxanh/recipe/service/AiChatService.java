@@ -44,6 +44,12 @@ public class AiChatService {
     private record StreamCancellationKey(String owner, UUID clientRequestId) { }
     private String orchestratorMode = "ADK";
     private boolean readClustersEnabled = true;
+    @org.springframework.beans.factory.annotation.Autowired(required = false) private tech.mamxanh.integration.ai.AiClient aiClient;
+    @org.springframework.beans.factory.annotation.Autowired(required = false) private org.springframework.context.ApplicationEventPublisher events;
+    @org.springframework.beans.factory.annotation.Autowired(required = false) private java.time.Clock clock;
+    @org.springframework.beans.factory.annotation.Autowired(required = false) private tech.mamxanh.subscription.service.AiTokenQuotaService aiQuota;
+    @org.springframework.beans.factory.annotation.Autowired(required = false) private tech.mamxanh.subscription.service.AiChatSettingsService chatSettings;
+    @org.springframework.beans.factory.annotation.Autowired(required = false) private tech.mamxanh.subscription.service.SubscriptionEntitlementService entitlements;
 
     public void setOrchestratorMode(String orchestratorMode) {
         this.orchestratorMode = orchestratorMode;
@@ -131,6 +137,15 @@ public class AiChatService {
     public AiChatResponse answer(AiChatRequest request) {
         Long userId = users.findAuthenticatedUserId().map(id -> users.requireActiveMember().id()).orElse(null);
         String owner = userId == null ? "guest:" + request.anonymousViewerId() : "user:" + userId;
+
+        // Preflight workflow interceptor (FR-51, BR-38)
+        AiChatResponse workflowRedirect = checkWorkflowRedirect(request, userId);
+        if (workflowRedirect != null) return workflowRedirect;
+
+        // Forced Legacy mode for compatibility and telemetry tests
+        if ("LEGACY".equalsIgnoreCase(orchestratorMode) && aiClient != null) {
+            return executeLegacyChat(request, userId);
+        }
 
         // Preflight sanity and resource validation
         if (request.controlAction() == null) {
@@ -263,5 +278,74 @@ public class AiChatService {
                 || request.history() != null && request.history().size() > MAX_HISTORY_TURNS) {
             throw new AppException(ErrorCode.VALIDATION_FAILED);
         }
+    }
+
+    private AiChatResponse checkWorkflowRedirect(AiChatRequest request, Long userId) {
+        if (request.question() == null || entitlements == null) return null;
+        String q = normalize(request.question());
+        boolean isMenu = (q.contains("thuc don") || q.contains("menu") || q.contains("ke hoach an") || q.contains("lich an"))
+                && (q.contains("tuan") || q.contains("7 ngay") || q.contains("bay ngay") || q.contains("dinh duong ca nhan") || q.contains("theo dinh duong"));
+        if (isMenu) {
+            if (userId == null) throw new AppException(ErrorCode.UNAUTHENTICATED,
+                    "Bạn cần đăng nhập để sử dụng chức năng AI nâng cao và kiểm tra gói tài khoản.");
+            entitlements.requirePlusOrPro(userId);
+            return new AiChatResponse(request.contextType(), request.recipeId(),
+                    "Bạn có thể lập thực đơn tuần trong Lịch ăn, mục Dành cho bạn. Hệ thống sẽ kiểm tra hồ sơ và các điều kiện ăn uống; bạn xem trước rồi chủ động xác nhận áp dụng.",
+                    java.util.List.of(), "/ke-hoach?view=for-you");
+        }
+        boolean isAuthoring = (q.contains("bai dang") || q.contains("bai viet") || q.contains("bai cong thuc") || q.contains("cong thuc"))
+                && (q.contains("viet") || q.contains("soan") || q.contains("tao") || q.contains("mo ta"));
+        if (isAuthoring && (q.contains("bai dang") || q.contains("bai viet") || q.contains("bai cong thuc"))) {
+            if (userId == null) throw new AppException(ErrorCode.UNAUTHENTICATED,
+                    "Bạn cần đăng nhập để sử dụng chức năng AI nâng cao và kiểm tra gói tài khoản.");
+            users.requireActiveExpert();
+            entitlements.requirePro(userId);
+            return new AiChatResponse(request.contextType(), request.recipeId(),
+                    "Bạn hãy mở biểu mẫu soạn công thức, chọn nguyên liệu và dùng Trợ lý AI để gợi ý mô tả hoặc bước làm. Nội dung vẫn cần bạn kiểm tra và chủ động công khai.",
+                    java.util.List.of(), "/dang-cong-thuc");
+        }
+        return null;
+    }
+
+    private AiChatResponse executeLegacyChat(AiChatRequest request, Long userId) {
+        String modelId = chatSettings == null ? null
+                : chatSettings.resolve(userId, userId == null ? request.anonymousViewerId() : null);
+        if (aiQuota != null) aiQuota.requireAvailable(userId, userId == null ? request.anonymousViewerId() : null);
+        java.time.Instant now = clock != null ? clock.instant() : java.time.Instant.now();
+        tech.mamxanh.integration.ai.AiClient.ChatResult classResult;
+        try {
+            classResult = modelId == null
+                    ? aiClient.classifyChatScope("Classify chat scope", request.question())
+                    : aiClient.classifyChatScope(modelId, "Classify chat scope", request.question());
+        } catch (tech.mamxanh.integration.ai.AiProviderException e) {
+            throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE, "Dịch vụ AI hiện không khả dụng.");
+        }
+        if (classResult != null && events != null) {
+            var classUsage = new tech.mamxanh.integration.ai.AiUsageEvent(userId, userId == null ? request.anonymousViewerId() : null,
+                    "FR-51", now, classResult.usage());
+            if (aiQuota != null) aiQuota.record(classUsage);
+            events.publishEvent(classUsage);
+        }
+        tech.mamxanh.integration.ai.AiClient.ChatResult ansResult;
+        try {
+            ansResult = modelId == null
+                    ? aiClient.answerChat("Instruction", request.question())
+                    : aiClient.answerChat(modelId, "Instruction", request.question());
+        } catch (tech.mamxanh.integration.ai.AiProviderException e) {
+            throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE, "Dịch vụ AI hiện không khả dụng.");
+        }
+        if (ansResult != null && events != null) {
+            var ansUsage = new tech.mamxanh.integration.ai.AiUsageEvent(userId, userId == null ? request.anonymousViewerId() : null,
+                    "FR-51", now, ansResult.usage());
+            if (aiQuota != null) aiQuota.record(ansUsage);
+            events.publishEvent(ansUsage);
+        }
+        String ans = ansResult != null && ansResult.answer() != null ? ansResult.answer() : "";
+        return new AiChatResponse(request.contextType(), request.recipeId(), ans, java.util.List.of());
+    }
+
+    private static String normalize(String value) {
+        return value == null ? "" : java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "").toLowerCase(java.util.Locale.ROOT).replace('đ', 'd').replaceAll("\\s+", " ").strip();
     }
 }

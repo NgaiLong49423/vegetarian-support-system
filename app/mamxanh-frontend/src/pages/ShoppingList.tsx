@@ -557,13 +557,13 @@ function ShoppingWorkspace() {
   }
   const renderGroup = ([group, entries]: [string, ShoppingItem[]], showHeading = true) => (
     <section key={group}>
-      {showHeading && <h3 className="mb-3 text-base font-bold text-ink">{group}</h3>}
+      {showHeading && <h3 className="mb-2.5 text-base font-bold text-ink">{group}</h3>}
       <div className="divide-y divide-brand-100">
         {[...entries].sort((a, b) => Number(b.id === lastChangedItemId) - Number(a.id === lastChangedItemId) || b.id - a.id).map((item) => (
           <div
             key={item.id}
             data-testid={`shopping-item-${item.id}`}
-            className={`grid grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] items-center gap-1 rounded-lg px-1 py-4 sm:gap-2.5 ${item.bought ? "bg-cream-soft/50" : ""}`}
+            className={`grid grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] items-center gap-1 rounded-lg px-1 py-1.5 sm:gap-2 sm:py-2 ${item.bought ? "bg-cream-soft/50" : ""}`}
           >
             <SpringCheck
               checked={item.bought}
@@ -586,53 +586,53 @@ function ShoppingWorkspace() {
                   <IngredientImage
                     imageUrl={item.imageUrl ?? null}
                     name={item.name}
-                    containerClassName="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-brand-100 bg-cream-soft md:h-16 md:w-16"
+                    containerClassName="h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-brand-100 bg-cream-soft sm:h-10 sm:w-10"
                   />
-                  <span className="break-words text-base font-medium leading-6 text-ink">{item.name}</span>
+                  <span className="break-words text-sm font-medium leading-tight text-ink">{item.name}</span>
                 </span>
               }
-              boxSize={24}
+              boxSize={22}
               color="#f97316"
               fillColor="#f97316"
               className="min-w-0 w-full"
             />
-            <span className={`text-base font-medium ${item.bought ? "text-ink-muted line-through" : "text-ink-soft"}`}>
+            <span className={`text-xs font-semibold sm:text-sm ${item.bought ? "text-ink-muted line-through" : "text-ink-soft"}`}>
               {quantityText(item)}
             </span>
             {item.sources?.length ? (
               <Button
                 variant="outline"
                 size="sm"
-                className="!h-9 !w-9 !p-0 md:!h-10 md:!w-10"
+                className="!h-8 !w-8 !p-0"
                 aria-label={`Xem món đã dùng ${item.name}`}
                 title={`Xem món đã dùng ${item.name}`}
                 disabled={busy}
                 onClick={() => openDialog(() => setSourceDetails(item))}
               >
-                <Info className="h-4 w-4 md:h-5 md:w-5" />
+                <Info className="h-4 w-4" />
               </Button>
-            ) : <span aria-hidden="true" className="h-9 w-9 md:h-10 md:w-10" />}
+            ) : <span aria-hidden="true" className="h-8 w-8" />}
             <Button
               variant="outline"
               size="sm"
-              className="!h-9 !w-9 !p-0 md:!h-10 md:!w-10"
+              className="!h-8 !w-8 !p-0"
               aria-label={`Sửa ${item.name} ${item.unitCode}`}
               title={`Sửa số lượng ${item.name}`}
               disabled={busy}
               onClick={() => openDialog(() => setEditor(item))}
             >
-              <Pencil className="h-4 w-4 md:h-5 md:w-5" />
+              <Pencil className="h-4 w-4" />
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="!h-9 !w-9 !p-0 md:!h-10 md:!w-10"
+              className="!h-8 !w-8 !p-0"
               aria-label={`Xoá ${item.name} ${item.unitCode}`}
               title={`Xóa ${item.name}`}
               disabled={busy}
               onClick={() => openDialog(() => setRemoval(item))}
             >
-              <Trash2 className="h-4 w-4 md:h-5 md:w-5" />
+              <Trash2 className="h-4 w-4" />
             </Button>
             {separate(item) && (
               <p className="col-span-5 pl-8 text-xs text-ink-muted">
@@ -645,7 +645,7 @@ function ShoppingWorkspace() {
     </section>
   )
   return (
-    <PageContainer className="py-6">
+    <PageContainer className="max-w-6xl py-6">
       <div className="grid items-start gap-5 md:grid-cols-[225px_minmax(0,1fr)]">
         <aside className="space-y-4 md:sticky md:top-20">
           <h1
@@ -815,14 +815,14 @@ function ShoppingWorkspace() {
             )
           ) : (
             <div aria-busy={busy}>
-              <header className="mb-5 rounded-2xl border border-brand-200 bg-gradient-to-r from-orange-50 via-brand-50/70 to-paper px-4 py-4 shadow-sm sm:px-5 sm:py-5">
-                <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-orange-100 text-orange-600 sm:h-12 sm:w-12">
-                    <ShoppingBasket className="h-5 w-5 sm:h-6 sm:w-6" />
+              <header className="mb-4 rounded-xl border border-brand-200 bg-gradient-to-r from-orange-50 via-brand-50/70 to-paper px-3.5 py-2.5 shadow-sm sm:px-4 sm:py-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-600 sm:h-10 sm:w-10">
+                    <ShoppingBasket className="h-4 w-4 sm:h-5 sm:w-5" />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-brand-700 sm:text-xs">Danh sách đang mở</p>
-                    <h2 className="mt-0.5 break-words text-xl font-extrabold leading-tight tracking-tight text-ink sm:text-2xl">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-brand-700 sm:text-[11px]">Danh sách đang mở</p>
+                    <h2 className="break-words text-lg font-bold leading-tight tracking-tight text-ink sm:text-xl">
                       {list.name}
                     </h2>
                   </div>
@@ -927,8 +927,8 @@ function ShoppingWorkspace() {
                       onClick={() => setTab(value)}
                       className={`rounded-lg px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-brand-400 ${
                         tab === value
-                          ? "bg-raised font-semibold text-black"
-                          : "text-black"
+                          ? "bg-raised font-semibold text-ink shadow-2xs"
+                          : "text-ink-soft hover:bg-raised/60 hover:text-ink"
                       }`}
                     >
                       {label} ({counts[value]})
@@ -949,7 +949,7 @@ function ShoppingWorkspace() {
                     <summary aria-label="Thao tác khác" className="flex h-9 cursor-pointer list-none items-center gap-2 rounded-full border border-brand-200 px-3 text-sm font-semibold text-ink-soft hover:border-brand-400 focus-visible:outline-2 focus-visible:outline-brand-400">
                       <MoreHorizontal className="h-4 w-4" /> Thao tác khác
                     </summary>
-                    <div className="absolute right-0 z-20 mt-2 flex min-w-52 flex-col gap-1 rounded-xl border border-brand-100 bg-paper p-2 shadow-lg">
+                    <div className="absolute right-0 z-20 mt-2 flex min-w-52 max-w-[calc(100vw-2rem)] flex-col gap-1 rounded-xl border border-brand-100 bg-paper p-2 shadow-lg">
                       <Button variant="ghost" size="sm" className="justify-start" disabled={busy} onClick={() => openDialog(() => { setNameDraft(list.name); setNameEditor(true) })}><Pencil className="h-4 w-4" />Đổi tên</Button>
                       <Button variant="ghost" size="sm" className="justify-start text-red-700 hover:bg-red-50" disabled={busy} onClick={() => openDialog(() => setListRemoval(true))}><Trash2 className="h-4 w-4" />Xóa danh sách</Button>
                       {counts.done > 0 && <Button variant="ghost" size="sm" className="justify-start" disabled={busy} onClick={() => openDialog(() => setRemoval("bought"))}><Trash2 className="h-4 w-4" />Xóa {counts.done} mục đã mua</Button>}
@@ -961,7 +961,7 @@ function ShoppingWorkspace() {
               {Object.entries(grouped).length ? (
                 <div className="grid grid-cols-1 gap-y-5 lg:grid-cols-2">
                   {groupedColumns.map((column, index) => (
-                    <div key={index} className={`min-w-0 space-y-5 ${index === 0 ? "lg:border-r lg:border-brand-200 lg:pr-7" : "lg:pl-7"}`}>
+                    <div key={index} className={`min-w-0 space-y-5 ${index === 0 ? "lg:border-r lg:border-brand-200 lg:pr-6" : "lg:pl-6"}`}>
                       {column.map((group) => renderGroup(group))}
                     </div>
                   ))}
@@ -973,10 +973,10 @@ function ShoppingWorkspace() {
               ) : null}
               {boughtItems.length > 0 && (
                 <section aria-label="Đồ đã mua" className="mt-6 border-t border-brand-200 pt-5">
-                  <h3 className="mb-3 text-base font-bold text-ink-muted">Đã mua ({boughtItems.length})</h3>
+                  <h3 className="mb-2.5 text-base font-bold text-ink-muted">Đã mua ({boughtItems.length})</h3>
                   <div className="grid grid-cols-1 gap-y-5 lg:grid-cols-2">
                     {boughtColumns.map((column, index) => column.length > 0 && (
-                      <div key={index} className={`min-w-0 ${index === 0 ? "lg:border-r lg:border-brand-200 lg:pr-7" : "lg:pl-7"}`}>
+                      <div key={index} className={`min-w-0 ${index === 0 ? "lg:border-r lg:border-brand-200 lg:pr-6" : "lg:pl-6"}`}>
                         {renderGroup(["Đã mua", column], false)}
                       </div>
                     ))}

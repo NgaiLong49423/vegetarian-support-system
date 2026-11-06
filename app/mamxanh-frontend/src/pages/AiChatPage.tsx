@@ -354,7 +354,7 @@ export function AiChatPage() {
       onPointerUp={stopResize}
       onPointerCancel={stopResize}
       onKeyDown={resizeWithKeyboard}
-      className="absolute left-1 top-1 z-10 flex h-5 w-5 touch-none cursor-nwse-resize items-center justify-center rounded text-ink-muted/70 hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600"
+      className="absolute left-1 top-1 z-10 hidden h-5 w-5 touch-none cursor-nwse-resize items-center justify-center rounded text-ink-muted/70 hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600 sm:flex"
     >
       <span
         aria-hidden="true"
@@ -807,16 +807,16 @@ export function AiChatPage() {
   const modeLabel = (executionMode === "CHATBOT" || executionMode === "QA") ? "Chatbot" : "AI Agent"
 
   return (
-    <div className="pointer-events-none fixed inset-2 z-50 flex items-end justify-end sm:inset-0 sm:p-5">
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 top-0 z-50 flex items-end justify-end sm:inset-0 sm:p-5">
       <section
         role="dialog"
         aria-modal="false"
         style={chatWindowStyle}
-        className="pointer-events-auto relative flex shrink-0 flex-col overflow-hidden rounded-2xl border border-brand-100 bg-paper shadow-2xl sm:max-h-[calc(100dvh-2.5rem)]"
+        className="ai-chat-sheet mobile-sheet-enter pointer-events-auto relative flex shrink-0 flex-col overflow-hidden rounded-2xl border border-brand-100 bg-paper shadow-2xl sm:max-h-[calc(100dvh-2.5rem)]"
         aria-labelledby="chat-heading"
       >
         {resizeHandle}
-        <header className="flex items-center justify-between border-b border-brand-100 bg-cream-soft py-3 pl-8 pr-4">
+        <header className="relative flex items-center justify-between border-b border-brand-100 bg-cream-soft pt-5 pb-3 pl-4 pr-4 sm:py-3 sm:pl-8"><span aria-hidden="true" className="modal-drag-pill absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full sm:hidden" />
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-brand-700">
               <Bot className="h-5 w-5" aria-hidden="true" />
@@ -1311,7 +1311,7 @@ export function AiChatPage() {
           </div>
         ) : <form
           onSubmit={submit}
-          className="border-t border-brand-100 bg-paper p-3 sm:p-4"
+          className="border-t border-brand-100 bg-paper p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:p-4"
         >
           <label htmlFor="ai-chat-question" className="sr-only">
             Câu hỏi của bạn

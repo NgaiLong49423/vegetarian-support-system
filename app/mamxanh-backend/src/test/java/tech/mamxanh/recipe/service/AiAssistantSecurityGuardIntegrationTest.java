@@ -2,6 +2,7 @@ package tech.mamxanh.recipe.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -91,6 +92,10 @@ class AiAssistantSecurityGuardIntegrationTest extends AbstractIntegrationTest {
                 new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 100, 10, 110));
         when(aiClient.classifyChatScope(anyString(), anyString(), anyString())).thenReturn(
                 new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 100, 10, 110));
+        when(aiClient.classifyChatScope(any(), any(), any(Duration.class))).thenReturn(
+                new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 100, 10, 110));
+        when(aiClient.classifyChatScope(any(), any(), any(), any(Duration.class))).thenReturn(
+                new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 100, 10, 110));
 
         engine = new AdkAssistantEngine(
                 users, aiQuota, chatSettings, sessionStore, toolRegistry, domainTools, knowledge,
@@ -120,6 +125,7 @@ class AiAssistantSecurityGuardIntegrationTest extends AbstractIntegrationTest {
         return new AiChatRequest.ConsentDecision(
                 AiChatRequest.ConsentAction.GRANT,
                 List.of(
+                        new AiChatRequest.ConsentScope(AiChatRequest.ConsentCategory.SHOPPING_LIST, AiChatRequest.ConsentPurpose.SHOPPING_LIST_READ),
                         new AiChatRequest.ConsentScope(AiChatRequest.ConsentCategory.SHOPPING_LIST, AiChatRequest.ConsentPurpose.SHOPPING_LIST_WRITE),
                         new AiChatRequest.ConsentScope(AiChatRequest.ConsentCategory.SHOPPING_LIST, AiChatRequest.ConsentPurpose.AI_CHAT)
                 )
