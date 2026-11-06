@@ -50,6 +50,8 @@ class AiTelemetryIntegrationTest extends AbstractIntegrationTest {
                 "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 150, 10, 160);
         when(ai.classifyChatScope(anyString(), anyString())).thenReturn(inScope);
         when(ai.classifyChatScope(anyString(), anyString(), anyString())).thenReturn(inScope);
+        when(ai.classifyChatScope(any(), any(), any(Duration.class))).thenReturn(inScope);
+        when(ai.classifyChatScope(any(), any(), any(), any(Duration.class))).thenReturn(inScope);
         clock.advance(Duration.between(clock.instant(), Instant.parse("2026-10-23T03:00:00Z")));
         guest = UUID.randomUUID().toString();
         String email = "fr11-" + guest + "@example.invalid";

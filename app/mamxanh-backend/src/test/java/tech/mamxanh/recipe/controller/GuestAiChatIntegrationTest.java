@@ -67,6 +67,10 @@ class GuestAiChatIntegrationTest extends AbstractIntegrationTest {
                 new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 1, 1, 2));
         when(ai.classifyChatScope(anyString(), anyString(), anyString())).thenReturn(
                 new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 1, 1, 2));
+        when(ai.classifyChatScope(any(), any(), any(), any(Duration.class))).thenReturn(
+                new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 1, 1, 2));
+        when(ai.classifyChatScope(any(), any(), any(Duration.class))).thenReturn(
+                new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 1, 1, 2));
         String id = UUID.randomUUID().toString();
         String body = "{\"contextType\":\"RECIPE\",\"recipeId\":" + recipeId + ",\"question\":\"Nấu bao lâu?\"}";
         mockMvc.perform(post("/api/v1/recipes/ai/chat").header("X-Guest-Chat-Id", id)
@@ -81,7 +85,7 @@ class GuestAiChatIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/recipes/ai/chat").header("X-Guest-Chat-Id", id)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isNotFound());
-        verify(ai, times(2)).classifyChatScope(anyString(), anyString(), anyString());
+        verify(ai, times(2)).classifyChatScope(any(), any(), any(), any(Duration.class));
         verify(llmFactory, times(1)).create(anyString());
     }
 }

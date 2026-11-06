@@ -91,6 +91,10 @@ class AiAssistantSecurityGuardIntegrationTest extends AbstractIntegrationTest {
                 new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 100, 10, 110));
         when(aiClient.classifyChatScope(anyString(), anyString(), anyString())).thenReturn(
                 new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 100, 10, 110));
+        when(aiClient.classifyChatScope(any(), any(), any(Duration.class))).thenReturn(
+                new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 100, 10, 110));
+        when(aiClient.classifyChatScope(any(), any(), any(), any(Duration.class))).thenReturn(
+                new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 100, 10, 110));
 
         engine = new AdkAssistantEngine(
                 users, aiQuota, chatSettings, sessionStore, toolRegistry, domainTools, knowledge,
