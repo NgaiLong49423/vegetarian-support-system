@@ -138,13 +138,11 @@ public class AiChatService {
         Long userId = users.findAuthenticatedUserId().map(id -> users.requireActiveMember().id()).orElse(null);
         String owner = userId == null ? "guest:" + request.anonymousViewerId() : "user:" + userId;
 
-        // Preflight workflow interceptor (FR-51, BR-38)
-        AiChatResponse workflowRedirect = checkWorkflowRedirect(request, userId);
-        if (workflowRedirect != null) return workflowRedirect;
-
-        // Forced Legacy mode for compatibility and telemetry tests
-        if ("LEGACY".equalsIgnoreCase(orchestratorMode) && aiClient != null) {
-            return executeLegacyChat(request, userId);
+        // Forced Legacy mode for compatibility, telemetry, and legacy entitlement tests
+        if ("LEGACY".equalsIgnoreCase(orchestratorMode)) {
+            AiChatResponse workflowRedirect = checkWorkflowRedirect(request, userId);
+            if (workflowRedirect != null) return workflowRedirect;
+            if (aiClient != null) return executeLegacyChat(request, userId);
         }
 
         // Preflight sanity and resource validation
@@ -312,18 +310,28 @@ public class AiChatService {
                 : chatSettings.resolve(userId, userId == null ? request.anonymousViewerId() : null);
         if (aiQuota != null) aiQuota.requireAvailable(userId, userId == null ? request.anonymousViewerId() : null);
         java.time.Instant now = clock != null ? clock.instant() : java.time.Instant.now();
-        tech.mamxanh.integration.ai.AiClient.ChatResult classResult = modelId == null
-                ? aiClient.classifyChatScope("Classify chat scope", request.question())
-                : aiClient.classifyChatScope(modelId, "Classify chat scope", request.question());
+        tech.mamxanh.integration.ai.AiClient.ChatResult classResult;
+        try {
+            classResult = modelId == null
+                    ? aiClient.classifyChatScope("Classify chat scope", request.question())
+                    : aiClient.classifyChatScope(modelId, "Classify chat scope", request.question());
+        } catch (tech.mamxanh.integration.ai.AiProviderException e) {
+            throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE, "Dịch vụ AI hiện không khả dụng.");
+        }
         if (classResult != null && events != null) {
             var classUsage = new tech.mamxanh.integration.ai.AiUsageEvent(userId, userId == null ? request.anonymousViewerId() : null,
                     "FR-51", now, classResult.usage());
             if (aiQuota != null) aiQuota.record(classUsage);
             events.publishEvent(classUsage);
         }
-        tech.mamxanh.integration.ai.AiClient.ChatResult ansResult = modelId == null
-                ? aiClient.answerChat("Instruction", request.question())
-                : aiClient.answerChat(modelId, "Instruction", request.question());
+        tech.mamxanh.integration.ai.AiClient.ChatResult ansResult;
+        try {
+            ansResult = modelId == null
+                    ? aiClient.answerChat("Instruction", request.question())
+                    : aiClient.answerChat(modelId, "Instruction", request.question());
+        } catch (tech.mamxanh.integration.ai.AiProviderException e) {
+            throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE, "Dịch vụ AI hiện không khả dụng.");
+        }
         if (ansResult != null && events != null) {
             var ansUsage = new tech.mamxanh.integration.ai.AiUsageEvent(userId, userId == null ? request.anonymousViewerId() : null,
                     "FR-51", now, ansResult.usage());

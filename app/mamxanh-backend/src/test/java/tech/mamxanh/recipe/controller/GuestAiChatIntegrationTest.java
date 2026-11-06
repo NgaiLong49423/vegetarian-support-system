@@ -87,7 +87,7 @@ class GuestAiChatIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/recipes/ai/chat").header("X-Guest-Chat-Id", id)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isNotFound());
-        verify(ai, times(2)).classifyChatScope(any(), any(), any(), any(Duration.class));
+        verify(ai, times(1)).classifyChatScope(any(), any(), any(Duration.class));
         verify(llmFactory, times(1)).create(anyString());
     }
 }
