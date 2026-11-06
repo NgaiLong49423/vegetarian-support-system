@@ -65,4 +65,8 @@ public class SubscriptionEntity {
                 && !now.isBefore(this.startsAt)
                 && now.isBefore(this.endsAt);
     }
+
+    public long effectiveQuota(LocalDateTime policyCutover) {
+        return policyCutover != null && startsAt.isBefore(policyCutover) ? tier.tokenQuota() : tokenQuota;
+    }
 }

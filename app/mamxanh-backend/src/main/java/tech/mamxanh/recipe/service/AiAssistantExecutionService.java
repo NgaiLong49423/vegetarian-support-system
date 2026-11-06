@@ -106,7 +106,8 @@ public class AiAssistantExecutionService {
         AiChatResponse refusal = classify(request, session.id(), mode, userId);
         if (refusal != null) return refusal;
         String role = userId == null ? "GUEST" : users.requireActiveMember().role().name();
-        List<AiAssistantToolRegistry.ToolDefinition> definitions = tools.definitionsFor(role);
+        List<AiAssistantToolRegistry.ToolDefinition> definitions = tools.definitionsFor(role).stream()
+                .filter(definition -> !isAdkOnlyMenuTool(definition.name())).toList();
         List<Source> sources = new ArrayList<>(knowledge.retrieve(request.question()));
         Plan plan = plan(request, userId, definitions, sources);
         List<AssistantStep> steps = new ArrayList<>();
@@ -209,6 +210,7 @@ public class AiAssistantExecutionService {
         int index = 0;
         for (var action : pending.actions()) {
             index++;
+            if (isAdkOnlyMenuTool(action.tool())) throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
             try {
                 quota.requireAvailable(userId, userId == null ? request.anonymousViewerId() : null);
                 var result = tools.execute(action.tool(), action.arguments());
@@ -223,6 +225,12 @@ public class AiAssistantExecutionService {
             }
         }
         return response(request, sessionId, mode, steps, List.of(), null, null, "Kết quả các bước đã xác nhận được hiển thị bên dưới.");
+    }
+
+    private static boolean isAdkOnlyMenuTool(String name) {
+        return "get_ai_menu_candidates".equals(name) || "create_ai_menu_preview".equals(name)
+                || "apply_ai_menu_preview".equals(name)
+                || "propose_recipe_form_patch".equals(name) || "create_recipe_post".equals(name);
     }
 
     private Plan plan(AiChatRequest request, Long userId, List<AiAssistantToolRegistry.ToolDefinition> definitions,

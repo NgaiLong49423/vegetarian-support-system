@@ -13,14 +13,18 @@ import tools.jackson.databind.ObjectMapper;
 
 /** Opt-in operational evaluation ceiling. Never reserves or debits user quota/Credit. */
 public final class PilotLiveBudget implements GeminiEmbeddingClient.Observer {
-    public static final String PRICING_DATE="2026-11-01";
+    // Verified against the Gemini Developer API pricing page for this evaluation date.
+    public static final String PRICING_DATE="2026-11-06";
+    public static final double MAX_RESERVED_UPPER_USD = 20.0;
+    public static final int MAX_GENERATION_INPUT_BYTES = 160_000;
+    public static final int MAX_GENERATION_ATTEMPTS = 175;
     private static final Object PROCESS_BUDGET_LOCK=new Object();
     private final Path path;
     private final int embeddingCeiling;
     private final ObjectMapper json=new ObjectMapper();
     public record State(double reservedUpperUsd,int embeddingAttempts,int generationAttempts,String pricingVerifiedOn) {
         public State {
-            if(!Double.isFinite(reservedUpperUsd)||reservedUpperUsd<0||reservedUpperUsd>5||embeddingAttempts<0||generationAttempts<0)
+            if(!Double.isFinite(reservedUpperUsd)||reservedUpperUsd<0||reservedUpperUsd>MAX_RESERVED_UPPER_USD||embeddingAttempts<0||generationAttempts<0)
                 throw new IllegalArgumentException("Invalid G3 budget ledger");
         }
     }
@@ -45,7 +49,7 @@ public final class PilotLiveBudget implements GeminiEmbeddingClient.Observer {
                 var next=new State(previous.reservedUpperUsd()+dollars,previous.embeddingAttempts()+(generation?0:1),previous.generationAttempts()+(generation?1:0),PRICING_DATE);
                 // The authorized focused validation batch was preflighted against the existing spend.
                 // State's USD ceiling remains authoritative for every call, including failed attempts.
-                if(next.embeddingAttempts()>embeddingCeiling||next.generationAttempts()>140) throw new IllegalStateException("Evaluation call ceiling reached");
+                if(next.embeddingAttempts()>embeddingCeiling||next.generationAttempts()>MAX_GENERATION_ATTEMPTS) throw new IllegalStateException("Evaluation call ceiling reached");
                 Path temporary=Files.createTempFile(path.getParent(),"g3-budget-",".tmp");
                 try {Files.writeString(temporary,json.writeValueAsString(next));Files.move(temporary,path,StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING);}
                 finally {Files.deleteIfExists(temporary);}
@@ -57,8 +61,12 @@ public final class PilotLiveBudget implements GeminiEmbeddingClient.Observer {
         }
     }
     public void generation(int bytes) {
-        if(bytes<0||bytes>128000) throw new IllegalArgumentException("Model input cap exceeded");
-        reserve((bytes*2*.75+1024*3.75)/1_000_000,true);
+        generation(bytes, 1024);
+    }
+    public void generation(int bytes, int outputTokens) {
+        if(bytes<0||bytes>MAX_GENERATION_INPUT_BYTES) throw new IllegalArgumentException("Model input cap exceeded");
+        if(outputTokens<1||outputTokens>8192) throw new IllegalArgumentException("Output cap exceeded");
+        reserve((bytes*2*.75+outputTokens*3.75)/1_000_000,true);
     }
     public void beforeCall(KnowledgeIndex.Config config,int bytes) {
         if(!config.model().equals("gemini-embedding-2")||bytes<0||bytes>7000) throw new IllegalArgumentException("Unpriced G3 embedding input");
@@ -74,15 +82,21 @@ public final class PilotLiveBudget implements GeminiEmbeddingClient.Observer {
         catch(java.io.IOException e) {throw new IllegalStateException("G3 operational usage storage unavailable",e);}
     }
     public BaseLlm wrap(BaseLlm delegate) {
-        if(!AiTokenUsage.MODEL.equals(delegate.model())) throw new IllegalArgumentException("Unpriced G3 generation model");
+        // Flash-Lite is cheaper than Flash at the verified rates; reserve the Flash upper bound for both.
+        if(!Set.of(AiTokenUsage.MODEL, "gemini-3.5-flash-lite").contains(delegate.model()))
+            throw new IllegalArgumentException("Unpriced generation model");
         return new BaseLlm(delegate.model()) {
             public Flowable<LlmResponse> generateContent(LlmRequest request,boolean stream) {
                 return Flowable.defer(()->{
-                    int cap=request.config().flatMap(c->c.maxOutputTokens()).orElse(1024);
-                    if(cap>4096) throw new IllegalArgumentException("Output cap exceeded");
+                    int cap=request.config().flatMap(c->c.maxOutputTokens())
+                            .orElseThrow(() -> new IllegalArgumentException("Output cap required for live budget"));
+                    if(cap>8192) throw new IllegalArgumentException("Output cap exceeded");
                     int bytes=request.toJson().getBytes(StandardCharsets.UTF_8).length+request.tools().values().stream()
                             .mapToInt(t->t.declaration().map(d->d.toJson().getBytes(StandardCharsets.UTF_8).length).orElse(0)).sum();
-                    generation(bytes);
+                    if(bytes>MAX_GENERATION_INPUT_BYTES) org.slf4j.LoggerFactory.getLogger(PilotLiveBudget.class)
+                            .warn("Gemini live input guard blocked model={} inputBytes={} limitBytes={} toolCount={}",
+                                    delegate.model(),bytes,MAX_GENERATION_INPUT_BYTES,request.tools().size());
+                    generation(bytes,cap);
                     return delegate.generateContent(request,stream).doOnNext(r->{
                         var record=new LinkedHashMap<String,Object>();record.put("model",model());record.put("providerUsage",r.usageMetadata().orElse(null));
                         record.put("finishReason",r.finishReason().map(Object::toString).orElse("MISSING"));append("generation-usage.jsonl",record);

@@ -128,15 +128,8 @@ export function AdminAiConfigurationPage({ section }: { section?: ConfigurationS
         const fields: string[] = [];
         if (before.displayName !== model.displayName) fields.push(`Tên: ${before.displayName} → ${model.displayName}`);
         if (before.enabled !== model.enabled) fields.push(`Trạng thái: ${before.enabled ? 'Bật' : 'Tắt'} → ${model.enabled ? 'Bật' : 'Tắt'}`);
-        for (const tier of ['free', 'plus', 'pro'] as const) {
-          const label = tierLabels[tier.toUpperCase() as keyof typeof tierLabels];
-          const allowedKey = `${tier}Allowed` as keyof AiModelSetting;
-          const defaultKey = `${tier}Default` as keyof AiModelSetting;
-          if (before[allowedKey] !== model[allowedKey] || before[defaultKey] !== model[defaultKey]) {
-            const describe = (item: AiModelSetting) => !item[allowedKey] ? 'Không cấp' : item[defaultKey] ? 'Mặc định' : 'Cho phép';
-            fields.push(`${label}: ${describe(before)} → ${describe(model)}`);
-          }
-        }
+        if (before.freeAllowed !== model.freeAllowed) fields.push(`Guest: ${before.freeAllowed ? 'Cho phép' : 'Không cấp'} → ${model.freeAllowed ? 'Cho phép' : 'Không cấp'}`);
+        if (before.freeDefault !== model.freeDefault) fields.push(`Mặc định chung: ${before.freeDefault ? 'Có' : 'Không'} → ${model.freeDefault ? 'Có' : 'Không'}`);
         if (fields.length) changes.push(`${model.modelId}: ${fields.join('; ')}`);
       }
       for (const model of savedConfiguration.models) {
@@ -166,14 +159,10 @@ export function AdminAiConfigurationPage({ section }: { section?: ConfigurationS
       return;
     }
     if (editingSection === 'models') {
-      for (const tier of ['free', 'plus', 'pro'] as const) {
-        const defaults = configuration.models.filter(model => model.enabled && model[`${tier}Allowed`] && model[`${tier}Default`]);
-        const available = configuration.models.some(model => model.enabled && model[`${tier}Allowed`]);
-        if (!available || defaults.length !== 1) {
-          const label = tierLabels[tier.toUpperCase() as keyof typeof tierLabels];
-          setError(`Gói ${label} cần có ít nhất một model đang bật và đúng một model mặc định. Hãy chọn model mặc định trước khi lưu.`);
-          return;
-        }
+      const defaults = configuration.models.filter(model => model.enabled && model.freeAllowed && model.freeDefault);
+      if (defaults.length !== 1) {
+        setError('Cần đúng một model mặc định đang bật và được phép cho Guest.');
+        return;
       }
     }
     setError(''); setSuccess(''); setSendEmailNotification(false); setConfirmSection(editingSection); setConfirmStep(1);
@@ -255,21 +244,22 @@ export function AdminAiConfigurationPage({ section }: { section?: ConfigurationS
       </Card>}
 
       {section === 'models' && <Card className="p-5 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">{sectionHeader('models', 'Model ID mới được kiểm tra với Gemini trước khi lưu; mỗi tier cần đúng một model mặc định đang bật.')}{editingSection === 'models' && <Button variant="outline" onClick={() => setConfiguration(current => current && ({ ...current, models: [...current.models, emptyModel()] }))}><Plus className="mr-2 h-4 w-4" />Thêm model</Button>}</div>
+        <div className="flex flex-wrap items-center justify-between gap-3">{sectionHeader('models', 'Free, Plus và Pro dùng cùng model đang bật; Guest chỉ dùng model được cho phép. Model mới được kiểm tra với Gemini trước khi lưu.')}{editingSection === 'models' && <Button variant="outline" onClick={() => setConfiguration(current => current && ({ ...current, models: [...current.models, emptyModel()] }))}><Plus className="mr-2 h-4 w-4" />Thêm model</Button>}</div>
         <div className="mt-5 space-y-4">
           {configuration.models.map((model, index) => <section key={`${model.modelId}-${index}`} className="rounded-2xl border border-brand-100 p-4">
             {editingSection === 'models' ? <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto] md:items-end">
               <label className="text-sm font-semibold text-ink">Model ID<input className={fieldClass} placeholder="gemini-model-id" value={model.modelId} onChange={event => updateModel(index, 'modelId', event.target.value)} /></label>
               <label className="text-sm font-semibold text-ink">Tên hiển thị<input className={fieldClass} placeholder="Gemini model" value={model.displayName} onChange={event => updateModel(index, 'displayName', event.target.value)} /></label>
-              <label className="flex items-center gap-2 pb-3 text-sm font-semibold text-ink"><input type="checkbox" checked={model.enabled} onChange={event => updateModel(index, 'enabled', event.target.checked)} />Đang bật</label>
+              <label className="flex items-center gap-2 pb-3 text-sm font-semibold text-ink"><input type="checkbox" checked={model.enabled} onChange={event => { const enabled = event.target.checked; setConfiguration(current => current && ({ ...current, models: current.models.map((entry, row) => row === index ? { ...entry, enabled, plusAllowed: enabled, proAllowed: enabled, ...(enabled ? {} : { freeAllowed: false, freeDefault: false, plusDefault: false, proDefault: false }) } : entry) })); }} />Đang bật</label>
               <Button aria-label="Xóa model khỏi cấu hình" variant="outline" onClick={() => setConfiguration(current => current && ({ ...current, models: current.models.filter((_, row) => row !== index) }))}><Trash2 className="h-4 w-4" /></Button>
             </div> : <div className="flex flex-wrap items-baseline justify-between gap-2"><div><h3 className="font-bold text-ink">{model.displayName}</h3><p className="text-xs text-ink-muted">{model.modelId}</p></div><span className={`rounded-full px-3 py-1 text-xs font-semibold ${model.enabled ? 'bg-green-100 text-green-800' : 'bg-raised text-ink-muted'}`}>{model.enabled ? 'Đang bật' : 'Đang tắt'}</span></div>}
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">{(['FREE', 'PLUS', 'PRO'] as const).map(tier => {
-              const allowedKey = `${tier.toLowerCase()}Allowed` as keyof AiModelSetting;
-              const defaultKey = `${tier.toLowerCase()}Default` as keyof AiModelSetting;
-              const describe = !model[allowedKey] ? 'Không cấp' : model[defaultKey] ? 'Mặc định' : 'Cho phép';
-              return <div key={tier} className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-raised px-3 py-2.5 text-sm"><strong>{tierLabels[tier]}</strong>{editingSection === 'models' ? <><label className="flex items-center gap-2"><input type="checkbox" checked={Boolean(model[allowedKey])} onChange={event => updateModel(index, allowedKey, event.target.checked)} />Cho phép</label><label className="flex items-center gap-2"><input type="radio" name={`default-${tier}`} checked={Boolean(model[defaultKey])} disabled={!model[`${tier.toLowerCase()}Allowed` as keyof AiModelSetting]} onChange={() => setConfiguration(current => current && ({ ...current, models: current.models.map((entry, row) => ({ ...entry, [`${tier.toLowerCase()}Default`]: row === index })) }))} />Mặc định</label></> : <span className="text-ink-muted">{describe}</span>}</div>;
-            })}</div>
+            <div className="mt-4 flex flex-wrap items-center gap-4 rounded-xl bg-raised px-3 py-2.5 text-sm">
+              <strong>Free / Plus / Pro: {model.enabled ? 'Cho phép' : 'Không cấp'}</strong>
+              {editingSection === 'models' ? <>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={model.freeAllowed} disabled={!model.enabled || model.freeDefault} onChange={event => updateModel(index, 'freeAllowed', event.target.checked)} />Cho phép Guest</label>
+                <label className="flex items-center gap-2"><input type="radio" name="default-model" checked={model.freeDefault} disabled={!model.enabled || !model.freeAllowed} onChange={() => setConfiguration(current => current && ({ ...current, models: current.models.map((entry, row) => ({ ...entry, freeDefault: row === index, plusDefault: row === index, proDefault: row === index })) }))} />Mặc định chung</label>
+              </> : <span className="text-ink-muted">Guest: {model.freeAllowed ? 'Cho phép' : 'Không cấp'}{model.freeDefault ? ' · Mặc định chung' : ''}</span>}
+            </div>
           </section>)}
         </div>
       </Card>}
@@ -287,7 +277,7 @@ export function AdminAiConfigurationPage({ section }: { section?: ConfigurationS
           <h2 id="ai-config-confirm-title" className="mt-1 text-xl font-extrabold text-ink">{confirmStep === 1 ? `Kiểm tra thay đổi: ${sectionTitles[confirmSection]}` : 'Xác nhận áp dụng cấu hình'}</h2>
           <p className="mt-2 text-sm text-ink-muted">{confirmStep === 1 ? 'Rà soát các giá trị cũ và mới. Chưa có dữ liệu nào được lưu ở bước này.' : 'Kiểm tra lần cuối phạm vi ảnh hưởng. Chỉ khi bấm nút bên dưới, hệ thống mới cập nhật cấu hình.'}</p>
           <ul className="mt-4 space-y-2 rounded-xl bg-raised p-4 text-sm text-ink">{sectionChanges(confirmSection).map((change, index) => <li key={index} className="list-inside list-disc">{change}</li>)}</ul>
-          <div className="mt-4 rounded-xl border border-brand-100 p-4 text-sm leading-6 text-ink-soft"><strong className="text-ink">Ảnh hưởng khi áp dụng</strong><p className="mt-1">{confirmSection === 'plans' ? 'Giá và quota Plus/Pro áp dụng cho lần kích hoạt mới; thay đổi quota Free có hiệu lực từ chu kỳ tháng kế tiếp. Chu kỳ gói đang chạy giữ nguyên snapshot.' : confirmSection === 'models' ? 'Quyền model theo từng gói có hiệu lực sau khi lưu. Model mới sẽ được kiểm tra với Gemini trước khi hệ thống ghi cấu hình.' : 'Tỷ lệ overage mới có hiệu lực cho lượt AI mới; tỷ lệ quy đổi/nạp và giới hạn mới áp dụng cho đơn nạp mới. Đơn đang chờ giữ nguyên snapshot.'}</p><p className="mt-1">Hệ thống gửi thông báo in-app về giá trị thay đổi và thời điểm hiệu lực tới các tài khoản đủ điều kiện.</p>{confirmStep === 2 && <p className="mt-1">{sendEmailNotification ? 'Email bổ sung sẽ được gửi bất đồng bộ tới người dùng đủ điều kiện.' : 'Không gửi email bổ sung.'}</p>}</div>
+          <div className="mt-4 rounded-xl border border-brand-100 p-4 text-sm leading-6 text-ink-soft"><strong className="text-ink">Ảnh hưởng khi áp dụng</strong><p className="mt-1">{confirmSection === 'plans' ? 'Giá và quota Plus/Pro áp dụng cho lần kích hoạt mới; thay đổi quota Free có hiệu lực từ chu kỳ tháng kế tiếp. Chu kỳ gói đang chạy giữ nguyên snapshot.' : confirmSection === 'models' ? 'Danh mục model chung có hiệu lực sau khi lưu; Guest chỉ dùng model được cho phép. Model mới được kiểm tra với Gemini trước khi ghi cấu hình.' : 'Tỷ lệ overage mới có hiệu lực cho lượt AI mới; tỷ lệ quy đổi/nạp và giới hạn mới áp dụng cho đơn nạp mới. Đơn đang chờ giữ nguyên snapshot.'}</p><p className="mt-1">Hệ thống gửi thông báo in-app về giá trị thay đổi và thời điểm hiệu lực tới các tài khoản đủ điều kiện.</p>{confirmStep === 2 && <p className="mt-1">{sendEmailNotification ? 'Email bổ sung sẽ được gửi bất đồng bộ tới người dùng đủ điều kiện.' : 'Không gửi email bổ sung.'}</p>}</div>
           {confirmStep === 1 && <label className="mt-4 flex items-start gap-3 text-sm text-ink"><input className="mt-1" type="checkbox" checked={sendEmailNotification} onChange={event => setSendEmailNotification(event.target.checked)} /><span><strong className="block">Gửi thêm email thông báo</strong><span className="text-ink-muted">Email gửi bất đồng bộ tới khách hàng/chuyên gia đang hoạt động và đã xác minh email.</span></span></label>}
           {error && <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
           <div className="mt-6 flex flex-wrap justify-end gap-3"><Button variant="outline" onClick={() => confirmStep === 2 ? setConfirmStep(1) : (setConfirmSection(null), setConfirmStep(null))} disabled={saving}>{confirmStep === 2 ? 'Xem lại thay đổi' : 'Quay lại chỉnh sửa'}</Button>{confirmStep === 1 ? <Button onClick={() => setConfirmStep(2)}>Tiếp tục xác nhận<ArrowRight className="ml-2 h-4 w-4" /></Button> : <Button onClick={() => void confirmSave()} disabled={saving}>{saving && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}{sendEmailNotification ? 'Đồng ý, áp dụng và gửi email' : 'Đồng ý, áp dụng thay đổi'}</Button>}</div>

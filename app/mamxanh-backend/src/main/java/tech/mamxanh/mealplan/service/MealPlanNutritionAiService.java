@@ -63,7 +63,6 @@ public class MealPlanNutritionAiService {
         MealPlanReadService.validateWeekStart(weekStart);
         long owner = users.requireActiveMember().id();
         profiles.requireEligible(owner);
-        entitlements.requirePro(owner);
         var plan = plans.findByUserIdAndWeekStartDate(owner, weekStart)
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
         MealPlanEntryEntity selected = entries.findByIdAndMealPlanId(entryId, plan.getId())

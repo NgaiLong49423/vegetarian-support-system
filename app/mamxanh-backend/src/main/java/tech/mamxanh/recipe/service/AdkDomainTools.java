@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Standardized Google ADK FunctionTools for Mâm Xanh AI Assistant.
- * Provides 28 domain capabilities scoped into 3 tiers:
+ * Provides domain capabilities scoped into 3 tiers:
  * - GUEST: 5 public tools
  * - CUSTOMER: 25 tools (5 public + 20 member tools)
  * - EXPERT: 28 tools (25 customer + 3 expert tools)
@@ -44,6 +44,9 @@ public class AdkDomainTools {
             "create_recipe_comment",
             "follow_expert",
             "get_meal_plan",
+            "get_ai_menu_candidates",
+            "create_ai_menu_preview",
+            "apply_ai_menu_preview",
             "apply_weekly_menu",
             "add_meal_plan_slot",
             "list_shopping_lists",
@@ -57,6 +60,7 @@ public class AdkDomainTools {
     );
 
     public static final List<String> EXPERT_TOOL_NAMES = List.of(
+            "propose_recipe_form_patch",
             "create_recipe_post",
             "update_own_recipe_post",
             "delete_own_recipe_post"
@@ -272,6 +276,28 @@ public class AdkDomainTools {
         return wrapResult("get_meal_plan", Map.of("weekStartDate", weekStartDate == null ? "" : weekStartDate));
     }
 
+    @Schema(description = "Load trusted, nutrition-eligible recipes for the ADK menu planner without calling another AI provider.")
+    public Map<String, Object> get_ai_menu_candidates(
+            @Schema(name = "request", description = "Preview criteria: weekStartDate, mode, goal and ingredient preferences") Map<String, Object> request) {
+        return wrapResult("get_ai_menu_candidates", Map.of("request", request == null ? Map.of() : request));
+    }
+
+    @Schema(description = "Generate a nutrition-aware AI menu preview from ADK-ranked trusted recipe IDs without saving it to the meal plan.")
+    public Map<String, Object> create_ai_menu_preview(
+            @Schema(name = "request", description = "Preview criteria: weekStartDate, mode, goal and ingredient preferences") Map<String, Object> request,
+            @Schema(name = "rankedRecipeIds", description = "Ordered IDs returned by get_ai_menu_candidates") List<Long> rankedRecipeIds) {
+        Map<String, Object> args = new LinkedHashMap<>();
+        args.put("request", request == null ? Map.of() : request);
+        args.put("rankedRecipeIds", rankedRecipeIds == null ? List.of() : rankedRecipeIds);
+        return wrapResult("create_ai_menu_preview", args);
+    }
+
+    @Schema(description = "Apply a previously generated menu preview after explicit confirmation.")
+    public Map<String, Object> apply_ai_menu_preview(
+            @Schema(name = "previewId", description = "ID returned by create_ai_menu_preview in this session") String previewId) {
+        return wrapResult("apply_ai_menu_preview", Map.of("previewId", previewId == null ? "" : previewId));
+    }
+
     @Schema(description = "Apply a complete 21-slot weekly menu to the authenticated member's own meal plan.")
     public Map<String, Object> apply_weekly_menu(
             @Schema(name = "weekStartDate", description = "Week start date (YYYY-MM-DD), must be Monday") String weekStartDate,
@@ -357,6 +383,12 @@ public class AdkDomainTools {
     // ==========================================
     // Tier 3: EXPERT Tools (3 Expert Tools)
     // ==========================================
+
+    @Schema(description = "Propose only explicitly requested changes to the currently open recipe form. The UI has not applied them yet.")
+    public Map<String, Object> propose_recipe_form_patch(
+            @Schema(name = "fields", description = "Field names and replacement string values") Map<String, Object> fields) {
+        return wrapResult("propose_recipe_form_patch", Map.of("fields", fields == null ? Map.of() : fields));
+    }
 
     @Schema(description = "Create and publish a RecipePost as the authenticated expert. Always requires explicit confirmation.")
     public Map<String, Object> create_recipe_post(

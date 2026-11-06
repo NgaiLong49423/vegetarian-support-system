@@ -7,6 +7,7 @@ import jakarta.validation.constraints.*;
 import tech.mamxanh.integration.ai.AiClient;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public record AiChatRequest(
@@ -24,9 +25,35 @@ public record AiChatRequest(
         @Schema(description = "Server-issued confirmation ID for continuing or rejecting a pending write plan.") UUID confirmationId,
         @Schema(description = "Explicit decision for the pending write plan.") ConfirmationDecision confirmationDecision,
         @Schema(description = "Client-generated UUID for request idempotency; required on the G3 pilot path.") UUID clientRequestId,
-        @Schema(description = "CANCEL bypasses the normal chat busy guard and never invokes a model.") ControlAction controlAction) {
+        @Schema(description = "CANCEL bypasses the normal chat busy guard and never invokes a model.") ControlAction controlAction,
+        @Valid @Schema(description = "Optional snapshot of the Expert's unsaved recipe form; untrusted client input.") FormContext formContext) {
 
     public enum ControlAction { CANCEL }
+
+    public record FormContext(@NotNull UUID formId, @Min(0) long revision,
+            @NotNull @Size(max = 16) Map<@NotBlank @Size(max = 40) String, @NotNull @Size(max = 5000) String> fields,
+            @NotNull @Size(max = 50) List<@NotNull @Valid FormIngredient> ingredients,
+            @Min(0) @Max(5) int mediaCount, boolean mediaUploading,
+            @Size(max = 12) Map<String, Object> publishPayload) {
+        public FormContext(UUID formId, long revision, Map<String, String> fields, List<FormIngredient> ingredients,
+                           int mediaCount, boolean mediaUploading) {
+            this(formId, revision, fields, ingredients, mediaCount, mediaUploading, null);
+        }
+    }
+
+    public record FormIngredient(@Size(max = 200) String name, @Positive Long ingredientId,
+            @Size(max = 40) String quantity, @Positive Integer unitId) { }
+
+    public enum FormActionStatus { APPLIED, CONFLICT, REJECTED }
+    public record FormActionAck(@NotNull UUID sessionId, @NotNull UUID actionId, @NotNull UUID formId,
+            @Min(0) long baseRevision, @Min(0) Long revision, @NotNull FormActionStatus status) { }
+
+    public AiChatRequest(ContextType contextType, Long recipeId, String question, List<Turn> history,
+            String anonymousViewerId, UUID sessionId, ExecutionMode executionMode, ConsentDecision consentDecision,
+            UUID confirmationId, ConfirmationDecision confirmationDecision, UUID clientRequestId, ControlAction controlAction) {
+        this(contextType, recipeId, question, history, anonymousViewerId, sessionId, executionMode,
+                consentDecision, confirmationId, confirmationDecision, clientRequestId, controlAction, null);
+    }
 
     public AiChatRequest(ContextType contextType, Long recipeId, String question, List<Turn> history,
             String anonymousViewerId, UUID sessionId, ExecutionMode executionMode, ConsentDecision consentDecision,

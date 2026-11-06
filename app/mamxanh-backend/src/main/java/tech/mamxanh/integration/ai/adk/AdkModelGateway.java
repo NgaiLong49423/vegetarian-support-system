@@ -155,6 +155,10 @@ public final class AdkModelGateway extends BaseLlm {
         for (int depth = 0; failure != null && depth < 8; depth++, failure = failure.getCause()) {
             if (failure instanceof java.util.concurrent.TimeoutException) return "TIMEOUT";
             if (failure instanceof ApiException api) return "HTTP_" + api.code();
+            if (failure instanceof IllegalArgumentException) {
+                var frame = failure.getStackTrace().length == 0 ? null : failure.getStackTrace()[0];
+                return frame == null ? "ILLEGAL_ARGUMENT" : "ILLEGAL_ARGUMENT_" + frame.getClassName() + "_" + frame.getMethodName() + "_L" + frame.getLineNumber();
+            }
         }
         return "OTHER";
     }
@@ -191,7 +195,9 @@ public final class AdkModelGateway extends BaseLlm {
             if (part.functionCall().isPresent()) {
                 var call = part.functionCall().get();
                 String name = call.name().orElse("");
-                if (!request.tools().containsKey(name) || call.args().isEmpty()) {
+                // Zero-argument actions such as create_recipe_post legitimately return an empty args map;
+                // the scoped tool performs its own authorization and reads the latest trusted context.
+                if (!request.tools().containsKey(name)) {
                     throw new IllegalArgumentException("Invalid tool call");
                 }
                 usablePart = true;
@@ -220,7 +226,7 @@ public final class AdkModelGateway extends BaseLlm {
         for (var part : parts) {
             if (part.functionCall().isPresent()) {
                 var call = part.functionCall().get();
-                if (!request.tools().containsKey(call.name().orElse("")) || call.args().isEmpty()) return "INVALID_TOOL_CALL";
+                if (!request.tools().containsKey(call.name().orElse(""))) return "INVALID_TOOL_CALL";
                 usablePart = true;
             } else if (part.text().filter(text -> !text.isBlank()).isEmpty()) {
                 if (part.thoughtSignature().isEmpty()) return "UNSUPPORTED_CONTENT";

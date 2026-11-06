@@ -83,7 +83,6 @@ public class AiRecipeRecommendationService {
 
     public AiWeeklyMenuPreviewResponse weeklyMenu(List<Long> ingredientIds) {
         var user = users.requireActiveMember();
-        entitlements.requirePlusOrPro(user.id());
         preferences.requirePersonalizedAiEligible(user.id());
         Set<Long> selected = normalizeIds(ingredientIds == null ? List.of() : ingredientIds);
         DietaryPreferencesResponse profile = preferences.getOwnPreferences();
@@ -113,9 +112,8 @@ public class AiRecipeRecommendationService {
         return new AiWeeklyMenuPreviewResponse(slots);
     }
 
-    /** Rechecks entitlement, profile and current publication/safety state inside the apply transaction. */
+    /** Rechecks profile and current publication/safety state inside the apply transaction. */
     public void requireWeeklyApplyEligible(long userId, List<Long> recipeIds) {
-        entitlements.requirePlusOrPro(userId);
         preferences.requirePersonalizedAiEligible(userId);
         DietaryPreferencesResponse profile = preferences.getOwnPreferences();
         Map<Long, RecipePostResponse> current = index(recipes.getPublishedCards(recipeIds.stream().distinct().toList()));

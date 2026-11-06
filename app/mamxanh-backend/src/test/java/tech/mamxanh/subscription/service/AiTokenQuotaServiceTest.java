@@ -53,22 +53,26 @@ class AiTokenQuotaServiceTest {
                 new tech.mamxanh.subscription.entity.AiConfigurationSnapshot.Credit(BigDecimal.valueOf(1000),400,10000,500000)));
         when(subscriptions.findByUserIdAndStatus(anyLong(), eq(SubscriptionStatus.ACTIVE))).thenReturn(Optional.empty());
         when(ledger.sumMemberTokens(anyLong(), any(), any())).thenReturn(0L);
-        when(ledger.sumGuestTokens(anyString())).thenReturn(0L);
+        when(ledger.sumGuestTokens(anyString(), any(), any())).thenReturn(0L);
         when(configuration.currentFreeQuota(any())).thenReturn(50_000L);
         when(creditWallet.balance(anyLong())).thenReturn(BigDecimal.ZERO);
         when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(7L, Role.CUSTOMER));
     }
 
     @Test
-    void appliesGuestLimitPerSessionAndStopsBeforeTheNextProviderCall() {
-        when(ledger.sumGuestTokens("guest-session")).thenReturn(19_999L);
+    void appliesGuestMonthlyLimitAndStopsBeforeTheNextProviderCall() {
+        when(ledger.sumGuestTokens(eq("guest-session"), any(), any())).thenReturn(49_999L);
         service.requireAvailable(null, "guest-session");
 
-        when(ledger.sumGuestTokens("guest-session")).thenReturn(20_000L);
+        when(ledger.sumGuestTokens(eq("guest-session"), any(), any())).thenReturn(50_000L);
         assertThatThrownBy(() -> service.requireAvailable(null, "guest-session"))
                 .isInstanceOf(AppException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_TOKEN_QUOTA_EXCEEDED);
-        verify(ledger, never()).sumGuestTokens("another-session");
+        verify(ledger, never()).sumGuestTokens(eq("another-session"), any(), any());
+        var usage = service.getGuestUsage("00000000-0000-0000-0000-000000000001");
+        assertThat(usage.quotaTokens()).isEqualTo(50_000);
+        assertThat(usage.periodStartsAt()).isEqualTo(Instant.parse("2026-09-30T17:00:00Z"));
+        assertThat(usage.resetsAt()).isEqualTo(Instant.parse("2026-10-31T17:00:00Z"));
     }
 
     @Test
@@ -90,18 +94,30 @@ class AiTokenQuotaServiceTest {
     }
 
     @Test
-    void paidQuotaUsesTheSubscriptionSnapshotAndPeriod() {
+    void paidQuotaUsesTheNewTierLimitAndSubscriptionPeriod() {
         var subscription = new SubscriptionEntity(7L, SubscriptionTier.PRO,
                 LocalDateTime.of(2026, 10, 1, 10, 0), LocalDateTime.of(2026, 10, 31, 10, 0));
+        subscription.setTokenQuota(600_000L);
+        when(configuration.paidQuotaPolicyCutover()).thenReturn(LocalDateTime.of(2026, 10, 15, 0, 0));
         when(subscriptions.findByUserIdAndStatus(7L, SubscriptionStatus.ACTIVE)).thenReturn(Optional.of(subscription));
         when(ledger.sumMemberTokens(eq(7L), eq(subscription.getStartsAt()), eq(subscription.getEndsAt())))
-                .thenReturn(599_999L);
+                .thenReturn(499_999L);
 
         service.requireAvailable(7L, null);
         var usage = service.getMyUsage(7L);
         assertThat(usage.tier()).isEqualTo("PRO");
-        assertThat(usage.quotaTokens()).isEqualTo(600_000);
+        assertThat(usage.quotaTokens()).isEqualTo(500_000);
         assertThat(usage.remainingTokens()).isEqualTo(1);
+    }
+
+    @Test
+    void paidCycleActivatedAfterPolicyCutoverKeepsItsConfiguredSnapshot() {
+        var subscription = new SubscriptionEntity(7L, SubscriptionTier.PLUS,
+                LocalDateTime.of(2026, 10, 20, 0, 0), LocalDateTime.of(2026, 11, 19, 0, 0));
+        subscription.setTokenQuota(275_000L);
+        when(configuration.paidQuotaPolicyCutover()).thenReturn(LocalDateTime.of(2026, 10, 15, 0, 0));
+        when(subscriptions.findByUserIdAndStatus(7L, SubscriptionStatus.ACTIVE)).thenReturn(Optional.of(subscription));
+        assertThat(service.getMyUsage(7L).quotaTokens()).isEqualTo(275_000L);
     }
 
     @Test
@@ -147,7 +163,9 @@ class AiTokenQuotaServiceTest {
         assertThat(snapshot.quotaLimit()).isEqualTo(50_000L);
         assertThat(snapshot.creditsPer1000OverageTokens()).isEqualTo(400L);
 
-        assertThatThrownBy(() -> service.beginCall(7L, null, "FR-51", "gemini-3.8-pro", NOW))
+        assertThat(service.beginCall(7L, null, "FR-51", "gemini-3.8-pro", NOW).model())
+                .isEqualTo("gemini-3.8-pro");
+        assertThatThrownBy(() -> service.beginCall(7L, null, "FR-51", "unknown-model", NOW))
                 .isInstanceOf(ApiException.class);
 
         when(creditWallet.balance(7L)).thenReturn(BigDecimal.ZERO);

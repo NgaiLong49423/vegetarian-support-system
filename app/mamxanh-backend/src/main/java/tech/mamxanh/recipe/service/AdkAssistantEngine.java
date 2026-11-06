@@ -99,7 +99,7 @@ public class AdkAssistantEngine implements AutoCloseable {
     private static final String CLASSIFICATION_UNAVAILABLE_ANSWER =
             "Hiện mình chưa thể kiểm tra phạm vi câu hỏi. Câu hỏi chưa được chuyển sang bước trả lời; bạn vui lòng thử lại sau ít phút.";
     private static final Pattern PERSONAL_DATA = Pattern.compile(
-            "(?iu)([\\w.+-]+@[\\w.-]+\\.[a-z]{2,}|(?:\\+?84|0)(?:[ .-]?\\d){8,10}|(?:hồ sơ|thông tin) (?:cá nhân|sức khỏe|suc khoe)|hồ sơ.{0,20}(?:tôi|mình)|(?:tôi|mình).{0,20}(?:hồ sơ|sức khỏe|BMI|calo)|sức khỏe (?:của )?(?:tôi|mình)|BMI (?:của )?(?:tôi|mình)|tên (?:hiển thị )?(?:của )?(?:tôi|mình)|(?:đổi|sửa|cập nhật) (?:tên|bio)|bio (?:của )?(?:tôi|mình)|dị ứng|bệnh nền|cân nặng|chiều cao|(?:chế độ ăn|tùy chọn ăn uống) của (?:tôi|mình)|(?:tôi|mình).{0,20}(?:ăn chay|dị ứng|chế độ ăn|tùy chọn ăn uống))");
+            "(?iu)([\\w.+-]+@[\\w.-]+\\.[a-z]{2,}|(?:\\+?84|0)(?:[ .-]?\\d){8,10}|(?:hồ sơ|thông tin) (?:cá nhân|sức khỏe|suc khoe)|hồ sơ.{0,20}(?:tôi|mình)|(?:tôi|mình).{0,20}(?:hồ sơ|sức khỏe|BMI|calo)|sức khỏe (?:của )?(?:tôi|mình)|BMI (?:của )?(?:tôi|mình)|tên (?:hiển thị )?(?:của )?(?:tôi|mình)|bio (?:của )?(?:tôi|mình)|dị ứng|bệnh nền|cân nặng|chiều cao|(?:chế độ ăn|tùy chọn ăn uống) của (?:tôi|mình)|(?:tôi|mình).{0,20}(?:ăn chay|dị ứng|chế độ ăn|tùy chọn ăn uống))");
 
     @FunctionalInterface
     public interface LlmFactory {
@@ -205,6 +205,7 @@ public class AdkAssistantEngine implements AutoCloseable {
         Long userId = users.findAuthenticatedUserId().isPresent() ? users.requireActiveMember().id() : null;
         String owner = userId == null ? "guest:" + request.anonymousViewerId() : "user:" + userId;
         String role = userId == null ? "GUEST" : users.requireActiveMember().role().name();
+        validateFormRole(request, role);
         Authentication auth = createAuthentication(userId, role);
 
         evictExpiredSessions();
@@ -289,16 +290,7 @@ public class AdkAssistantEngine implements AutoCloseable {
 
         // 5. Execute Turn via ADK Two-Way Agentic Loop
         List<Source> sources = new ArrayList<>();
-        String effectivePromptText = request.question();
-        if (request.contextType() == AiChatRequest.ContextType.RECIPE && request.recipeId() != null) {
-            AiAssistantToolRegistry.ToolResult recipeContext = toolRegistry.execute("get_recipe_detail", Map.of("recipeId", request.recipeId()));
-            try {
-                effectivePromptText = request.question() + "\n\n[NGỮ CẢNH CÔNG THỨC CÔNG KHAI HIỆN TẠI]:\n"
-                        + mapper.writeValueAsString(recipeContext.result());
-            } catch (JacksonException serializationFailure) {
-                throw new IllegalStateException("Không thể tạo ngữ cảnh công thức công khai.", serializationFailure);
-            }
-        }
+        String effectivePromptText = consentContinuationPrompt(request, recipeContextPrompt(request));
         if (mode.isChatbot()) {
             long retrievalStarted = System.nanoTime();
             List<Source> retrieved = knowledge != null ? knowledge.retrieve(request.question()) : List.of();
@@ -307,7 +299,7 @@ public class AdkAssistantEngine implements AutoCloseable {
             if (!retrieved.isEmpty()) {
                 sources.addAll(retrieved);
                 StringBuilder kbContext = new StringBuilder();
-                kbContext.append(request.question()).append("\n\n[TÀI LIỆU NỘI BỘ THAM KHẢO]:\n");
+                kbContext.append(effectivePromptText).append("\n\n[TÀI LIỆU NỘI BỘ THAM KHẢO]:\n");
                 for (Source s : retrieved) {
                     kbContext.append("- ").append(s.title()).append(": ").append(s.excerpt()).append("\n");
                 }
@@ -320,6 +312,94 @@ public class AdkAssistantEngine implements AutoCloseable {
         }
         return runAdkTurn(request, userId, owner, auth, sessionHandle, state, mode, activeConsents,
                 Content.fromParts(Part.fromText(effectivePromptText)), false, null, new ArrayList<>(), sources, turnDeadline);
+    }
+
+    private static void validateFormRole(AiChatRequest request, String role) {
+        if (request.formContext() != null && !"EXPERT".equals(role)) throw new AppException(ErrorCode.ACCESS_DENIED);
+    }
+
+    private AiAssistantToolRegistry.ToolResult proposeRecipeFormPatch(AiChatRequest.FormContext form, Map<String, Object> args) {
+        if (form == null || !(args.getOrDefault("fields", Map.of()) instanceof Map<?, ?> fields)
+                || !(args.getOrDefault("appendText", Map.of()) instanceof Map<?, ?> appendText)
+                || fields.size() + appendText.size() > 10)
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "Cần biểu mẫu công thức đang mở và các trường hợp lệ.");
+        Set<String> allowed = Set.of("title", "description", "instructions", "dishCategory", "vegetarianType",
+                "difficulty", "servings", "prepTimeMinutes", "cookTimeMinutes", "youtubeUrl");
+        Map<String, String> changes = new LinkedHashMap<>();
+        for (var entry : fields.entrySet()) {
+            if (!(entry.getKey() instanceof String key) || !allowed.contains(key)
+                    || !(entry.getValue() instanceof String value) || value.length() > 5000)
+                throw new AppException(ErrorCode.VALIDATION_FAILED, "Patch chứa trường hoặc giá trị không hợp lệ.");
+            changes.put(key, value);
+        }
+        for (var entry : appendText.entrySet()) {
+            if (!(entry.getKey() instanceof String key) || !Set.of("description", "instructions").contains(key)
+                    || changes.containsKey(key) || !(entry.getValue() instanceof String suffix)
+                    || suffix.isBlank() || suffix.length() > 5000)
+                throw new AppException(ErrorCode.VALIDATION_FAILED, "Nội dung nối thêm chỉ hỗ trợ mô tả hoặc hướng dẫn hợp lệ.");
+            String current = form.fields().getOrDefault(key, "");
+            String addition = suffix.strip();
+            String updated = current.contains(addition) ? current
+                    : current.isBlank() ? addition : current.stripTrailing() + "\n\n" + addition;
+            int maxLength = "description".equals(key) ? 2000 : 5000;
+            if (updated.length() > maxLength)
+                throw new AppException(ErrorCode.VALIDATION_FAILED, "Nội dung sau khi nối vượt giới hạn của biểu mẫu.");
+            changes.put(key, updated);
+        }
+        Object rawIngredients = args.getOrDefault("addIngredients", List.of());
+        if (!(rawIngredients instanceof List<?> additions) || additions.size() > 50 || (changes.isEmpty() && additions.isEmpty()))
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "Danh sách nguyên liệu đề xuất không hợp lệ.");
+        List<Map<String, String>> ingredients = new ArrayList<>();
+        for (Object item : additions) {
+            if (!(item instanceof Map<?, ?> row) || !(row.get("name") instanceof String name)
+                    || !(row.get("quantity") instanceof String quantity) || !(row.get("unitCode") instanceof String unit)
+                    || name.isBlank() || name.length() > 200 || quantity.length() > 40 || unit.isBlank() || unit.length() > 40)
+                throw new AppException(ErrorCode.VALIDATION_FAILED, "Nguyên liệu đề xuất thiếu tên, số lượng hoặc đơn vị.");
+            try {
+                if (new java.math.BigDecimal(quantity).signum() <= 0) throw new NumberFormatException();
+            } catch (NumberFormatException invalid) {
+                throw new AppException(ErrorCode.VALIDATION_FAILED, "Số lượng nguyên liệu phải lớn hơn 0.");
+            }
+            ingredients.add(Map.of("name", name.strip(), "quantity", quantity.strip(), "unitCode", unit.strip()));
+        }
+        return new AiAssistantToolRegistry.ToolResult("UI_ACTION_REQUIRED", "Đang chờ giao diện xác nhận thay đổi biểu mẫu.",
+                Map.of("actionId", UUID.randomUUID().toString(), "formId", form.formId().toString(),
+                        "revision", form.revision(), "fields", Map.copyOf(changes), "addIngredients", List.copyOf(ingredients)), List.of());
+    }
+
+    private String recipeContextPrompt(AiChatRequest request) {
+        try {
+            StringBuilder prompt = new StringBuilder(request.question());
+            if (request.contextType() == AiChatRequest.ContextType.RECIPE && request.recipeId() != null) {
+                AiAssistantToolRegistry.ToolResult recipe = toolRegistry.execute("get_recipe_detail", Map.of("recipeId", request.recipeId()));
+                prompt.append("\n\n[NGỮ CẢNH CÔNG THỨC CÔNG KHAI HIỆN TẠI]:\n").append(mapper.writeValueAsString(recipe.result()));
+            }
+            if (request.formContext() != null) {
+                prompt.append("\n\n[FORM CÔNG THỨC CHƯA LƯU, DỮ LIỆU NGƯỜI DÙNG CHƯA XÁC THỰC]:\n")
+                        .append(mapper.writeValueAsString(Map.of("formId", request.formContext().formId(),
+                                "revision", request.formContext().revision(), "fields", request.formContext().fields(),
+                                "ingredients", request.formContext().ingredients(), "mediaCount", request.formContext().mediaCount(),
+                                "mediaUploading", request.formContext().mediaUploading())));
+            }
+            return prompt.toString();
+        } catch (JacksonException failure) {
+            throw new IllegalStateException("Không thể tạo ngữ cảnh công thức công khai.", failure);
+        }
+    }
+
+    private static String consentContinuationPrompt(AiChatRequest request, String prompt) {
+        if (request.consentDecision() == null || request.consentDecision().action() != ConsentAction.GRANT) {
+            return prompt;
+        }
+        // Consent is a structured user decision, not a natural-language instruction. Make the
+        // continuation explicit to ADK while keeping all actual authorization in the tool guard.
+        return prompt + "\n\n[TIẾP TỤC SAU KHI NGƯỜI DÙNG ĐỒNG Ý DỮ LIỆU]:\n"
+                + "Người dùng vừa cấp consent theo các scope có cấu trúc trong request này. Hãy tiếp tục yêu cầu "
+                + "đang chờ trong hội thoại và thử lại công cụ đọc cần thiết nếu phù hợp. Backend vẫn kiểm tra "
+                + "từng scope; nếu công cụ trả CONSENT_REQUIRED thì dừng và yêu cầu đúng scope còn thiếu. "
+                + "Consent không phải xác nhận thao tác ghi; chỉ thực hiện đúng hành động người dùng đã yêu cầu. "
+                + "Nếu người dùng chỉ yêu cầu xem trước, không áp dụng hoặc lưu dữ liệu. "
+                + "Không tuyên bố đã hoàn thành nếu chưa có kết quả thực tế từ công cụ/backend.";
     }
 
     private AiChatResponse runAdkTurn(
@@ -365,10 +445,10 @@ public class AdkAssistantEngine implements AutoCloseable {
         try {
             EngineSessionState.TurnContext turnContext = new EngineSessionState.TurnContext(
                     auth, mode, activeConsents, steps, sources, stagedConfirmation, request.clientRequestId(),
-                    approvalResume, approvedConfirmationCallId, null, new AiChatCancellationSignal(), requiredConsentScopes,
+                    approvalResume, approvedConfirmationCallId, null, new AiChatCancellationSignal(), requiredConsentScopes, request.formContext(),
                     turnDeadline);
             state.currentTurn.set(turnContext);
-            state.ensureRunner(resolvedModel, role, mode);
+            state.ensureRunner(resolvedModel, role, mode, request);
         } catch (RuntimeException unavailable) {
             LOG.warn("Failed to initialize ADK runner: {}", unavailable.getMessage());
             return buildResponse(request, sessionHandle.id(), mode, "FAILED", List.of(), List.of(), null, null,
@@ -424,6 +504,7 @@ public class AdkAssistantEngine implements AutoCloseable {
             }
         }
 
+        if (steps.stream().anyMatch(step -> "UI_ACTION_REQUIRED".equals(step.status()))) answer = "Mình đã đề xuất thay đổi và đang chờ giao diện xác nhận.";
         String verifiedAnswer = verifier != null ? verifier.verify(answer, mode, steps, null) : answer;
         return buildResponse(request, sessionHandle.id(), mode, "COMPLETED", steps, sources, null, null, verifiedAnswer);
     }
@@ -486,11 +567,29 @@ public class AdkAssistantEngine implements AutoCloseable {
                 sessionStore.markPendingRejected(sessionHandle.id(), owner, confirmationId);
                 state.pendingConfirmation = null;
                 state.serverPendingAction = null;
-                if (journal != null) {
-                    journal.cancel(ownerId, effectiveRequestId, actionId);
-                }
                 return buildResponse(request, sessionHandle.id(), mode, "COMPLETED",
                         List.of(), List.of(), null, null, "Đã hủy thao tác theo yêu cầu của bạn.");
+            }
+            if ("apply_ai_menu_preview".equals(toolName)
+                    && (state.menuPreview == null || !state.menuPreview.id().toString().equals(arguments.get("previewId")))) {
+                sessionStore.discardPending(sessionHandle.id(), owner);
+                state.serverPendingAction = null;
+                state.pendingConfirmation = null;
+                throw new AppException(ErrorCode.VALIDATION_FAILED, "Bản xem trước đã thay đổi hoặc hết hạn; hãy tạo lại thực đơn.");
+            }
+            if ("create_recipe_post".equals(toolName)) {
+                var form = request.formContext();
+                var staged = state.pendingPublishForm;
+                if (form == null || staged == null || form.mediaUploading()
+                        || !staged.formId().equals(form.formId()) || staged.revision() != form.revision()
+                        || form.publishPayload() == null
+                        || !mapper.valueToTree(arguments).equals(mapper.valueToTree(form.publishPayload()))) {
+                    sessionStore.discardPending(sessionHandle.id(), owner);
+                    state.serverPendingAction = null;
+                    state.pendingConfirmation = null;
+                    state.pendingPublishForm = null;
+                    throw new AppException(ErrorCode.VALIDATION_FAILED, "Biểu mẫu đã thay đổi; hãy kiểm tra và xác nhận lại.");
+                }
             }
         }
 
@@ -509,6 +608,7 @@ public class AdkAssistantEngine implements AutoCloseable {
             toolResult = journal != null
                     ? journal.executeWithJournal(ownerId, effectiveRequestId, actionId, toolName, argumentsHash, () -> toolRegistry.execute(toolName, arguments))
                     : toolRegistry.execute(toolName, arguments);
+            if ("apply_ai_menu_preview".equals(toolName) && "SUCCEEDED".equals(toolResult.status())) state.menuPreview = null;
             sessionStore.markPendingExecuted(sessionHandle.id(), owner, confirmationId);
         } catch (Exception failure) {
             sessionStore.markPendingFailed(sessionHandle.id(), owner, confirmationId);
@@ -634,6 +734,7 @@ public class AdkAssistantEngine implements AutoCloseable {
         Long userId = users.findAuthenticatedUserId().isPresent() ? users.requireActiveMember().id() : null;
         String owner = userId == null ? "guest:" + request.anonymousViewerId() : "user:" + userId;
         String role = userId == null ? "GUEST" : users.requireActiveMember().role().name();
+        validateFormRole(request, role);
         Authentication auth = createAuthentication(userId, role);
 
         evictExpiredSessions();
@@ -732,7 +833,7 @@ public class AdkAssistantEngine implements AutoCloseable {
 
         // 5. Execute Turn via ADK Two-Way Agentic Loop with Streaming
         List<Source> sources = new ArrayList<>();
-        String effectivePromptText = request.question();
+        String effectivePromptText = consentContinuationPrompt(request, recipeContextPrompt(request));
         if (mode.isChatbot()) {
             long retrievalStarted = System.nanoTime();
             List<Source> retrieved = knowledge != null ? knowledge.retrieve(request.question()) : List.of();
@@ -741,7 +842,7 @@ public class AdkAssistantEngine implements AutoCloseable {
             if (!retrieved.isEmpty()) {
                 sources.addAll(retrieved);
                 StringBuilder kbContext = new StringBuilder();
-                kbContext.append(request.question()).append("\n\n[TÀI LIỆU NỘI BỘ THAM KHẢO]:\n");
+                kbContext.append(effectivePromptText).append("\n\n[TÀI LIỆU NỘI BỘ THAM KHẢO]:\n");
                 for (Source s : retrieved) {
                     kbContext.append("- ").append(s.title()).append(": ").append(s.excerpt()).append("\n");
                 }
@@ -788,9 +889,9 @@ public class AdkAssistantEngine implements AutoCloseable {
             state.currentTurn.set(new EngineSessionState.TurnContext(
                     auth, mode, activeConsents, steps, sources, stagedConfirmation, request.clientRequestId(),
                     approvalResume, approvedConfirmationCallId,
-                    step -> consumer.accept(AiChatStreamEvent.step(step)), cancellationSignal, requiredConsentScopes,
+                    step -> consumer.accept(AiChatStreamEvent.step(step)), cancellationSignal, requiredConsentScopes, request.formContext(),
                     turnDeadline));
-            state.ensureRunner(resolvedModel, role, mode);
+            state.ensureRunner(resolvedModel, role, mode, request);
         } catch (RuntimeException unavailable) {
             LOG.warn("Failed to initialize ADK runner: {}", unavailable.getMessage());
             AiChatResponse resp = buildResponse(request, sessionHandle.id(), mode, "FAILED", List.of(), List.of(), null, null,
@@ -919,6 +1020,7 @@ public class AdkAssistantEngine implements AutoCloseable {
             }
         }
 
+        if (steps.stream().anyMatch(step -> "UI_ACTION_REQUIRED".equals(step.status()))) answer = "Mình đã đề xuất thay đổi và đang chờ giao diện xác nhận.";
         String verifiedAnswer = verifier != null ? verifier.verify(answer, mode, steps, null) : answer;
         AiChatResponse response = buildResponse(request, sessionHandle.id(), mode, "COMPLETED", steps, sources, null, null, verifiedAnswer);
         consumer.accept(AiChatStreamEvent.complete(response));
@@ -1023,7 +1125,7 @@ public class AdkAssistantEngine implements AutoCloseable {
         var matcher = PERSONAL_DATA.matcher(text);
         if (!matcher.find()) return null;
         String matched = matcher.group().toLowerCase(Locale.ROOT);
-        if (matched.contains("sức khỏe") || matched.contains("bmi") || matched.contains("calo")
+        if (matched.contains("sức khỏe") || matched.contains("dinh dưỡng") || matched.contains("bmi") || matched.contains("calo")
                 || matched.contains("dị ứng") || matched.contains("bệnh nền")
                 || matched.contains("cân nặng") || matched.contains("chiều cao")) {
             return ConsentCategory.HEALTH_PROFILE;
@@ -1171,7 +1273,10 @@ public class AdkAssistantEngine implements AutoCloseable {
                             .retryOptions(HttpRetryOptions.builder().attempts(1).build())
                             .build())
                     .build();
-            return new Gemini(modelId, client);
+            var model = new Gemini(modelId, client);
+            var budget = tech.mamxanh.integration.ai.adk.PilotLiveBudget.configured(
+                    System.getenv("MAMXANH_AI_CHAT_G3_LIVE_BUDGET_FILE"));
+            return budget == null ? model : budget.wrap(model);
         };
     }
 
@@ -1189,6 +1294,49 @@ public class AdkAssistantEngine implements AutoCloseable {
             ExecutionMode originalMode
     ) { }
 
+    private record MenuPreviewSnapshot(UUID id, Map<String, Object> applyArguments) { }
+    private record PendingFormAction(UUID id, UUID formId, long revision, AiChatRequest.FormActionAck acknowledgement) { }
+
+    public AiChatRequest.FormActionAck acknowledgeFormAction(AiChatRequest.FormActionAck ack) {
+        var user = users.requireActiveMember();
+        if (!"EXPERT".equals(user.role().name())) throw new AppException(ErrorCode.ACCESS_DENIED);
+        String owner = "user:" + user.id();
+        if (!ownsSession(ack.sessionId(), owner)) throw new AppException(ErrorCode.VALIDATION_FAILED);
+        EngineSessionState state = engineSessions.get(ack.sessionId());
+        if (state == null || !state.owner.equals(owner)) throw new AppException(ErrorCode.VALIDATION_FAILED);
+        synchronized (state) {
+            PendingFormAction pending = state.pendingFormAction;
+            if (pending == null || !pending.id().equals(ack.actionId()) || !pending.formId().equals(ack.formId())
+                    || pending.revision() != ack.baseRevision()
+                    || (ack.status() == AiChatRequest.FormActionStatus.APPLIED && (ack.revision() == null || ack.revision() < pending.revision())))
+                throw new AppException(ErrorCode.VALIDATION_FAILED, "Xác nhận biểu mẫu không hợp lệ hoặc đã hết hạn.");
+            if (pending.acknowledgement() != null && !pending.acknowledgement().equals(ack))
+                throw new AppException(ErrorCode.VALIDATION_FAILED, "Thao tác đã được xác nhận với kết quả khác.");
+            state.pendingFormAction = new PendingFormAction(pending.id(), pending.formId(), pending.revision(), ack);
+            return ack;
+        }
+    }
+
+    private MenuPreviewSnapshot menuPreviewSnapshot(Map<String, Object> args, Object result) {
+        if (!(args.get("request") instanceof Map<?, ?> request) || !(result instanceof Map<?, ?> preview)
+                || !(preview.get("meals") instanceof List<?> meals) || meals.isEmpty()) return null;
+        List<Map<String, Object>> selected = new ArrayList<>();
+        for (Object value : meals) {
+            if (!(value instanceof Map<?, ?> meal) || meal.get("mealDate") == null
+                    || meal.get("mealType") == null || meal.get("recipeId") == null) return null;
+            selected.add(Map.of("mealDate", meal.get("mealDate"), "mealType", meal.get("mealType"), "recipeId", meal.get("recipeId")));
+        }
+        if (request.get("weekStartDate") == null || request.get("mode") == null) return null;
+        Map<String, Object> apply = new LinkedHashMap<>();
+        apply.put("weekStartDate", request.get("weekStartDate"));
+        apply.put("mode", request.get("mode"));
+        if (request.get("goal") != null) apply.put("goal", request.get("goal"));
+        if (request.get("avoidedIngredientIds") instanceof List<?> avoided) apply.put("avoidedIngredientIds", List.copyOf(avoided));
+        apply.put("meals", List.copyOf(selected));
+        UUID id = UUID.randomUUID();
+        return new MenuPreviewSnapshot(id, Map.of("previewId", id.toString(), "request", Map.copyOf(apply)));
+    }
+
     private final class EngineSessionState implements AutoCloseable {
         private final UUID sessionId;
         private final Long userId;
@@ -1202,10 +1350,14 @@ public class AdkAssistantEngine implements AutoCloseable {
         private volatile boolean consentRevoked;
         private volatile PendingConfirmation pendingConfirmation;
         private volatile ServerPendingAction serverPendingAction;
+        private volatile MenuPreviewSnapshot menuPreview;
+        private volatile PendingFormAction pendingFormAction;
+        private volatile AiChatRequest.FormContext pendingPublishForm;
         private InMemoryRunner runner;
         private String adkSessionId;
         private String boundModelId;
         private ExecutionMode boundMode;
+        private Set<String> boundToolNames = Set.of();
         private record TurnContext(
                 Authentication callerAuth,
                 ExecutionMode mode,
@@ -1219,6 +1371,7 @@ public class AdkAssistantEngine implements AutoCloseable {
                 Consumer<AssistantStep> onStepConsumer,
                 AiChatCancellationSignal cancellationSignal,
                 AtomicReference<Set<ConsentScope>> requiredConsentScopes,
+                AiChatRequest.FormContext formContext,
                 AiTurnDeadline turnDeadline
         ) {
             void addStep(AssistantStep step) {
@@ -1249,18 +1402,19 @@ public class AdkAssistantEngine implements AutoCloseable {
             this.expiresAt = expiresAt;
         }
 
-        private synchronized void ensureRunner(String modelId, String role, ExecutionMode mode) {
+        private synchronized void ensureRunner(String modelId, String role, ExecutionMode mode, AiChatRequest request) {
             ExecutionMode canonicalMode = mode == null ? ExecutionMode.CHATBOT : mode.canonical();
-            if (runner != null && Objects.equals(boundModelId, modelId) && Objects.equals(boundMode, canonicalMode)) {
+            List<AiAssistantToolRegistry.ToolDefinition> definitions = scopedDefinitions(role, mode, request);
+            Set<String> toolNames = definitions.stream().map(AiAssistantToolRegistry.ToolDefinition::name)
+                    .collect(java.util.stream.Collectors.toUnmodifiableSet());
+            if (runner != null && Objects.equals(boundModelId, modelId) && Objects.equals(boundMode, canonicalMode)
+                    && Objects.equals(boundToolNames, toolNames)) {
                 return;
             }
 
             closeRunnerOnly();
 
             boolean isChatbot = mode == ExecutionMode.CHATBOT;
-            List<AiAssistantToolRegistry.ToolDefinition> definitions = isChatbot
-                    ? List.of()
-                    : toolRegistry.definitionsFor(role);
 
             List<BaseTool> adkTools = definitions.stream()
                     .map(def -> (BaseTool) new ScopedAssistantTool(def, this))
@@ -1310,6 +1464,29 @@ public class AdkAssistantEngine implements AutoCloseable {
             this.adkSessionId = runner.sessionService().createSession(runner.appName(), owner).blockingGet().id();
             this.boundModelId = modelId;
             this.boundMode = canonicalMode;
+            this.boundToolNames = toolNames;
+        }
+
+        private List<AiAssistantToolRegistry.ToolDefinition> scopedDefinitions(
+                String role, ExecutionMode mode, AiChatRequest request) {
+            if (mode == ExecutionMode.CHATBOT) return List.of();
+            List<AiAssistantToolRegistry.ToolDefinition> definitions = toolRegistry.definitionsFor(role);
+            if (request.formContext() != null) {
+                String question = request.question() == null ? "" : request.question().toLowerCase(java.util.Locale.ROOT);
+                boolean publishTurn = question.contains("đăng") || question.contains("xuat ban")
+                        || question.contains("xuất bản") || question.contains("publish") || question.contains("post");
+                Set<String> formTools = publishTurn ? Set.of("create_recipe_post") : Set.of("propose_recipe_form_patch");
+                return definitions.stream().filter(definition -> formTools.contains(definition.name())).toList();
+            }
+            String question = request.question() == null ? "" : request.question().toLowerCase(java.util.Locale.ROOT);
+            boolean menuTurn = menuPreview != null || question.contains("thực đơn") || question.contains("thuc don")
+                    || question.contains("menu") || question.contains("lịch ăn") || question.contains("lich an")
+                    || question.contains("bữa ăn") || question.contains("bua an") || question.contains("meal plan");
+            if (!menuTurn) return definitions;
+            Set<String> menuTools = Set.of("search_approved_knowledge", "get_health_profile", "get_dietary_preferences",
+                    "get_meal_plan", "get_ai_menu_candidates", "create_ai_menu_preview",
+                    "apply_ai_menu_preview", "apply_weekly_menu");
+            return definitions.stream().filter(definition -> menuTools.contains(definition.name())).toList();
         }
 
         private synchronized void closeRunnerOnly() {
@@ -1343,6 +1520,44 @@ public class AdkAssistantEngine implements AutoCloseable {
 
         @Override
         public Optional<FunctionDeclaration> declaration() {
+            if ("get_ai_menu_candidates".equals(definition.name())
+                    || "create_ai_menu_preview".equals(definition.name())) {
+                String properties = "\"request\":{\"type\":\"OBJECT\",\"properties\":{"
+                        + "\"weekStartDate\":{\"type\":\"STRING\",\"description\":\"Monday date in YYYY-MM-DD format from the user's request\"},"
+                        + "\"mode\":{\"type\":\"STRING\",\"enum\":[\"PROFILE\",\"THIS_WEEK\"]},"
+                        + "\"goal\":{\"type\":\"STRING\"},"
+                        + "\"preferredIngredientIds\":{\"type\":\"ARRAY\",\"items\":{\"type\":\"INTEGER\"}},"
+                        + "\"avoidedIngredientIds\":{\"type\":\"ARRAY\",\"items\":{\"type\":\"INTEGER\"}}},"
+                        + "\"required\":[\"weekStartDate\",\"mode\"]}";
+                String schema = "get_ai_menu_candidates".equals(definition.name())
+                        ? "{\"type\":\"OBJECT\",\"properties\":{" + properties + "},\"required\":[\"request\"]}"
+                        : "{\"type\":\"OBJECT\",\"properties\":{" + properties
+                                + ",\"rankedRecipeIds\":{\"type\":\"ARRAY\",\"items\":{\"type\":\"INTEGER\"}}},"
+                                + "\"required\":[\"request\",\"rankedRecipeIds\"]}";
+                return Optional.of(FunctionDeclaration.builder().name(definition.name())
+                        .description(definition.description()).parameters(Schema.fromJson(schema)).build());
+            }
+            if ("propose_recipe_form_patch".equals(definition.name())) {
+                return Optional.of(FunctionDeclaration.builder().name(definition.name()).description(definition.description())
+                        .parameters(Schema.fromJson("""
+                                {"type":"OBJECT","properties":{
+                                  "fields":{"type":"OBJECT","properties":{
+                                    "title":{"type":"STRING"},"description":{"type":"STRING"},
+                                    "instructions":{"type":"STRING"},"dishCategory":{"type":"STRING"},
+                                    "vegetarianType":{"type":"STRING"},"difficulty":{"type":"STRING"},
+                                    "servings":{"type":"STRING"},"prepTimeMinutes":{"type":"STRING"},
+                                    "cookTimeMinutes":{"type":"STRING"},"youtubeUrl":{"type":"STRING"}}},
+                                  "appendText":{"type":"OBJECT","properties":{
+                                    "description":{"type":"STRING"},"instructions":{"type":"STRING"}}},
+                                  "addIngredients":{"type":"ARRAY","items":{"type":"OBJECT","properties":{
+                                    "name":{"type":"STRING"},"quantity":{"type":"STRING"},
+                                    "unitCode":{"type":"STRING"}},"required":["name","quantity","unitCode"]}}}}
+                                """)).build());
+            }
+            if ("create_recipe_post".equals(definition.name())) {
+                return Optional.of(FunctionDeclaration.builder().name(definition.name()).description(definition.description())
+                        .parameters(Schema.fromJson("{\"type\":\"OBJECT\"}")).build());
+            }
             if (domainTools != null) {
                 var decl = domainTools.getDeclaration(definition.name());
                 if (decl != null) {
@@ -1388,11 +1603,25 @@ public class AdkAssistantEngine implements AutoCloseable {
                     return Map.of("status", "SKIPPED", "message", "Không thể gọi thêm công cụ ghi trong lượt phản hồi xác nhận.");
                 }
 
+                MenuPreviewSnapshot currentPreview = sessionState.menuPreview;
+                if ("apply_ai_menu_preview".equals(definition.name())
+                        && (currentPreview == null || args == null || !currentPreview.id().toString().equals(args.get("previewId")))) {
+                    return Map.of("status", "BLOCKED", "message", "Không tìm thấy bản xem trước hợp lệ trong phiên này.");
+                }
+                AiChatRequest.FormContext publishForm = turn.formContext();
+                if ("create_recipe_post".equals(definition.name()) && (publishForm == null || publishForm.mediaUploading()
+                        || publishForm.publishPayload() == null)) {
+                    return Map.of("status", "BLOCKED", "message", "Cần biểu mẫu hiện tại và ảnh đã tải lên trước khi đăng.");
+                }
+                final Map<String, Object> effectiveArgs = "apply_ai_menu_preview".equals(definition.name())
+                        ? currentPreview.applyArguments() : "create_recipe_post".equals(definition.name())
+                        ? publishForm.publishPayload() : (args == null ? Map.of() : args);
+
                 // Check QA mode for write actions
                 if (turn.mode().isChatbot() && definition.write()) {
                     int stepIndex = turn.steps().size() + 1;
                     String msg = "Chế độ QA không ghi dữ liệu. Hãy chọn CONFIRM hoặc AUTO cho yêu cầu này.";
-                    Map<String, Object> preview = Map.of("preview", args != null ? args : Map.of());
+                    Map<String, Object> preview = Map.of("preview", effectiveArgs);
                     turn.addStep(new AssistantStep(stepIndex, definition.name(), "SKIPPED_MODE", msg, preview));
                     return Map.of(
                             "status", "SKIPPED_MODE",
@@ -1408,26 +1637,30 @@ public class AdkAssistantEngine implements AutoCloseable {
                                 && definition.write());
 
                 if (requiresConfirmation) {
+                    if ("create_recipe_post".equals(definition.name())) {
+                        toolRegistry.validateRecipePublish(effectiveArgs);
+                        sessionState.pendingPublishForm = publishForm;
+                    }
                     int stepIndex = turn.steps().size() + 1;
                     String actionId = definition.name() + "_" + stepIndex;
                     String summary = definition.isHighRisk()
                             ? "Thao tác rủi ro cao cần xác nhận trước khi thực hiện."
                             : "Cần xác nhận trước khi thay đổi dữ liệu.";
-                    Map<String, Object> immutableArgs = args != null ? Collections.unmodifiableMap(new LinkedHashMap<>(args)) : Map.of();
+                    Map<String, Object> immutableArgs = Collections.unmodifiableMap(new LinkedHashMap<>(effectiveArgs));
                     String argsJson = "";
                     try {
                         argsJson = mapper.writeValueAsString(immutableArgs);
                     } catch (Exception ignored) {
                     }
                     long ownerId = sessionState.userId != null ? sessionState.userId : 0L;
-                    UUID effectiveRequestId = turn.clientRequestId() != null ? turn.clientRequestId() : sessionState.sessionId;
-
                     AiAssistantSessionStore.PendingPlan storePlan = sessionStore.createPending(
                             sessionState.sessionId,
                             sessionState.owner,
                             List.of(new AiAssistantSessionStore.PendingAction(definition.name(), immutableArgs, true)),
                             true);
                     UUID planId = storePlan.id();
+                    // The confirmation ID is known to the client even if the confirmation response is lost.
+                    UUID effectiveRequestId = planId;
 
                     ServerPendingAction serverAction = new ServerPendingAction(
                             planId,
@@ -1454,7 +1687,7 @@ public class AdkAssistantEngine implements AutoCloseable {
                             true,
                             proposedListName == null || proposedListName.isBlank() ? null : proposedListName);
                     turn.stagedConfirmation().set(pending);
-                    Map<String, Object> preview = Map.of("preview", args != null ? args : Map.of());
+                    Map<String, Object> preview = Map.of("preview", effectiveArgs);
                     turn.addStep(new AssistantStep(stepIndex, definition.name(), "AWAITING_CONFIRMATION", summary, preview));
                     return Map.of(
                             "status", "AWAITING_CONFIRMATION",
@@ -1469,10 +1702,21 @@ public class AdkAssistantEngine implements AutoCloseable {
                 UUID effectiveRequestId = turn.clientRequestId() != null ? turn.clientRequestId() : sessionState.sessionId;
 
                 AiAssistantToolRegistry.ToolResult result;
-                if (definition.write() && journal != null) {
+                if ("propose_recipe_form_patch".equals(definition.name())) {
+                    if (turn.steps().stream().anyMatch(step -> "UI_ACTION_REQUIRED".equals(step.status())))
+                        throw new AppException(ErrorCode.VALIDATION_FAILED, "Chỉ xử lý một patch mỗi lượt.");
+                    result = proposeRecipeFormPatch(turn.formContext(), effectiveArgs);
+                    @SuppressWarnings("unchecked") Map<String, Object> action = (Map<String, Object>) result.result();
+                    synchronized (sessionState) {
+                        if (sessionState.pendingFormAction != null && sessionState.pendingFormAction.acknowledgement() == null)
+                            throw new AppException(ErrorCode.VALIDATION_FAILED, "Patch trước chưa được giao diện xác nhận.");
+                        sessionState.pendingFormAction = new PendingFormAction(UUID.fromString((String) action.get("actionId")),
+                                turn.formContext().formId(), turn.formContext().revision(), null);
+                    }
+                } else if (definition.write() && journal != null) {
                     String argsJson = "";
                     try {
-                        argsJson = mapper.writeValueAsString(args != null ? args : Map.of());
+                        argsJson = mapper.writeValueAsString(effectiveArgs);
                     } catch (Exception ignored) {
                     }
                     String argumentsHash = hash(actionId + ":" + definition.name() + ":" + argsJson);
@@ -1482,9 +1726,20 @@ public class AdkAssistantEngine implements AutoCloseable {
                             actionId,
                             definition.name(),
                             argumentsHash,
-                            () -> toolRegistry.execute(definition.name(), args));
+                            () -> toolRegistry.execute(definition.name(), effectiveArgs));
                 } else {
-                    result = toolRegistry.execute(definition.name(), args);
+                    result = toolRegistry.execute(definition.name(), effectiveArgs);
+                }
+
+                if ("create_ai_menu_preview".equals(definition.name()) && "SUCCEEDED".equals(result.status())) {
+                    MenuPreviewSnapshot snapshot = menuPreviewSnapshot(effectiveArgs, result.result());
+                    sessionState.menuPreview = snapshot;
+                    if (snapshot != null && result.result() instanceof Map<?, ?> data) {
+                        Map<String, Object> withId = new LinkedHashMap<>();
+                        data.forEach((key, value) -> { if (key instanceof String text) withId.put(text, value); });
+                        withId.put("previewId", snapshot.id().toString());
+                        result = new AiAssistantToolRegistry.ToolResult(result.status(), result.summary(), withId, result.sources());
+                    }
                 }
 
                 if (result.sources() != null) {

@@ -1,11 +1,12 @@
 import { aiRequiredTier, aiUpgradeMessage, type AiPaidTier } from '../lib/aiUpgrade';
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { AlertCircle, Check, Info, LoaderCircle, Plus, Sparkles, Trash2 } from 'lucide-react';
-import { recipesApi, type Choice, type CreateRecipeRequest, type IngredientOption, type RecipeFormOptions, type IngredientRecipeUnit } from '../api/recipes';
+import { recipesApi, type AiRecipeFormContext, type AiRecipeFormPatch, type AiRecipeFormPatchAck, type Choice, type CreateRecipeRequest, type IngredientOption, type RecipeFormOptions, type IngredientRecipeUnit } from '../api/recipes';
 import { ApiError, asApiError } from '../lib/apiClient';
 import { PageContainer } from '../components/Layout';
 import { useAuth } from '../components/AuthContext';
+import { useAiChat } from '../components/AiChatContext';
 import { YouTubeEmbed } from '../components/YouTubeEmbed';
 import { validateYouTubeUrl } from '../utils/youtube';
 import { Button, Card } from '../components/ui';
@@ -79,6 +80,12 @@ function RecipeCreationAccessGate({ role }: { role: UserRole }) {
 }
 
 function CreateRecipeForm() {
+  const { registerRecipeForm } = useAiChat();
+  const [formId] = useState(() => crypto.randomUUID());
+  const formSnapshot = useRef<AiRecipeFormContext | null>(null);
+  const formSignature = useRef('');
+  const pendingFormPatch = useRef<{ fields: Record<string, string>; added: Array<{ ingredientId: number; unitId: number; quantity: string }>;
+    resolve: (ack: AiRecipeFormPatchAck) => void } | null>(null);
   const [options, setOptions] = useState<RecipeFormOptions | null>(null);
   const [optionsError, setOptionsError] = useState('');
   const [loadingOptions, setLoadingOptions] = useState(true);
@@ -119,6 +126,89 @@ function CreateRecipeForm() {
   const [aiNotice, setAiNotice] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  useLayoutEffect(() => {
+    const values = {
+      fields: { title, description, instructions, dishCategory, vegetarianType, difficulty, servings, prepTimeMinutes, cookTimeMinutes, youtubeUrl },
+      ingredients: ingredients.map(row => ({ name: row.ingredientName || row.search, ingredientId: row.ingredientId, quantity: row.quantity, unitId: row.unitId })),
+      mediaCount: mediaList.length,
+      mediaUploading,
+      publishPayload: { title, description, instructions, dishCategory, vegetarianType, difficulty,
+        servings: Number(servings), prepTimeMinutes: Number(prepTimeMinutes), cookTimeMinutes: Number(cookTimeMinutes), youtubeUrl,
+        ingredients: ingredients.map(row => ({ ingredientId: row.ingredientId ?? 0, unitId: row.unitId ?? 0, quantity: Number(row.quantity) })),
+        media: mediaList.map(image => ({ blobUrl: image.url, mimeType: image.mimeType, cover: image.isCover })) },
+    };
+    const signature = JSON.stringify(values);
+    if (signature !== formSignature.current) {
+      formSnapshot.current = { formId, revision: (formSnapshot.current?.revision ?? -1) + 1, ...values };
+      formSignature.current = signature;
+    }
+    if (pendingFormPatch.current && formSnapshot.current) {
+      const pending = pendingFormPatch.current;
+      pendingFormPatch.current = null;
+      const applied = Object.entries(pending.fields).every(([key, value]) => formSnapshot.current?.fields[key] === value)
+        && pending.added.every(item => formSnapshot.current?.ingredients.some(row => row.ingredientId === item.ingredientId
+          && row.unitId === item.unitId && row.quantity === item.quantity));
+      pending.resolve({ status: applied ? 'APPLIED' : 'CONFLICT', revision: formSnapshot.current.revision });
+    }
+  }, [formId, title, description, instructions, dishCategory, vegetarianType, difficulty, servings, prepTimeMinutes, cookTimeMinutes, youtubeUrl, ingredients, mediaList, mediaUploading]);
+
+  useEffect(() => {
+    let active = true;
+    const apply = async (patch: AiRecipeFormPatch): Promise<AiRecipeFormPatchAck> => {
+      const current = formSnapshot.current;
+      if (!current || patch.formId !== current.formId || patch.revision !== current.revision || pendingFormPatch.current) return { status: 'CONFLICT' };
+      if (!patch.fields || typeof patch.fields !== 'object' || Array.isArray(patch.fields)) return { status: 'REJECTED' };
+      const setters: Record<string, (value: string) => void> = { title: setTitle, description: setDescription, instructions: setInstructions,
+        dishCategory: setDishCategory, vegetarianType: setVegetarianType, difficulty: setDifficulty, servings: setServings,
+        prepTimeMinutes: setPrepTimeMinutes, cookTimeMinutes: setCookTimeMinutes, youtubeUrl: handleYoutubeChange };
+      const entries = Object.entries(patch.fields);
+      const additions = patch.addIngredients ?? [];
+      if ((!entries.length && !additions.length) || additions.length > 50 || entries.some(([key, value]) => !Object.prototype.hasOwnProperty.call(setters, key) || typeof value !== 'string')) return { status: 'REJECTED' };
+      for (const [key, value] of entries) {
+        const maxLength = ({ title: 120, description: 2000, instructions: 5000 } as Record<string, number>)[key];
+        if (maxLength !== undefined && value.length > maxLength) return { status: 'REJECTED' };
+        const choices = key === 'dishCategory' ? options?.dishCategories : key === 'vegetarianType' ? options?.vegetarianTypes : key === 'difficulty' ? options?.difficulties : undefined;
+        if (['dishCategory', 'vegetarianType', 'difficulty'].includes(key) && (!choices || !choices.some(choice => choice.code === value))) return { status: 'REJECTED' };
+        if (['servings', 'prepTimeMinutes', 'cookTimeMinutes'].includes(key)) {
+          const number = Number(value);
+          if (!/^\d+$/.test(value) || !Number.isSafeInteger(number) || number < (key === 'servings' ? 1 : 0) || number > (key === 'servings' ? 50 : 1440)) return { status: 'REJECTED' };
+        }
+        if (key === 'youtubeUrl' && !validateYouTubeUrl(value).valid) return { status: 'REJECTED' };
+      }
+      const resolved: IngredientRow[] = [];
+      try {
+        for (const item of additions) {
+          if (!item.name.trim() || !item.unitCode.trim() || !/^\d{1,8}(?:\.\d{1,2})?$/.test(item.quantity)
+              || Number(item.quantity) <= 0) return { status: 'REJECTED' };
+          const matches = (await recipesApi.searchIngredients(item.name)).filter(candidate =>
+            candidate.name.trim().toLocaleLowerCase('vi-VN') === item.name.trim().toLocaleLowerCase('vi-VN'));
+          if (matches.length !== 1 || current.ingredients.some(row => row.ingredientId === matches[0].ingredientId)
+              || resolved.some(row => row.ingredientId === matches[0].ingredientId)) return { status: 'REJECTED' };
+          const units = await recipesApi.getIngredientUnits(matches[0].ingredientId);
+          const unitMatches = units.filter(unit => unit.code.trim().toLocaleLowerCase('vi-VN') === item.unitCode.trim().toLocaleLowerCase('vi-VN'));
+          if (unitMatches.length !== 1) return { status: 'REJECTED' };
+          resolved.push({ ...emptyIngredient(), ingredientId: matches[0].ingredientId, ingredientName: matches[0].name,
+            search: matches[0].name, quantity: item.quantity, unitId: unitMatches[0].id, units });
+        }
+      } catch { return { status: 'REJECTED' }; }
+      const latest = formSnapshot.current;
+      if (!active || !latest || latest.formId !== patch.formId || latest.revision !== patch.revision || pendingFormPatch.current) return { status: 'CONFLICT' };
+      const existingRows = latest.ingredients.filter(row => row.ingredientId !== null || row.name.trim() || row.quantity.trim() || row.unitId !== null);
+      if (existingRows.length + resolved.length > 50) return { status: 'REJECTED' };
+      if (!resolved.length && entries.every(([key, value]) => latest.fields[key] === value)) return { status: 'APPLIED', revision: latest.revision };
+      return new Promise(resolve => {
+        pendingFormPatch.current = { fields: { ...patch.fields }, added: resolved.map(row => ({ ingredientId: row.ingredientId!, unitId: row.unitId!, quantity: row.quantity })), resolve };
+        entries.forEach(([key, value]) => setters[key](value));
+        if (resolved.length) setIngredients(rows => {
+          const kept = rows.filter(row => row.ingredientId !== null || row.search.trim() || row.quantity.trim() || row.unitId !== null);
+          return [...kept, ...resolved];
+        });
+      });
+    };
+    const unregister = registerRecipeForm(() => formSnapshot.current, apply);
+    return () => { active = false; unregister(); pendingFormPatch.current?.resolve({ status: 'CONFLICT' }); pendingFormPatch.current = null; };
+  }, [registerRecipeForm, options]);
+
   const suggestedDifficulty = assessRecipeDifficulty({
     ingredientCount: ingredients.filter((ing) => ing.ingredientId || ing.quantity).length,
     prepTimeMinutes: Number(prepTimeMinutes) || 0,
@@ -146,14 +236,11 @@ function CreateRecipeForm() {
             const searchResults = await recipesApi.searchIngredients(item.name);
             if (searchResults && searchResults.length > 0) {
               const exact = searchResults.find(
-                (r) => r.name.toLowerCase() === item.name.toLowerCase(),
+                (r) => r.name.trim().toLocaleLowerCase('vi-VN') === item.name.trim().toLocaleLowerCase('vi-VN'),
               );
               if (exact) {
                 foundIngredientId = exact.ingredientId;
                 foundName = exact.name;
-              } else {
-                foundIngredientId = searchResults[0].ingredientId;
-                foundName = searchResults[0].name;
               }
             }
           } catch {

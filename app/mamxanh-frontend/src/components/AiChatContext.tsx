@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+import type { AiRecipeFormContext, AiRecipeFormPatch, AiRecipeFormPatchAck } from '../api/recipes';
 
 export type RecipeArticleContext = {
   recipeId: number;
@@ -25,6 +26,9 @@ export type AiChatContextValue = {
   openChat: (recipe?: RecipeArticleContext) => void;
   closeChat: () => void;
   startNewChat: () => void;
+  registerRecipeForm: (snapshot: () => AiRecipeFormContext | null, apply: (patch: AiRecipeFormPatch) => Promise<AiRecipeFormPatchAck>) => () => void;
+  getRecipeFormContext: () => AiRecipeFormContext | null;
+  applyRecipeFormPatch: (patch: AiRecipeFormPatch) => Promise<AiRecipeFormPatchAck>;
 };
 
 export const AiChatContext = createContext<AiChatContextValue | null>(null);

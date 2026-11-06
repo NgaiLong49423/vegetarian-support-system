@@ -13,6 +13,12 @@ declare global {
 
 export const test = base.extend({
   context: async ({ context }, use, testInfo) => {
+    // Most established AI chat tests exercise the compatible JSON endpoint.
+    // The UI now probes the streaming endpoint first, so model the server's
+    // explicit "stream not available" response and let the existing per-test
+    // JSON route handle the compatibility fallback. Page-level streaming
+    // fixtures take precedence for the tests that cover SSE behavior directly.
+    await context.route((url) => url.pathname === '/api/v1/recipes/ai/chat/stream', (route) => route.fulfill({ status: 404 }));
     // Isolated Frontend tests mock account sessions. Prevent the shared saved-status read
     // from escaping to a live Backend; page-specific saved recipe fixtures override this.
     await context.route((url) => url.pathname === '/api/v1/saved-recipes', (route) => route.fulfill({ json: {

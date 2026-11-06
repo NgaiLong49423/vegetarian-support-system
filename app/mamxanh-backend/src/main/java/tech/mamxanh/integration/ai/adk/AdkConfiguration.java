@@ -72,7 +72,9 @@ public class AdkConfiguration {
                         .retryOptions(HttpRetryOptions.builder().attempts(1).build())
                         .build())
                 .build();
-        return new Gemini(modelId, client);
+        BaseLlm model = new Gemini(modelId, client);
+        PilotLiveBudget budget = PilotLiveBudget.configured(System.getenv("MAMXANH_AI_CHAT_G3_LIVE_BUDGET_FILE"));
+        return budget == null ? model : budget.wrap(model);
     }
 
     private static final class UnconfiguredLlm extends BaseLlm {

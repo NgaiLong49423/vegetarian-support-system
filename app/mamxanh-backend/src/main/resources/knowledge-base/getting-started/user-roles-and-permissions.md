@@ -45,7 +45,7 @@ Hệ thống có 4 vai trò chính:
 |---|:---:|:---:|:---:|
 | Xem công thức công khai, tỷ lệ % Like, lượt xem | Có | Có | Có |
 | Tìm kiếm, lọc và so sánh 2 công thức | Có | Có | Có |
-| Sử dụng AI Chatbot trải nghiệm | Có (tối đa 20.000 token/phiên) | Có (theo gói dịch vụ) | Có (theo gói dịch vụ) |
+| Sử dụng AI Chatbot trải nghiệm | Có (50.000 token/tháng) | Có (theo gói dịch vụ) | Có (theo gói dịch vụ) |
 | Bình chọn Like / Dislike bài viết | Không | Có | Có (trừ bài của mình) |
 | Viết bình luận, phản hồi thảo luận | Không | Có | Có |
 | Lưu công thức yêu thích (`Saved Recipe`) | Không | Có | Có |
@@ -62,7 +62,7 @@ Hệ thống có 4 vai trò chính:
 
 ### 1. Khách vãng lai (Guest)
 - **Đặc điểm:** Người truy cập chưa đăng nhập tài khoản.
-- **Quyền hạn:** Khám phá toàn bộ bài công thức đã công khai, xem danh bạ chuyên gia, xem danh mục nguyên liệu, tra cứu thông tin dinh dưỡng công thức, sử dụng tính năng so sánh 2 món ăn và trải nghiệm AI Chatbot với hạn mức kỹ thuật (20.000 token mỗi phiên trình duyệt).
+- **Quyền hạn:** Khám phá toàn bộ bài công thức đã công khai, xem danh bạ chuyên gia, xem danh mục nguyên liệu, tra cứu thông tin dinh dưỡng công thức, sử dụng tính năng so sánh 2 món ăn và trải nghiệm AI Chatbot với hạn mức 50.000 token mỗi tháng theo định danh Guest hiện tại.
 - **Giới hạn:** Không có dữ liệu cá nhân lưu trữ; không thể lưu món, lên lịch ăn, đi chợ, bình luận hay bình chọn Like/Dislike.
 
 ### 2. Thành viên thông thường (Customer)
@@ -82,5 +82,5 @@ Hệ thống có 4 vai trò chính:
 
 ## Những điều cần lưu ý
 
-1. **Gói dịch vụ AI (Free, Plus, Pro) không thay đổi vai trò tài khoản:** Việc nâng cấp gói Plus hoặc Pro chỉ mở rộng hạn mức token và cho phép lựa chọn mô hình Gemini cao cấp hơn, không biến tài khoản Customer thành Expert và không cấp thêm quyền đăng bài.
+1. **Gói dịch vụ AI (Free, Plus, Pro) không thay đổi vai trò tài khoản:** Các gói dùng chung danh mục model AI; nâng cấp thay đổi hạn mức token, không biến Customer thành Expert và không cấp thêm quyền đăng bài.
 2. **Quyền tác giả độc lập:** Mỗi Chuyên gia chỉ có quyền chỉnh sửa hoặc xóa bài viết do chính tài khoản của mình tạo ra.

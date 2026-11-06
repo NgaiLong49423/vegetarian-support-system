@@ -288,7 +288,28 @@ export interface AiPendingConfirmation {
   proposedListName?: string | null;
 }
 export interface AiChatTurn { speaker: 'USER' | 'ASSISTANT'; content: string; recommendedRecipeIds?: number[] }
+export interface AiRecipeFormContext {
+  formId: string;
+  revision: number;
+  fields: Record<string, string>;
+  ingredients: Array<{ name: string; ingredientId: number | null; quantity: string; unitId: number | null }>;
+  mediaCount: number;
+  mediaUploading: boolean;
+  publishPayload?: CreateRecipeRequest;
+}
+export interface AiRecipeFormPatch {
+  formId: string; revision: number; fields: Record<string, string>;
+  addIngredients?: Array<{ name: string; quantity: string; unitCode: string }>;
+}
+export interface AiRecipeFormPatchAck { status: 'APPLIED' | 'CONFLICT' | 'REJECTED'; revision?: number }
+export interface AiRecipeFormActionAck extends AiRecipeFormPatchAck {
+  sessionId: string;
+  actionId: string;
+  formId: string;
+  baseRevision: number;
+}
 export interface AiChatRequest {
+  formContext?: AiRecipeFormContext;
   anonymousViewerId?: string;
   executionMode?: AiExecutionMode;
   sessionId?: string;
@@ -378,7 +399,7 @@ export async function streamAiChat(
     headers['Authorization'] = `Bearer ${token}`;
   }
   if (payload.anonymousViewerId) {
-    headers['X-Anonymous-Viewer'] = payload.anonymousViewerId;
+    headers['X-Guest-Chat-Id'] = payload.anonymousViewerId;
   }
 
   let response: Response;
@@ -390,8 +411,9 @@ export async function streamAiChat(
       signal,
     });
   } catch (err) {
-    if (signal?.aborted) throw err;
-    return recipesApi.chat(payload);
+    // A network failure can occur after the server accepted a write. Never resend
+    // the request automatically; the caller can recover its journaled outcome.
+    throw err;
   }
 
   if (response.status === 404) {
@@ -486,6 +508,13 @@ export async function streamAiChat(
 }
 
 export const recipesApi = {
+  actionExecutions: (requestId: string) => request(
+    () => apiClient.get<Array<{ actionId: string; tool: string; state: string; summary: string | null; result: unknown }>>(
+      `/recipes/ai/chat/action-executions/${requestId}`),
+  ),
+  acknowledgeFormAction: (payload: AiRecipeFormActionAck) => request(
+    () => apiClient.post<AiRecipeFormActionAck>('/recipes/ai/chat/ui-actions/ack', payload),
+  ),
   chatExecution: (clientRequestId: string) => request(
     () => apiClient.get<{ clientRequestId: string; actionId: string; state: string; shoppingListId: number | null }>(
       `/recipes/ai/chat/executions/${clientRequestId}`),
