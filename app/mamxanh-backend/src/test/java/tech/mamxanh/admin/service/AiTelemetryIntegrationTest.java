@@ -151,7 +151,7 @@ class AiTelemetryIntegrationTest extends AbstractIntegrationTest {
         when(ai.answerChat(anyString(),anyString(),anyString())).thenThrow(new AiProviderException("private provider failure"));
         mockMvc.perform(post("/api/v1/recipes/ai/chat").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isServiceUnavailable());
-        assertThat(count()).isEqualTo(3); // the failed answer still follows a successful recorded classification.
+        awaitCount(3); // the failed answer still follows a successful recorded classification.
         assertThat(output.getAll()).doesNotContain("Hướng dẫn nấu canh chua chay FR11 marker", "Chao ban", "private provider failure");
     }
 

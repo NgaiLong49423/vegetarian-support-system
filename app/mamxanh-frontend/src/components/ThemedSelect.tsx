@@ -4,6 +4,7 @@ import { Check, ChevronDown } from "lucide-react"
 export interface ThemedSelectOption {
   value: string
   label: string
+  disabled?: boolean
 }
 
 export interface ThemedSelectProps {
@@ -116,7 +117,7 @@ export function ThemedSelect({
         className="pointer-events-none absolute inset-0 -z-10 h-full w-full opacity-0"
       >
         {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
+          <option key={opt.value} value={opt.value} disabled={opt.disabled}>
             {opt.label}
           </option>
         ))}
@@ -145,12 +146,15 @@ export function ThemedSelect({
                   key={opt.value}
                   type="button"
                   role="option"
+                  disabled={opt.disabled}
                   aria-selected={isSelected}
-                  onClick={() => handleSelect(opt.value)}
+                  onClick={() => !opt.disabled && handleSelect(opt.value)}
                   className={`group flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
-                    isSelected
-                      ? "bg-brand-500/15 text-brand-600 dark:text-brand-400 font-bold"
-                      : "text-ink-soft hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-500/10"
+                    opt.disabled
+                      ? "cursor-not-allowed opacity-40 text-ink-muted"
+                      : isSelected
+                        ? "bg-brand-500/15 text-brand-600 dark:text-brand-400 font-bold"
+                        : "text-ink-soft hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-500/10"
                   }`}
                 >
                   <span className="truncate">{opt.label}</span>

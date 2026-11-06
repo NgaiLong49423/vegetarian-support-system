@@ -58,10 +58,10 @@ export function PublicRecipeCard({
             <span className="truncate">{recipe.authorName}</span>
           </div>
         </div>
-        <h2 className="mt-2.5 line-clamp-2 text-sm font-semibold leading-5 text-ink transition-colors duration-200 group-hover:text-brand-600">
+        <h2 className="mt-2.5 line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-ink transition-colors duration-200 group-hover:text-brand-600">
           {recipe.title}
         </h2>
-        <p className="mt-1 text-xs text-ink-muted">
+        <p className="mt-1 truncate text-xs text-ink-muted">
           {recipe.ingredients.length} nguyên liệu ·{" "}
           {recipe.prepTimeMin + recipe.cookTimeMin} phút · {recipe.servings}{" "}
           phần

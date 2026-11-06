@@ -1712,7 +1712,7 @@ export function AdminCatalogPage() {
                         })
                       }
                       options={[
-                        { value: "", label: "Chọn nhóm nguyên liệu" },
+                        { value: "", label: "Chọn nhóm nguyên liệu", disabled: true },
                         ...catalogOptions.groups.map((group) => ({
                           value: group,
                           label: normalizeIngredientGroup(group),
@@ -2124,7 +2124,7 @@ function IngredientUnitsManager({
                   selectConversion(e.target.value ? Number(e.target.value) : 0)
                 }
                 options={[
-                  { value: "", label: "Chọn quả, củ hoặc miếng" },
+                  { value: "", label: "Chọn quả, củ hoặc miếng", disabled: true },
                   ...countUnits.map((unit) => ({
                     value: String(unit.id),
                     label: unit.code,

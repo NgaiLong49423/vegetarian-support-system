@@ -138,11 +138,13 @@ public class AiChatService {
         Long userId = users.findAuthenticatedUserId().map(id -> users.requireActiveMember().id()).orElse(null);
         String owner = userId == null ? "guest:" + request.anonymousViewerId() : "user:" + userId;
 
-        // Forced Legacy mode for compatibility, telemetry, and legacy entitlement tests
-        if ("LEGACY".equalsIgnoreCase(orchestratorMode)) {
-            AiChatResponse workflowRedirect = checkWorkflowRedirect(request, userId);
-            if (workflowRedirect != null) return workflowRedirect;
-            if (aiClient != null) return executeLegacyChat(request, userId);
+        // Preflight workflow interceptor (FR-51, BR-38)
+        AiChatResponse workflowRedirect = checkWorkflowRedirect(request, userId);
+        if (workflowRedirect != null) return workflowRedirect;
+
+        // Forced Legacy mode for compatibility and telemetry tests
+        if ("LEGACY".equalsIgnoreCase(orchestratorMode) && aiClient != null) {
+            return executeLegacyChat(request, userId);
         }
 
         // Preflight sanity and resource validation
