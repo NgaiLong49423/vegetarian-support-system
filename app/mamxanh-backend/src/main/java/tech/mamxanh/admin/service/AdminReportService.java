@@ -124,7 +124,7 @@ public class AdminReportService {
         report.resolve(decision, request.reason(), now());
 
         notifications.reportResult(report.getReporterId(), reportId, current.recipe().id(), title,
-                decision != ReportDecision.NO_VIOLATION);
+                decision != ReportDecision.NO_VIOLATION, decision != ReportDecision.HIDE_RECIPE);
         switch (decision) {
             case WARN_AUTHOR -> notifications.authorWarned(authorId, reportId, title, request.reason());
             case HIDE_RECIPE -> notifications.recipeHidden(authorId, reportId, title, request.reason());

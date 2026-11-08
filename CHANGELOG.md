@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.148.1
+> **Version:** v2.150.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-11-05
 > **Status:** Active
@@ -8,6 +8,25 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-11-05 — Email Moderation Outcomes to Reporters and Authors (Issue #51)
+
+**Status:** Committed — `b49ab125`.
+
+**Scope:** Complete FR-49 (UC-49.3) by emailing the result of an Administrator's report decision to the reporter and to the author who is warned, has the post hidden or has the account locked.
+
+### Added
+
+- Email each moderation outcome after the decision commits, on an async thread, using the same title and message as the in-app notification so no reporter identity appears (BR-28, AC-49.4).
+- Add SQL Server integration tests for the reporter and author emails, a locked author, an unverified address, a rejected decision and an email server failure.
+
+### Changed
+
+- Send moderation outcome emails to verified addresses regardless of the reply email preference, because FR-49 gives moderation results priority. Document this in `docs/api/API.md` sections 21 and 23 and the Backend README; no API or migration change.
+
+### Fixed
+
+- Stop linking the reporter's `REPORT_RESULT` notification and email to a post the decision has hidden, which opened on a "not found" page.
 
 ## 2026-11-05 — Verify AI Assistant Navigation Results
 
@@ -1281,6 +1300,31 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Prevent the assistant modal from presenting locally generated content as paid AI assistance without a Backend entitlement check (BUG-077).
 - Reject unfinished recipe provider responses and preserve the documented 502 invalid-response mapping (BUG-067).
 - Redact chat request, history-turn and response diagnostic representations while preserving their JSON payloads; port the privacy correction recorded as BUG-076 on the FR-11 branch.
+
+## 2026-10-24 — Notify Members of Replies In-App and by Email (Issue #51)
+
+**Status:** Committed — `a0157f9`, `1386e6e`, `1338052`, `c1237af`, `9294dcd`.
+
+**Scope:** Deliver the FR-49 parts that do not depend on the report-handling workflow (Issue #33): reply notifications (AC-49.1), best-effort reply emails (AC-49.2, AC-49.3), the notification center and read state (UC-49.1, UC-49.2) and the reply email preference (UC-49.4). Moderation-outcome notifications (AC-49.4) were completed by the report-handling workflow.
+
+### Added
+
+- Create a `COMMENT_REPLY` notification for the author of the answered comment in the same transaction as the reply; root comments and replies to one's own comment create none, and a reply to a level-5 comment notifies that comment's author although it is stored under the level-4 parent.
+- Send the reply email after commit on an async thread when `USER.reply_email_enabled` is on and the account is active and verified; a delivery failure is logged without the address and keeps the reply and its notification.
+- Add owner-scoped endpoints `GET /api/v1/me/notifications`, `GET /api/v1/me/notifications/unread-count`, `PUT /api/v1/me/notifications/{notificationId}/read`, `PUT /api/v1/me/notifications/read-all` and `GET`/`PUT /api/v1/me/notification-preferences`, with `404 NOTIFICATION_NOT_FOUND` for another user's notification.
+- Add the header bell with the unread count, the `/thong-bao` notification center with an unread filter, paging and "mark all read", and the reply email switch in profile settings.
+- Add SQL Server integration tests for every Acceptance Criterion above and Playwright tests for the bell, center, deep link and preference.
+
+### Changed
+
+- Give each recipe comment a `comment-{id}` anchor; a notification link loads further comment pages until the reply is shown and focuses it.
+- Document the endpoints in `docs/api/API.md` section 23 and the Backend and Frontend READMEs; no migration is needed because `USER.reply_email_enabled` exists since V1.
+- Split the email notification note in profile settings into two sentences instead of joining them with a semicolon.
+- Split the closing sentence of the reply email in two instead of joining them with a semicolon, and check the email text in the reply email test.
+
+### Fixed
+
+- None.
 
 ## 2026-10-24 — Refine Shopping List Workflow ([PR #185](https://github.com/NgaiLong49423/vegetarian-support-system/pull/185))
 
