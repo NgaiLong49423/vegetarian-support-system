@@ -140,7 +140,7 @@ export function Home() {
 
         <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-zinc-800/75 via-zinc-700/65 to-zinc-900/90" />
 
-        <PageContainer className="relative z-10 py-14 text-center sm:py-20">
+        <PageContainer className="relative z-10 py-10 text-center sm:py-20">
           <Badge
             tone="brand"
             className="home-hero-badge mx-auto mb-4 shadow-sm backdrop-blur-sm"
@@ -148,7 +148,7 @@ export function Home() {
             <Leaf className="h-3.5 w-3.5" />
             Mâm Xanh · Ẩm thực thuần lành
           </Badge>
-          <h1 className="mx-auto text-3xl font-extrabold leading-[1.18] tracking-tight text-white drop-shadow-sm sm:text-5xl sm:leading-[1.15]">
+          <h1 className="mx-auto text-2xl font-extrabold leading-[1.2] tracking-tight text-white drop-shadow-sm sm:text-5xl sm:leading-[1.15]">
             <span className="block">Sống Xanh An Lành,</span>
             <span className="block bg-gradient-to-r from-brand-500 via-brand-400 to-amber-400 bg-clip-text pt-1 pb-2 text-transparent">
               Cân Bằng Vi Chất
@@ -163,11 +163,11 @@ export function Home() {
 
       {/* Main dashboard with ambient background & spacious balanced layout */}
       <div className="relative overflow-hidden">
-        <PageContainer className="relative z-10 space-y-7 py-8 sm:py-10 pb-12 sm:pb-16">
+        <PageContainer className="relative z-10 space-y-5 py-6 sm:space-y-7 sm:py-10 pb-10 sm:pb-16">
           {/* Row 1: Search + BorderGlow AI Assistant (8 cols) & User Kitchen Shortcuts (4 cols) */}
           <div className="grid items-stretch gap-6 lg:grid-cols-12">
             <div className="flex flex-col justify-between gap-6 lg:col-span-8">
-              <Card className="p-6 sm:p-7">
+              <Card className="p-4 sm:p-7">
                 <h2 className="text-xl font-bold tracking-tight text-ink sm:text-2xl">
                   Hôm nay bạn muốn nấu gì?
                 </h2>
@@ -201,12 +201,12 @@ export function Home() {
                   </AiButton>
                 </form>
                 {options && (
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="mobile-scroll-x mt-4 flex flex-nowrap gap-2 pb-1 sm:flex-wrap sm:pb-0">
                     {options.vegetarianTypes.map((choice) => (
                       <Link
                         key={choice.code}
                         to={`/kham-pha?vegetarianType=${encodeURIComponent(choice.code)}`}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-cream-soft/60 px-3 py-1.5 text-xs font-medium text-ink-soft transition-colors hover:border-brand-600 hover:text-brand-600"
+                        className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-200 bg-cream-soft/60 px-3 py-1.5 text-xs font-medium text-ink-soft transition-colors hover:border-brand-600 hover:text-brand-600"
                       >
                         <Leaf className="h-3.5 w-3.5 text-leaf-700" />
                         {choice.label}
@@ -236,14 +236,14 @@ export function Home() {
                       và dưỡng chất phù hợp với bạn.
                     </p>
                   </div>
-                  <AiButton size="sm" onClick={() => navigate("/ke-hoach")}>
+                  <AiButton size="sm" className="w-full justify-center sm:w-auto" onClick={() => navigate("/ke-hoach")}>
                     Gợi ý thực đơn của tôi
                   </AiButton>
                 </div>
               </BorderGlow>
             </div>
 
-            <Card className="flex flex-col justify-between p-6 lg:col-span-4">
+            <Card className="flex flex-col justify-between p-4 sm:p-6 lg:col-span-4">
               <div className="flex items-center gap-4 border-b border-brand-100 pb-5">
                 {account?.avatarUrl ? (
                   <img

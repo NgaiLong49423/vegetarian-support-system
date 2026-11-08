@@ -18,6 +18,7 @@ function sql(query:string):string {
 test.use({trace:'off'});
 
 test('G3 live conversations with real services, SQL accounting and both member actors',async({request})=>{
+  test.skip(project !== 'mamxanh-g3', 'Requires dedicated mamxanh-g3 Compose project');
   test.setTimeout(900000);
   const marker=randomUUID().slice(0,8),ids:number[]=[],results:Record<string,unknown>[]=[];
   const output=path.join(root,'app/mamxanh-backend/target/g3');mkdirSync(output,{recursive:true});

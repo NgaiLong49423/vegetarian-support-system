@@ -102,7 +102,7 @@ export function IngredientDirectoryPage() {
         })}
       </ul>}
 
-      {!error && !loading && ingredients.length > 0 && <div className="mt-7 flex flex-wrap items-center gap-3 border-t border-brand-100 pt-5">
+      {!error && !loading && ingredients.length > 0 && <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-20 mt-6 flex flex-wrap items-center justify-between gap-2.5 rounded-2xl border border-brand-200 bg-paper/95 p-3 shadow-lg backdrop-blur-md md:static md:mt-7 md:justify-start md:gap-3 md:rounded-none md:border-0 md:border-t md:border-brand-100 md:bg-transparent md:p-0 md:pt-5 md:shadow-none">
         <Button variant="primary" disabled={selected.length === 0} onClick={findRecipes}>Tìm công thức{selected.length > 0 ? ` (${selected.length})` : ''}</Button>
         <span className="text-sm text-ink-muted">Công thức sẽ cần có đủ các nguyên liệu đã chọn.</span>
       </div>}

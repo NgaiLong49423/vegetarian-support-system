@@ -101,7 +101,7 @@ export function RecipeCard({ recipe }: { recipe: Recipe }) {
             <span className="text-xs font-semibold text-brand-600">{recipe.category}</span>
           </div>
 
-          <h3 className="mb-3 line-clamp-2 font-bold leading-snug text-ink transition-colors group-hover:text-brand-700">
+          <h3 className="mb-3 line-clamp-2 min-h-11 font-bold leading-snug text-ink transition-colors group-hover:text-brand-700">
             {recipe.name}
           </h3>
 

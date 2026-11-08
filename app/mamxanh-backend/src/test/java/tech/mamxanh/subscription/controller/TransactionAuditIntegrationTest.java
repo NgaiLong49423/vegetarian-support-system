@@ -169,7 +169,7 @@ class TransactionAuditIntegrationTest extends AbstractIntegrationTest {
         asAdmin(get(URL).param("query",Long.toString(checkout.orderCode())))
             .andExpect(jsonPath("$.summary.paid").value(1)).andExpect(jsonPath("$.transactions.content[0].subscriptionId").isNumber())
             .andExpect(jsonPath("$.transactions.content[0].subscriptionEndsAt").value("2026-11-28T10:00:00Z"));
-        settlement.settle(Long.toString(checkout.orderCode()),49000,PaymentStatus.PAID);
+        settlement.settle(Long.toString(checkout.orderCode()),checkout.amountVnd(),PaymentStatus.PAID);
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM SUBSCRIPTION WHERE user_id=?",Integer.class,member)).isEqualTo(1);
     }
     @Test void explicitCreateFailureIsDurableButNeverOverwritesAnEarlyPaidCallback() {

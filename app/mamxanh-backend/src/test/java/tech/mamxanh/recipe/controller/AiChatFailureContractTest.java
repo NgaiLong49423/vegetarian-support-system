@@ -122,6 +122,9 @@ class AiChatFailureContractTest {
     void advancedChatRequestUsesHttpUpgradeContractAndNeverInvokesProvider() throws Exception {
         when(users.findAuthenticatedUserId()).thenReturn(Optional.of(7L));
         when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(7, tech.mamxanh.auth.entity.Role.CUSTOMER));
+        doThrow(new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED,
+                "Hãy nâng cấp lên Plus để lập thực đơn tuần.").withProperty("requiredTier", "PLUS").withProperty("upgradeUrl", "/goi-ai"))
+                .when(entitlements).requirePlusOrPro(7L);
         when(adkEngine.execute(any())).thenThrow(
                 new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED,
                         "Hãy nâng cấp lên Plus để lập thực đơn tuần.").withProperty("requiredTier", "PLUS").withProperty("upgradeUrl", "/goi-ai"));

@@ -1,112 +1,155 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react"
 
 /* --------------------------------------------------------------------------
  * Small reusable design-system primitives shared across pages.
  * ------------------------------------------------------------------------ */
 
-type Tone = 'brand' | 'leaf' | 'amber' | 'neutral';
+type Tone = "brand" | "leaf" | "amber" | "neutral"
 
 export function Badge({
   children,
-  tone = 'brand',
+
+  tone = "brand",
+
   soft = true,
-  className = '',
+
+  className = "",
 }: {
-  children: ReactNode;
-  tone?: Tone;
-  soft?: boolean;
-  className?: string;
+  children: ReactNode
+
+  tone?: Tone
+
+  soft?: boolean
+
+  className?: string
 }) {
   const tones: Record<Tone, string> = soft
     ? {
-        brand: 'bg-brand-100 text-brand-700 border-brand-200',
-        leaf: 'bg-leaf-100 text-leaf-700 border-leaf-100',
-        amber: 'bg-amber-100 text-amber-800 border-amber-200',
-        neutral: 'bg-brand-50 text-ink-soft border-brand-100',
+        brand: "bg-brand-100 text-brand-700 border-brand-200",
+
+        leaf: "bg-leaf-100 text-leaf-700 border-leaf-100",
+
+        amber: "bg-amber-100 text-amber-800 border-amber-200",
+
+        neutral: "bg-brand-50 text-ink-soft border-brand-100",
       }
     : {
-        brand: 'bg-brand-600 text-on-brand border-brand-600',
-        leaf: 'bg-leaf-600 text-white border-leaf-600',
-        amber: 'bg-amber-500 text-white border-amber-500',
-        neutral: 'bg-raised text-ink border-brand-200',
-      };
+        brand: "bg-brand-600 text-on-brand border-brand-600",
+
+        leaf: "bg-leaf-600 text-white border-leaf-600",
+
+        amber: "bg-amber-500 text-white border-amber-500",
+
+        neutral: "bg-raised text-ink border-brand-200",
+      }
+
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${tones[tone]} ${className}`}
     >
       {children}
     </span>
-  );
+  )
 }
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'outline';
+type ButtonVariant = "primary" | "secondary" | "ghost" | "outline"
 
 export function Button({
   children,
-  variant = 'primary',
-  size = 'md',
-  className = '',
-  as = 'button',
+
+  variant = "primary",
+
+  size = "md",
+
+  className = "",
+
+  as = "button",
+
   ...rest
 }: {
-  children: ReactNode;
-  variant?: ButtonVariant;
-  size?: 'sm' | 'md' | 'lg';
-  className?: string;
-  as?: 'button' | 'span';
+  children: ReactNode
+
+  variant?: ButtonVariant
+
+  size?: "sm" | "md" | "lg"
+
+  className?: string
+
+  as?: "button" | "span"
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   const variants: Record<ButtonVariant, string> = {
     primary:
-      'bg-brand-600 text-on-brand shadow-sm shadow-brand-600/25 hover:bg-brand-700 active:scale-[.98]',
-    secondary: 'bg-brand-100 text-brand-700 hover:bg-brand-200 active:scale-[.98]',
-    ghost: 'text-ink-soft hover:bg-brand-100/60',
+      "bg-brand-600 text-on-brand shadow-sm shadow-brand-600/25 hover:bg-brand-700 active:scale-[.98]",
+
+    secondary:
+      "bg-brand-100 text-brand-700 hover:bg-brand-200 active:scale-[.98]",
+
+    ghost: "text-ink-soft hover:bg-brand-100/60",
+
     outline:
-      'border border-brand-200 bg-paper text-ink-soft hover:border-brand-300 hover:text-brand-700',
-  };
+      "border border-brand-200 bg-paper text-ink-soft hover:border-brand-300 hover:text-brand-700",
+  }
+
   const sizes = {
-    sm: 'px-3 py-1.5 text-sm gap-1.5',
-    md: 'px-5 py-2.5 text-sm gap-2',
-    lg: 'px-6 py-3 text-base gap-2',
-  };
-  const cls = `inline-flex items-center justify-center rounded-full font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/70 disabled:opacity-50 disabled:pointer-events-none ${variants[variant]} ${sizes[size]} ${className}`;
-  if (as === 'span') return <span className={cls}>{children}</span>;
+    sm: "px-3 py-1.5 text-sm gap-1.5",
+
+    md: "px-5 py-2.5 text-sm gap-2",
+
+    lg: "px-6 py-3 text-base gap-2",
+  }
+
+  const cls = `inline-flex items-center justify-center rounded-full font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/70 disabled:opacity-50 disabled:pointer-events-none ${variants[variant]} ${sizes[size]} ${className}`
+
+  if (as === "span") return <span className={cls}>{children}</span>
+
   return (
     <button className={cls} {...rest}>
       {children}
     </button>
-  );
+  )
 }
 
 export function Card({
   children,
-  className = '',
+
+  className = "",
+
   hover = false,
+
   ...rest
 }: {
-  children: ReactNode;
-  className?: string;
-  hover?: boolean;
+  children: ReactNode
+
+  className?: string
+
+  hover?: boolean
 } & React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={`rounded-2xl border border-brand-100 bg-paper ${
-        hover ? 'transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-brand-900/5 hover:border-brand-200' : ''
+        hover
+          ? "transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-brand-900/5 hover:border-brand-200"
+          : ""
       } ${className}`}
       {...rest}
     >
       {children}
     </div>
-  );
+  )
 }
 
 export function SectionHeading({
   eyebrow,
+
   title,
+
   action,
 }: {
-  eyebrow?: string;
-  title: ReactNode;
-  action?: ReactNode;
+  eyebrow?: string
+
+  title: ReactNode
+
+  action?: ReactNode
 }) {
   return (
     <div className="mb-6 flex items-end justify-between gap-4">
@@ -116,23 +159,31 @@ export function SectionHeading({
             {eyebrow}
           </p>
         )}
-        <h2 className="text-lg font-semibold tracking-tight text-ink sm:text-xl">{title}</h2>
+        <h2 className="text-lg font-semibold tracking-tight text-ink sm:text-xl">
+          {title}
+        </h2>
       </div>
       {action}
     </div>
-  );
+  )
 }
 
 export function EmptyState({
-  icon = '🌱',
+  icon = "🌱",
+
   title,
+
   description,
+
   action,
 }: {
-  icon?: string;
-  title: string;
-  description?: string;
-  action?: ReactNode;
+  icon?: string
+
+  title: string
+
+  description?: string
+
+  action?: ReactNode
 }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border border-brand-100 bg-paper px-6 py-12 text-center">
@@ -140,20 +191,26 @@ export function EmptyState({
         {icon}
       </div>
       <h3 className="mb-1 text-lg font-bold text-ink">{title}</h3>
-      {description && <p className="max-w-sm text-sm text-ink-muted">{description}</p>}
+      {description && (
+        <p className="max-w-sm text-sm text-ink-muted">{description}</p>
+      )}
       {action && <div className="mt-5">{action}</div>}
     </div>
-  );
+  )
 }
 
 export function Stat({
   icon,
+
   label,
+
   value,
 }: {
-  icon: ReactNode;
-  label: string;
-  value: string;
+  icon: ReactNode
+
+  label: string
+
+  value: string
 }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-brand-100 bg-paper px-4 py-3">
@@ -165,15 +222,24 @@ export function Stat({
         <p className="truncate font-bold text-ink">{value}</p>
       </div>
     </div>
-  );
+  )
 }
 
-export function ProgressBar({ pct, tone = 'brand' }: { pct: number; tone?: 'brand' | 'leaf' | 'amber' }) {
+export function ProgressBar({
+  pct,
+  tone = "brand",
+}: {
+  pct: number
+  tone?: "brand" | "leaf" | "amber"
+}) {
   const colors = {
-    brand: 'bg-brand-500',
-    leaf: 'bg-leaf-500',
-    amber: 'bg-amber-400',
-  };
+    brand: "bg-brand-500",
+
+    leaf: "bg-leaf-500",
+
+    amber: "bg-amber-400",
+  }
+
   return (
     <div className="h-2 w-full overflow-hidden rounded-full bg-brand-100">
       <div
@@ -181,10 +247,27 @@ export function ProgressBar({ pct, tone = 'brand' }: { pct: number; tone?: 'bran
         style={{ width: `${Math.min(100, pct)}%` }}
       />
     </div>
-  );
+  )
 }
 
-export { AiButton, type AiButtonProps } from './AiButton';
-export { BorderGlow, type BorderGlowProps } from './BorderGlow';
-export { RippleDistortion, type RippleDistortionProps } from './RippleDistortion';
-export { Pattern, type PatternProps } from './Pattern';
+export { AiButton, type AiButtonProps } from "./AiButton"
+
+export { BorderGlow, type BorderGlowProps } from "./BorderGlow"
+
+export {
+  RippleDistortion,
+  type RippleDistortionProps,
+} from "./RippleDistortion"
+
+export { Pattern, type PatternProps } from "./Pattern"
+export {
+  AnimatedNumber,
+  useCountUp,
+  type AnimatedNumberProps,
+} from "./AnimatedNumber"
+export { HamsterLoader, type HamsterLoaderProps } from "./HamsterLoader"
+export {
+  ThemedSelect,
+  type ThemedSelectProps,
+  type ThemedSelectOption,
+} from "./ThemedSelect"

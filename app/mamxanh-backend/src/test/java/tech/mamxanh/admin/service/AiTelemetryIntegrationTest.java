@@ -50,6 +50,8 @@ class AiTelemetryIntegrationTest extends AbstractIntegrationTest {
                 "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 150, 10, 160);
         when(ai.classifyChatScope(anyString(), anyString())).thenReturn(inScope);
         when(ai.classifyChatScope(anyString(), anyString(), anyString())).thenReturn(inScope);
+        when(ai.classifyChatScope(any(), any(), any(Duration.class))).thenReturn(inScope);
+        when(ai.classifyChatScope(any(), any(), any(), any(Duration.class))).thenReturn(inScope);
         clock.advance(Duration.between(clock.instant(), Instant.parse("2026-10-23T03:00:00Z")));
         guest = UUID.randomUUID().toString();
         String email = "fr11-" + guest + "@example.invalid";
@@ -149,7 +151,7 @@ class AiTelemetryIntegrationTest extends AbstractIntegrationTest {
         when(ai.answerChat(anyString(),anyString(),anyString())).thenThrow(new AiProviderException("private provider failure"));
         mockMvc.perform(post("/api/v1/recipes/ai/chat").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isServiceUnavailable());
-        assertThat(count()).isEqualTo(3); // the failed answer still follows a successful recorded classification.
+        awaitCount(3); // the failed answer still follows a successful recorded classification.
         assertThat(output.getAll()).doesNotContain("Hướng dẫn nấu canh chua chay FR11 marker", "Chao ban", "private provider failure");
     }
 

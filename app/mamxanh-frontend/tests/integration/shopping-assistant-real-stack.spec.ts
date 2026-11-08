@@ -47,6 +47,7 @@ function sql(query: string): string {
 }
 
 test('G3 real-stack E2E: CUSTOMER and EXPERT use ADK Shopping List pilot across consent, QA/CONFIRM/AUTO modes, and persist real lists in SQL', async ({ page, request }) => {
+  test.skip(project !== 'mamxanh-g3', 'Requires dedicated mamxanh-g3 Compose project');
   test.setTimeout(300_000);
   const marker = randomUUID().slice(0, 8);
   const customerEmail = `g3-cust-${marker}@example.invalid`;
