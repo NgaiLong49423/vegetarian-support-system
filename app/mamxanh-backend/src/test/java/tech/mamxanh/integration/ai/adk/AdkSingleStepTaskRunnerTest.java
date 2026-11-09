@@ -55,6 +55,20 @@ class AdkSingleStepTaskRunnerTest {
     }
 
     @Test
+    void recommendationsUseLowThinkingForSupportedModel() {
+        var model = new TestModel(req -> textResponse("{\"recipeIds\":[10]}"));
+        var runner = new AdkSingleStepTaskRunner(new AdkModelGateway(model, new TestPolicy(), CLOCK), CLOCK);
+
+        runner.executeTask(userAuth("101", "ROLE_CUSTOMER"), "RECOMMENDATIONS", "Instruction",
+                "Prompt", null, 8192, Duration.ofSeconds(5));
+
+        var config = model.requests.getFirst().config().orElseThrow();
+        assertThat(config.maxOutputTokens()).contains(8192);
+        assertThat(config.thinkingConfig().orElseThrow().thinkingLevel().orElseThrow().knownEnum())
+                .isEqualTo(com.google.genai.types.ThinkingLevel.Known.LOW);
+    }
+
+    @Test
     void executeTaskRejectsOversizedContextBeforeReachingModel() {
         var accounting = new TestPolicy();
         var model = new TestModel(req -> textResponse("{}"));
