@@ -1530,7 +1530,13 @@ public class AdkAssistantEngine implements AutoCloseable {
             if (request.formContext() != null) {
                 String question = request.question() == null ? "" : request.question().toLowerCase(java.util.Locale.ROOT);
                 boolean publishTurn = question.contains("đăng") || question.contains("xuat ban")
-                        || question.contains("xuất bản") || question.contains("publish") || question.contains("post");
+                        || question.contains("xuất bản") || question.contains("publish") || question.contains("post")
+                        || (pendingFormAction != null
+                                && pendingFormAction.acknowledgement() != null
+                                && pendingFormAction.acknowledgement().status() == AiChatRequest.FormActionStatus.APPLIED
+                                && pendingFormAction.acknowledgement().revision() != null
+                                && pendingFormAction.acknowledgement().revision() == request.formContext().revision()
+                                && isAffirmativeFormContinuation(question));
                 Set<String> formTools = publishTurn ? Set.of("create_recipe_post") : Set.of("propose_recipe_form_patch");
                 return definitions.stream().filter(definition -> formTools.contains(definition.name())).toList();
             }
@@ -1543,6 +1549,12 @@ public class AdkAssistantEngine implements AutoCloseable {
                     "get_meal_plan", "get_ai_menu_candidates", "create_ai_menu_preview",
                     "apply_ai_menu_preview", "apply_weekly_menu");
             return definitions.stream().filter(definition -> menuTools.contains(definition.name())).toList();
+        }
+
+        private boolean isAffirmativeFormContinuation(String question) {
+            String normalized = java.text.Normalizer.normalize(question, java.text.Normalizer.Form.NFD)
+                    .replaceAll("\\p{M}+", "").replace('đ', 'd');
+            return normalized.matches(".*\\b(toi|minh|em)?\\s*(dong y|chap nhan|xac nhan|ok|duoc|tien hanh)\\b.*");
         }
 
         private synchronized void closeRunnerOnly() {

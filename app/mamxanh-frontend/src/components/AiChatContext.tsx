@@ -23,6 +23,7 @@ export type AiChatContextValue = {
   recipeId: number | null;
   recipeTitle: string | null;
   recipeArticle: RecipeArticleContext | null;
+  setPageRecipeArticle: (recipe: RecipeArticleContext | null) => void;
   openChat: (recipe?: RecipeArticleContext) => void;
   closeChat: () => void;
   startNewChat: () => void;

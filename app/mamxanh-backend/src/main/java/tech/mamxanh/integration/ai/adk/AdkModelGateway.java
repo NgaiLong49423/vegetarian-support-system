@@ -123,7 +123,16 @@ public final class AdkModelGateway extends BaseLlm {
                     if (modelResponse.errorCode().isPresent()) throw new IllegalStateException("Partial model response has an error");
                     return modelResponse;
                 }
-                validate(request, modelResponse);
+                try {
+                    validate(request, modelResponse);
+                } catch (IllegalArgumentException invalidResponse) {
+                    // A provider-declared error response can be transient. Retry one non-streaming
+                    // call; never replay a stream after partial output may have reached the user.
+                    if (!stream && modelResponse.errorCode().isPresent()) {
+                        throw new RetryableProviderFailure(invalidResponse);
+                    }
+                    throw invalidResponse;
+                }
                 if (usageRecorded.compareAndSet(false, true)) {
                     asMember(() -> { policy.onUsableResponse(call, accountingContext, usage(modelResponse)); return null; });
                 }

@@ -9,6 +9,26 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-11-09 — Continue AI Recipe Actions Across Turns
+
+**Status:** Committed — fef0938f.
+
+**Scope:** Preserve the current recipe context in Chatbox and let an Expert continue a recipe-form action after the Frontend acknowledges an applied patch.
+
+### Added
+
+- Keep the current published recipe article available in Chatbox, including after messages have been sent.
+- Continue from an acknowledged form patch to the existing publish confirmation flow when the Expert agrees.
+
+### Changed
+
+- Retry eligible non-streaming provider-declared error responses without replaying a stream that may have emitted partial output.
+- Collapse the recipe article details in the conversation to keep follow-up messages accessible.
+
+### Fixed
+
+- Preserve the active recipe title and article when Chatbox is opened from a published recipe page.
+
 ## 2026-11-06 — Bound AI Menu Follow-up Context
 
 **Status:** Working tree — not committed.

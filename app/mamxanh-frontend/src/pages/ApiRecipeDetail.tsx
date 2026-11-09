@@ -115,7 +115,7 @@ export function ApiRecipeDetail() {
 }
 
 function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
-  const { openChat } = useAiChat();
+  const { openChat, setPageRecipeArticle } = useAiChat();
   const { account } = useAuth();
   const [searchParams] = useSearchParams();
   const fromMealPlan = searchParams.has('mealPlanWeek') || searchParams.has('mealPlanEntryId');
@@ -167,6 +167,30 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
   const media = useMemo(() => recipe?.media ?? [], [recipe]);
   const activeMedia = media[selectedMedia] ?? media.find((item) => item.cover) ?? media[0];
   const youtubeEmbedUrl = recipe?.youtubeUrl ? getYoutubeEmbedUrl(recipe.youtubeUrl) : null;
+
+  useEffect(() => {
+    if (!recipe) {
+      setPageRecipeArticle(null);
+      return;
+    }
+    setPageRecipeArticle({
+      recipeId: recipe.recipeId,
+      title: recipe.title,
+      description: recipe.description,
+      coverUrl: activeMedia?.blobUrl ?? null,
+      authorName: recipe.author?.displayName ?? 'Chuyên gia Mâm Xanh',
+      authorAvatarUrl: recipe.author?.avatarUrl ?? null,
+      dishCategoryLabel: recipe.dishCategoryLabel,
+      vegetarianTypeLabel: recipe.vegetarianTypeLabel,
+      difficultyLabel: recipe.difficultyLabel,
+      servings: recipe.servings,
+      prepTimeMinutes: recipe.prepTimeMinutes,
+      cookTimeMinutes: recipe.cookTimeMinutes,
+      ingredients: recipe.ingredients.map(({ name, quantity, unitName }) => ({ name, quantity, unitName })),
+      instructions: recipe.instructions,
+    });
+    return () => setPageRecipeArticle(null);
+  }, [recipe, activeMedia?.blobUrl, setPageRecipeArticle]);
 
   async function shareRecipe() {
     if (!recipe) return;

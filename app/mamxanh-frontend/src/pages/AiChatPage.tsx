@@ -150,7 +150,7 @@ export function AiChatPage() {
     timer: number
   } | null>(null)
   const activeRecipeTitle =
-    recipeTitle?.trim() || (recipeId === null ? "" : `công thức #${recipeId}`)
+    recipeTitle?.trim() || recipeArticle?.title.trim() || (recipeId === null ? "" : "công thức này")
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [executionMode, setExecutionMode] = useState<AiExecutionMode>("CHATBOT")
@@ -965,6 +965,44 @@ export function AiChatPage() {
           aria-live="polite"
           aria-label="Cuộc trò chuyện"
         >
+          {recipeArticle && (
+            <details className="overflow-hidden rounded-xl border border-brand-200 bg-paper text-ink shadow-xs">
+              <summary className="flex cursor-pointer list-none items-center gap-3 p-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600">
+                {recipeArticle.coverUrl ? (
+                  <img src={recipeArticle.coverUrl} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+                ) : (
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700"><Bot className="h-6 w-6" aria-hidden="true" /></span>
+                )}
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[10px] font-bold uppercase tracking-wide text-brand-700">Bài công thức đang hỏi</span>
+                  <span className="block truncate text-sm font-bold">{recipeArticle.title}</span>
+                  <span className="block truncate text-xs text-ink-muted">{recipeArticle.authorName}</span>
+                </span>
+                <ChevronDown className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden="true" />
+              </summary>
+              <div className="space-y-3 border-t border-brand-100 p-3 text-xs leading-5">
+                {recipeArticle.description && <p className="text-ink-muted">{recipeArticle.description}</p>}
+                <div className="flex flex-wrap gap-1.5 text-ink-muted">
+                  <span>{recipeArticle.vegetarianTypeLabel}</span><span>·</span>
+                  <span>{recipeArticle.dishCategoryLabel}</span><span>·</span>
+                  <span>{recipeArticle.prepTimeMinutes + recipeArticle.cookTimeMinutes} phút</span><span>·</span>
+                  <span>{recipeArticle.servings} khẩu phần</span>
+                </div>
+                <section>
+                  <h3 className="font-bold text-ink">Nguyên liệu</h3>
+                  {recipeArticle.ingredients.length ? (
+                    <ul className="mt-1 list-inside list-disc space-y-0.5 text-ink-muted">
+                      {recipeArticle.ingredients.map((ingredient, index) => <li key={`${ingredient.name}-${index}`}>{ingredient.name} — {ingredient.quantity} {ingredient.unitName}</li>)}
+                    </ul>
+                  ) : <p className="text-ink-muted">Bài viết chưa ghi thành phần.</p>}
+                </section>
+                <section>
+                  <h3 className="font-bold text-ink">Cách chế biến</h3>
+                  <p className="mt-1 whitespace-pre-wrap text-ink-muted">{recipeArticle.instructions || "Bài viết chưa ghi cách chế biến."}</p>
+                </section>
+              </div>
+            </details>
+          )}
           {messages.length === 0 &&
             (hasRecipeContext ? (
               <div className="flex min-h-full flex-col justify-center py-8">
@@ -986,109 +1024,6 @@ export function AiChatPage() {
                     </p>
                   </div>
                 </div>
-                {recipeArticle && (
-                  <article
-                    aria-label={`Bài công thức: ${recipeArticle.title}`}
-                    className="mt-4 overflow-hidden rounded-xl border border-brand-200 bg-paper text-ink shadow-xs"
-                  >
-                    <div className="flex gap-3 border-b border-brand-100 p-3">
-                      {recipeArticle.coverUrl ? (
-                        <img
-                          src={recipeArticle.coverUrl}
-                          alt={`Ảnh ${recipeArticle.title}`}
-                          className="h-20 w-20 shrink-0 rounded-lg object-cover"
-                        />
-                      ) : (
-                        <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
-                          <Bot className="h-7 w-7" aria-hidden="true" />
-                        </span>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[10px] font-bold uppercase tracking-wide text-brand-700">
-                          Bài công thức đang xem
-                        </p>
-                        <h2 className="mt-0.5 font-bold leading-5">
-                          {recipeArticle.title}
-                        </h2>
-                        {recipeArticle.description && (
-                          <p className="mt-1 line-clamp-2 text-xs leading-4 text-ink-muted">
-                            {recipeArticle.description}
-                          </p>
-                        )}
-                        <div className="mt-2 flex min-w-0 items-center gap-1.5 text-[11px] text-ink-muted">
-                          {recipeArticle.authorAvatarUrl ? (
-                            <img
-                              src={recipeArticle.authorAvatarUrl}
-                              alt=""
-                              className="h-5 w-5 shrink-0 rounded-full object-cover"
-                            />
-                          ) : (
-                            <UserRound
-                              className="h-3.5 w-3.5 shrink-0"
-                              aria-hidden="true"
-                            />
-                          )}
-                          <span className="truncate">
-                            {recipeArticle.authorName}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-3 p-3 text-xs leading-5">
-                      <div className="flex flex-wrap gap-1.5">
-                        {[
-                          recipeArticle.vegetarianTypeLabel,
-                          recipeArticle.dishCategoryLabel,
-                          recipeArticle.difficultyLabel,
-                        ]
-                          .filter(Boolean)
-                          .map((label) => (
-                            <span
-                              key={label}
-                              className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-700"
-                            >
-                              {label}
-                            </span>
-                          ))}
-                        <span className="inline-flex items-center gap-1 rounded-full bg-cream-soft px-2 py-0.5 text-[10px] text-ink-muted">
-                          <Clock3 className="h-3 w-3" aria-hidden="true" />
-                          {recipeArticle.prepTimeMinutes +
-                            recipeArticle.cookTimeMinutes}{" "}
-                          phút
-                        </span>
-                        <span className="rounded-full bg-cream-soft px-2 py-0.5 text-[10px] text-ink-muted">
-                          {recipeArticle.servings} khẩu phần
-                        </span>
-                      </div>
-                      <section>
-                        <h3 className="font-bold text-ink">Nguyên liệu</h3>
-                        {recipeArticle.ingredients.length ? (
-                          <ul className="mt-1 list-inside list-disc space-y-0.5 text-ink-muted">
-                            {recipeArticle.ingredients.map(
-                              (ingredient, index) => (
-                                <li key={`${ingredient.name}-${index}`}>
-                                  {ingredient.name} — {ingredient.quantity}{" "}
-                                  {ingredient.unitName}
-                                </li>
-                              ),
-                            )}
-                          </ul>
-                        ) : (
-                          <p className="text-ink-muted">
-                            Bài viết chưa ghi thành phần.
-                          </p>
-                        )}
-                      </section>
-                      <section>
-                        <h3 className="font-bold text-ink">Cách chế biến</h3>
-                        <p className="mt-1 whitespace-pre-wrap text-ink-muted">
-                          {recipeArticle.instructions ||
-                            "Bài viết chưa ghi cách chế biến."}
-                        </p>
-                      </section>
-                    </div>
-                  </article>
-                )}
                 <div className="mt-5 flex flex-wrap justify-center gap-2">
                   {[
                     "Công thức này gồm những nguyên liệu nào?",

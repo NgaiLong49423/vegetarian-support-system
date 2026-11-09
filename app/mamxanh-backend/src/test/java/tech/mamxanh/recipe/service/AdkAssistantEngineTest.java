@@ -188,6 +188,38 @@ class AdkAssistantEngineTest {
     }
 
     @Test
+    void affirmativeReplyAfterAppliedFormPatchStartsPublishConfirmation() {
+        when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(10L, Role.EXPERT));
+        when(toolRegistry.definitionsFor("EXPERT")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("propose_recipe_form_patch", "Propose", "{}", false, false, Set.of()),
+                new AiAssistantToolRegistry.ToolDefinition("create_recipe_post", "Publish", "{}", true, true, Set.of())));
+        var formId = UUID.randomUUID();
+        var firstForm = new AiChatRequest.FormContext(formId, 4, Map.of("title", "Bánh chay"), List.of(), 0, false);
+        var latestForm = new AiChatRequest.FormContext(formId, 5, Map.of("title", "Bánh chay"), List.of(), 0, false,
+                Map.of("title", "Bánh chay"));
+        var calls = new java.util.concurrent.atomic.AtomicInteger();
+        ScriptedLlm llm = new ScriptedLlm(input -> switch (calls.incrementAndGet()) {
+            case 1 -> functionCall("propose_recipe_form_patch", "patch-1", Map.of("fields", Map.of("title", "Bánh chay mới")));
+            case 2 -> textResponse("Đã gửi patch.");
+            case 3 -> functionCall("create_recipe_post", "publish-1", Map.of());
+            default -> textResponse("Vui lòng xem lại và xác nhận nội dung đăng.");
+        });
+        var engine = createEngine(llm);
+        var first = engine.execute(new AiChatRequest(ContextType.GENERAL, null, "Viết nội dung công thức", List.of(), null, null,
+                ExecutionMode.AGENT, null, null, null, UUID.randomUUID(), null, firstForm));
+        @SuppressWarnings("unchecked") var patch = (Map<String, Object>) first.steps().getFirst().result().get("data");
+        engine.acknowledgeFormAction(new AiChatRequest.FormActionAck(first.sessionId(), UUID.fromString((String) patch.get("actionId")),
+                formId, 4, 5L, AiChatRequest.FormActionStatus.APPLIED));
+
+        var continuation = engine.execute(new AiChatRequest(ContextType.GENERAL, null, "Tôi đồng ý", List.of(), null,
+                first.sessionId(), ExecutionMode.AGENT, null, null, null, UUID.randomUUID(), null, latestForm));
+
+        assertThat(continuation.pendingConfirmation()).isNotNull();
+        assertThat(continuation.steps()).extracting(step -> step.tool()).contains("create_recipe_post");
+        verify(toolRegistry).validateRecipePublish(latestForm.publishPayload());
+    }
+
+    @Test
     void customerCannotSubmitExpertFormContextBeforeModelExecution() {
         when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(10L, Role.CUSTOMER));
         var form = new AiChatRequest.FormContext(UUID.randomUUID(), 1, Map.of("title", "Món chay"), List.of(), 0, false);

@@ -40,6 +40,8 @@ export function AiChatHost({ children }: { children: ReactNode }) {
   const [chatRecipeTitle, setChatRecipeTitle] = useState<string | null>(null)
   const [chatRecipeArticle, setChatRecipeArticle] =
     useState<RecipeArticleContext | null>(null)
+  const [pageRecipeArticle, setPageRecipeArticle] =
+    useState<RecipeArticleContext | null>(null)
   const [chatRecipePath, setChatRecipePath] = useState<string | null>(null)
 
   const routeRecipeMatch = /^\/cong-thuc\/id\/(\d+)\/?$/.exec(pathname)
@@ -47,7 +49,9 @@ export function AiChatHost({ children }: { children: ReactNode }) {
   const routeRecipeId = parsedRouteId !== null && Number.isSafeInteger(parsedRouteId) && parsedRouteId > 0
     ? parsedRouteId : null
   const activeRecipeId = routeRecipeId ?? (chatRecipePath === pathname ? chatRecipeId : null)
-  const activeArticle = chatRecipeArticle?.recipeId === activeRecipeId ? chatRecipeArticle : null
+  const activeArticle = chatRecipeArticle?.recipeId === activeRecipeId
+    ? chatRecipeArticle
+    : pageRecipeArticle?.recipeId === activeRecipeId ? pageRecipeArticle : null
 
   const openChat = useCallback((recipe?: RecipeArticleContext) => {
     if (recipe) {
@@ -88,8 +92,9 @@ export function AiChatHost({ children }: { children: ReactNode }) {
     () => ({
       isOpen: chatOpen,
       recipeId: activeRecipeId,
-      recipeTitle: activeArticle ? chatRecipeTitle : null,
+      recipeTitle: activeArticle?.title ?? (activeRecipeId === chatRecipeId ? chatRecipeTitle : null),
       recipeArticle: activeArticle,
+      setPageRecipeArticle,
       openChat,
       closeChat,
       startNewChat,
@@ -102,6 +107,7 @@ export function AiChatHost({ children }: { children: ReactNode }) {
       activeRecipeId,
       chatRecipeTitle,
       activeArticle,
+      setPageRecipeArticle,
       openChat,
       closeChat,
       startNewChat,
