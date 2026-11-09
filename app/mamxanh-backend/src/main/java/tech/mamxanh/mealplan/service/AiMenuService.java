@@ -78,32 +78,20 @@ public class AiMenuService {
         this.aiQuota = aiQuota;
     }
 
-    @Transactional(readOnly = true)
     public AiMenuPreviewResponse createPreview(CreateAiMenuPreviewRequest request) {
-        validateWeek(request.weekStartDate());
-        long userId = users.requireActiveMember().id();
-        // Entitlement and health-profile gates intentionally run before catalog work or Gemini.
-        entitlements.requirePlusOrPro(userId);
-        var profile = nutritionProfiles.requireMenuNutritionContext(userId);
-        LocalDate firstSuggestionDate = firstActionableDate(request.weekStartDate());
-        LocalDate lastSuggestionDate = lastActionableDate(request.weekStartDate());
-        var dietary = dietaryPreferences.menuConstraints(userId);
-        String goal = "PROFILE".equals(request.mode()) ? profile.nutritionGoal() : request.goal();
-        Set<Long> preferred = Set.copyOf(normalizedIds(request.preferredIngredientIds()));
-        if (firstSuggestionDate.isAfter(lastSuggestionDate)) {
-            return preview(request.weekStartDate(), request.mode(), goal, List.of(), List.of(), preferred, profile);
+        MenuContext context = resolveMenuContext(request);
+        if (context.firstSuggestionDate().isAfter(context.lastSuggestionDate())) {
+            return preview(request.weekStartDate(), request.mode(), context.goal(), List.of(), List.of(),
+                    context.preferred(), context.profile());
         }
-        List<Long> weeklyAvoid = normalizedIds(request.avoidedIngredientIds());
-        List<Long> allAvoid = java.util.stream.Stream.concat(dietary.avoidedIngredientIds().stream(), weeklyAvoid.stream())
-                .distinct().toList();
-        List<String> avoidNames = dietary.avoidedIngredientNames();
-        List<Candidate> pool = candidates(dietary.vegetarianType(), allAvoid, avoidNames);
+        List<Candidate> pool = context.pool();
         if (pool.isEmpty()) throw new AppException(ErrorCode.AI_RESPONSE_INVALID,
                 "Chưa có đủ công thức công khai phù hợp và có dữ liệu dinh dưỡng để tạo thực đơn.");
         List<Long> ids = pool.stream().map(c -> c.recipe().id()).toList();
-        String prompt = prompt(firstSuggestionDate, lastSuggestionDate, goal, dietary.vegetarianType(),
-                preferred, allAvoid, pool, profile);
+        String prompt = prompt(context.firstSuggestionDate(), context.lastSuggestionDate(), context.goal(),
+                context.vegetarianType(), context.preferred(), context.allAvoid(), pool, context.profile());
         try {
+            long userId = users.requireActiveMember().id();
             aiQuota.requireAvailable(userId, null);
             var result = ai.recommendRecipes(prompt, ids, ids.size());
             if (result == null) throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
@@ -117,10 +105,11 @@ public class AiMenuService {
             List<Candidate> ranked = java.util.stream.Stream.concat(rankedIds.stream().map(candidateById::get),
                     pool.stream().filter(candidate -> !rankedSet.contains(candidate.recipe().id()))).toList();
             List<AiMenuOptimizer.Selection> selections = optimizer.optimize(request.weekStartDate(),
-                    firstSuggestionDate, lastSuggestionDate, profile.energyKcal().doubleValue(), ranked.stream()
+                    context.firstSuggestionDate(), context.lastSuggestionDate(), context.profile().energyKcal().doubleValue(), ranked.stream()
                             .map(candidate -> new AiMenuOptimizer.Candidate(candidate.recipe().id(), candidate.nutritionPerServing())).toList(),
-                    profile.dailyTargets());
-            return preview(request.weekStartDate(), request.mode(), goal, selections, pool, preferred, profile);
+                    context.profile().dailyTargets());
+            return preview(request.weekStartDate(), request.mode(), context.goal(), selections, pool,
+                    context.preferred(), context.profile());
         } catch (AiProviderException exception) {
             throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE,
                     "Không thể tạo thực đơn lúc này. Vui lòng thử lại sau.");
@@ -131,11 +120,93 @@ public class AiMenuService {
         }
     }
 
+    /** Trusted candidates for the Chatbox ADK planner. This method never calls an AI provider. */
+    public Map<String, Object> getAdkPreviewCandidates(CreateAiMenuPreviewRequest request) {
+        MenuContext context = resolveMenuContext(request);
+        if (context.firstSuggestionDate().isAfter(context.lastSuggestionDate())) {
+            return Map.of("canGenerate", false, "candidates", List.of(),
+                    "firstDate", context.firstSuggestionDate(), "lastDate", context.lastSuggestionDate());
+        }
+        if (context.pool().isEmpty()) throw new AppException(ErrorCode.AI_RESPONSE_INVALID,
+                "Chưa có đủ công thức công khai phù hợp và có dữ liệu dinh dưỡng để tạo thực đơn.");
+        List<Map<String, Object>> trustedCandidates = context.pool().stream().map(candidate -> {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("recipeId", candidate.recipe().id());
+            item.put("title", candidate.recipe().title());
+            item.put("ingredients", candidate.recipe().ingredients().stream()
+                    .map(RecipePostResponse.Ingredient::name).toList());
+            // The ADK only ranks eligible candidates; the Backend optimizer uses the full trusted
+            // nutrition map below when it constructs the preview. Avoid duplicating every nutrient
+            // value for all candidates in the model conversation history.
+            return item;
+        }).toList();
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("canGenerate", true);
+        result.put("firstDate", context.firstSuggestionDate());
+        result.put("lastDate", context.lastSuggestionDate());
+        result.put("goal", context.goal());
+        result.put("vegetarianType", context.vegetarianType());
+        result.put("preferredIngredientIds", context.preferred());
+        result.put("avoidedIngredientIds", context.allAvoid());
+        result.put("energyKcal", context.profile().energyKcal());
+        result.put("candidates", trustedCandidates);
+        return result;
+    }
+
+    /** Builds the existing business preview from ADK-ranked IDs after re-resolving trusted data. */
+    public AiMenuPreviewResponse createPreviewFromAdkSelection(CreateAiMenuPreviewRequest request, List<Long> rankedRecipeIds) {
+        MenuContext context = resolveMenuContext(request);
+        if (context.firstSuggestionDate().isAfter(context.lastSuggestionDate())) {
+            return preview(request.weekStartDate(), request.mode(), context.goal(), List.of(), List.of(),
+                    context.preferred(), context.profile());
+        }
+        List<Long> allowedIds = context.pool().stream().map(candidate -> candidate.recipe().id()).toList();
+        List<Long> rankedIds = normalizeAdkRankedIds(rankedRecipeIds, allowedIds);
+        Map<Long, Candidate> candidateById = context.pool().stream()
+                .collect(Collectors.toMap(candidate -> candidate.recipe().id(), candidate -> candidate));
+        Set<Long> rankedSet = Set.copyOf(rankedIds);
+        List<Candidate> ranked = java.util.stream.Stream.concat(rankedIds.stream().map(candidateById::get),
+                context.pool().stream().filter(candidate -> !rankedSet.contains(candidate.recipe().id()))).toList();
+        List<AiMenuOptimizer.Selection> selections = optimizer.optimize(request.weekStartDate(),
+                context.firstSuggestionDate(), context.lastSuggestionDate(), context.profile().energyKcal().doubleValue(),
+                ranked.stream().map(candidate -> new AiMenuOptimizer.Candidate(candidate.recipe().id(), candidate.nutritionPerServing())).toList(),
+                context.profile().dailyTargets());
+        return preview(request.weekStartDate(), request.mode(), context.goal(), selections, context.pool(),
+                context.preferred(), context.profile());
+    }
+
+    private MenuContext resolveMenuContext(CreateAiMenuPreviewRequest request) {
+        validateWeek(request.weekStartDate());
+        long userId = users.requireActiveMember().id();
+        var profile = nutritionProfiles.requireMenuNutritionContext(userId);
+        LocalDate firstSuggestionDate = firstActionableDate(request.weekStartDate());
+        LocalDate lastSuggestionDate = lastActionableDate(request.weekStartDate());
+        var dietary = dietaryPreferences.menuConstraints(userId);
+        String goal = "PROFILE".equals(request.mode()) ? profile.nutritionGoal() : request.goal();
+        Set<Long> preferred = Set.copyOf(normalizedIds(request.preferredIngredientIds()));
+        List<Long> weeklyAvoid = normalizedIds(request.avoidedIngredientIds());
+        List<Long> allAvoid = java.util.stream.Stream.concat(dietary.avoidedIngredientIds().stream(), weeklyAvoid.stream())
+                .distinct().toList();
+        List<Candidate> pool = firstSuggestionDate.isAfter(lastSuggestionDate) ? List.of()
+                : candidates(dietary.vegetarianType(), allAvoid, dietary.avoidedIngredientNames());
+        return new MenuContext(profile, firstSuggestionDate, lastSuggestionDate, goal, preferred, allAvoid,
+                dietary.vegetarianType(), pool);
+    }
+
+    private static List<Long> normalizeAdkRankedIds(List<Long> rankedIds, List<Long> allowedIds) {
+        if (rankedIds == null || rankedIds.isEmpty() || rankedIds.size() > CANDIDATE_LIMIT
+                || rankedIds.stream().anyMatch(id -> id == null || id < 1)
+                || rankedIds.stream().distinct().count() != rankedIds.size()
+                || rankedIds.stream().anyMatch(id -> !allowedIds.contains(id))) {
+            throw new AppException(ErrorCode.AI_RESPONSE_INVALID, "ADK trả về công thức ngoài danh sách được phép.");
+        }
+        return List.copyOf(rankedIds);
+    }
+
     @Transactional
     public MealPlanWeekResponse apply(ApplyAiMenuRequest request) {
         validateWeek(request.weekStartDate());
         long userId = users.requireActiveMember().id();
-        entitlements.requirePlusOrPro(userId);
         nutritionProfiles.requireMenuNutritionContext(userId);
         LocalDate firstReplaceDate = firstActionableDate(request.weekStartDate());
         LocalDate lastReplaceDate = lastActionableDate(request.weekStartDate());
@@ -345,4 +416,7 @@ public class AiMenuService {
     }
 
     private record Candidate(RecipePostResponse recipe, Map<String, java.math.BigDecimal> nutritionPerServing) { }
+    private record MenuContext(NutritionProfileService.MenuNutritionContext profile, LocalDate firstSuggestionDate,
+            LocalDate lastSuggestionDate, String goal, Set<Long> preferred, List<Long> allAvoid,
+            String vegetarianType, List<Candidate> pool) { }
 }

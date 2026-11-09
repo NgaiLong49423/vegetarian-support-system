@@ -46,6 +46,20 @@ import {
 
 type ChatMessage = PersistedAiChatMessage
 
+function menuPreviewData(value: unknown): { weekStartDate: string; meals: Array<{ mealDate: string; mealType: string; recipeId: number; recipeTitle: string }>; disclaimer: string } | null {
+  if (!value || typeof value !== "object") return null
+  const data = value as Record<string, unknown>
+  if (typeof data.weekStartDate !== "string" || !Array.isArray(data.meals)) return null
+  const meals = data.meals.filter((meal): meal is { mealDate: string; mealType: string; recipeId: number; recipeTitle: string } => {
+    if (!meal || typeof meal !== "object") return false
+    const item = meal as Record<string, unknown>
+    return typeof item.mealDate === "string" && typeof item.mealType === "string" &&
+      typeof item.recipeId === "number" && Number.isSafeInteger(item.recipeId) && item.recipeId > 0 && typeof item.recipeTitle === "string"
+  })
+  if (meals.length !== data.meals.length || meals.length > 1050) return null
+  return { weekStartDate: data.weekStartDate, meals, disclaimer: typeof data.nutritionDisclaimer === "string" ? data.nutritionDisclaimer : "" }
+}
+
 const AI_WORKFLOW_ROUTES = [
   "/trang-chu", "/kham-pha", "/ke-hoach", "/ke-hoach?view=for-you", "/di-cho",
   "/goi-ai", "/nap-ai-credit", "/ho-so", "/ho-so/so-thich-an-uong",
@@ -119,7 +133,7 @@ export function AiChatPage() {
   locationRef.current = { pathname: location.pathname, search: location.search }
   const { account, isAuthenticated } = useAuth()
 
-  const { isOpen, recipeId, recipeTitle, recipeArticle, closeChat, startNewChat } =
+  const { isOpen, recipeId, recipeTitle, recipeArticle, closeChat, startNewChat, getRecipeFormContext, applyRecipeFormPatch } =
     useAiChat()
   let ownerKey = isAuthenticated && account?.id != null ? `member-${account.id}` : "guest-cookie-unavailable"
   if (!isAuthenticated) {
@@ -136,7 +150,7 @@ export function AiChatPage() {
     timer: number
   } | null>(null)
   const activeRecipeTitle =
-    recipeTitle?.trim() || (recipeId === null ? "" : `công thức #${recipeId}`)
+    recipeTitle?.trim() || recipeArticle?.title.trim() || (recipeId === null ? "" : "công thức này")
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [executionMode, setExecutionMode] = useState<AiExecutionMode>("CHATBOT")
@@ -145,6 +159,7 @@ export function AiChatPage() {
   const [sessionExpiry, setSessionExpiry] = useState(Date.now() + 30 * 60 * 1000)
   const previousOwner = useRef(ownerKey)
   const activeRequest = useRef<string | null>(null)
+  const activeRecoveryRequest = useRef<string | null>(null)
   const privateContext = useRef(false)
   const [recoveryRequest, setRecoveryRequest] = useState<string | null>(null)
   const [hydratedOwnerKey, setHydratedOwnerKey] = useState<string | null>(null)
@@ -471,7 +486,7 @@ export function AiChatPage() {
     await cancellation
     setLoading(false)
     if (clientRequestId && isAuthenticated) {
-      setRecoveryRequest(clientRequestId)
+      setRecoveryRequest(activeRecoveryRequest.current ?? clientRequestId)
     }
     setError("Đã yêu cầu dừng. Thao tác ghi đã bắt đầu có thể hoàn tất; hãy kiểm tra kết quả.")
   }
@@ -480,6 +495,26 @@ export function AiChatPage() {
     if (!recoveryRequest || !isAuthenticated) return
     const version = requestVersion.current
     try {
+      const actions = await recipesApi.actionExecutions(recoveryRequest)
+      if (version !== requestVersion.current) return
+      if (actions.length > 0) {
+        const succeeded = actions.filter(action => action.state === "SUCCEEDED")
+        const unresolved = actions.filter(action => action.state !== "SUCCEEDED")
+        if (succeeded.length > 0) {
+          setMessages(current => [...current.map(message => ({ ...message, pendingConfirmation: null, consentRequest: null, displayOnly: true })),
+            { id: Date.now(), speaker: "ASSISTANT", sensitive: true, displayOnly: true,
+              content: `Backend xác nhận: ${succeeded.map(action => action.summary ?? action.tool).join("; ")}${unresolved.length ? ". Một số bước chưa được xác nhận." : ""}`,
+              steps: succeeded.map((action, index) => ({ sequence: index + 1, tool: action.tool, status: "SUCCEEDED", summary: action.summary ?? "Đã xác nhận từ Backend.", result: { data: action.result } })) }])
+        }
+        if (unresolved.length) {
+          setError(`Trạng thái thao tác: ${unresolved.map(action => action.state).join(", ")}. Không tự chạy lại thao tác ghi.`)
+        } else {
+          pendingAiChatRequest(ownerKey, null)
+          setRecoveryRequest(null)
+          setError("")
+        }
+        return
+      }
       const result = await recipesApi.chatExecution(recoveryRequest)
       if (version !== requestVersion.current) return
       if (result.state === "SUCCEEDED" && result.shoppingListId) {
@@ -507,10 +542,14 @@ export function AiChatPage() {
     if (!normalized || loading || retrySeconds > 0) return
 
     const sourceLocation = `${locationRef.current.pathname}${locationRef.current.search}`
+    const formContext = isAuthenticated && account?.role === "EXPERT" ? getRecipeFormContext() : null
     const version = requestVersion.current
     const clientRequestId = globalThis.crypto.randomUUID()
+    const recoveryId = continuation.confirmationDecision === "APPROVE" && continuation.confirmationId
+      ? continuation.confirmationId : clientRequestId
     activeRequest.current = clientRequestId
-    pendingAiChatRequest(ownerKey, clientRequestId)
+    activeRecoveryRequest.current = recoveryId
+    pendingAiChatRequest(ownerKey, recoveryId)
     const revoked = continuation.consentDecision?.action === "REVOKE"
     const sensitive = privateContext.current || /danh\s*sách|mua\s*sắm|đi\s*chợ|shopping|hồ sơ|sức khỏe/i.test(normalized)
       || continuation.consentDecision?.action === "GRANT"
@@ -569,6 +608,7 @@ export function AiChatPage() {
         executionMode,
         ...(sessionId ? { sessionId } : {}),
         ...continuation,
+        ...(formContext ? { formContext } : {}),
         ...(!isAuthenticated
           ? { anonymousViewerId: chatGuestViewer() }
           : {}),
@@ -591,7 +631,8 @@ export function AiChatPage() {
       }, {
         onDelta: (delta) => {
           streamedTokens += delta
-          if (navigationIntent) return
+          // Form actions are not acknowledged until React applies the patch; wait for the verified final result.
+          if (navigationIntent || formContext) return
           setMessages((current) => current.map((msg) =>
             msg.id === assistantId ? { ...msg, content: streamedTokens } : msg
           ))
@@ -609,6 +650,43 @@ export function AiChatPage() {
       }, abortController.signal)
 
       if (version !== requestVersion.current) return
+      let formActionMessage: string | undefined
+      const actions = (response.steps ?? []).filter((step) => step.tool === "propose_recipe_form_patch" && step.status === "UI_ACTION_REQUIRED")
+      if (actions.length > 0) {
+        const data = actions[0].result?.data
+        if (actions.length !== 1 || !response.sessionId || !data || typeof data !== "object" || Array.isArray(data)) {
+          formActionMessage = "Không thể áp dụng đề xuất vì dữ liệu hành động không hợp lệ."
+        } else {
+          const action = data as Record<string, unknown>
+          const fields = action.fields
+          const ingredients = action.addIngredients ?? []
+          if (typeof action.actionId !== "string" || typeof action.formId !== "string" ||
+              !Number.isSafeInteger(action.revision) || typeof fields !== "object" || fields === null || Array.isArray(fields) ||
+              !Object.values(fields).every((value) => typeof value === "string") || !Array.isArray(ingredients) ||
+              !ingredients.every(item => item && typeof item === "object" && typeof item.name === "string"
+                && typeof item.quantity === "string" && typeof item.unitCode === "string")) {
+            formActionMessage = "Không thể áp dụng đề xuất vì dữ liệu hành động không hợp lệ."
+          } else {
+            const patch = { formId: action.formId, revision: action.revision as number, fields: fields as Record<string, string>,
+              addIngredients: ingredients as Array<{ name: string; quantity: string; unitCode: string }> }
+            const result = await applyRecipeFormPatch(patch)
+            try {
+              await recipesApi.acknowledgeFormAction({ sessionId: response.sessionId, actionId: action.actionId,
+                formId: patch.formId, baseRevision: patch.revision, ...result })
+              formActionMessage = result.status === "APPLIED"
+                ? "Đã cập nhật các trường được đề xuất trong biểu mẫu."
+                : result.status === "CONFLICT"
+                  ? "Biểu mẫu đã thay đổi trong lúc chờ; đề xuất chưa được áp dụng."
+                  : "Không thể áp dụng đề xuất vào biểu mẫu hiện tại."
+            } catch {
+              formActionMessage = result.status === "APPLIED"
+                ? "Biểu mẫu có thể đã được cập nhật, nhưng chưa xác nhận được kết quả với máy chủ. Hãy kiểm tra lại."
+                : "Không thể xác nhận kết quả áp dụng biểu mẫu với máy chủ."
+            }
+          }
+        }
+      }
+      if (version !== requestVersion.current) return
       if (response.sessionId) setSessionId(response.sessionId)
       pendingAiChatRequest(ownerKey, null)
       setRecoveryRequest(null)
@@ -619,7 +697,7 @@ export function AiChatPage() {
               ...msg,
               content: trustedWorkflowUrl(response.workflowUrl)
                 ? "Đang mở trang bạn yêu cầu…"
-                : safeUnverifiedAnswer(response.answer || streamedTokens),
+                : formActionMessage ?? safeUnverifiedAnswer(response.answer || streamedTokens),
               recommendations: response.recommendations ?? [],
               workflowUrl: trustedWorkflowUrl(response.workflowUrl) ? undefined : response.workflowUrl,
               steps: response.steps ?? msg.steps ?? [],
@@ -697,7 +775,10 @@ export function AiChatPage() {
       setMessages((current) => current.map((message) => message.id === assistantId
         ? { ...message, runStatus: streamedTokens ? "PARTIAL_FAILURE" : "FAILED" }
         : message))
-      if (isAuthenticated && sensitive) setRecoveryRequest(clientRequestId)
+      if (isAuthenticated && (sensitive || continuation.confirmationDecision === "APPROVE")) {
+        setRecoveryRequest(recoveryId)
+        if (continuation.confirmationDecision === "APPROVE") setRetryQuestion("")
+      }
       else pendingAiChatRequest(ownerKey, null)
       const apiError = asApiError(cause)
       if (apiError.code === "AI_GUEST_RATE_LIMITED" && apiError.retryAfter) {
@@ -747,7 +828,7 @@ export function AiChatPage() {
           : apiError.code === "AI_SUBSCRIPTION_REQUIRED"
           ? aiUpgradeMessage(apiError, "PLUS", "Tính năng AI bạn yêu cầu")
           : apiError.code === "AI_TOKEN_QUOTA_EXCEEDED" && !isAuthenticated
-          ? "Bạn đã dùng hết 20.000 token dùng thử trong phiên này. Đăng ký tài khoản để tiếp tục sử dụng AI."
+          ? "Bạn đã dùng hết 50.000 token dành cho Guest trong tháng này. Đăng ký tài khoản để tiếp tục sử dụng AI."
           : apiError.status === 429
           ? "Bạn đã gửi nhiều câu hỏi trong thời gian ngắn. Thử lại sau; bạn cũng có thể đăng ký tài khoản để tiếp tục."
           : apiError.status === 0 ||
@@ -884,6 +965,44 @@ export function AiChatPage() {
           aria-live="polite"
           aria-label="Cuộc trò chuyện"
         >
+          {recipeArticle && (
+            <details className="overflow-hidden rounded-xl border border-brand-200 bg-paper text-ink shadow-xs">
+              <summary className="flex cursor-pointer list-none items-center gap-3 p-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600">
+                {recipeArticle.coverUrl ? (
+                  <img src={recipeArticle.coverUrl} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+                ) : (
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700"><Bot className="h-6 w-6" aria-hidden="true" /></span>
+                )}
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[10px] font-bold uppercase tracking-wide text-brand-700">Bài công thức đang hỏi</span>
+                  <span className="block truncate text-sm font-bold">{recipeArticle.title}</span>
+                  <span className="block truncate text-xs text-ink-muted">{recipeArticle.authorName}</span>
+                </span>
+                <ChevronDown className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden="true" />
+              </summary>
+              <div className="space-y-3 border-t border-brand-100 p-3 text-xs leading-5">
+                {recipeArticle.description && <p className="text-ink-muted">{recipeArticle.description}</p>}
+                <div className="flex flex-wrap gap-1.5 text-ink-muted">
+                  <span>{recipeArticle.vegetarianTypeLabel}</span><span>·</span>
+                  <span>{recipeArticle.dishCategoryLabel}</span><span>·</span>
+                  <span>{recipeArticle.prepTimeMinutes + recipeArticle.cookTimeMinutes} phút</span><span>·</span>
+                  <span>{recipeArticle.servings} khẩu phần</span>
+                </div>
+                <section>
+                  <h3 className="font-bold text-ink">Nguyên liệu</h3>
+                  {recipeArticle.ingredients.length ? (
+                    <ul className="mt-1 list-inside list-disc space-y-0.5 text-ink-muted">
+                      {recipeArticle.ingredients.map((ingredient, index) => <li key={`${ingredient.name}-${index}`}>{ingredient.name} — {ingredient.quantity} {ingredient.unitName}</li>)}
+                    </ul>
+                  ) : <p className="text-ink-muted">Bài viết chưa ghi thành phần.</p>}
+                </section>
+                <section>
+                  <h3 className="font-bold text-ink">Cách chế biến</h3>
+                  <p className="mt-1 whitespace-pre-wrap text-ink-muted">{recipeArticle.instructions || "Bài viết chưa ghi cách chế biến."}</p>
+                </section>
+              </div>
+            </details>
+          )}
           {messages.length === 0 &&
             (hasRecipeContext ? (
               <div className="flex min-h-full flex-col justify-center py-8">
@@ -905,109 +1024,6 @@ export function AiChatPage() {
                     </p>
                   </div>
                 </div>
-                {recipeArticle && (
-                  <article
-                    aria-label={`Bài công thức: ${recipeArticle.title}`}
-                    className="mt-4 overflow-hidden rounded-xl border border-brand-200 bg-paper text-ink shadow-xs"
-                  >
-                    <div className="flex gap-3 border-b border-brand-100 p-3">
-                      {recipeArticle.coverUrl ? (
-                        <img
-                          src={recipeArticle.coverUrl}
-                          alt={`Ảnh ${recipeArticle.title}`}
-                          className="h-20 w-20 shrink-0 rounded-lg object-cover"
-                        />
-                      ) : (
-                        <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
-                          <Bot className="h-7 w-7" aria-hidden="true" />
-                        </span>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[10px] font-bold uppercase tracking-wide text-brand-700">
-                          Bài công thức đang xem
-                        </p>
-                        <h2 className="mt-0.5 font-bold leading-5">
-                          {recipeArticle.title}
-                        </h2>
-                        {recipeArticle.description && (
-                          <p className="mt-1 line-clamp-2 text-xs leading-4 text-ink-muted">
-                            {recipeArticle.description}
-                          </p>
-                        )}
-                        <div className="mt-2 flex min-w-0 items-center gap-1.5 text-[11px] text-ink-muted">
-                          {recipeArticle.authorAvatarUrl ? (
-                            <img
-                              src={recipeArticle.authorAvatarUrl}
-                              alt=""
-                              className="h-5 w-5 shrink-0 rounded-full object-cover"
-                            />
-                          ) : (
-                            <UserRound
-                              className="h-3.5 w-3.5 shrink-0"
-                              aria-hidden="true"
-                            />
-                          )}
-                          <span className="truncate">
-                            {recipeArticle.authorName}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-3 p-3 text-xs leading-5">
-                      <div className="flex flex-wrap gap-1.5">
-                        {[
-                          recipeArticle.vegetarianTypeLabel,
-                          recipeArticle.dishCategoryLabel,
-                          recipeArticle.difficultyLabel,
-                        ]
-                          .filter(Boolean)
-                          .map((label) => (
-                            <span
-                              key={label}
-                              className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-700"
-                            >
-                              {label}
-                            </span>
-                          ))}
-                        <span className="inline-flex items-center gap-1 rounded-full bg-cream-soft px-2 py-0.5 text-[10px] text-ink-muted">
-                          <Clock3 className="h-3 w-3" aria-hidden="true" />
-                          {recipeArticle.prepTimeMinutes +
-                            recipeArticle.cookTimeMinutes}{" "}
-                          phút
-                        </span>
-                        <span className="rounded-full bg-cream-soft px-2 py-0.5 text-[10px] text-ink-muted">
-                          {recipeArticle.servings} khẩu phần
-                        </span>
-                      </div>
-                      <section>
-                        <h3 className="font-bold text-ink">Nguyên liệu</h3>
-                        {recipeArticle.ingredients.length ? (
-                          <ul className="mt-1 list-inside list-disc space-y-0.5 text-ink-muted">
-                            {recipeArticle.ingredients.map(
-                              (ingredient, index) => (
-                                <li key={`${ingredient.name}-${index}`}>
-                                  {ingredient.name} — {ingredient.quantity}{" "}
-                                  {ingredient.unitName}
-                                </li>
-                              ),
-                            )}
-                          </ul>
-                        ) : (
-                          <p className="text-ink-muted">
-                            Bài viết chưa ghi thành phần.
-                          </p>
-                        )}
-                      </section>
-                      <section>
-                        <h3 className="font-bold text-ink">Cách chế biến</h3>
-                        <p className="mt-1 whitespace-pre-wrap text-ink-muted">
-                          {recipeArticle.instructions ||
-                            "Bài viết chưa ghi cách chế biến."}
-                        </p>
-                      </section>
-                    </div>
-                  </article>
-                )}
                 <div className="mt-5 flex flex-wrap justify-center gap-2">
                   {[
                     "Công thức này gồm những nguyên liệu nào?",
@@ -1091,6 +1107,8 @@ export function AiChatPage() {
                 {message.steps?.some(step => step.status !== "AWAITING_CONFIRMATION") ? (
                   <div className="mt-3 space-y-2" aria-label="Các bước AI đã xử lý">
                     {message.steps.filter(step => step.status !== "AWAITING_CONFIRMATION").map((step) => {
+                      const menuPreview = step.tool === "create_ai_menu_preview" && step.status === "SUCCEEDED"
+                        ? menuPreviewData(step.result?.data) : null
                       const preview = step.result?.preview
                       const previewEntries = preview && typeof preview === "object"
                         ? Object.entries(preview as Record<string, unknown>)
@@ -1099,6 +1117,22 @@ export function AiChatPage() {
                         <section key={`${step.sequence}-${step.tool}`} className="rounded-xl border border-brand-100 bg-paper p-3 text-xs text-ink">
                           <p className="font-semibold">{step.sequence}. {({ search_business_knowledge: "Tìm hướng dẫn", get_business_knowledge: "Đọc hướng dẫn", create_shopping_list: "Tạo danh sách mua sắm", get_shopping_list: "Đọc lại danh sách mua sắm" } as Record<string,string>)[step.tool] ?? step.tool.replace(/_/g, " ")} <span className="ml-1 rounded bg-brand-50 px-1.5 py-0.5 text-[10px] font-bold text-brand-700">{({ SUCCEEDED: "Hoàn tất", FAILED: "Chưa hoàn tất", AWAITING_CONFIRMATION: "Chờ xác nhận", BLOCKED_BUDGET: "Hết ngân sách", SKIPPED_MODE: "Chỉ xem trước", CLARIFICATION_REQUIRED: "Cần thông tin", SKIPPED_INTENT: "Chưa thực hiện" } as Record<string,string>)[step.status] ?? step.status}</span></p>
                           <p className="mt-1 text-ink-muted">{step.summary}</p>
+                          {menuPreview && (
+                            <section aria-label="Xem trước thực đơn AI" className="mt-2 border-t border-brand-100 pt-2">
+                              <p className="font-bold">Thực đơn tuần bắt đầu {menuPreview.weekStartDate}</p>
+                              <p className="mt-1 text-ink-muted">Đây là bản xem trước; chưa lưu vào lịch ăn.</p>
+                              {menuPreview.meals.length === 0 ? <p className="mt-2">Không có bữa ăn khả dụng trong khoảng này.</p> : (
+                                <ul className="mt-2 space-y-1">
+                                  {menuPreview.meals.map((meal, index) => (
+                                    <li key={`${meal.mealDate}-${meal.mealType}-${meal.recipeId}-${index}`}>
+                                      {meal.mealDate} · {({ BREAKFAST: "Sáng", LUNCH: "Trưa", DINNER: "Tối" } as Record<string, string>)[meal.mealType] ?? meal.mealType}: {meal.recipeTitle}
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                              {menuPreview.disclaimer && <p className="mt-2 text-ink-muted">{menuPreview.disclaimer}</p>}
+                            </section>
+                          )}
                           {previewEntries.length > 0 && (
                             <dl className="mt-2 space-y-1 border-t border-brand-50 pt-2">
                               {previewEntries.map(([key, value]) => (

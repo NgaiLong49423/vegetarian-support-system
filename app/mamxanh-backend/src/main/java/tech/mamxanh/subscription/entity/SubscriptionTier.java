@@ -7,8 +7,8 @@ package tech.mamxanh.subscription.entity;
  * The enum price values only recognize payment rows created before V34 stored their tier snapshot.
  */
 public enum SubscriptionTier {
-    PLUS(49_000, 300_000, "Gói PLUS", "Gói tháng với hạn mức token và model Gemini theo cấu hình hiện hành"),
-    PRO(99_000, 600_000, "Gói PRO", "Gói tháng với hạn mức token và model Gemini theo cấu hình hiện hành");
+    PLUS(49_000, 200_000, "Gói PLUS", "Gói tháng với hạn mức token theo cấu hình hiện hành"),
+    PRO(99_000, 500_000, "Gói PRO", "Gói tháng với hạn mức token theo cấu hình hiện hành");
 
     private final int priceVnd;
     private final long tokenQuota;

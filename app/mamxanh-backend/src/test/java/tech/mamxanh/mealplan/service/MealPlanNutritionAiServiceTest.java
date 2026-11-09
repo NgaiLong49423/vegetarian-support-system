@@ -60,11 +60,10 @@ class MealPlanNutritionAiServiceTest {
     }
 
     @Test
-    void memberWithoutProCannotRequestNutritionAiBeforeReadingMenusOrCallingProvider() {
-        doThrow(new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED))
-                .when(entitlements).requirePro(OWNER);
+    void ineligibleNutritionProfileCannotRequestRecommendations() {
+        doThrow(new AppException(ErrorCode.ACCESS_DENIED)).when(profiles).requireEligible(OWNER);
         assertThatThrownBy(() -> service.recommend(MONDAY, 101L))
-                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_SUBSCRIPTION_REQUIRED);
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
         verifyNoInteractions(plans, entries, nutrition, analysis, recipePosts, ai, events);
     }
 
@@ -74,7 +73,7 @@ class MealPlanNutritionAiServiceTest {
 
         var result = service.recommend(MONDAY, 101L);
 
-        verify(entitlements).requirePro(OWNER);
+        verify(entitlements, never()).requirePro(OWNER);
         assertThat(result.recommendations()).isEmpty();
         assertThat(result.analysis()).contains("Chưa có công thức");
         verifyNoInteractions(nutrition, analysis, recipePosts, ai, events);

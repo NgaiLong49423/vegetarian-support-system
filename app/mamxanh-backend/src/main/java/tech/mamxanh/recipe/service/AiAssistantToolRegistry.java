@@ -11,6 +11,9 @@ import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.mealplan.dto.request.AddMealPlanEntryRequest;
 import tech.mamxanh.mealplan.dto.request.ApplyAiWeeklyMenuRequest;
+import tech.mamxanh.mealplan.dto.request.CreateAiMenuPreviewRequest;
+import tech.mamxanh.mealplan.dto.request.ApplyAiMenuRequest;
+import tech.mamxanh.mealplan.service.AiMenuService;
 import tech.mamxanh.mealplan.service.MealPlanReadService;
 import tech.mamxanh.mealplan.service.MealPlanService;
 import tech.mamxanh.nutrition.dto.request.SaveDietaryPreferencesRequest;
@@ -53,6 +56,7 @@ public class AiAssistantToolRegistry {
     private final NutritionProfileService nutritionProfiles;
     private final MealPlanReadService mealPlanReads;
     private final MealPlanService mealPlans;
+    private final AiMenuService aiMenus;
     private final ShoppingListService shoppingLists;
     private final ApprovedAiKnowledgeRetriever knowledge;
     private final Validator validator;
@@ -64,7 +68,7 @@ public class AiAssistantToolRegistry {
             RecipeService recipeService, IngredientCatalogService ingredientCatalog,
             RecipeReactionService reactions, RecipeCommentService comments,
             MemberFollowService follows, MemberProfileService profiles, DietaryPreferenceService dietaryPreferences,
-            NutritionProfileService nutritionProfiles, MealPlanReadService mealPlanReads, MealPlanService mealPlans,
+            NutritionProfileService nutritionProfiles, MealPlanReadService mealPlanReads, MealPlanService mealPlans, AiMenuService aiMenus,
             ShoppingListService shoppingLists, ApprovedAiKnowledgeRetriever knowledge, Validator validator,
             ObjectMapper mapper, CurrentUserService users, SubscriptionEntitlementService entitlements) {
         this.recipePosts = recipePosts;
@@ -78,6 +82,7 @@ public class AiAssistantToolRegistry {
         this.nutritionProfiles = nutritionProfiles;
         this.mealPlanReads = mealPlanReads;
         this.mealPlans = mealPlans;
+        this.aiMenus = aiMenus;
         this.shoppingLists = shoppingLists;
         this.knowledge = knowledge;
         this.validator = validator;
@@ -112,6 +117,9 @@ public class AiAssistantToolRegistry {
         definitions.add(def("create_recipe_comment", "Create a comment on a published recipe for the authenticated member.", "{\"recipeId\":1,\"content\":\"text\",\"parentCommentId\":null}", RiskTier.LOW_RISK_WRITE, Set.of()));
         definitions.add(def("follow_expert", "Follow or unfollow an eligible expert account.", "{\"expertId\":1,\"follow\":true}", RiskTier.LOW_RISK_WRITE, Set.of()));
         definitions.add(def("get_meal_plan", "Read the authenticated member's meal plan for one week.", "{\"weekStartDate\":\"YYYY-MM-DD\"}", RiskTier.READ_ONLY, Set.of()));
+        definitions.add(def("get_ai_menu_candidates", "Load the authenticated member's eligible nutrition profile, dietary constraints, and trusted public recipe candidates for an AI menu. Call this first; do not invent recipe IDs.", "{\"request\":CreateAiMenuPreviewRequest}", RiskTier.READ_ONLY, Set.of(AiChatRequest.ConsentCategory.HEALTH_PROFILE, AiChatRequest.ConsentCategory.DIETARY_PREFERENCES)));
+        definitions.add(def("create_ai_menu_preview", "Create a nutrition-aware preview from recipe IDs ranked by this ADK turn and returned by get_ai_menu_candidates. Ask for missing requirements; this does not write the meal plan.", "{\"request\":CreateAiMenuPreviewRequest,\"rankedRecipeIds\":[1,2]}", RiskTier.READ_ONLY, Set.of(AiChatRequest.ConsentCategory.HEALTH_PROFILE, AiChatRequest.ConsentCategory.DIETARY_PREFERENCES)));
+        definitions.add(def("apply_ai_menu_preview", "Apply the previously generated preview in this session after explicit confirmation. Use its previewId; never invent meals.", "{\"previewId\":\"UUID\"}", RiskTier.HIGH_RISK_WRITE, Set.of()));
         definitions.add(def("apply_weekly_menu", "Apply a complete 21-slot weekly menu to the authenticated member's own meal plan. Always requires explicit confirmation.", "ApplyAiWeeklyMenuRequest plus weekStartDate", RiskTier.HIGH_RISK_WRITE, Set.of()));
         definitions.add(def("add_meal_plan_slot", "Add a single recipe entry to the authenticated member's meal plan on a given date and meal type.", "{\"date\":\"YYYY-MM-DD\",\"mealType\":\"BREAKFAST|LUNCH|DINNER\",\"recipeId\":1}", RiskTier.LOW_RISK_WRITE, Set.of()));
         definitions.add(def("list_shopping_lists", "List the authenticated member's own shopping lists.", "{}", RiskTier.READ_ONLY, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
@@ -123,7 +131,8 @@ public class AiAssistantToolRegistry {
         definitions.add(def("delete_shopping_item", "Delete a shopping item from a list owned by the authenticated member. Always requires explicit confirmation.", "{\"listId\":1,\"itemId\":1}", RiskTier.HIGH_RISK_WRITE, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
         definitions.add(def("delete_shopping_list", "Permanently delete a shopping list owned by the authenticated member. Always requires explicit confirmation.", "{\"listId\":1}", RiskTier.HIGH_RISK_WRITE, Set.of(AiChatRequest.ConsentCategory.SHOPPING_LIST)));
         if (expert) {
-            definitions.add(def("create_recipe_post", "Create and publish a RecipePost as the authenticated expert. Always requires explicit confirmation.", "CreateRecipeRequest", RiskTier.HIGH_RISK_WRITE, Set.of()));
+            definitions.add(def("propose_recipe_form_patch", "Apply nothing yourself. Return this tool for explicit user requests to change the current Expert recipe form. Use the latest Form Context as the base. For a request to append or continue description/instructions, send only the exact new text in appendText so the server joins it to the latest field value; for other edits use fields with the complete resulting value. Do not send both for the same field. Include only requested fields and new ingredients, preserve all others, and ask if the intended result is unclear. Enum codes: dishCategory NOODLE_SOUP|STIR_FRY|HOT_POT|BRAISED|SOUP|FRIED|STEAMED|SALAD|ROLL|GRILLED|DESSERT; vegetarianType VEGAN|LACTO|OVO|LACTO_OVO; difficulty EASY|MEDIUM|HARD. For new ingredients use exact catalog names, positive quantities and valid unit codes. Frontend resolves and acknowledges the revision-bound patch.", "{\"fields\":{\"fieldName\":\"complete replacement value\"},\"appendText\":{\"description\":\"exact text to append\",\"instructions\":\"exact text to append\"},\"addIngredients\":[{\"name\":\"string\",\"quantity\":\"string\",\"unitCode\":\"string\"}]}", RiskTier.READ_ONLY, Set.of()));
+            definitions.add(def("create_recipe_post", "Prepare to publish the authenticated expert's current recipe form. The server uses the form snapshot, never model-provided recipe data, and requires explicit confirmation.", "{}", RiskTier.HIGH_RISK_WRITE, Set.of()));
             definitions.add(def("update_own_recipe_post", "Update a RecipePost owned by the authenticated expert. Always requires explicit confirmation.", "{\"recipeId\":1,\"recipe\":UpdateRecipePostRequest}", RiskTier.HIGH_RISK_WRITE, Set.of()));
             definitions.add(def("delete_own_recipe_post", "Permanently delete a RecipePost owned by the authenticated expert. Always requires explicit confirmation.", "{\"recipeId\":1}", RiskTier.HIGH_RISK_WRITE, Set.of()));
         }
@@ -148,6 +157,34 @@ public class AiAssistantToolRegistry {
             case "create_recipe_comment" -> createComment(args);
             case "follow_expert" -> followExpert(args);
             case "get_meal_plan" -> data("Đã đọc thực đơn tuần.", mealPlanReads.getWeek(LocalDate.parse(text(args, "weekStartDate"))));
+            case "get_ai_menu_candidates" -> {
+                Object request = args.get("request");
+                if (!(request instanceof Map<?, ?> map)) throw new AppException(ErrorCode.VALIDATION_FAILED);
+                @SuppressWarnings("unchecked") Map<String, Object> values = (Map<String, Object>) map;
+                yield data("Đã tải danh sách công thức phù hợp để ADK chọn; chưa tạo hoặc lưu thực đơn.",
+                        aiMenus.getAdkPreviewCandidates(validated(values, CreateAiMenuPreviewRequest.class)));
+            }
+            case "create_ai_menu_preview" -> {
+                Object request = args.get("request");
+                if (!(request instanceof Map<?, ?> map)) throw new AppException(ErrorCode.VALIDATION_FAILED);
+                @SuppressWarnings("unchecked") Map<String, Object> values = (Map<String, Object>) map;
+                Object rawIds = args.get("rankedRecipeIds");
+                if (!(rawIds instanceof List<?> ids)) throw new AppException(ErrorCode.VALIDATION_FAILED);
+                List<Long> rankedIds = ids.stream().map(value -> {
+                    if (!(value instanceof Number number)) throw new AppException(ErrorCode.VALIDATION_FAILED);
+                    long id = number.longValue();
+                    if (number.doubleValue() != id) throw new AppException(ErrorCode.VALIDATION_FAILED);
+                    return id;
+                }).toList();
+                yield data("Đã tạo bản xem trước thực đơn; chưa lưu vào lịch ăn.",
+                        aiMenus.createPreviewFromAdkSelection(validated(values, CreateAiMenuPreviewRequest.class), rankedIds));
+            }
+            case "apply_ai_menu_preview" -> {
+                Object request = args.get("request");
+                if (!(request instanceof Map<?, ?> map)) throw new AppException(ErrorCode.VALIDATION_FAILED);
+                @SuppressWarnings("unchecked") Map<String, Object> values = (Map<String, Object>) map;
+                yield data("Đã áp dụng thực đơn được xác nhận vào lịch ăn.", aiMenus.apply(validated(values, ApplyAiMenuRequest.class)));
+            }
             case "apply_weekly_menu" -> applyWeeklyMenu(args);
             case "add_meal_plan_slot" -> addMealPlanSlot(args);
             case "list_shopping_lists" -> data("Đã đọc danh sách mua sắm của bạn.", shoppingLists.list(0, 20));
@@ -292,6 +329,11 @@ public class AiAssistantToolRegistry {
         LocalDate weekStartDate = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         var added = mealPlans.addEntry(weekStartDate, new AddMealPlanEntryRequest(date, mealType, recipeId));
         return data("Đã thêm món vào kế hoạch ăn uống.", added);
+    }
+
+    public void validateRecipePublish(Map<String, Object> arguments) {
+        requireExpertPro();
+        validated(arguments, CreateRecipeRequest.class);
     }
 
     private void requireExpertPro() {

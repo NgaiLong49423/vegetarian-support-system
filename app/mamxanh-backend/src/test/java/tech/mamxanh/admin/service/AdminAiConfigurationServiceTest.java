@@ -92,7 +92,9 @@ class AdminAiConfigurationServiceTest {
 
         assertThat(response).isNotNull();
         verify(modelValidator).verifyModel("gemini-3.9-flash");
-        verify(configurations).replaceModels(any());
+        verify(configurations).replaceModels(org.mockito.ArgumentMatchers.argThat(models -> models.stream()
+                .allMatch(model -> model.plusAllowed() == model.enabled() && model.proAllowed() == model.enabled()
+                        && model.plusDefault() == model.freeDefault() && model.proDefault() == model.freeDefault())));
     }
 
     @Test

@@ -104,20 +104,9 @@ public class SubscriptionService {
         List<String> features = new java.util.ArrayList<>();
         features.add("Các chức năng AI theo vai trò và quyền nghiệp vụ của tài khoản");
         features.add("Hạn mức " + String.format(java.util.Locale.forLanguageTag("vi-VN"), "%,d", quota) + " token mỗi tháng");
-        var allowedModels = configuration.models().stream().filter(model -> model.enabled())
-                .filter(model -> switch (tier) {
-                    case "FREE" -> model.freeAllowed();
-                    case "PLUS" -> model.plusAllowed();
-                    case "PRO" -> model.proAllowed();
-                    default -> false;
-                }).toList();
+        var allowedModels = configuration.models().stream().filter(model -> model.enabled()).toList();
         String modelNames = allowedModels.stream().map(model -> model.displayName()
-                + (switch (tier) {
-                    case "FREE" -> model.freeDefault();
-                    case "PLUS" -> model.plusDefault();
-                    case "PRO" -> model.proDefault();
-                    default -> false;
-                } ? " (mặc định)" : "")).collect(java.util.stream.Collectors.joining(", "));
+                + (model.freeDefault() ? " (mặc định)" : "")).collect(java.util.stream.Collectors.joining(", "));
         if (!modelNames.isBlank()) features.add("Model Gemini: " + modelNames);
         features.add("Có thể dùng AI Credit để tiếp tục khi vượt hạn mức tháng");
         return List.copyOf(features);
@@ -253,7 +242,7 @@ public class SubscriptionService {
         // Match the AI guard's starts_at <= now < ends_at window without cancelling a future period.
         if (!sub.isActiveAt(now)) return freeSubscription();
 
-        List<String> unlockedFeatures = planFeatures(sub.getTier().name(), sub.getTokenQuota());
+        List<String> unlockedFeatures = planFeatures(sub.getTier().name(), sub.effectiveQuota(aiConfiguration.paidQuotaPolicyCutover()));
 
         return new MySubscriptionResponse(
                 sub.getTier().name(),

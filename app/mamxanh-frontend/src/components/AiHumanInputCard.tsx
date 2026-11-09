@@ -16,6 +16,7 @@ export function AiHumanInputCard({ message, busy, onDecision, onReply }: Props) 
   const [reply, setReply] = useState("")
   const consent = message.consentRequest
   const pending = message.pendingConfirmation
+  const recipePreview = message.steps?.find(step => step.tool === "create_recipe_post" && step.status === "AWAITING_CONFIRMATION")?.result?.preview
   const title = consent ? "Cho phép dùng dữ liệu cá nhân?" : "Xem lại trước khi thực hiện"
   const options = consent
     ? ["Đồng ý và tiếp tục", "Không đồng ý"]
@@ -54,6 +55,12 @@ export function AiHumanInputCard({ message, busy, onDecision, onReply }: Props) 
             : <>{pending?.summary}. Các thay đổi chưa được áp dụng.</>}
         </p>
         {pending?.proposedListName && <p className="mt-2 text-sm font-semibold leading-6">Tên danh sách dự kiến: “{pending.proposedListName}”</p>}
+        {recipePreview != null && typeof recipePreview === "object" && (
+          <section className="mt-3 rounded-lg border border-brand-100 bg-paper p-3" aria-label="Nội dung công thức sẽ đăng">
+            <p className="font-semibold">Nội dung công thức sẽ đăng</p>
+            <pre className="mt-2 whitespace-pre-wrap break-words text-xs">{JSON.stringify(recipePreview, null, 2)}</pre>
+          </section>
+        )}
         <fieldset disabled={busy} className="mt-3 space-y-1 pb-3">
           <legend className="sr-only">Chọn một phương án</legend>
           {options.map((label, index) => {

@@ -55,9 +55,11 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -79,6 +81,7 @@ class AiAssistantToolIntegrationTest {
     @Mock private NutritionProfileService nutritionProfiles;
     @Mock private MealPlanReadService mealPlanReads;
     @Mock private MealPlanService mealPlans;
+    @Mock private tech.mamxanh.mealplan.service.AiMenuService aiMenus;
     @Mock private ShoppingListService shoppingLists;
     @Mock private ApprovedAiKnowledgeRetriever knowledge;
     @Mock private CurrentUserService users;
@@ -95,8 +98,48 @@ class AiAssistantToolIntegrationTest {
         registry = new AiAssistantToolRegistry(
                 recipePosts, recipeService, ingredientCatalog, reactions, comments,
                 follows, profiles, dietaryPreferences, nutritionProfiles, mealPlanReads,
-                mealPlans, shoppingLists, knowledge, validator, mapper, users, entitlements
+                mealPlans, aiMenus, shoppingLists, knowledge, validator, mapper, users, entitlements
         );
+    }
+
+    @Test
+    void aiMenuPreviewDelegatesAdkSelectionToExistingServiceWithoutApplying() {
+        var preview = new tech.mamxanh.mealplan.dto.response.AiMenuPreviewResponse(
+                java.time.LocalDate.of(2026, 11, 2), "PROFILE", null, null, null, null,
+                List.of(), List.of(), "Preview only");
+        when(aiMenus.createPreviewFromAdkSelection(any(), anyList())).thenReturn(preview);
+        var result = registry.execute("create_ai_menu_preview", Map.of("request",
+                Map.of("weekStartDate", "2026-11-02", "mode", "PROFILE"), "rankedRecipeIds", List.of(11, 12)));
+        assertThat(result.status()).isEqualTo("SUCCEEDED");
+        verify(aiMenus).createPreviewFromAdkSelection(any(), eq(List.of(11L, 12L)));
+        verify(aiMenus, never()).apply(any());
+        org.mockito.Mockito.verifyNoInteractions(mealPlans);
+    }
+
+    @Test
+    void aiMenuCandidateToolLoadsTrustedCandidatesWithoutGeneratingPreview() {
+        when(aiMenus.getAdkPreviewCandidates(any())).thenReturn(Map.of("canGenerate", true, "candidates", List.of()));
+        var result = registry.execute("get_ai_menu_candidates", Map.of("request",
+                Map.of("weekStartDate", "2026-11-02", "mode", "PROFILE")));
+        assertThat(result.status()).isEqualTo("SUCCEEDED");
+        verify(aiMenus).getAdkPreviewCandidates(any());
+        verify(aiMenus, never()).createPreviewFromAdkSelection(any(), anyList());
+        verifyNoInteractions(mealPlans);
+    }
+
+    @Test
+    void aiMenuPreviewApplyReusesPreviewServiceAndNeverUsesTheTwentyOneSlotMealPlanPath() {
+        var monday = java.time.LocalDate.of(2026, 11, 2);
+        var resultWeek = new tech.mamxanh.mealplan.dto.response.MealPlanWeekResponse(monday, List.of());
+        when(aiMenus.apply(any())).thenReturn(resultWeek);
+
+        var result = registry.execute("apply_ai_menu_preview", Map.of("request", Map.of(
+                "weekStartDate", "2026-11-02", "mode", "PROFILE",
+                "meals", List.of(Map.of("mealDate", "2026-11-03", "mealType", "LUNCH", "recipeId", 57)))));
+
+        assertThat(result.status()).isEqualTo("SUCCEEDED");
+        verify(aiMenus).apply(any(tech.mamxanh.mealplan.dto.request.ApplyAiMenuRequest.class));
+        verify(mealPlans, never()).applyAiMenu(any(), any());
     }
 
     // --- Cụm 1: Tri thức & Q&A (Tool 1..5) ---
@@ -398,10 +441,10 @@ class AiAssistantToolIntegrationTest {
     }
 
     @Test
-    @DisplayName("definitionsFor returns exact tool count per role: Guest=5, Customer=25, Expert=28")
+    @DisplayName("definitionsFor includes AI menu preview for eligible members")
     void roleScopingCountsMatchArchitectureContract() {
         assertThat(registry.definitionsFor("GUEST")).hasSize(5);
-        assertThat(registry.definitionsFor("CUSTOMER")).hasSize(25);
-        assertThat(registry.definitionsFor("EXPERT")).hasSize(28);
+        assertThat(registry.definitionsFor("CUSTOMER")).hasSize(28);
+        assertThat(registry.definitionsFor("EXPERT")).hasSize(32);
     }
 }

@@ -67,6 +67,6 @@ Bạn có thể kích hoạt Trợ lý AI bất cứ lúc nào bằng cách nh�
 
 ## Hạn mức sử dụng của từng nhóm người dùng
 
-- **Khách vãng lai (Guest):** Được trải nghiệm AI cơ bản với hạn mức 20.000 token mỗi phiên trình duyệt và giới hạn tối đa 10 câu hỏi mỗi phút để chống spam tự động.
-- **Thành viên gói Free:** Có 50.000 token miễn phí mỗi tháng dương lịch, sử dụng mô hình Gemini Flash-Lite tối ưu tốc độ.
-- **Thành viên gói Plus & Pro:** Hạn mức 300.000 - 600.000 token/tháng, được quyền lựa chọn mô hình Gemini Flash hoặc Flash-Lite thông minh hơn và có thể nạp thêm AI Credit khi dùng vượt hạn mức.
+- **Khách vãng lai (Guest):** Có 50.000 token mỗi tháng dương lịch theo định danh Guest hiện tại và giới hạn tối đa 10 câu hỏi mỗi phút để chống spam tự động.
+- **Thành viên gói Free:** Có 50.000 token miễn phí mỗi tháng dương lịch.
+- **Thành viên gói Plus & Pro:** Có lần lượt 200.000 và 500.000 token mỗi chu kỳ thuê bao. Các gói thành viên dùng chung danh mục model và có thể nạp AI Credit khi vượt hạn mức.

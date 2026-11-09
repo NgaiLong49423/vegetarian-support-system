@@ -32,6 +32,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Service
 public class AiChatService {
+    public AiChatRequest.FormActionAck acknowledgeFormAction(AiChatRequest.FormActionAck ack) {
+        if (adkEngine == null) throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE);
+        return adkEngine.acknowledgeFormAction(ack);
+    }
     private static final Logger LOG = LoggerFactory.getLogger(AiChatService.class);
     private static final int MAX_HISTORY_TURNS = 8;
 
@@ -255,6 +259,7 @@ public class AiChatService {
 
     private boolean shouldRouteToG3Pilot(AiChatRequest request) {
         if (adkShoppingPilot == null) return false;
+        if (request.formContext() != null) return false;
         Long userId = users.findAuthenticatedUserId().map(id -> users.requireActiveMember().id()).orElse(null);
         String owner = userId == null ? "guest:" + request.anonymousViewerId() : "user:" + userId;
 

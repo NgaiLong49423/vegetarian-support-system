@@ -52,6 +52,7 @@ import java.util.function.Function;
 class AiAssistantSecurityGuardIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired private JdbcTemplate sql;
+    @Autowired private org.springframework.transaction.PlatformTransactionManager transactionManager;
     @Autowired private AiAssistantExecutionJournal journal;
     @Autowired private AiAssistantToolRegistry toolRegistry;
     @Autowired private AiAssistantSessionStore sessionStore;
@@ -363,6 +364,45 @@ class AiAssistantSecurityGuardIntegrationTest extends AbstractIntegrationTest {
 
         assertThat(invocationCount.get()).isEqualTo(1);
         assertThat(result2).isEqualTo(Map.of("createdListId", 9999L));
+    }
+
+    @Test
+    @DisplayName("Mất phản hồi sau commit và khởi động lại chỉ trả kết quả đã lưu, không ghi trùng")
+    void committedWriteWithLostResponseSurvivesRestartRecoveryWithoutDuplicateWrite() {
+        UUID clientReqId = UUID.randomUUID();
+        String actionId = "action-create-list-after-response-loss";
+        String toolName = "create_shopping_list";
+        String argsHash = "response-loss-" + UUID.randomUUID();
+        String listName = "Response loss " + UUID.randomUUID();
+        AtomicInteger invocationCount = new AtomicInteger();
+
+        // The domain write and SUCCEEDED journal state commit together. Discarding this
+        // return value models a response lost after the database committed successfully.
+        journal.executeWithJournal(testUser, clientReqId, actionId, toolName, argsHash, () -> {
+            invocationCount.incrementAndGet();
+            Long createdListId = sql.queryForObject(
+                    "INSERT INTO [SHOPPING_LIST] (user_id, name) OUTPUT INSERTED.shopping_list_id VALUES (?, ?)",
+                    Long.class, testUser, listName);
+            return Map.of("createdListId", createdListId);
+        });
+
+        // A fresh journal instance models a backend restart: it must recover from SQL,
+        // preserve the committed success, and reuse it for the retried request.
+        var restartedJournal = new AiAssistantExecutionJournal(sql, transactionManager, mapper);
+        restartedJournal.recoverAbandonedReservations();
+        Object retryResult = restartedJournal.executeWithJournal(testUser, clientReqId, actionId, toolName, argsHash, () -> {
+            invocationCount.incrementAndGet();
+            throw new AssertionError("A committed action must not execute again after response loss.");
+        });
+
+        assertThat(retryResult).isInstanceOf(Map.class)
+                .extracting(result -> ((Map<?, ?>) result).get("createdListId"))
+                .isNotNull();
+        assertThat(invocationCount).hasValue(1);
+        assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_LIST] WHERE user_id = ? AND name = ?",
+                Integer.class, testUser, listName)).isEqualTo(1);
+        assertThat(restartedJournal.find(testUser, clientReqId, actionId).orElseThrow().state())
+                .isEqualTo(AiAssistantExecutionJournal.ActionState.SUCCEEDED);
     }
 
     @Test

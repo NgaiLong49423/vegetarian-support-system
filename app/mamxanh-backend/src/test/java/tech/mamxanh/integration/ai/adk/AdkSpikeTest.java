@@ -310,6 +310,23 @@ class AdkSpikeTest {
         }
     }
 
+    @Test void zeroArgumentToolCallIsValidWhenTheToolIsRegistered() {
+        var ledger = new Ledger();
+        var owner = actor("7", "EXPERT");
+        var tools = new FixtureTools();
+        var model = new FakeModel(request -> request.contents().stream()
+                .flatMap(content -> content.parts().orElse(List.of()).stream())
+                .anyMatch(part -> part.functionResponse().isPresent())
+                ? text("Đã đọc trạng thái.") : call("read_status", "status-1", Map.of()));
+        var session = new AdkSpikeSession(owner, new AdkModelGateway(model, ledger, CLOCK),
+                List.of(new AdkSpikeSession.Tool(FunctionTool.create(tools, "read_status"), args -> { })), CLOCK);
+
+        var events = session.run(owner, user("Đọc trạng thái hiện tại")).toList().blockingGet();
+
+        assertThat(events.stream().flatMap(event -> event.functionResponses().stream())).hasSize(1);
+        assertThat(ledger.usages).hasSize(2);
+    }
+
     @Test void usableResponseWithoutUsageDoesNotInventTokens() {
         var ledger = new Ledger();
         var gateway = new AdkModelGateway(new FakeModel(r -> text("OK").toBuilder().usageMetadata(null).build()), ledger, CLOCK);
@@ -540,6 +557,8 @@ class AdkSpikeTest {
     public static class FixtureTools {
         final AtomicInteger writes = new AtomicInteger();
         final List<String> observedOwners = new CopyOnWriteArrayList<>();
+        @Schema(description = "Read a status that requires no arguments")
+        public Map<String, Object> read_status() { return Map.of("status", "ready"); }
         @Schema(description = "Read an existing fixture list by its real ID")
         public Map<String, Object> read_list(@Schema(name = "listId", description = "Positive list ID") int id) {
             if (id < 1) throw new IllegalArgumentException("Invalid list ID");

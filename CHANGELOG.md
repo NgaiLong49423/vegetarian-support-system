@@ -2,12 +2,79 @@
 > **File:** `CHANGELOG.md`
 > **Version:** v2.150.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-11-05
+> **Last Updated:** 2026-11-06<br>
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-11-09 — Continue AI Recipe Actions Across Turns
+
+**Status:** Committed — 371f2bd1.
+
+**Scope:** Preserve the current recipe context in Chatbox and let an Expert continue a recipe-form action after the Frontend acknowledges an applied patch.
+
+### Added
+
+- Keep the current published recipe article available in Chatbox, including after messages have been sent.
+- Continue from an acknowledged form patch to the existing publish confirmation flow when the Expert agrees.
+
+### Changed
+
+- Retry eligible non-streaming provider-declared error responses without replaying a stream that may have emitted partial output.
+- Collapse the recipe article details in the conversation to keep follow-up messages accessible.
+
+### Fixed
+
+- Preserve the active recipe title and article when Chatbox is opened from a published recipe page.
+
+## 2026-11-06 — Bound AI Menu Follow-up Context
+
+**Status:** Committed — 309163e7.
+
+**Scope:** Reduce repeated menu candidate data in later ADK model requests while preserving the active preview and confirmation flow.
+
+### Added
+
+- Add offline checks for candidate history compaction and session-bound preview confirmation.
+
+### Changed
+
+- Omit completed candidate pools from earlier turns in model requests while retaining tool response identifiers and current-turn data.
+- Keep prior preview identifiers and meal summaries in model history while retaining the complete preview snapshot for confirmation and apply.
+- Raise the authorized cumulative Gemini evaluation guard to $50 while preserving the existing ledger and preflight enforcement.
+
+### Fixed
+
+- Reduce repeated menu candidate context on follow-up requests; a live P0-C follow-up still hit the input-size guard after preview creation.
+- Strengthen the live P0-C check to reject an error response or a preview whose displayed dish names contradict the requested mushroom avoidance. The existing live result exposed a remaining ingredient-constraint defect and is not full acceptance.
+
+## 2026-11-06 — Context-Aware AI Agent Actions
+
+**Status:** Committed — 110e2833.
+
+**Scope:** Route page-aware recipe questions, Expert recipe-form actions, and AI menu preview/apply through the existing ADK and business-service boundaries while aligning monthly AI quotas.
+
+### Added
+
+- Add request-scoped recipe page context and revision-bound recipe-form patches with Frontend acknowledgement.
+- Add ADK candidate-loading and preview tools so Chatbox ranks Backend-approved recipes in its current ADK turn, then reuses the existing menu optimizer and apply business flow without a nested legacy model call.
+- Add live P0-C acceptance coverage for Customer Free eligibility, preview-only behavior, explicit apply confirmation and saved meal-plan verification.
+
+### Changed
+
+- Align Guest/Free, Plus and Pro AI token limits to 50,000, 200,000 and 500,000 respectively while retaining role and business-rule restrictions.
+- Clarify that follow-up form edits must return the complete updated field value and preserve every field outside the requested patch.
+- Raise the pilot request-size preflight ceiling to 160,000 bytes and align the cumulative Gemini live spend guard with the approved $20 test ceiling.
+- Keep full trusted nutrition data in the Backend optimizer while omitting repeated candidate nutrition targets from ADK ranking context; extend the finite call-count guard for the approved $20 batch while the cumulative USD guard remains authoritative.
+
+### Fixed
+
+- Count Guest token usage within its monthly period while retaining the existing Guest identity, usage ledger and accounting mechanisms.
+- Resolve append-only recipe-form edits against the latest Form Context on the Backend, preserving all other fields and preventing Gemini from having to reconstruct unchanged instructions.
+
+Live acceptance remains partial: P0-A passed all three prompts against Backend recipe 57 and Gemini, with saved screenshot/trace evidence. P0-B published once through Chatbox; Backend and Database confirm the single PUBLISHED recipe and successful action journal. P0-C used the authorized synthetic Customer Free fixture; P1 created and displayed a preview without changing the meal plan. P2 exceeded the 160,000-byte input preflight at 171,101 bytes, so its second preview and P3 apply were not run. Database verification found zero meal plans and entries for the fixture, no journal action, and schema version 44. The cumulative Gemini upper-bound reserve is $19.3598881 of the approved $20 ceiling; the input-size guard, not the spend ceiling, blocked continuation.
 
 ## 2026-11-05 — Email Moderation Outcomes to Reporters and Authors (Issue #51)
 
