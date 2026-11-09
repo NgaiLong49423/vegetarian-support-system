@@ -521,7 +521,7 @@ function CreateRecipeForm() {
                   <span className="text-xs font-bold uppercase tracking-wide text-brand-700">Nguyên liệu {index + 1}</span>
                   {ingredients.length > 1 && <button type="button" onClick={() => setIngredients((current) => current.filter((item) => item.key !== row.key))} className="rounded-lg p-2 text-ink-muted hover:bg-red-50 hover:text-red-700" aria-label={`Xóa nguyên liệu ${index + 1}`}><Trash2 className="h-4 w-4" /></button>}
                 </div>
-                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_120px_180px]">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-[minmax(0,1fr)_120px_180px] [&>*:first-child]:col-span-2 sm:[&>*:first-child]:col-span-1">
                   <IngredientPicker
                     value={row.search || row.ingredientName}
                     selectedId={row.ingredientId}

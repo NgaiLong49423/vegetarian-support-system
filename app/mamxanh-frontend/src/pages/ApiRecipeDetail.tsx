@@ -309,7 +309,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
             Xuất công thức
             <ChevronDown className="h-4 w-4 shrink-0" />
           </button>
-          {exportOpen && <div className="absolute right-0 z-20 mt-2 w-52 rounded-xl border border-brand-100 bg-paper p-1.5 shadow-lg">
+          {exportOpen && <div className="absolute right-0 z-20 mt-2 w-52 max-w-[calc(100vw-2rem)] rounded-xl border border-brand-100 bg-paper p-1.5 shadow-lg">
             <button type="button" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-ink hover:bg-brand-50" onClick={() => { downloadText(recipe); setExportOpen(false); }}><Download className="h-4 w-4 text-brand-600" />Tải tệp TXT</button>
             <button type="button" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-ink hover:bg-brand-50" onClick={() => { setExportOpen(false); printRecipe(); }}><Printer className="h-4 w-4 text-brand-600" />In / lưu PDF A4</button>
           </div>}
@@ -341,7 +341,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
         <Badge>{recipe.dishCategoryLabel}</Badge>
         <Badge tone="neutral">{recipe.difficultyLabel}</Badge>
       </div>
-      <h1 className="max-w-4xl text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">{recipe.title}</h1>
+      <h1 className="max-w-4xl text-2xl font-extrabold tracking-tight text-ink sm:text-4xl">{recipe.title}</h1>
       {recipe.description && <p className="mt-3 max-w-3xl leading-7 text-ink-muted">{recipe.description}</p>}
       <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-brand-100/70 pt-4 text-sm text-ink-muted">
         <div className="flex items-center gap-3">

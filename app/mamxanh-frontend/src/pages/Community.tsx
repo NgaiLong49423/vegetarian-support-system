@@ -26,12 +26,12 @@ export function Community() {
         <p className="mt-2 text-xs leading-5 text-ink-muted">Chia sẻ kinh nghiệm, bí quyết và kiến thức dinh dưỡng từ cộng đồng ăn chay Việt.</p>
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-2">
+      <div className="mobile-scroll-x mb-6 flex flex-nowrap gap-2 pb-1 sm:flex-wrap sm:pb-0">
         {topics.map((t) => (
           <button
             key={t}
             onClick={() => setTopic(t)}
-            className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all duration-200 active:scale-95 ${
+            className={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all duration-200 active:scale-95 ${
               topic === t ? 'border-brand-600 bg-brand-600 text-on-brand shadow-sm shadow-brand-600/20' : 'border-brand-200 bg-paper text-ink-soft hover:border-brand-300 hover:text-brand-700'
             }`}
           >

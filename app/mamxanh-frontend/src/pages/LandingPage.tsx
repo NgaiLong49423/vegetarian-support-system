@@ -26,18 +26,28 @@ const sections = [
   { id: "tro-ly-ai", label: "AI" },
 ]
 
-function LandingActions({ final = false }: { final?: boolean }) {
+function LandingActions({
+  final = false,
+  hero = false,
+}: {
+  final?: boolean
+  hero?: boolean
+}) {
   const { isAuthenticated } = useAuth()
+  const lightBtn = final || hero
   return (
-    <div className="landing-actions">
+    <div className={`landing-actions${hero ? " landing-actions-hero" : ""}`}>
       <Link
-        className={`landing-button${final ? " landing-button-light" : ""}`}
+        className={`landing-button${lightBtn ? " landing-button-light" : ""}`}
         to="/trang-chu"
       >
         {isAuthenticated ? "Vào ứng dụng" : "Bắt đầu khám phá"}
         <ArrowRight size={18} aria-hidden="true" />
       </Link>
-      <Link className="landing-text-link" to="/kham-pha">
+      <Link
+        className={`landing-text-link${lightBtn ? " landing-text-link-light" : ""}`}
+        to="/kham-pha"
+      >
         Khám phá công thức
       </Link>
     </div>
@@ -55,16 +65,24 @@ export function LandingPage() {
     const revealNodes = Array.from(
       root.querySelectorAll<HTMLElement>("[data-reveal]"),
     )
+    const videoNodes = Array.from(
+      root.querySelectorAll<HTMLVideoElement>(".landing-reel-video"),
+    )
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches
 
+    root.classList.remove("has-scroll-motion")
     if (prefersReducedMotion || typeof IntersectionObserver === "undefined") {
       revealNodes.forEach((node) => node.classList.add("is-visible"))
+      videoNodes.forEach((video) => video.pause())
       return
     }
 
     root.classList.add("has-scroll-motion")
+    videoNodes.forEach((video) => {
+      video.play().catch(() => {})
+    })
 
     const revealObserver = new IntersectionObserver(
       (entries) => {
@@ -72,27 +90,110 @@ export function LandingPage() {
           const target = entry.target as HTMLElement
           if (entry.isIntersecting) {
             target.classList.add("is-visible")
-          } else if (entry.boundingClientRect.top > 40) {
+          } else if (entry.boundingClientRect.top >= window.innerHeight) {
             target.classList.remove("is-visible")
           }
         }
       },
       {
-        threshold: 0.12,
-        rootMargin: "0px 0px -36px 0px",
+        threshold: 0.04,
+        rootMargin: "0px",
       },
     )
 
     revealNodes.forEach((node) => {
       const rect = node.getBoundingClientRect()
-      if (rect.top < window.innerHeight * 0.92) {
+      if (rect.top < window.innerHeight * 0.98) {
         node.classList.add("is-visible")
       }
       revealObserver.observe(node)
     })
 
+    const navLinks = Array.from(
+      root.querySelectorAll<HTMLElement>("[data-section-id]"),
+    )
+    const sectionEls = sections
+      .map((s) => root.querySelector<HTMLElement>(`#${s.id}`))
+      .filter((el): el is HTMLElement => el !== null)
+
+    let currentProgress = 0
+    let targetProgress = 0
+    let rafId = 0
+
+    const syncVisibleNodes = () => {
+      const vh = window.innerHeight
+      for (const node of revealNodes) {
+        const rect = node.getBoundingClientRect()
+        if (rect.top < vh * 0.98 && rect.bottom > 0) {
+          node.classList.add("is-visible")
+        } else if (rect.top >= vh) {
+          node.classList.remove("is-visible")
+        }
+      }
+    }
+
+    const syncActiveSection = () => {
+      const focusLine = window.innerHeight * 0.38
+      let activeId = ""
+      for (const sectionEl of sectionEls) {
+        const rect = sectionEl.getBoundingClientRect()
+        if (rect.top <= focusLine && rect.bottom > 120) {
+          activeId = sectionEl.id
+        }
+      }
+      navLinks.forEach((link) => {
+        link.classList.toggle(
+          "is-active",
+          link.dataset.sectionId === activeId && activeId !== "",
+        )
+      })
+    }
+
+    const computeTargetProgress = () => {
+      const maxScroll = Math.max(
+        1,
+        document.documentElement.scrollHeight - window.innerHeight,
+      )
+      targetProgress = Math.min(1, Math.max(0, window.scrollY / maxScroll))
+    }
+
+    const stepProgress = () => {
+      const diff = targetProgress - currentProgress
+      if (Math.abs(diff) <= 0.001) {
+        currentProgress = targetProgress
+        rafId = 0
+        root.style.setProperty("--journey-progress", currentProgress.toFixed(4))
+        return
+      }
+      currentProgress += diff * 0.12
+      root.style.setProperty("--journey-progress", currentProgress.toFixed(4))
+      rafId = window.requestAnimationFrame(stepProgress)
+    }
+
+    const handleScrollOrResize = () => {
+      syncVisibleNodes()
+      syncActiveSection()
+      computeTargetProgress()
+      if (!rafId) {
+        rafId = window.requestAnimationFrame(stepProgress)
+      }
+    }
+
+    syncVisibleNodes()
+    syncActiveSection()
+    computeTargetProgress()
+    currentProgress = targetProgress
+    root.style.setProperty("--journey-progress", currentProgress.toFixed(4))
+
+    window.addEventListener("scroll", handleScrollOrResize, { passive: true })
+    window.addEventListener("resize", handleScrollOrResize)
+
     return () => {
       revealObserver.disconnect()
+      window.removeEventListener("scroll", handleScrollOrResize)
+      window.removeEventListener("resize", handleScrollOrResize)
+      window.cancelAnimationFrame(rafId)
+      root.classList.remove("has-scroll-motion")
     }
   }, [])
 
@@ -114,8 +215,23 @@ export function LandingPage() {
         Đi tới nội dung chính
       </a>
       <header className="landing-header">
-        <div className="landing-container landing-header-inner">
+        <div className="landing-frame landing-header-inner">
           <Logo />
+          <nav
+            className="landing-desktop-nav"
+            aria-label="Điều hướng mục giới thiệu"
+          >
+            {sections.map((section) => (
+              <a
+                key={section.id}
+                href={`#${section.id}`}
+                data-section-id={section.id}
+                className="landing-desktop-link"
+              >
+                {section.label}
+              </a>
+            ))}
+          </nav>
           <div className="landing-header-actions">
             {!isAuthenticated && (
               <Link className="landing-login" to="/dang-nhap">
@@ -132,26 +248,68 @@ export function LandingPage() {
         </div>
       </header>
 
-      <main id="landing-main" tabIndex={-1}>
-        <section
-          className="landing-hero landing-container"
-          aria-labelledby="landing-title"
+      <main id="landing-main" className="landing-main" tabIndex={-1}>
+        <nav
+          className="landing-mobile-nav"
+          aria-label="Điều hướng nhanh đầu trang"
         >
-          <p className="landing-eyebrow">
-            <Leaf size={15} aria-hidden="true" /> Một căn bếp. Nhiều cảm hứng.
-          </p>
-          <h1 id="landing-title">
-            Ăn chay theo
-            <br />
-            cách của <span>bạn.</span>
-          </h1>
-          <p className="landing-hero-copy">
-            Từ món ăn bạn muốn thử đến những bữa chay mỗi ngày. Khám phá công
-            thức, giữ lại món yêu thích và tìm cảm hứng cho căn bếp của bạn.
-          </p>
-          <LandingActions />
+          <div className="landing-container landing-mobile-nav-inner">
+            {sections.map((section) => (
+              <a
+                key={section.id}
+                href={`#${section.id}`}
+                data-section-id={section.id}
+                className="landing-mobile-chip"
+              >
+                {section.label}
+              </a>
+            ))}
+          </div>
+        </nav>
 
-          <div className="landing-hero-preview" data-reveal="up">
+        <section className="landing-hero" aria-labelledby="landing-title">
+          <div className="landing-stage landing-hero-cinema">
+            <video
+              className="landing-reel-video"
+              src="/assets/mamxanh-culinary-reel.webm"
+              poster="/hero-art.jpg"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              aria-hidden="true"
+            />
+            <div className="landing-reel-scrim" aria-hidden="true" />
+            <div className="landing-hero-cinema-meta" aria-hidden="true">
+              <span>MÂM XANH · CĂN BẾP THUẦN CHAY</span>
+              <span>CÔNG THỨC · LỊCH ĂN · AI</span>
+            </div>
+
+            <div className="landing-hero-cinema-content">
+              <p className="landing-eyebrow landing-eyebrow-light">
+                <Leaf size={14} aria-hidden="true" /> Một căn bếp. Nhiều cảm hứng.
+              </p>
+              <h1 id="landing-title">
+                <span className="landing-heading-sans">Ăn chay theo</span>
+                <br />
+                <span className="landing-heading-serif">
+                  cách của <span>bạn.</span>
+                </span>
+              </h1>
+              <p className="landing-hero-copy">
+                Từ món ăn bạn muốn thử đến những bữa chay mỗi ngày. Khám phá công
+                thức, giữ lại món yêu thích và tìm cảm hứng cho căn bếp của bạn.
+              </p>
+              <LandingActions hero />
+              <a className="landing-scroll-hint" href="#cong-thuc">
+                Cùng khám phá Mâm Xanh
+                <ArrowDown size={15} aria-hidden="true" />
+              </a>
+            </div>
+          </div>
+
+          <div className="landing-container landing-hero-preview" data-reveal="up">
             <div className="landing-hero-note">
               <span>Công thức</span>
               <span>Lịch ăn</span>
@@ -230,11 +388,6 @@ export function LandingPage() {
               <figcaption>Trang chủ Guest · Mâm Xanh</figcaption>
             </figure>
           </div>
-
-          <a className="landing-scroll-hint" href="#cong-thuc">
-            Cùng khám phá Mâm Xanh
-            <ArrowDown size={16} aria-hidden="true" />
-          </a>
         </section>
 
         <section
@@ -242,22 +395,28 @@ export function LandingPage() {
           className="landing-section landing-container"
           aria-labelledby="discovery-title"
         >
-          <div className="landing-section-heading" data-reveal="up">
-            <p className="landing-eyebrow">BẮT ĐẦU TỪ MỘT MÓN ĂN</p>
-            <h2 id="discovery-title">
-              Món hợp với bạn,
-              <br />
-              ngay trong tầm tay.
-            </h2>
-            <p>
-              Tìm công thức theo loại ăn chay, nguyên liệu bạn có và thời gian
-              dành cho việc nấu. Đọc cách làm, xem định lượng rồi chọn món muốn
-              thử.
-            </p>
-            <Link className="landing-text-link" to="/kham-pha">
-              Tìm món cho hôm nay
-              <ArrowRight size={17} aria-hidden="true" />
-            </Link>
+          <div className="landing-discovery-header" data-reveal="up">
+            <div className="landing-section-heading">
+              <p className="landing-eyebrow">BẮT ĐẦU TỪ MỘT MÓN ĂN</p>
+              <h2 id="discovery-title">
+                <span className="landing-heading-sans">Món hợp với bạn,</span>
+                <br />
+                <span className="landing-heading-serif">
+                  ngay trong tầm tay.
+                </span>
+              </h2>
+            </div>
+            <div className="landing-discovery-intro">
+              <p>
+                Tìm công thức theo loại ăn chay, nguyên liệu bạn có và thời gian
+                dành cho việc nấu. Đọc cách làm, xem định lượng rồi chọn món
+                muốn thử.
+              </p>
+              <Link className="landing-editorial-link" to="/kham-pha">
+                <ArrowRight size={16} aria-hidden="true" />
+                <span>Tìm món cho hôm nay</span>
+              </Link>
+            </div>
           </div>
 
           <div className="landing-discovery-screens">
@@ -341,7 +500,10 @@ export function LandingPage() {
 
           <div className="landing-discovery-details">
             <div data-reveal="up">
-              <Search size={24} aria-hidden="true" />
+              <span className="landing-pillar-index" aria-hidden="true">
+                01
+              </span>
+              <Search size={22} aria-hidden="true" />
               <h3>Tìm theo nhu cầu</h3>
               <p>
                 Từ một nguyên liệu quen thuộc đến một món ăn mới, bắt đầu với
@@ -352,7 +514,10 @@ export function LandingPage() {
               data-reveal="up"
               style={{ "--reveal-delay": "90ms" } as React.CSSProperties}
             >
-              <ChefHat size={24} aria-hidden="true" />
+              <span className="landing-pillar-index" aria-hidden="true">
+                02
+              </span>
+              <ChefHat size={22} aria-hidden="true" />
               <h3>Biết trước khi nấu</h3>
               <p>
                 Nguyên liệu, định lượng, khẩu phần và hướng dẫn ở cùng một nơi.
@@ -362,12 +527,15 @@ export function LandingPage() {
               data-reveal="up"
               style={{ "--reveal-delay": "180ms" } as React.CSSProperties}
             >
-              <Bookmark size={24} aria-hidden="true" />
+              <span className="landing-pillar-index" aria-hidden="true">
+                03
+              </span>
+              <Bookmark size={22} aria-hidden="true" />
               <h3>Giữ món mình thích</h3>
               <p>Lưu công thức vào tài khoản để dễ tìm lại khi muốn vào bếp.</p>
-              <Link className="landing-text-link" to={savedDestination}>
-                {savedLabel}
-                <ArrowRight size={16} aria-hidden="true" />
+              <Link className="landing-editorial-link" to={savedDestination}>
+                <ArrowRight size={15} aria-hidden="true" />
+                <span>{savedLabel}</span>
               </Link>
             </div>
           </div>
@@ -375,23 +543,27 @@ export function LandingPage() {
 
         <section
           id="lich-an"
-          className="landing-section landing-section-tinted"
+          className="landing-stage landing-section landing-section-dark"
           aria-labelledby="planner-title"
         >
           <div className="landing-container landing-split">
             <div className="landing-section-heading" data-reveal="left">
-              <p className="landing-eyebrow">BỮA ĂN CÓ KẾ HOẠCH</p>
+              <p className="landing-eyebrow landing-eyebrow-light">
+                BỮA ĂN CÓ KẾ HOẠCH
+              </p>
               <h2 id="planner-title">
-                Dành chỗ cho
+                <span className="landing-heading-sans">Dành chỗ cho</span>
                 <br />
-                những bữa ăn bạn thích.
+                <span className="landing-heading-serif">
+                  những bữa ăn bạn thích.
+                </span>
               </h2>
               <p>
                 Tập hợp công thức vào lịch ăn ngày và tuần. Từ bữa sáng nhẹ
                 nhàng đến bữa tối đủ đầy, mỗi lựa chọn đều có chỗ trong kế hoạch
                 của bạn.
               </p>
-              <div className="landing-feature-line">
+              <div className="landing-feature-line landing-feature-line-light">
                 <CalendarDays size={18} aria-hidden="true" />
                 <span>Lịch ăn theo ngày · Ba bữa mỗi ngày</span>
               </div>
@@ -519,9 +691,13 @@ export function LandingPage() {
           <div className="landing-section-heading" data-reveal="right">
             <p className="landing-eyebrow">TỪ CĂN BẾP ĐẾN GIỎ HÀNG</p>
             <h2 id="shopping-title">
-              Mua sắm nguyên liệu cùng
+              <span className="landing-heading-sans">
+                Mua sắm nguyên liệu cùng
+              </span>
               <br />
-              một danh sách rõ ràng.
+              <span className="landing-heading-serif">
+                một danh sách rõ ràng.
+              </span>
             </h2>
             <p>
               Chuẩn bị nguyên liệu từ công thức hoặc lịch ăn. Tổng hợp những thứ
@@ -537,16 +713,18 @@ export function LandingPage() {
 
         <section
           id="dinh-duong"
-          className="landing-section landing-section-tinted"
+          className="landing-stage landing-section landing-section-stone"
           aria-labelledby="nutrition-title"
         >
           <div className="landing-container landing-split">
             <div className="landing-section-heading" data-reveal="left">
               <p className="landing-eyebrow">HIỂU THÊM VỀ BỮA CHAY</p>
               <h2 id="nutrition-title">
-                Thêm thông tin.
+                <span className="landing-heading-sans">Thêm thông tin.</span>
                 <br />
-                Thêm cơ sở để lựa chọn.
+                <span className="landing-heading-serif">
+                  Thêm cơ sở để lựa chọn.
+                </span>
               </h2>
               <p>
                 Tham khảo dinh dưỡng của công thức theo khẩu phần, khai báo hồ
@@ -658,9 +836,11 @@ export function LandingPage() {
           <div className="landing-section-heading" data-reveal="right">
             <p className="landing-eyebrow">KHI BẠN CẦN MỘT Ý TƯỞNG</p>
             <h2 id="ai-title">
-              Một người bạn
+              <span className="landing-heading-sans">Một người bạn</span>
               <br />
-              trong hành trình ăn chay.
+              <span className="landing-heading-serif">
+                trong hành trình ăn chay.
+              </span>
             </h2>
             <p>
               Hỏi về công thức, tìm gợi ý món từ nội dung công khai và nhận hỗ
@@ -675,41 +855,73 @@ export function LandingPage() {
         </section>
 
         <section
-          className="landing-community landing-section"
+          className="landing-stage landing-community landing-section"
           aria-labelledby="community-title"
         >
-          <div className="landing-container" data-reveal="up">
-            <p className="landing-eyebrow">CẢM HỨNG ĐẾN TỪ NGƯỜI CHIA SẺ</p>
-            <h2 id="community-title">
-              Một công thức ngon.
-              <br />
-              Nhiều câu chuyện để trao đổi.
-            </h2>
-            <p>
-              Khám phá công thức từ Chuyên gia ẩm thực chay, chia sẻ trải nghiệm
-              qua bình luận và theo dõi người có cùng cảm hứng nấu ăn.
-            </p>
-            <div className="landing-community-icons" aria-hidden="true">
-              <ChefHat />
-              <Leaf />
-              <MessageCircle />
+          <div className="landing-container landing-community-grid">
+            <div className="landing-community-collage" aria-hidden="true">
+              <div className="landing-collage-card landing-collage-sm" data-reveal="left">
+                <img src="/assets/40053.png" alt="" loading="lazy" />
+              </div>
+              <div className="landing-collage-card landing-collage-lg" data-reveal="up">
+                <img src="/assets/40c2c.png" alt="" loading="lazy" />
+              </div>
             </div>
-            <Link className="landing-text-link" to="/kham-pha">
-              Khám phá những công thức được chia sẻ
-              <ArrowRight size={17} aria-hidden="true" />
-            </Link>
+
+            <div className="landing-community-copy" data-reveal="up">
+              <p className="landing-eyebrow">CẢM HỨNG ĐẾN TỪ NGƯỜI CHIA SẺ</p>
+              <h2 id="community-title">
+                <span className="landing-heading-sans">Một công thức ngon.</span>
+                <br />
+                <span className="landing-heading-serif">
+                  Nhiều câu chuyện để trao đổi.
+                </span>
+              </h2>
+              <p>
+                Khám phá công thức từ Chuyên gia ẩm thực chay, chia sẻ trải
+                nghiệm qua bình luận và theo dõi người có cùng cảm hứng nấu ăn.
+              </p>
+              <div className="landing-community-icons" aria-hidden="true">
+                <ChefHat />
+                <Leaf />
+                <MessageCircle />
+              </div>
+              <Link className="landing-editorial-link" to="/kham-pha">
+                <ArrowRight size={16} aria-hidden="true" />
+                <span>Khám phá những công thức được chia sẻ</span>
+              </Link>
+            </div>
           </div>
         </section>
 
-        <section className="landing-final-cta" aria-labelledby="final-title">
-          <div className="landing-container" data-reveal="up">
-            <p className="landing-eyebrow">
+        <section
+          className="landing-stage landing-final-cta"
+          aria-labelledby="final-title"
+        >
+          <video
+            className="landing-reel-video"
+            src="/assets/mamxanh-culinary-reel.webm"
+            poster="/assets/cddd4.png"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="none"
+            aria-hidden="true"
+          />
+          <div className="landing-reel-scrim landing-reel-scrim-deep" aria-hidden="true" />
+          <div className="landing-container landing-final-cta-inner" data-reveal="up">
+            <p className="landing-eyebrow landing-eyebrow-light">
               CĂN BẾP CỦA BẠN, HÀNH TRÌNH CỦA BẠN
             </p>
             <h2 id="final-title">
-              Bắt đầu từ món chay
+              <span className="landing-heading-sans">
+                Bắt đầu từ món chay
+              </span>
               <br />
-              tiếp theo của bạn.
+              <span className="landing-heading-serif">
+                tiếp theo của bạn.
+              </span>
             </h2>
             <p>
               Một món mới để thử. Một công thức để giữ lại. Một chút cảm hứng

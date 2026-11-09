@@ -29,10 +29,11 @@ import { ApiRecipeDetail } from "../pages/ApiRecipeDetail"
 import { ExpertRecipeProfile } from "../pages/ExpertRecipeProfile"
 import { MemberProfilePage } from "../pages/MemberProfilePage"
 import { ProfileSettingsPage } from "../pages/ProfileSettingsPage"
+import { NotificationsPage } from "../pages/NotificationsPage"
 import { useAiChat } from "./AiChatContext"
 import { AdminDashboard } from "../pages/AdminDashboard"
 import { AiTelemetryPage } from "../pages/AiTelemetryPage"
-import { AdminPendingModule } from "../pages/AdminPendingModule"
+import { AdminUserManagement } from "../pages/AdminUserManagement"
 import { AdminTransactionsPage } from "../pages/AdminTransactionsPage"
 import { AdminAiConfigurationPage } from "../pages/AdminAiConfigurationPage"
 import { AdminReportsPage } from "../pages/AdminReportsPage"
@@ -105,6 +106,7 @@ export default function ApplicationRoutes() {
               <Route path="/bai-viet/:slug" element={<PostDetail />} />
               <Route path="/ho-so" element={<Profile />} />
               <Route path="/ho-so/cai-dat" element={<ProfileSettingsPage />} />
+              <Route path="/thong-bao" element={<NotificationsPage />} />
               <Route path="/thanh-vien/:userId" element={<MemberProfilePage />} />
               <Route
                 path="/ho-so/chuyen-gia"
@@ -143,7 +145,7 @@ export default function ApplicationRoutes() {
               />
               <Route
                 path="/admin/nguoi-dung"
-                element={<AdminPendingModule module="users" />}
+                element={<AdminUserManagement />}
               />
               <Route
                 path="/admin/giao-dich"

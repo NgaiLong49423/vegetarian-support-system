@@ -52,6 +52,18 @@ public class OpenApiConfig {
                         new io.swagger.v3.oas.models.security.SecurityRequirement(),
                         new io.swagger.v3.oas.models.security.SecurityRequirement().addList(BEARER_AUTH)));
             }
+            var chatStream = openApi.getPaths().get("/api/v1/recipes/ai/chat/stream");
+            if (chatStream != null && chatStream.getPost() != null) {
+                chatStream.getPost().setSecurity(java.util.List.of(
+                        new io.swagger.v3.oas.models.security.SecurityRequirement(),
+                        new io.swagger.v3.oas.models.security.SecurityRequirement().addList(BEARER_AUTH)));
+            }
+            var chatCancel = openApi.getPaths().get("/api/v1/recipes/ai/chat/cancel");
+            if (chatCancel != null && chatCancel.getPost() != null) {
+                chatCancel.getPost().setSecurity(java.util.List.of(
+                        new io.swagger.v3.oas.models.security.SecurityRequirement(),
+                        new io.swagger.v3.oas.models.security.SecurityRequirement().addList(BEARER_AUTH)));
+            }
             openApi.getPaths().values().forEach(path -> path.readOperations().forEach(OpenApiConfig::addErrorResponses));
         };
     }

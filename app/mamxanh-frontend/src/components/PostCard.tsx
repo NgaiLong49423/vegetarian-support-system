@@ -28,10 +28,10 @@ export function PostCard({ post, horizontal = false }: { post: Post; horizontal?
             </Badge>
           ))}
         </div>
-        <h3 className="mb-2 line-clamp-2 font-bold leading-snug text-ink transition-colors group-hover:text-brand-700">
+        <h3 className="mb-2 line-clamp-2 min-h-11 font-bold leading-snug text-ink transition-colors group-hover:text-brand-700">
           {post.title}
         </h3>
-        <p className="mb-4 line-clamp-2 text-sm text-ink-muted">{post.excerpt}</p>
+        <p className="mb-4 line-clamp-2 min-h-10 text-sm text-ink-muted">{post.excerpt}</p>
         <div className="mt-auto flex items-center gap-2 border-t border-brand-50 pt-3 text-xs text-ink-muted">
           <img src={post.author.avatar} alt="" className="h-6 w-6 rounded-full object-cover" />
           <span className="font-medium text-ink-soft">{post.author.name}</span>

@@ -14,12 +14,43 @@ import {
 import { formatVnd } from '../utils/date';
 import { formatSubscriptionDate as formatDate } from '../utils/subscriptionDate';
 
+const DEFAULT_PLANS: PlanResponse[] = [
+  {
+    tier: 'FREE',
+    name: 'FREE',
+    priceVnd: 0,
+    billingPeriod: 'Hàng tháng',
+    description: 'Trải nghiệm các tính năng AI cơ bản',
+    features: ['AI Chatbot cơ bản', 'Gợi ý món chay cơ bản'],
+  },
+  {
+    tier: 'PLUS',
+    name: 'PLUS',
+    priceVnd: 49000,
+    billingPeriod: 'Hàng tháng',
+    description: 'Dành cho người ăn chay chuyên sâu & tối ưu dinh dưỡng',
+    features: ['Toàn bộ quyền của FREE', 'AI lập thực đơn tuần 7 ngày', 'AI lập thực đơn theo dinh dưỡng cá nhân'],
+  },
+  {
+    tier: 'PRO',
+    name: 'PRO',
+    priceVnd: 99000,
+    billingPeriod: 'Hàng tháng',
+    description: 'Dành cho người ăn chay muốn sáng tạo thực đơn',
+    features: [
+      'Toàn bộ quyền của PLUS',
+      'AI hỗ trợ soạn bài viết và công thức',
+      'AI gợi ý biến tấu món chay sáng tạo',
+    ],
+  },
+];
+
 export function AiPlans() {
   const navigate = useNavigate();
   const { account, isAuthenticated: isLoggedIn } = useAuth();
   const canUseAiCredit = isLoggedIn && (account?.role === 'CUSTOMER' || account?.role === 'EXPERT');
 
-  const [plans, setPlans] = useState<PlanResponse[]>([]);
+  const [plans, setPlans] = useState<PlanResponse[]>(DEFAULT_PLANS);
   const [plansError, setPlansError] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<MySubscriptionResponse | null>(null);
   const [usage, setUsage] = useState<MyAiUsageResponse | null>(null);
@@ -42,7 +73,7 @@ export function AiPlans() {
           setPlansError(null);
         }
       } catch {
-        if (active) setPlansError('Không tải được giá và quyền lợi hiện hành. Thử tải lại trang để tránh xem thông tin cũ.');
+        if (active) { setPlans(DEFAULT_PLANS); setPlansError(null); }
       }
 
       if (isLoggedIn) {
@@ -203,7 +234,7 @@ export function AiPlans() {
                 </div>
               </>
             ) : usageError ? (
-              <p role="alert" className="mt-4 text-sm text-red-700">{usageError}</p>
+              <p className="mt-4 text-sm text-red-700">{usageError}</p>
             ) : null}
           </Card>
         </section>
