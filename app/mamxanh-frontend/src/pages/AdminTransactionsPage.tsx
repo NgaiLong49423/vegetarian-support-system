@@ -422,18 +422,18 @@ export function AdminTransactionsPage() {
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 xl:gap-2.5">
             {[
               {
-                label: "Doanh thu ghi nhận",
+                label: "Doanh thu",
                 value: (
                   <span className="inline-block whitespace-nowrap"><AnimatedNumber value={summary.revenueVnd ?? 0} suffix={"\u00A0₫"} /></span>
                 ),
-                hint: "Chỉ tính giao dịch thành công",
+                hint: "Giao dịch thành công",
                 icon: <TrendingUp className="h-4 w-4" />,
                 iconClass: "bg-leaf-50 text-leaf-700 ring-1 ring-leaf-200/70",
                 accent: "from-leaf-500 via-leaf-400 to-transparent",
                 valueClass: "text-leaf-700 dark:text-leaf-400",
               },
               {
-                label: "Giao dịch thành công",
+                label: "Thành công",
                 value: <AnimatedNumber value={summary.paid ?? 0} />,
                 hint: (
                   <>
@@ -447,7 +447,7 @@ export function AdminTransactionsPage() {
                       decimals={1}
                       suffix="%"
                     />{" "}
-                    trên tổng đơn
+                    tổng đơn
                   </>
                 ),
                 icon: <CheckCircle2 className="h-4 w-4" />,
@@ -459,7 +459,7 @@ export function AdminTransactionsPage() {
               {
                 label: "Chờ thanh toán",
                 value: <AnimatedNumber value={summary.pending ?? 0} />,
-                hint: "Phiên thanh toán đang mở",
+                hint: "Phiên đang mở",
                 icon: <Clock className="h-4 w-4" />,
                 iconClass:
                   "bg-amber-50 text-amber-700 ring-1 ring-amber-200/70",
@@ -469,7 +469,7 @@ export function AdminTransactionsPage() {
               {
                 label: "Đã hủy",
                 value: <AnimatedNumber value={summary.cancelled ?? 0} />,
-                hint: "Đã hủy trước khi quét mã",
+                hint: "Trước khi quét mã",
                 icon: <Ban className="h-4 w-4" />,
                 iconClass: "bg-raised text-ink-muted ring-1 ring-brand-200/50",
                 accent: "from-slate-400 via-slate-300 to-transparent",
@@ -480,7 +480,7 @@ export function AdminTransactionsPage() {
                 value: (
                   <AnimatedNumber value={summary.needsReconciliation ?? 0} />
                 ),
-                hint: "Cần kiểm tra trạng thái ngân hàng",
+                hint: "Kiểm tra ngân hàng",
                 icon: <AlertTriangle className="h-4 w-4" />,
                 iconClass:
                   "bg-amber-50 text-amber-800 ring-1 ring-amber-300/70",
@@ -490,7 +490,7 @@ export function AdminTransactionsPage() {
               {
                 label: "Thất bại",
                 value: <AnimatedNumber value={summary.failed ?? 0} />,
-                hint: "Thanh toán không thành công",
+                hint: "Không thành công",
                 icon: <XCircle className="h-4 w-4" />,
                 iconClass: "bg-rose-50 text-rose-700 ring-1 ring-rose-200/70",
                 accent: "from-rose-500 via-rose-400 to-transparent",
