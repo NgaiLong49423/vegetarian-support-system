@@ -202,7 +202,7 @@ export function AiPlans() {
         )}
 
         <p className="mt-2 text-xs text-ink-muted">
-          Gói quyết định hạn mức token và model Gemini; quyền dùng chức năng AI theo vai trò và quyền nghiệp vụ của tài khoản. Free tính theo tháng dương lịch, Plus/Pro theo tháng gói. Guest có 20.000 token mỗi phiên. Plus/Pro thanh toán từng tháng qua payOS, không tự động gia hạn.
+          Gói quyết định hạn mức token; các gói dùng chung danh mục model AI, còn quyền dùng chức năng phụ thuộc vai trò và điều kiện nghiệp vụ. Guest và Free có 50.000 token theo tháng dương lịch; Plus/Pro tính theo chu kỳ gói. Plus/Pro thanh toán từng tháng qua payOS, không tự động gia hạn.
         </p>
       </div>
 

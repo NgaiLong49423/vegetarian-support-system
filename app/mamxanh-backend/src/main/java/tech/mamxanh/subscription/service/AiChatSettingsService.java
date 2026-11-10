@@ -72,25 +72,18 @@ public class AiChatSettingsService {
         boolean invalidPreference = preferred != null && allowed.stream().noneMatch(model -> model.modelId().equalsIgnoreCase(preferred));
         String selected = invalidPreference ? null : preferred == null ? defaultId : preferred;
         return new AiChatSettingsResponse(usage.tier(), usage.consumedTokens(), usage.quotaTokens(), usage.remainingTokens(),
-                "GUEST".equals(usage.tier()) ? null : usage.resetsAt(), selected, invalidPreference || selected == null,
+                usage.resetsAt(), selected, invalidPreference || selected == null,
                 allowed.stream().map(model -> new ModelOption(model.modelId(), model.displayName(), model.modelId().equals(defaultId))).toList());
     }
 
     private List<Model> allowedModels(String tier) {
         List<Model> models = configuration.findConfiguration().models();
-        return models.stream().filter(Model::enabled).filter(model -> switch (tier) {
-            case "PLUS" -> model.plusAllowed();
-            case "PRO" -> model.proAllowed();
-            default -> model.freeAllowed();
-        }).toList();
+        return models.stream().filter(Model::enabled)
+                .filter(model -> !"GUEST".equals(tier) || model.freeAllowed()).toList();
     }
 
     private static boolean isDefault(Model model, String tier) {
-        return switch (tier) {
-            case "PLUS" -> model.plusDefault();
-            case "PRO" -> model.proDefault();
-            default -> model.freeDefault();
-        };
+        return model.freeDefault();
     }
 
     private static ApiException invalidSelection() {

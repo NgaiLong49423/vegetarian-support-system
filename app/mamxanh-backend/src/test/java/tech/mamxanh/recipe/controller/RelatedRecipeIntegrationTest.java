@@ -129,26 +129,21 @@ class RelatedRecipeIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void guestFreeExpiredAndAdminNeverReachProvider() throws Exception {
+    void guestAndAdminNeverReachProvider() throws Exception {
         mockMvc.perform(post(path() + "/ai")).andExpect(status().isUnauthorized());
-        mockMvc.perform(post(path() + "/ai").with(principal())).andExpect(status().isForbidden());
-        paid("PRO");
-        jdbc.update("UPDATE [SUBSCRIPTION] SET ends_at='2026-01-02' WHERE user_id=?", member);
-        mockMvc.perform(post(path() + "/ai").with(principal())).andExpect(status().isForbidden());
         jdbc.update("UPDATE [USER] SET role='ADMIN' WHERE user_id=?", member);
         mockMvc.perform(post(path() + "/ai").with(principal())).andExpect(status().isForbidden());
         verifyNoInteractions(ai);
     }
 
     @Test
-    void activePlusCannotReachTheRelatedRecipeProvider() throws Exception {
+    void freeAndPlusMembersCanReachTheRelatedRecipeProvider() throws Exception {
+        when(ai.recommendRecipes(anyString(), anyList(), anyInt())).thenReturn(result(best));
+        mockMvc.perform(post(path() + "/ai").with(principal()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.items[0].id").value(best));
         paid("PLUS");
         mockMvc.perform(post(path() + "/ai").with(principal()))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("AI_SUBSCRIPTION_REQUIRED"))
-                .andExpect(jsonPath("$.requiredTier").value("PRO"))
-                .andExpect(jsonPath("$.upgradeUrl").value("/goi-ai"));
-        verifyNoInteractions(ai);
+                .andExpect(status().isOk()).andExpect(jsonPath("$.items[0].id").value(best));
     }
 
     @ParameterizedTest

@@ -29,6 +29,27 @@ public class AiChatController {
     private tech.mamxanh.recipe.service.AiShoppingExecutionJournal journal;
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private tech.mamxanh.auth.service.CurrentUserService users;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private tech.mamxanh.recipe.service.AiAssistantExecutionJournal actionJournal;
+
+    public record ActionExecution(String actionId, String tool, String state, String summary, Object result) { }
+
+    @GetMapping("/action-executions/{requestId}")
+    @Operation(summary = "Recover this member's recorded assistant actions after a lost response",
+            description = "An empty result or an indeterminate state never authorizes replay.",
+            security = @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH))
+    public ResponseEntity<java.util.List<ActionExecution>> actionExecutions(@PathVariable java.util.UUID requestId) {
+        long ownerId = users.requireActiveMember().id();
+        if (actionJournal == null) throw new tech.mamxanh.common.exception.AppException(
+                tech.mamxanh.common.exception.ErrorCode.AI_TELEMETRY_UNAVAILABLE);
+        var result = actionJournal.findByRequest(ownerId, requestId).stream().map(entry -> {
+            var data = entry.resultData() instanceof tech.mamxanh.recipe.service.AiAssistantToolRegistry.ToolResult toolResult
+                    ? toolResult : null;
+            return new ActionExecution(entry.actionId(), entry.toolName(), entry.state().name(),
+                    data == null ? null : data.summary(), data == null ? null : data.result());
+        }).toList();
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(result);
+    }
 
     @GetMapping("/executions/{clientRequestId}")
     @Operation(summary = "Look up this member's Shopping List write by client request ID; UNKNOWN never authorizes replay",
@@ -44,11 +65,20 @@ public class AiChatController {
         this.guestRateLimiter = guestRateLimiter;
     }
 
+    @PostMapping("/ui-actions/ack")
+    @Operation(summary = "Acknowledge a recipe form action after the interface applies or rejects it",
+            security = @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH))
+    public ResponseEntity<AiChatRequest.FormActionAck> acknowledgeFormAction(
+            @Valid @RequestBody AiChatRequest.FormActionAck acknowledgement) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(service.acknowledgeFormAction(acknowledgement));
+    }
+
     @PostMapping
     @Operation(summary = "Ask the vegetarian cooking assistant",
             security = {@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH), @SecurityRequirement(name = "")},
             description = "Guest and active Member use the same chatbot. Guest must supply a session-cookie UUID in anonymousViewerId; "
-                    + "Guest is limited to 20,000 provider-reported tokens per anonymous session and a rolling limit of 10 requests per minute independently for cookie and peer IP. "
+                    + "Guest is limited to 50,000 provider-reported tokens per calendar month per anonymous identity and a rolling limit of 10 requests per minute independently for cookie and peer IP. "
                     + "General context or the latest public RecipePost is loaded server-side. "
                     + "Recipe discovery selects only current public RecipePosts from the Backend catalog; explicitly requested recipe drafts remain chat text only. "
                     + "Legacy conversation history is request-scoped. Orchestration clients may use a bounded Backend session with consent and confirmation; prompts are not persisted. Guest has no account dietary context. "
@@ -57,7 +87,7 @@ public class AiChatController {
     @ApiResponse(responseCode = "200", description = "AI answer and, when relevant, selected public recipe cards generated.")
     @ApiResponse(responseCode = "400", description = "Invalid question, history, or context fields.")
     @ApiResponse(responseCode = "401", description = "Bearer token invalid/expired, or a Guest requests a Member-only workflow; no provider call.")
-    @ApiResponse(responseCode = "403", description = "Account/role denied, or workflow requires a higher subscription. AI_SUBSCRIPTION_REQUIRED includes requiredTier and upgradeUrl; no provider call.")
+    @ApiResponse(responseCode = "403", description = "Account or role denied; no provider call.")
     @ApiResponse(responseCode = "429", description = "Guest exceeded the cookie/IP rate limit or the current Guest/Member token quota. Retry-After is provided for rate-limit responses.",
             headers = @Header(name = "Retry-After", description = "Seconds until Guest can try again.",
                     schema = @Schema(types = {"integer"}, minimum = "1")))
@@ -84,7 +114,7 @@ public class AiChatController {
             return new AiChatRequest(request.contextType(), request.recipeId(), request.question(),
                     request.history(), guestId, request.sessionId(), request.executionMode(),
                     request.consentDecision(), request.confirmationId(), request.confirmationDecision(),
-                    request.clientRequestId(), request.controlAction());
+                    request.clientRequestId(), request.controlAction(), request.formContext());
         }
         return request;
     }

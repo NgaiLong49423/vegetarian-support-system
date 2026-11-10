@@ -33,7 +33,7 @@ import java.util.UUID;
 /** Synchronous quota and AI Credit overage accounting; telemetry remains a separate operational stream. */
 @Service
 public class AiTokenQuotaService {
-    public static final long GUEST_QUOTA = 20_000;
+    public static final long GUEST_QUOTA = 50_000;
     public static final long DEFAULT_OVERAGE_RATE = 400L;
     private static final ZoneId FREE_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final long RETENTION_DAYS = 90;
@@ -172,7 +172,7 @@ public class AiTokenQuotaService {
             if (ledger.existsById(eventId)) return;
 
             long consumedBefore = snapshot.userId() == null
-                    ? ledger.sumGuestTokens(snapshot.anonymousSessionId())
+                    ? ledger.sumGuestTokens(snapshot.anonymousSessionId(), snapshot.periodStart(), snapshot.periodEnd())
                     : ledger.sumMemberTokens(snapshot.userId(), snapshot.periodStart(), snapshot.periodEnd());
 
             ledger.saveAndFlush(new AiTokenUsageLedgerEntity(eventId, snapshot.userId(),
@@ -230,11 +230,6 @@ public class AiTokenQuotaService {
         String normalized = modelId.strip().toLowerCase(Locale.ROOT);
         boolean allowed = snapshot.models().stream()
                 .filter(AiConfigurationSnapshot.Model::enabled)
-                .filter(model -> switch (tier) {
-                    case "PLUS" -> model.plusAllowed();
-                    case "PRO" -> model.proAllowed();
-                    default -> model.freeAllowed();
-                })
                 .anyMatch(model -> model.modelId().equalsIgnoreCase(normalized));
         if (!allowed) {
             throw new ApiException(HttpStatus.CONFLICT, "AI_MODEL_SELECTION_REQUIRED",
@@ -245,14 +240,18 @@ public class AiTokenQuotaService {
     private Period currentPeriod(Long userId, String guestSessionId, Instant at) {
         if (userId == null) {
             if (guestSessionId == null) throw new AppException(ErrorCode.VALIDATION_FAILED);
-            LocalDateTime end = LocalDateTime.ofInstant(at, ZoneOffset.UTC).plusNanos(1);
-            return new Period("GUEST", GUEST_QUOTA, end.minusDays(1), end);
+            LocalDate month = at.atZone(FREE_ZONE).toLocalDate().withDayOfMonth(1);
+            Instant start = month.atStartOfDay(FREE_ZONE).toInstant();
+            Instant end = month.plusMonths(1).atStartOfDay(FREE_ZONE).toInstant();
+            return new Period("GUEST", GUEST_QUOTA, LocalDateTime.ofInstant(start, ZoneOffset.UTC),
+                    LocalDateTime.ofInstant(end, ZoneOffset.UTC));
         }
         LocalDateTime now = LocalDateTime.ofInstant(at, ZoneOffset.UTC);
         SubscriptionEntity active = subscriptions.findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE)
                 .filter(subscription -> subscription.isActiveAt(now)).orElse(null);
         if (active != null) {
-            return new Period(active.getTier().name(), active.getTokenQuota(), active.getStartsAt(), active.getEndsAt());
+            long effectiveQuota = active.effectiveQuota(configuration.paidQuotaPolicyCutover());
+            return new Period(active.getTier().name(), effectiveQuota, active.getStartsAt(), active.getEndsAt());
         }
         LocalDate localDate = at.atZone(FREE_ZONE).toLocalDate();
         Instant start = localDate.withDayOfMonth(1).atStartOfDay(FREE_ZONE).toInstant();
@@ -262,7 +261,7 @@ public class AiTokenQuotaService {
     }
 
     private long consumed(Long userId, String guestSessionId, Period period) {
-        return userId == null ? ledger.sumGuestTokens(guestSessionId)
+        return userId == null ? ledger.sumGuestTokens(guestSessionId, period.start(), period.end())
                 : ledger.sumMemberTokens(userId, period.start(), period.end());
     }
 

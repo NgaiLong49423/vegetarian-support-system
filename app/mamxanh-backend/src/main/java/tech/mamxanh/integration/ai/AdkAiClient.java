@@ -116,7 +116,7 @@ public class AdkAiClient implements AiClient, AutoCloseable {
         try {
             var result = taskRunner.executeTaskWithResult(
                     currentAuth(), selectedModel(), "RECOMMENDATIONS", promptLoader.loadSystemPrompt(), fullPrompt,
-                    schema, 2048, DEFAULT_TIMEOUT);
+                    schema, 8192, DEFAULT_TIMEOUT);
 
             if (result.text() == null || result.text().isBlank()) {
                 throw AiProviderException.invalidResponse("ADK recommendation output is incomplete");

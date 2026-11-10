@@ -24,7 +24,7 @@ class BusinessKnowledgeLiveTest {
     void buildIndexAndExerciseNativeKnowledgeAgent() throws Exception {
         var json = new ObjectMapper();
         var catalog = KnowledgeCatalog.agent();
-        var dir = Path.of("target/business-knowledge-live-20261101");
+        var dir = Path.of("target/business-knowledge-live-20261105");
         Files.createDirectories(dir);
         if (Files.exists(dir.resolve("runtime-owner.json")))
             throw new IllegalStateException("Evaluation ledger is owned by the running acceptance stack; reconcile and transfer ownership before another CLI batch");
@@ -35,12 +35,13 @@ class BusinessKnowledgeLiveTest {
         int calls = catalog.chunks().size() + 15;
         assertThat(calls).isLessThan(2000);
         // Upper bound: maximum permitted bytes per embedding plus 18 maximum generation calls.
-        assertThat(calls * 8024 * 2 * .20 / 1_000_000 + 12 * (128000 * 2 * .75 + 1024 * 3.75) / 1_000_000).isLessThan(5);
+        assertThat(calls * 8024 * 2 * .20 / 1_000_000
+                + 12 * (PilotLiveBudget.MAX_GENERATION_INPUT_BYTES * 2 * .75 + 1024 * 3.75) / 1_000_000).isLessThan(5);
         var budget = new PilotLiveBudget(ledger, 2000);
         var config = new KnowledgeIndex.Config("gemini-embedding-2",768,"search-prefix-v1");
         String key = System.getenv("GEMINI_API_KEY");
         assertThat(key).as("Backend Gemini credential available").isNotBlank();
-        try (var client = Client.builder().apiKey(key).httpOptions(HttpOptions.builder().timeout(10000)
+        try (var client = Client.builder().apiKey(key).httpOptions(HttpOptions.builder().timeout(20000)
                 .retryOptions(HttpRetryOptions.builder().attempts(1).build()).build()).build()) {
             var embedder = new GeminiEmbeddingClient(client,config,budget);
             var checkpoint = dir.resolve("vectors.json");
@@ -53,10 +54,13 @@ class BusinessKnowledgeLiveTest {
                 priorIndex = json.readValue(Files.readString(packagedIndex), KnowledgeIndex.class);
             }
             if (priorIndex != null && priorIndex.config().equals(config)) {
+                boolean sameCorpus = catalog.fingerprint().equals(priorIndex.corpusHash());
                 Set<String> changedPlaybookIds = Set.of(
-                        "assistant-scope", "execution-confirmation", "session-consent-budget", "shopping-create", "shopping-read");
+                        "assistant-scope", "execution-confirmation", "session-consent-budget", "shopping-create", "shopping-read",
+                        "ai-assistant-overview", "ai-chat-cooking-guidance", "user-roles-and-permissions",
+                        "managing-subscription", "plans-overview", "ai-limits-and-errors");
                 for (var chunk : catalog.chunks()) {
-                    if (!changedPlaybookIds.contains(chunk.documentId()) && priorIndex.vectors().containsKey(chunk.id())) {
+                    if ((sameCorpus || !changedPlaybookIds.contains(chunk.documentId())) && priorIndex.vectors().containsKey(chunk.id())) {
                         vectors.put(chunk.id(), priorIndex.vectors().get(chunk.id()));
                     }
                 }

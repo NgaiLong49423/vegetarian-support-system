@@ -1,5 +1,245 @@
 import { expect, test } from './baseFixtures';
 
+test('lost confirmation response is recovered by confirmation ID without replay', async ({ page }) => {
+  await signInAsMember(page, 'EXPERT');
+  const confirmationId = '55555555-5555-4555-8555-555555555555';
+  let streamRequests = 0;
+  let fallbackRequests = 0;
+  let recoveredId = '';
+  await page.route('**/api/v1/recipes/ai/chat/action-executions/*', async route => {
+    recoveredId = route.request().url().split('/').at(-1) ?? '';
+    await route.fulfill({ json: [{ actionId: 'create_recipe_post_1', tool: 'create_recipe_post',
+      state: 'SUCCEEDED', summary: 'Đã công khai bài công thức.', result: { recipeId: 123 } }] });
+  });
+  await page.route('**/api/v1/recipes/ai/chat', async route => { fallbackRequests++; await route.abort(); });
+  await page.route('**/api/v1/recipes/ai/chat/stream', async route => {
+    streamRequests++;
+    if (streamRequests > 1) { await route.abort('failed'); return; }
+    await route.fulfill({ json: { contextType: 'GENERAL', recipeId: null, answer: 'Vui lòng xác nhận.', recommendations: [],
+      sessionId: '44444444-4444-4444-8444-444444444444', runStatus: 'AWAITING_CONFIRMATION',
+      pendingConfirmation: { confirmationId, summary: 'Đăng công thức', requiresExplicitConfirmation: true },
+      steps: [{ sequence: 1, tool: 'create_recipe_post', status: 'AWAITING_CONFIRMATION', summary: 'Chờ xác nhận',
+        result: { preview: { title: 'Món chay' } } }] } });
+  });
+  await page.goto('/trang-chu');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Đăng công thức này');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await expect(page.getByText('Nội dung công thức sẽ đăng')).toBeVisible();
+  await page.getByRole('radio', { name: 'Xác nhận thay đổi', exact: true }).check();
+  await page.getByRole('button', { name: 'Gửi', exact: true }).click();
+  await page.getByRole('button', { name: 'Kiểm tra kết quả' }).click();
+  await expect(page.getByText('Backend xác nhận: Đã công khai bài công thức.')).toBeVisible();
+  expect(recoveredId).toBe(confirmationId);
+  expect(streamRequests).toBe(2);
+  expect(fallbackRequests).toBe(0);
+});
+
+test('expert ingredient patch resolves exact catalog name and keeps existing rows', async ({ page }) => {
+  await signInAsMember(page, 'EXPERT');
+  const acknowledgements: Array<Record<string, unknown>> = [];
+  await page.route('**/api/v1/recipes/ingredient-options?*', route => route.fulfill({ json: [
+    { ingredientId: 15, name: 'Đậu hũ' }, { ingredientId: 16, name: 'Đậu hũ chiên' },
+  ] }));
+  await page.route('**/api/v1/recipes/ai/chat/ui-actions/ack', async route => {
+    const payload = route.request().postDataJSON(); acknowledgements.push(payload); await route.fulfill({ json: payload });
+  });
+  await page.route('**/api/v1/recipes/ai/chat/stream', async route => {
+    const form = route.request().postDataJSON().formContext;
+    await route.fulfill({ json: { contextType: 'GENERAL', recipeId: null, sessionId: '11111111-1111-4111-8111-111111111111',
+      answer: 'Đang chờ giao diện xác nhận.', recommendations: [], steps: [{ sequence: 1,
+        tool: 'propose_recipe_form_patch', status: 'UI_ACTION_REQUIRED', summary: 'Cập nhật', result: { data: {
+          actionId: '22222222-2222-4222-8222-222222222222', formId: form.formId, revision: form.revision,
+          fields: {}, addIngredients: [{ name: 'Đậu hũ', quantity: '200', unitCode: 'g' }],
+        } } }] } });
+  });
+  await page.goto('/dang-cong-thuc');
+  await page.getByLabel('Chọn nguyên liệu 1').fill('Bí đỏ');
+  await page.getByLabel('Số lượng nguyên liệu 1').fill('100');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Thêm 200g đậu hũ');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await expect(page.getByText('Đã cập nhật các trường được đề xuất trong biểu mẫu.')).toBeVisible();
+  await expect(page.getByLabel('Chọn nguyên liệu 1')).toHaveValue('Bí đỏ');
+  await expect(page.getByLabel('Số lượng nguyên liệu 1')).toHaveValue('100');
+  await expect(page.getByLabel('Chọn nguyên liệu 2')).toHaveValue('Đậu hũ');
+  await expect(page.getByLabel('Số lượng nguyên liệu 2')).toHaveValue('200');
+  await expect(page.getByLabel('Đơn vị nguyên liệu 2')).toHaveValue('1');
+  expect(acknowledgements[0].status).toBe('APPLIED');
+});
+
+test('ingredient lookup cannot apply a patch after the form changes', async ({ page }) => {
+  await signInAsMember(page, 'EXPERT');
+  let received: (() => void) | undefined;
+  const requested = new Promise<void>(resolve => { received = resolve; });
+  let release: (() => void) | undefined;
+  const waitForEdit = new Promise<void>(resolve => { release = resolve; });
+  const acknowledgements: Array<Record<string, unknown>> = [];
+  await page.route('**/api/v1/recipes/ingredient-options?*', async route => {
+    received?.(); await waitForEdit;
+    await route.fulfill({ json: [{ ingredientId: 15, name: 'Đậu hũ' }] });
+  });
+  await page.route('**/api/v1/recipes/ai/chat/ui-actions/ack', async route => {
+    const payload = route.request().postDataJSON(); acknowledgements.push(payload); await route.fulfill({ json: payload });
+  });
+  await page.route('**/api/v1/recipes/ai/chat/stream', async route => {
+    const form = route.request().postDataJSON().formContext;
+    await route.fulfill({ json: { contextType: 'GENERAL', recipeId: null, sessionId: '11111111-1111-4111-8111-111111111111',
+      answer: 'Đang chờ giao diện xác nhận.', recommendations: [], steps: [{ sequence: 1,
+        tool: 'propose_recipe_form_patch', status: 'UI_ACTION_REQUIRED', summary: 'Cập nhật', result: { data: {
+          actionId: '22222222-2222-4222-8222-222222222222', formId: form.formId, revision: form.revision,
+          fields: { title: 'Tên đề xuất' }, addIngredients: [{ name: 'Đậu hũ', quantity: '200', unitCode: 'g' }],
+        } } }] } });
+  });
+  await page.goto('/dang-cong-thuc');
+  await page.getByLabel('Tên món *').fill('Tên ban đầu');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Thêm 200g đậu hũ');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await requested;
+  await page.getByRole('button', { name: 'Đóng khung chat' }).click();
+  await page.getByLabel('Tên món *').fill('Tên tôi vừa sửa');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  release?.();
+  await expect(page.getByText('Biểu mẫu đã thay đổi trong lúc chờ; đề xuất chưa được áp dụng.')).toBeVisible();
+  await expect(page.getByLabel('Tên món *')).toHaveValue('Tên tôi vừa sửa');
+  await expect(page.getByLabel('Chọn nguyên liệu 1')).toHaveValue('');
+  expect(acknowledgements[0].status).toBe('CONFLICT');
+});
+
+test('expert form patch preserves other fields and acknowledges the React result', async ({ page }) => {
+  await signInAsMember(page, 'EXPERT');
+  const acknowledgements: Array<Record<string, unknown>> = [];
+  await page.route('**/api/v1/recipes/ai/chat/ui-actions/ack', async route => {
+    const payload = route.request().postDataJSON();
+    acknowledgements.push(payload);
+    await route.fulfill({ json: payload });
+  });
+  await page.route('**/api/v1/recipes/ai/chat', async route => {
+    const form = route.request().postDataJSON().formContext;
+    await route.fulfill({ json: { contextType: 'GENERAL', recipeId: null, sessionId: '11111111-1111-4111-8111-111111111111',
+      answer: 'Đang chờ giao diện xác nhận.', recommendations: [], steps: [{ sequence: 1,
+        tool: 'propose_recipe_form_patch', status: 'UI_ACTION_REQUIRED', summary: 'Cập nhật',
+        result: { data: { actionId: '22222222-2222-4222-8222-222222222222', formId: form.formId,
+          revision: form.revision, fields: { title: 'Đậu hũ sốt cà' } } } }] } });
+  });
+  await page.goto('/dang-cong-thuc');
+  await page.getByLabel('Tên món *').fill('Tên cũ');
+  await page.getByLabel('Mô tả', { exact: true }).fill('Mô tả do tôi viết');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Sửa tên món');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await expect(page.getByText('Đã cập nhật các trường được đề xuất trong biểu mẫu.')).toBeVisible();
+  await expect(page.getByLabel('Tên món *')).toHaveValue('Đậu hũ sốt cà');
+  await expect(page.getByLabel('Mô tả', { exact: true })).toHaveValue('Mô tả do tôi viết');
+  expect(acknowledgements).toHaveLength(1);
+  expect(acknowledgements[0].status).toBe('APPLIED');
+  expect(acknowledgements[0].revision).toBeGreaterThan(acknowledgements[0].baseRevision as number);
+});
+
+test('expert form patch rejects a stale revision and acknowledges conflict', async ({ page }) => {
+  await signInAsMember(page, 'EXPERT');
+  let received: (() => void) | undefined;
+  const requested = new Promise<void>(resolve => { received = resolve; });
+  let release: (() => void) | undefined;
+  const waitForEdit = new Promise<void>(resolve => { release = resolve; });
+  const acknowledgements: Array<Record<string, unknown>> = [];
+  await page.route('**/api/v1/recipes/ai/chat/ui-actions/ack', async route => {
+    const payload = route.request().postDataJSON();
+    acknowledgements.push(payload);
+    await route.fulfill({ json: payload });
+  });
+  await page.route('**/api/v1/recipes/ai/chat', async route => {
+    const form = route.request().postDataJSON().formContext;
+    received?.();
+    await waitForEdit;
+    await route.fulfill({ json: { contextType: 'GENERAL', recipeId: null, sessionId: '11111111-1111-4111-8111-111111111111',
+      answer: 'Đang chờ giao diện xác nhận.', recommendations: [], steps: [{ sequence: 1,
+        tool: 'propose_recipe_form_patch', status: 'UI_ACTION_REQUIRED', summary: 'Cập nhật',
+        result: { data: { actionId: '22222222-2222-4222-8222-222222222222', formId: form.formId,
+          revision: form.revision, fields: { title: 'Đề xuất cũ' } } } }] } });
+  });
+  await page.goto('/dang-cong-thuc');
+  await page.getByLabel('Tên món *').fill('Tên cũ');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Sửa tên món');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await requested;
+  await page.getByRole('button', { name: 'Đóng khung chat' }).click();
+  await page.getByLabel('Tên món *').fill('Tên đã sửa');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  release?.();
+  await expect(page.getByText('Biểu mẫu đã thay đổi trong lúc chờ; đề xuất chưa được áp dụng.')).toBeVisible();
+  await expect(page.getByLabel('Tên món *')).toHaveValue('Tên đã sửa');
+  expect(acknowledgements[0].status).toBe('CONFLICT');
+});
+
+test('expert chat snapshots the current unsaved recipe form with a changing revision', async ({ page }) => {
+  await signInAsMember(page, 'EXPERT');
+  const snapshots: Array<{ formId: string; revision: number; fields: Record<string, string> }> = [];
+  await page.route('**/api/v1/recipes/ai/chat', async route => {
+    snapshots.push(route.request().postDataJSON().formContext);
+    await route.fulfill({ json: { contextType: 'GENERAL', recipeId: null, answer: 'Đã nhận.', recommendations: [] } });
+  });
+  await page.goto('/dang-cong-thuc');
+  await page.getByLabel('Tên món *').fill('Đậu hũ');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Giúp tôi viết công thức');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await expect.poll(() => snapshots.length).toBe(1);
+  expect(snapshots[0].fields.title).toBe('Đậu hũ');
+  await page.getByRole('button', { name: 'Đóng khung chat' }).click();
+  await page.getByLabel('Tên món *').fill('Đậu hũ sốt cà');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Viết tiếp');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await expect.poll(() => snapshots.length).toBe(2);
+  expect(snapshots[1].formId).toBe(snapshots[0].formId);
+  expect(snapshots[1].revision).toBeGreaterThan(snapshots[0].revision);
+  expect(snapshots[1].fields.title).toBe('Đậu hũ sốt cà');
+});
+
+test('AI menu tool result shows a preview without applying it', async ({ page }) => {
+  await page.addInitScript(() => sessionStorage.setItem('mamxanh.auth', JSON.stringify({
+    accessToken: 'playwright-member-token', expiresAt: Date.now() + 3_600_000,
+    account: { id: 7, displayName: 'Member test', email: 'member@example.test', role: 'CUSTOMER', avatarUrl: null },
+  })));
+  let applyCalls = 0;
+  await page.route('**/api/v1/meal-plans/ai-menu', async route => { applyCalls++; await route.abort(); });
+  await page.route('**/api/v1/recipes/ai/chat', route => route.fulfill({ json: {
+    contextType: 'GENERAL', recipeId: null, answer: 'Đây là bản xem trước.', recommendations: [],
+    steps: [{ sequence: 1, tool: 'create_ai_menu_preview', status: 'SUCCEEDED', summary: 'Đã tạo bản xem trước.', result: { data: {
+      weekStartDate: '2026-11-02', meals: [{ mealDate: '2026-11-03', mealType: 'LUNCH', recipeId: 57, recipeTitle: 'Đậu hũ sốt cà' }],
+      nutritionDisclaimer: 'Dinh dưỡng dự kiến.',
+    } } }],
+  } }));
+  await page.goto('/trang-chu');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Tạo thực đơn tuần này');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  const preview = page.getByRole('region', { name: 'Xem trước thực đơn AI' });
+  await expect(preview).toContainText('2026-11-03 · Trưa: Đậu hũ sốt cà');
+  await expect(preview).toContainText('chưa lưu vào lịch ăn');
+  expect(applyCalls).toBe(0);
+});
+
+test('floating chat captures the current recipe route on each message', async ({ page }) => {
+  const sent: Array<Record<string, unknown>> = [];
+  await page.route('**/api/v1/recipes/ai/chat', async route => {
+    const request = route.request().postDataJSON() as Record<string, unknown>;
+    sent.push(request);
+    await route.fulfill({ json: { contextType: request.contextType, recipeId: request.recipeId, answer: 'Đã nhận câu hỏi.' } });
+  });
+  for (const id of [57, 58]) {
+    await page.goto(`/cong-thuc/id/${id}`);
+    await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+    await page.getByLabel('Câu hỏi của bạn').fill('Bước 2 của món này là gì?');
+    await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+    await expect.poll(() => sent.length).toBe(id === 57 ? 1 : 2);
+    expect(sent.at(-1)).toMatchObject({ contextType: 'RECIPE', recipeId: id });
+  }
+});
+
 async function signInAsMember(page: import('@playwright/test').Page, role = 'CUSTOMER') {
   await page.addInitScript((role) => sessionStorage.setItem('mamxanh.auth', JSON.stringify({
     accessToken: 'playwright-member-token', expiresAt: Date.now() + 3_600_000,
@@ -240,6 +480,9 @@ const supportedAgentDestinations = [
 for (const destination of supportedAgentDestinations) {
   test(`Agent opens ${destination.page} at its rendered React Router destination`, async ({ page }) => {
     await signInAsMember(page, destination.role);
+    if (destination.page === 'RECIPE_DETAIL') {
+      await page.route('**/api/v1/recipes/56', route => route.fulfill({ status: 404, json: { detail: 'Recipe not found' } }));
+    }
     await page.route('**/api/v1/recipes/ai/chat', route => route.fulfill({ json: {
       contextType: 'GENERAL', recipeId: null, answer: 'Đã mở trang theo yêu cầu.',
       recommendations: [], workflowUrl: destination.path,

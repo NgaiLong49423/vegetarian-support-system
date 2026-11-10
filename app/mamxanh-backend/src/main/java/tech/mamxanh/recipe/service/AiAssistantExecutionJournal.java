@@ -130,7 +130,10 @@ public class AiAssistantExecutionJournal {
                 ActionState.RESERVED, null, null, Instant.now()
         );
 
-        JournalEntry existing = entries.putIfAbsent(key, entry);
+        if (jdbc != null && requiresNewTransaction == null) {
+            throw new AppException(ErrorCode.AI_RESPONSE_INVALID, "Không thể xác minh trạng thái thao tác.");
+        }
+        JournalEntry existing = jdbc == null ? entries.putIfAbsent(key, entry) : null;
         if (existing != null) {
             if (existing.argumentsHash() != null && !existing.argumentsHash().equalsIgnoreCase(finalHash)) {
                 throw new AppException(ErrorCode.VALIDATION_FAILED, "Tham số của yêu cầu không khớp với bản ghi đã tồn tại.");
@@ -176,6 +179,7 @@ public class AiAssistantExecutionJournal {
                 throw appEx;
             } catch (Exception ex) {
                 log.warn("Failed to persist reservation in SQL Server: {}", ex.getMessage());
+                throw new AppException(ErrorCode.AI_RESPONSE_INVALID, "Không thể xác minh trạng thái thao tác.");
             }
         }
         return entry;
@@ -183,7 +187,7 @@ public class AiAssistantExecutionJournal {
 
     public void updateState(long ownerId, UUID clientRequestId, String actionId, ActionState newState, Object resultData, String errorMessage) {
         ActionKey key = new ActionKey(ownerId, clientRequestId, actionId);
-        entries.compute(key, (k, existing) -> {
+        if (jdbc == null) entries.compute(key, (k, existing) -> {
             String tool = existing != null ? existing.toolName() : "unknown";
             String argHash = existing != null ? existing.argumentsHash() : null;
             Instant created = existing != null ? existing.createdAt() : Instant.now();
@@ -195,26 +199,28 @@ public class AiAssistantExecutionJournal {
             if (resultData != null) {
                 try {
                     json = mapper.writeValueAsString(resultData);
-                } catch (Exception ignored) {
-                    json = String.valueOf(resultData);
+                } catch (Exception failure) {
+                    throw new AppException(ErrorCode.AI_RESPONSE_INVALID, "Không thể lưu kết quả thao tác để xác minh.");
                 }
             }
             final String finalJson = json;
             try {
-                jdbc.update("""
+                int updated = jdbc.update("""
                         UPDATE AI_ASSISTANT_ACTION_JOURNAL
                         SET state = ?, result_json = COALESCE(?, result_json), error_message = COALESCE(?, error_message)
                         WHERE owner_id = ? AND client_request_id = ? AND action_id = ?
                         """, newState.name(), finalJson, errorMessage, ownerId, clientRequestId, actionId);
+                if (updated != 1) throw new IllegalStateException("Journal entry not found");
             } catch (Exception ex) {
                 log.warn("Failed to update SQL journal state for key {}: {}", key, ex.getMessage());
+                throw new AppException(ErrorCode.AI_RESPONSE_INVALID, "Không thể xác minh trạng thái thao tác.");
             }
         }
     }
 
     public Optional<JournalEntry> find(long ownerId, UUID clientRequestId, String actionId) {
         ActionKey key = new ActionKey(ownerId, clientRequestId, actionId);
-        JournalEntry mem = entries.get(key);
+        JournalEntry mem = jdbc == null ? entries.get(key) : null;
         if (mem != null) {
             return Optional.of(mem);
         }
@@ -236,12 +242,12 @@ public class AiAssistantExecutionJournal {
                     String resultJson = rs.getString("result_json");
                     return new JournalEntry(
                             rs.getLong("owner_id"),
-                            (UUID) rs.getObject("client_request_id"),
+                            UUID.fromString(rs.getString("client_request_id")),
                             rs.getString("action_id"),
                             rs.getString("tool_name"),
                             rs.getString("arguments_hash"),
                             state,
-                            resultJson,
+                            resultJson == null ? null : mapper.readValue(resultJson, AiAssistantToolRegistry.ToolResult.class),
                             rs.getString("error_message"),
                             rs.getTimestamp("created_at").toInstant()
                     );
@@ -249,17 +255,38 @@ public class AiAssistantExecutionJournal {
 
                 if (!rows.isEmpty()) {
                     JournalEntry fromDb = rows.getFirst();
-                    entries.put(key, fromDb);
                     return Optional.of(fromDb);
                 }
             } catch (Exception ex) {
                 log.debug("SQL find failed for key {}: {}", key, ex.getMessage());
+                throw new AppException(ErrorCode.AI_RESPONSE_INVALID, "Không thể xác minh trạng thái thao tác.");
             }
         }
         return Optional.empty();
     }
 
     public List<JournalEntry> findByRequest(long ownerId, UUID clientRequestId) {
+        if (jdbc != null) {
+            try {
+                return jdbc.query("""
+                        SELECT owner_id, client_request_id, action_id, tool_name, arguments_hash, state, result_json, error_message, created_at
+                        FROM AI_ASSISTANT_ACTION_JOURNAL
+                        WHERE owner_id = ? AND client_request_id = ? AND expires_at > SYSUTCDATETIME()
+                        ORDER BY created_at, action_id
+                        """, (rs, rowNum) -> {
+                    ActionState state;
+                    try { state = ActionState.valueOf(rs.getString("state")); }
+                    catch (Exception ignored) { state = ActionState.INDETERMINATE; }
+                    String resultJson = rs.getString("result_json");
+                    return new JournalEntry(rs.getLong("owner_id"), UUID.fromString(rs.getString("client_request_id")),
+                            rs.getString("action_id"), rs.getString("tool_name"), rs.getString("arguments_hash"),
+                            state, resultJson == null ? null : mapper.readValue(resultJson, AiAssistantToolRegistry.ToolResult.class),
+                            rs.getString("error_message"), rs.getTimestamp("created_at").toInstant());
+                }, ownerId, clientRequestId);
+            } catch (Exception failure) {
+                throw new AppException(ErrorCode.AI_RESPONSE_INVALID, "Không thể xác minh trạng thái thao tác.");
+            }
+        }
         return entries.values().stream()
                 .filter(e -> e.ownerId() == ownerId && Objects.equals(e.clientRequestId(), clientRequestId))
                 .sorted(Comparator.comparing(JournalEntry::createdAt).thenComparing(JournalEntry::actionId))
@@ -307,10 +334,17 @@ public class AiAssistantExecutionJournal {
             if (entry.state() == ActionState.RESERVED || entry.state() == ActionState.WRITING) {
                 throw new AppException(ErrorCode.VALIDATION_FAILED, "Thao tác đang được xử lý trong một yêu cầu khác.");
             }
+            if (entry.state() == ActionState.INDETERMINATE) {
+                throw new AppException(ErrorCode.AI_RESPONSE_INVALID, "Kết quả thao tác chưa xác định; hãy kiểm tra dữ liệu trước khi thử lại.");
+            }
         }
 
         // 2. Reserve Action
-        recordReservation(ownerId, clientRequestId, actionId, toolName, finalHash);
+        JournalEntry reservation = recordReservation(ownerId, clientRequestId, actionId, toolName, finalHash);
+        if (reservation.state() == ActionState.SUCCEEDED) {
+            @SuppressWarnings("unchecked") T cached = (T) reservation.resultData();
+            return cached;
+        }
 
         // 3. Execute domain action (wrapped in shared transaction if manager available)
         try {

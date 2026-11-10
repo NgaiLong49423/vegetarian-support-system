@@ -143,7 +143,7 @@ test('edits plans section, validates changes, steps through confirmation dialog 
   expect(savedData).toBeTruthy();
 });
 
-test('edits models section, adds model, validates defaults, deletes model and saves', async ({ page }) => {
+test('edits shared models section, adds model, validates the Guest default, deletes model and saves', async ({ page }) => {
   let putRequests = 0;
   await page.route('**/api/v1/admin/ai-config', (route) => {
     if (route.request().method() === 'PUT') {
@@ -162,11 +162,11 @@ test('edits models section, adds model, validates defaults, deletes model and sa
   const deleteButtons = page.getByRole('button', { name: 'Xóa model khỏi cấu hình' });
   await deleteButtons.nth(2).click();
 
-  // Test validation when a tier has no default: uncheck enabled on model 0
+  // The common default must remain enabled and allowed for Guest.
   const enabledCheckboxes = page.locator('input[type="checkbox"]').filter({ hasText: '' });
   await enabledCheckboxes.first().uncheck();
   await page.getByRole('button', { name: 'Lưu phần này' }).click();
-  await expect(page.getByRole('alert')).toContainText('cần có ít nhất một model đang bật');
+  await expect(page.getByRole('alert')).toContainText('Cần đúng một model mặc định đang bật và được phép cho Guest.');
   await enabledCheckboxes.first().check();
 
   // Add new model

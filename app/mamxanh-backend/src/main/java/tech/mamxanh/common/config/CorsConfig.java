@@ -39,6 +39,7 @@ public class CorsConfig {
         guestChat.setAllowedHeaders(new java.util.ArrayList<>(configuration.getAllowedHeaders()));
         guestChat.addAllowedHeader("X-Guest-Chat-Id");
         source.registerCorsConfiguration("/api/v1/recipes/ai/chat", guestChat);
+        source.registerCorsConfiguration("/api/v1/recipes/ai/chat/stream", guestChat);
         source.registerCorsConfiguration("/api/**", configuration);
         return source;
     }

@@ -86,7 +86,7 @@ class AdkDomainToolsTest {
         registry = new AiAssistantToolRegistry(
                 recipePosts, recipeService, ingredientCatalog, reactions, comments,
                 follows, profiles, dietaryPreferences, nutritionProfiles, mealPlanReads,
-                mealPlans, shoppingLists, knowledge, validator, mapper, users, entitlements
+                mealPlans, mock(tech.mamxanh.mealplan.service.AiMenuService.class), shoppingLists, knowledge, validator, mapper, users, entitlements
         );
         domainTools = new AdkDomainTools(registry);
         domainTools.initDeclarations();
@@ -127,10 +127,10 @@ class AdkDomainToolsTest {
     }
 
     @Test
-    @DisplayName("Customer role is scoped to exactly 25 tools (5 public + 20 member)")
+    @DisplayName("Customer role includes ADK candidate selection and AI menu preview tools")
     void customerRoleIsScopedToExactly25Tools() {
         List<String> names = domainTools.getToolNamesForRole("CUSTOMER");
-        assertThat(names).hasSize(25);
+        assertThat(names).hasSize(28);
         assertThat(names).contains(
                 "search_public_recipes",
                 "get_recipe_detail",
@@ -147,6 +147,9 @@ class AdkDomainToolsTest {
                 "create_recipe_comment",
                 "follow_expert",
                 "get_meal_plan",
+                "get_ai_menu_candidates",
+                "create_ai_menu_preview",
+                "apply_ai_menu_preview",
                 "apply_weekly_menu",
                 "add_meal_plan_slot",
                 "list_shopping_lists",
@@ -163,17 +166,17 @@ class AdkDomainToolsTest {
         assertThat(names).doesNotContain("create_recipe_post", "update_own_recipe_post", "delete_own_recipe_post");
 
         List<FunctionTool> tools = domainTools.createToolsForRole("CUSTOMER");
-        assertThat(tools).hasSize(25);
+        assertThat(tools).hasSize(28);
 
         List<AiAssistantToolRegistry.ToolDefinition> definitions = domainTools.definitionsFor("CUSTOMER");
-        assertThat(definitions).hasSize(25);
+        assertThat(definitions).hasSize(28);
     }
 
     @Test
-    @DisplayName("Expert role is scoped to exactly 28 tools (25 customer + 3 expert)")
+    @DisplayName("Expert role includes customer and expert tools")
     void expertRoleIsScopedToExactly28Tools() {
         List<String> names = domainTools.getToolNamesForRole("EXPERT");
-        assertThat(names).hasSize(28);
+        assertThat(names).hasSize(32);
         assertThat(names).contains(
                 "create_recipe_post",
                 "update_own_recipe_post",
@@ -181,10 +184,10 @@ class AdkDomainToolsTest {
         );
 
         List<FunctionTool> tools = domainTools.createToolsForRole("EXPERT");
-        assertThat(tools).hasSize(28);
+        assertThat(tools).hasSize(32);
 
         List<AiAssistantToolRegistry.ToolDefinition> definitions = domainTools.definitionsFor("EXPERT");
-        assertThat(definitions).hasSize(28);
+        assertThat(definitions).hasSize(32);
     }
 
     @Test

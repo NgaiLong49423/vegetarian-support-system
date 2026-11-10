@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.60.0
+> **Version:** v2.61.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-11-01
+> **Last Updated:** 2026-11-05
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -84,13 +84,13 @@ Tạo phễu tiếp cận mở rộng nhằm giới thiệu kiến thức ẩm t
 ---
 
 <a id="fr-02"></a>
-### FR-02 — Quyền Guest dùng AI Chatbot với giới hạn tần suất và token theo phiên
+### FR-02 — Quyền Guest dùng AI Chatbot với giới hạn tần suất và token theo tháng
 
 - **Mã yêu cầu:** FR-02
 - **Module:** M06 (AI Assistant & Personalization)
 - **Tóm tắt yêu cầu:** Hệ thống quản lý quyền và trải nghiệm của Guest khi tương tác với AI Chatbot chung của hệ thống ([FR-51](FUNCTIONAL-REQUIREMENTS.md#fr-51)) theo cơ chế bảo vệ tần suất kỹ thuật (Technical Rate Limiting):
   - **Quyền sử dụng:** Guest được trải nghiệm trực tiếp AI Chatbot cơ bản (FR-51) ở cả Ngữ cảnh chung (General Context) và Ngữ cảnh bài công thức (Recipe Context theo [FR-20](FUNCTIONAL-REQUIREMENTS.md#fr-20)) đối với các Recipe Post đang công khai mà không bắt buộc đăng nhập (BR-01).
-  - **Giới hạn tần suất kỹ thuật (Rate Limiting):** Áp dụng giới hạn tần suất kỹ thuật (ví dụ: tối đa 10 request / phút theo anonymous cookie kết hợp IP) để chống spam và ngăn chặn cạn kiệt tài nguyên máy chủ; chịu quota 20.000 token mỗi phiên cùng giới hạn tần suất kỹ thuật (BR-01/02).
+  - **Giới hạn tần suất kỹ thuật (Rate Limiting):** Áp dụng giới hạn tần suất kỹ thuật (ví dụ: tối đa 10 request / phút theo anonymous cookie kết hợp IP) để chống spam; Guest chịu quota 50.000 token mỗi tháng theo định danh Guest, độc lập session AI (BR-01/02).
   - **Giới hạn trải nghiệm:** Guest không có hồ sơ dinh dưỡng cá nhân; phiên hội thoại có phạm vi tạm thời và hạn dùng (BR-05, NFR-22). Guest không phải là một thực thể trong cơ sở dữ liệu.
   - **Toàn bộ năng lực và luồng tương tác:** Hành vi hội thoại, áp dụng chỉ dẫn an toàn và phản hồi câu hỏi do [FR-51](FUNCTIONAL-REQUIREMENTS.md#fr-51) sở hữu và điều phối; thời gian phản hồi của AI Chatbot phải đáp ứng [NFR-03](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03).
 
@@ -740,7 +740,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **Use Case detail:** [Open interaction flows](../use-cases/ai-and-personalization.md#fr-10).
 
 #### Mục đích và phạm vi
-Hệ thống cho phép Guest và Member sử dụng chức năng AI theo quyền truy cập dữ liệu, vai trò, quyền sở hữu và điều kiện nghiệp vụ của chức năng gốc; gói AI không cấp thêm quyền nghiệp vụ. Hạn mức token và model Gemini được chọn phụ thuộc gói hiện hành theo BR-02. Member có thể lưu model preference theo tài khoản trong chatbox dùng chung; preference áp dụng cho mọi chức năng AI mà tài khoản được phép sử dụng. Backend kiểm tra quyền, model preference, catalog đang bật, consent và hạn mức trước mỗi lần gọi provider. Admin không thao tác qua AI Assistant.
+Hệ thống cho phép Guest và Member sử dụng chức năng AI theo quyền truy cập dữ liệu, vai trò, quyền sở hữu và điều kiện nghiệp vụ của chức năng gốc; gói AI không cấp thêm quyền nghiệp vụ. Hạn mức token phụ thuộc gói, các gói Member dùng chung catalog model đang bật theo BR-02. Member có thể lưu model preference theo tài khoản trong chatbox dùng chung; preference áp dụng cho mọi chức năng AI mà tài khoản được phép sử dụng. Backend kiểm tra quyền, model preference, catalog đang bật, consent và hạn mức trước mỗi lần gọi provider. Admin không thao tác qua AI Assistant.
 
 #### Actors và Use Cases
 - Primary Actor: Guest, Member (Free/Plus/Pro).
@@ -748,20 +748,20 @@ Hệ thống cho phép Guest và Member sử dụng chức năng AI theo quyền
 - `UC-10.2`: Chọn model Gemini khả dụng theo gói.
 
 #### Phân quyền và ràng buộc
-- Pilot mặc định Guest theo cấu hình Free; Free dùng Gemini Flash-Lite; Plus/Pro dùng Flash-Lite hoặc Flash, mặc định Flash. Admin có thể gán bất kỳ Gemini model đã xác minh cho từng tier; mỗi tier phải có model đang bật và default hợp lệ. Chưa hỗ trợ model ngoài Gemini.
-- Model list và model access lấy từ catalog do Admin cấu hình. Guest không lưu preference; Member preference được lưu theo chính tài khoản đã xác thực. Credit mua thêm không mở quyền model; khi gói hết hạn, model access trở về Free.
+- Free/Plus/Pro dùng chung catalog Gemini đang bật và model mặc định hợp lệ. Guest giữ các giới hạn Guest và không lưu preference; Admin chỉ thêm model đã được xác minh. Chưa hỗ trợ model ngoài Gemini.
+- Model list lấy từ catalog do Admin cấu hình. Member preference được lưu theo chính tài khoản đã xác thực. Credit mua thêm không thay đổi quyền model.
 - Từ chối trước provider call nếu quyền dữ liệu/chức năng, model access, consent hoặc ngân sách không hợp lệ. Nếu preference đã lưu không còn được phép hoặc model bị Admin tắt, yêu cầu người dùng chọn lại; không tự thay model và không gọi provider.
 - Khi model lỗi hoặc không hỗ trợ tác vụ, giải thích lý do và đề xuất model hợp lệ khác. Chỉ retry bằng model thay thế sau khi người dùng đồng ý; đồng ý cho phép đúng một lần retry và không thay đổi preference đã lưu.
 
 #### Tiêu chí chấp nhận
 - **AC-10.1:** Guest và Member được dùng chức năng AI khi thỏa quyền của chức năng gốc; gói không mở rộng role/ownership.
-- **AC-10.2:** Guest dùng cùng catalog/access/default với Free. Catalog pilot mặc định Free là Flash-Lite; Plus/Pro là Flash-Lite và Flash, default Flash. Access/default thực tế lấy từ cấu hình Admin; mỗi tier có ít nhất một model bật và một default hợp lệ.
-- **AC-10.3:** Backend từ chối model không thuộc danh sách được phép theo gói hoặc catalog đang bật trước khi gọi Gemini. Nếu model preference lưu trước đó không còn hợp lệ, yêu cầu người dùng chọn lại; không tự thay model. Gói hết hạn trở về quyền model Free; Credit mua thêm không mở quyền model.
+- **AC-10.2:** Free/Plus/Pro dùng chung catalog model đang bật và default hợp lệ; Guest tiếp tục theo giới hạn Guest.
+- **AC-10.3:** Backend từ chối model không thuộc catalog đang bật hoặc không được phép cho Guest trước khi gọi Gemini. Nếu model preference lưu trước đó không còn hợp lệ, yêu cầu người dùng chọn lại; không tự thay model. Credit mua thêm không mở quyền model.
 - **AC-10.4:** Thiếu quyền dữ liệu/chức năng hoặc consent thì không gửi dữ liệu tương ứng tới Gemini; mọi luồng dùng model đã được Backend xác thực và không đưa Gemini API key ra Frontend.
 - **AC-10.5:** Khi model lỗi/không hỗ trợ, hệ thống báo lý do và đề xuất model hợp lệ; chỉ retry đúng một lần sau khi người dùng đồng ý, không đổi preference tài khoản.
 - **AC-10.6:** Model picker nằm trong chatbox dùng chung; Guest không lưu preference, Member preference được lưu theo tài khoản và khôi phục khi đăng nhập lại.
 - **AC-10.7:** Preference chỉ đọc/sửa cho tài khoản hiện tại; Guest dùng default của cấu hình Free (pilot là Flash-Lite) và Backend không nhận account ID do client chỉ định.
-- **AC-10.8:** Member có thể chọn và lưu model preference cho mọi chức năng AI được phép; preference được xác thực lại theo tier/subscription hiện tại trước mỗi provider call.
+- **AC-10.8:** Member có thể chọn và lưu model preference cho mọi chức năng AI được phép; preference được xác thực lại theo catalog đang bật trước mỗi provider call.
 
 ---
 
@@ -844,7 +844,7 @@ Hệ thống cho phép Guest và Member sử dụng chức năng AI theo quyền
 - **Tóm tắt yêu cầu:** Member có thể xem và mua gói tháng Free/Plus/Pro bằng VNĐ qua cổng thanh toán. Thanh toán người dùng tự xác nhận; AI Assistant chỉ điều hướng tới trang thanh toán. Giá pilot hiện là Free 0đ, Plus 99.000đ/tháng, Pro 199.000đ/tháng; Admin có thể đổi giá cho lần kích hoạt/mua mới. Gói trả phí chỉ kích hoạt sau xác minh thanh toán; không auto-renew, không hoàn tiền một phần; webhook idempotent; không có gói năm/coupon/promotion/trial. Quyền chức năng AI theo quyền nghiệp vụ, token quota/model access theo BR-02.
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Member đã đăng nhập tài khoản hợp lệ (FR-03).
-  - Bảng giá/quota khởi đầu: Free 0đ và 50.000 token/tháng; Plus 99.000đ và 300.000 token/tháng; Pro 199.000đ và 600.000 token/tháng. Guest có 20.000 token/session. Plus/Pro chu kỳ bắt đầu khi kích hoạt/gia hạn; Member Free có chu kỳ tháng riêng; quota không cộng dồn. Admin có thể đổi giá và quota; chu kỳ đã mua giữ cấu hình đã cấp. Chi tiết model catalog và quota ở BR-02/FR-63/65.
+  - Bảng giá/quota: Guest/Free 50.000 token/tháng; Plus 99.000đ và 200.000 token/chu kỳ; Pro 199.000đ và 500.000 token/chu kỳ. Plus/Pro bắt đầu chu kỳ lúc kích hoạt/gia hạn; quota không cộng dồn. Trần mới áp dụng ngay cho chu kỳ đang hoạt động, giữ usage, thời gian và Credit; các thay đổi về sau theo BR-02/FR-63/65.
   - Tiền tệ: Đồng Việt Nam (VNĐ) duy nhất.
   - Không hỗ trợ: Gói năm, coupon, giảm giá, trial, hoàn tiền một phần.
 - **Phân loại Actor:**
@@ -857,7 +857,7 @@ Hệ thống cho phép Guest và Member sử dụng chức năng AI theo quyền
   - `UC-13.2`: Khởi tạo đơn hàng và thanh toán nâng cấp gói theo giá hiện hành được Admin cấu hình.
   - `UC-13.3`: Xem thông tin trạng thái gói dịch vụ hiện tại và ngày hết hạn chu kỳ đã trả phí.
 - **User Stories:**
-  - *Là một người dùng thường xuyên cần AI lên thực đơn*, tôi muốn nâng cấp lên gói Plus theo giá hiện hành/tháng một cách an toàn và minh bạch để tăng hạn mức token và quyền chọn Gemini model theo gói mà không bị tự động trừ tiền âm thầm vào tháng sau.
+  - *Là một người dùng thường xuyên cần AI lên thực đơn*, tôi muốn nâng cấp lên gói Plus theo giá hiện hành/tháng một cách an toàn và minh bạch để tăng hạn mức token mà không bị tự động trừ tiền âm thầm vào tháng sau.
 
 #### Phân quyền & Ràng buộc phê duyệt
 - **Quyền hạn:** Member đã đăng nhập mới có quyền thực hiện giao dịch thanh toán nâng cấp.
@@ -1543,7 +1543,7 @@ Hệ thống cho phép Guest và Member sử dụng chức năng AI theo quyền
 - **AC-21.5 (Xác thực quyền Chuyên gia và ngân sách trước khi gọi AI):**
   - *Given* Chuyên gia đăng nhập và có đủ token/Credit theo FR-63/64,
   - *When* tác giả yêu cầu AI hỗ trợ soạn bài,
-  - *Then* Backend kiểm tra role, quyền sở hữu/dữ liệu, model theo tier, consent và ngân sách trước Gemini; tài khoản Free được phép nếu còn ngân sách và dùng model đang được cấu hình cho tier Free (pilot mặc định Flash-Lite). Tài khoản không có role Expert bị từ chối theo FR-04.
+  - *Then* Backend kiểm tra role, quyền sở hữu/dữ liệu, model trong catalog chung, consent và ngân sách trước Gemini; tài khoản Free được phép nếu còn ngân sách. Tài khoản không có role Expert bị từ chối theo FR-04.
 
 ---
 
@@ -2124,7 +2124,7 @@ Thu thập và chuẩn hóa dữ liệu sở thích, thói quen và các ràng b
   - **Then:** Hệ thống ghi nhận trạng thái chưa hoàn tất Onboarding; Member vẫn có thể thực hiện tìm kiếm bài viết, lưu công thức, xếp lịch ăn thủ công và bình luận; riêng Chuyên gia vẫn có thể tạo Recipe Post bình thường mà không bị ngăn cản (BR-30).
 
 - **AC-31.4 — Chặn gọi AI cá nhân hóa khi chưa chọn loại ăn chay:**
-  - **Given:** Member chưa chọn loại ăn chay trong hồ sơ sở thích và thuộc gói có quyền sử dụng tính năng tương ứng.
+  - **Given:** Member chưa chọn loại ăn chay trong hồ sơ sở thích và có quyền nghiệp vụ sử dụng tính năng tương ứng.
   - **When:** Member nhấn yêu cầu "AI gợi ý món cho tôi" hoặc "AI tạo thực đơn tuần".
   - **Then:** Hệ thống kiểm tra và chặn yêu cầu; tuyệt đối KHÔNG gửi yêu cầu tới dịch vụ AI; hệ thống hiển thị thông báo yêu cầu chọn loại ăn chay trước (BR-31).
 
@@ -2506,7 +2506,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 #### Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
   - [BR-01](BUSINESS-RULES.md#br-01): Quyền AI cơ bản cho Guest và Free.
-  - [BR-02](BUSINESS-RULES.md#br-02): Hạn mức token và model theo gói.
+  - [BR-02](BUSINESS-RULES.md#br-02): Hạn mức token theo gói và danh mục model chung.
   - [BR-03](BUSINESS-RULES.md#br-03): Kiểm tra quyền tính năng trước khi gọi Gemini.
   - [BR-04](BUSINESS-RULES.md#br-04): Xử lý lỗi provider và timeout AI.
   - [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest.
@@ -3121,7 +3121,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **Tóm tắt yêu cầu:** Cung cấp tính năng gợi ý các bài công thức nấu ăn liên quan ở chân trang chi tiết Recipe Post; mặc định hệ thống hiển thị danh sách gợi ý liên quan thông thường dựa trên tiêu chí đối khớp thuộc tính tĩnh (cùng danh mục món ăn, trùng khớp ít nhất một nguyên liệu chính, cùng trường phái ăn chay) mà hoàn toàn không sử dụng trí tuệ nhân tạo (AI) và không yêu cầu gói trả phí; đồng thời cung cấp nút tùy chọn chuyên biệt "Nhờ Trợ lý AI gợi ý món ăn kết hợp hoặc biến tấu" sử dụng Google Gemini AI; chỉ khi người dùng chủ động bấm nút này, hệ thống mới gửi yêu cầu tới Gemini nếu người dùng có quyền xem dữ liệu công khai, model và ngân sách hợp lệ (FR-10, BR-02/03, FR-63); các gợi ý của AI cũng chỉ được chọn lọc từ các Recipe Post đang công khai trong hệ thống, không tự bịa công thức mới.
 - **Phạm vi nghiệp vụ:**
   - Gợi ý thông thường: Phục vụ cho mọi đối tượng người dùng (bao gồm Guest và Member) hoàn toàn miễn phí (BR-05).
-  - Tùy chọn gọi AI: Guest và Member có thể yêu cầu dựa trên bài công khai; Guest chịu session quota/rate limit, Member quota theo gói. Không khóa theo Plus/Pro; không truy cập dữ liệu riêng tư.
+  - Tùy chọn gọi AI: Guest và Member có thể yêu cầu dựa trên bài công khai; Guest chịu quota tháng/rate limit, Member quota theo gói. Không khóa theo Plus/Pro; không truy cập dữ liệu riêng tư.
 - **Phân loại Actor:**
   - Primary Actor: `Guest / Member` (xem gợi ý thông thường hoặc chủ động yêu cầu AI gợi ý từ bài công khai).
   - Supporting Actor: `Hệ thống truy vấn công thức nội bộ`, `Google Gemini AI` (khi được gọi).
@@ -3332,7 +3332,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **Người dùng và Quyền truy cập:**
   - Cả `Guest` và `Member` sử dụng **CÙNG MỘT AI Chatbot** này; không tạo bot riêng biệt theo phân quyền người dùng.
   - Sự khác biệt nằm ở cơ chế xác thực, giới hạn tần suất kỹ thuật và mức độ cá nhân hóa:
-    - *Guest:* Trải nghiệm trực tiếp AI Chatbot cơ bản (FR-51) theo cơ chế giới hạn tần suất kỹ thuật (Technical Rate Limiting, tối đa 10 request / phút theo anonymous cookie + IP) để chống spam (FR-02, BR-01); được phép hỏi cả ngữ cảnh chung và ngữ cảnh bài công thức công khai; không có hồ sơ dinh dưỡng cá nhân; phiên hội thoại có phạm vi tạm thời và hạn dùng (BR-05, NFR-22). Guest chịu quota 20.000 token mỗi phiên và giới hạn tần suất kỹ thuật; Member chịu hạn mức token theo gói (BR-01/02, FR-63).
+    - *Guest:* Trải nghiệm trực tiếp AI Chatbot cơ bản (FR-51) theo cơ chế giới hạn tần suất kỹ thuật (tối đa 10 request / phút theo anonymous cookie + IP); được phép hỏi ngữ cảnh chung và bài công thức công khai; không có hồ sơ dinh dưỡng cá nhân; phiên hội thoại tạm thời (BR-05, NFR-22). Guest chịu quota 50.000 token mỗi tháng theo định danh Guest độc lập session; Member chịu quota theo gói (BR-01/02, FR-63).
     - *Member (Free / Plus / Pro):* Được xác thực theo tài khoản; không áp dụng quota theo số request/ngày; chức năng theo quyền nghiệp vụ gốc, còn token quota/model theo FR-10, BR-01, BR-02, FR-63.
     - Dữ liệu đo lường kỹ thuật (telemetry) do provider trả về chỉ dùng để đối soát chi phí vận hành và lưu trữ tối đa 90 ngày; tuyệt đối không lưu trữ raw prompt (BR-04, FR-11).
   - Thời gian phản hồi: đáp ứng [NFR-03](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03).
@@ -3371,7 +3371,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - `US-51.3` *(Dinh dưỡng & BMI an toàn)*: Là một người theo dõi sức khỏe, tôi muốn hỏi AI để hiểu rõ ý nghĩa tham khảo của chỉ số BMI cá nhân và cách phân bổ calorie của bữa ăn chay mà không tiếp nhận các chỉ định y khoa sai lệch.
 
 #### Phân quyền & Ràng buộc phê duyệt
-- **Quyền hạn:** Cả Guest (theo FR-02) và Member (theo FR-10) đều có quyền sử dụng cùng một AI Chatbot này; Guest tuân thủ giới hạn tần suất kỹ thuật; Member được xác thực theo tài khoản và quota token và model theo gói; quyền chức năng theo quyền nghiệp vụ/role của chức năng gốc.
+- **Quyền hạn:** Guest (theo FR-02) và Member (theo FR-10) dùng cùng chatbot; Guest tuân thủ rate limit và quota tháng, Member được xác thực theo tài khoản và quota theo gói; quyền chức năng theo role/điều kiện nghiệp vụ, model theo catalog chung của Member.
 - **Ràng buộc an toàn & Toàn vẹn:** Ranh giới y tế (BR-09, BR-41); không bịa đặt (NFR-25); thao tác dữ liệu theo Execution Mode và quyền gốc FR-66; publish/xóa vĩnh viễn cần xác nhận; không sửa danh mục dinh dưỡng chính thức (BR-51); tuân thủ `dietaryType`/`allergiesAndRestrictions`; phân biệt nhãn AI với nội dung tác giả.
 
 #### Ma trận truy vết (Traceability Matrix)
@@ -3419,7 +3419,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **AC-51.5 (Nhất quán một AI Chatbot duy nhất cho cả Guest và Member):**
   - *Given* Guest và Member cùng trải nghiệm đặt câu hỏi cho AI Chatbot,
   - *When* hệ thống tiếp nhận và xử lý request,
-  - *Then* cả hai đều tương tác với cùng một mô hình AI Chatbot duy nhất (FR-51); Guest được bảo vệ bằng giới hạn tần suất kỹ thuật (FR-02, BR-01) và Member được xác thực theo tài khoản; quyền chức năng do role/ownership xác định, Guest chịu session quota và Member chịu quota gói (FR-10, FR-63, BR-01/02).
+  - *Then* cả hai đều tương tác với cùng một AI Chatbot (FR-51); Guest chịu rate limit và quota tháng theo định danh Guest, Member được xác thực theo tài khoản và chịu quota gói; quyền chức năng do role/ownership xác định (FR-10, FR-63, BR-01/02).
 - **AC-51.6 (Chuyển tiếp thao tác theo Execution Mode):**
   - *Given* người dùng trong phiên chat yêu cầu "Hãy sửa nội dung hướng dẫn của bài viết này ngắn lại" hoặc "Thêm món này vào lịch ăn của tôi",
   - *When* Chatbot xử lý,
@@ -3987,10 +3987,10 @@ Trang này là cách duyệt trực tiếp từ điển nguyên liệu hiện c�
 - **Mã yêu cầu:** FR-63
 - **Module:** M06
 - **Actor:** Guest, Member.
-- **Mô tả:** Embedding phục vụ indexing/query knowledge là chi phí hệ thống theo BR-03/04, không trừ quota/Credit người dùng. Đối với model call phục vụ người dùng, Backend ghi nhận token provider báo cáo cho mọi response Gemini sử dụng được (input, output, reasoning nếu có), một lần mỗi event; duy trì hạn mức Guest theo phiên và Member theo chu kỳ; dùng quota tháng trước AI Credit, không cộng dồn quota tháng; Guest hết hạn mức được mời đăng ký. Member xem gói, quota, đã dùng/còn lại, thời điểm reset và Credit đã tiêu thụ/số dư. Không giữ trước quota/Credit; chỉ bắt đầu model call khi còn quota hoặc Credit dương. Nếu lượt đã bắt đầu vượt số dư, chỉ trừ tối đa Credit hiện có, hệ thống chịu phần vượt và số dư không âm. Chu kỳ quota được chụp lúc bắt đầu call. Lượt lỗi không trừ quota/Credit; chi tiết usage được lưu 90 ngày sau khi chu kỳ tương ứng kết thúc, còn lịch sử Credit tồn tại trong vòng đời tài khoản.
+- **Mô tả:** Embedding phục vụ indexing/query knowledge là chi phí hệ thống theo BR-03/04, không trừ quota/Credit người dùng. Đối với model call phục vụ người dùng, Backend ghi nhận token provider báo cáo cho mọi response Gemini sử dụng được (input, output, reasoning nếu có), một lần mỗi event; duy trì hạn mức Guest theo tháng dương lịch và Member theo chu kỳ; dùng quota tháng trước AI Credit, không cộng dồn quota tháng; Guest hết hạn mức được mời đăng ký. Member xem gói, quota, đã dùng/còn lại, thời điểm reset và Credit đã tiêu thụ/số dư. Không giữ trước quota/Credit; chỉ bắt đầu model call khi còn quota hoặc Credit dương. Nếu lượt đã bắt đầu vượt số dư, chỉ trừ tối đa Credit hiện có, hệ thống chịu phần vượt và số dư không âm. Chu kỳ quota được chụp lúc bắt đầu call. Lượt lỗi không trừ quota/Credit; chi tiết usage được lưu 90 ngày sau khi chu kỳ tương ứng kết thúc, còn lịch sử Credit tồn tại trong vòng đời tài khoản.
 - **Acceptance Criteria:**
-  - AC-63.1: Guest được tối đa 20.000 token mỗi phiên, đồng thời giữ rate limit hiện hành; hết quota bị chặn và được mời đăng ký.
-  - AC-63.2: Quota khởi đầu Free 50.000/tháng, Plus 300.000/tháng, Pro 600.000/tháng; paid cycle bắt đầu lúc kích hoạt/gia hạn, Free có chu kỳ tháng riêng; quota tháng không cộng dồn.
+  - AC-63.1: Guest được tối đa 50.000 token mỗi tháng dương lịch theo định danh Guest, độc lập session AI; giữ rate limit hiện hành; hết quota bị chặn và được mời đăng ký.
+  - AC-63.2: Guest/Free có 50.000 token/tháng, Plus 200.000 và Pro 500.000 token/chu kỳ thuê bao; trần Plus/Pro mới áp dụng ngay cho chu kỳ đang hoạt động mà không reset usage, thời gian hoặc Credit. Quota không cộng dồn.
   - AC-63.3: Token từ mọi lần gọi model phục vụ người dùng thành công được cộng đúng một lần; lỗi provider không trừ ngân sách người dùng. Indexing và query embedding cho knowledge retrieval là chi phí vận hành hệ thống, không cộng vào usage/quota/Credit người dùng; operational usage được theo dõi riêng theo BR-03/04.
   - AC-63.4: Hết cả quota và Credit thì dừng trước lần gọi model kế tiếp và business write chưa bắt đầu, kể cả model vừa trả yêu cầu ghi. Báo từng bước, giữ bước đã commit; pending write phải được duyệt lại sau khi bổ sung ngân sách.
   - AC-63.5: Member có trang xem chính xác gói, token đã dùng/còn lại, ngày reset, Credit balance và mức Credit đã dùng; không lộ dữ liệu tài khoản khác.
@@ -4008,7 +4008,7 @@ Trang này là cách duyệt trực tiếp từ điển nguyên liệu hiện c�
 - **Mô tả:** Member nhập số tiền nạp trong min/max do Admin cấu hình, xem số Credit quy đổi, tự tạo đơn và thanh toán. Sau khi quota tháng hết, hệ thống tự động tính và trừ Credit cho token overage theo tỷ lệ hiện hành; Credit có thể dùng xuyên các chu kỳ và không hết hạn. Credit hỗ trợ phần thập phân và tính chính xác theo token thực tế, không làm tròn lên từng lượt hoặc block; pilot 1.000 token = 400 Credit (1 token = 0,4 Credit). Đơn nạp chờ hết hạn sau 15 phút. Thanh toán xảy ra sau khi đơn hết hạn cần đối soát thủ công, chưa tự cộng Credit và phải thông báo người dùng; webhook đến muộn vẫn được ghi nhận nếu xác minh được thanh toán xảy ra trước hạn. Credit mua thêm không mở quyền chọn model.
 - **Acceptance Criteria:**
   - AC-64.1: Cấu hình khởi đầu 1.000đ = 1.000 Credit; min 10.000đ, max 500.000đ mỗi đơn; người dùng tự xác nhận thanh toán.
-  - AC-64.2: Mọi Member kể cả Free được nạp; Credit mua thêm không đổi model access, vẫn theo cấu hình tier hiện hành (pilot Free mặc định Flash-Lite).
+  - AC-64.2: Mọi Member kể cả Free được nạp; Credit mua thêm không đổi quyền sử dụng model trong catalog chung.
   - AC-64.3: Khi quota hết, quy đổi 1.000 token overage = 400 Credit theo cùng tỷ lệ cho mọi model/loại token; quota tháng được dùng trước Credit.
   - AC-64.4: Credit không hết hạn; không lưu token mua thêm thành balance hết hạn.
   - AC-64.5: Đơn chờ thanh toán giữ số tiền/Credit tại thời điểm tạo đến khi đơn hết hạn, dù Admin đổi tỷ lệ.
@@ -4026,11 +4026,11 @@ Trang này là cách duyệt trực tiếp từ điển nguyên liệu hiện c�
 - **Mã yêu cầu:** FR-65
 - **Module:** M09, M06, M08
 - **Actor:** Administrator.
-- **Mô tả:** Administrator quản lý quota Free/Plus/Pro và giá Plus/Pro (Free luôn 0đ), catalog Gemini (model ID/tên hiển thị/trạng thái), access/default theo tier, tỷ lệ VND/Credit, tỷ lệ Credit/token overage và giới hạn nạp. Admin có thể tặng gói AI cho tài khoản CUSTOMER hoặc EXPERT; không tặng gói cho Admin. Thay đổi quota Free giữa chu kỳ có hiệu lực từ tháng kế tiếp `Asia/Saigon`; thay đổi giá/quota Plus/Pro áp dụng cho lần mua/kích hoạt mới, chu kỳ đã kích hoạt giữ snapshot. Model mới phải được xác minh trực tiếp với Gemini trước khi lưu; lỗi provider hoặc ID không được hỗ trợ thì từ chối lưu và giữ nguyên cấu hình hiện tại. Mọi thay đổi cấu hình thực tế gửi thông báo in-app cho CUSTOMER/EXPERT đang hoạt động; Admin có thể chọn gửi thêm email bất đồng bộ tới CUSTOMER/EXPERT đang hoạt động và đã xác minh email. Thông báo chứa giá trị cũ/mới và thời điểm hiệu lực. Tỷ lệ overage có hiệu lực ngay; tỷ lệ VND/Credit và giới hạn nạp áp dụng đơn mới, còn đơn chờ giữ snapshot đến khi hết hạn. Grant Credit cần số lượng dương và lý do 10–500 ký tự, ghi vào AI Credit ledger theo FR-64, Credit không hết hạn và người nhận được thông báo. AI Assistant không được gọi chức năng quản trị.
+- **Mô tả:** Administrator quản lý quota Free/Plus/Pro và giá Plus/Pro (Free luôn 0đ), catalog Gemini chung cho các gói Member (model ID/tên hiển thị/trạng thái) và default hợp lệ, tỷ lệ VND/Credit, tỷ lệ Credit/token overage và giới hạn nạp. Admin có thể tặng gói AI cho tài khoản CUSTOMER hoặc EXPERT; không tặng gói cho Admin. Trần mới Plus/Pro áp dụng ngay cho chu kỳ đang hoạt động, giữ usage, thời gian và Credit; thay đổi quota Free và thay đổi giá/quota trả phí về sau theo BR-02. Model mới phải được xác minh trực tiếp với Gemini trước khi lưu; lỗi provider hoặc ID không được hỗ trợ thì từ chối lưu và giữ nguyên cấu hình hiện tại. Mọi thay đổi cấu hình thực tế gửi thông báo in-app cho CUSTOMER/EXPERT đang hoạt động; Admin có thể chọn gửi thêm email bất đồng bộ tới CUSTOMER/EXPERT đang hoạt động và đã xác minh email. Thông báo chứa giá trị cũ/mới và thời điểm hiệu lực. Tỷ lệ overage có hiệu lực ngay; tỷ lệ VND/Credit và giới hạn nạp áp dụng đơn mới, còn đơn chờ giữ snapshot đến khi hết hạn. Grant Credit cần số lượng dương và lý do 10–500 ký tự, ghi vào AI Credit ledger theo FR-64, Credit không hết hạn và người nhận được thông báo. AI Assistant không được gọi chức năng quản trị.
 - **Acceptance Criteria:**
   - AC-65.1: Chỉ Admin được phép đọc/sửa cấu hình; mọi thao tác bị kiểm tra RBAC tại Backend.
-  - AC-65.2: Cấu hình khởi đầu là Free 0đ/50.000 token mỗi tháng, Plus 99.000đ/300.000 token mỗi tháng, Pro 199.000đ/600.000 token mỗi tháng; Admin sửa quota mọi tier và giá Plus/Pro. Free quota đổi giữa tháng chỉ hiệu lực từ chu kỳ sau; giá/quota Plus/Pro mới chỉ áp dụng lần mua/kích hoạt mới, chu kỳ đang chạy giữ snapshot.
-  - AC-65.3: Admin thêm/sửa/bật/tắt Gemini model, gán quyền và default theo tier. Guest dùng Free. Mỗi tier luôn có ít nhất một model đang bật và default hợp lệ; không lưu thay đổi làm vi phạm điều kiện này. Model ID mới phải được Gemini xác minh trước khi lưu; lỗi/ID không hỗ trợ thì không lưu model mới và giữ nguyên cấu hình trước đó.
+  - AC-65.2: Cấu hình là Free 0đ/50.000 token mỗi tháng, Plus 99.000đ/200.000 và Pro 199.000đ/500.000 token mỗi chu kỳ. Trần mới áp dụng ngay cho chu kỳ đang hoạt động, giữ usage và thời gian; các thay đổi quota/giá về sau theo BR-02.
+  - AC-65.3: Admin thêm/sửa/bật/tắt Gemini model và cấu hình default hợp lệ trong catalog chung cho các gói Member. Model ID mới phải được Gemini xác minh trước khi lưu; lỗi/ID không hỗ trợ thì không lưu thay đổi.
   - AC-65.4: Admin cấu hình tỷ lệ VND/Credit, Credit/token và min/max nạp; giá trị khởi đầu lần lượt là 1.000đ/1.000 Credit, 400 Credit/1.000 overage token và 10.000–500.000đ/lần. Overage đổi có hiệu lực ngay; tỷ lệ nạp và giới hạn áp dụng cho đơn mới; đơn chờ giữ snapshot cũ đến hết hạn.
   - AC-65.5: Mọi thay đổi cấu hình thực tế gửi in-app notification cho CUSTOMER/EXPERT đang hoạt động; Admin có thể chọn email bất đồng bộ cho CUSTOMER/EXPERT đang hoạt động và xác minh email. Nội dung có giá trị cũ/mới và thời điểm hiệu lực.
   - AC-65.6: Admin có thể tặng tier Free, Plus hoặc Pro cho tài khoản CUSTOMER hoặc EXPERT. Gói áp dụng ngay và thay gói hiện tại; Plus/Pro bắt đầu chu kỳ 30 ngày mới từ thời điểm tặng, với quota cấu hình hiện hành. Tặng Free kết thúc subscription trả phí đang hoạt động và áp dụng quota Free theo tháng dương lịch. Không tạo payment order hoặc hoàn tiền phần thời hạn còn lại. Admin nhập lý do 10–500 ký tự; Backend ghi người tặng, tài khoản nhận, tier cũ/mới, thời điểm kết thúc quyền lợi trả phí, lý do và thời điểm tặng vào lịch sử tài khoản, đồng thời gửi in-app notification cho người nhận. Nếu tier được yêu cầu đang hiệu lực, không tạo giao dịch tặng mới.
@@ -4059,3 +4059,6 @@ Trang này là cách duyệt trực tiếp từ điển nguyên liệu hiện c�
   - AC-66.8: Model thay thế sau lỗi chỉ được dùng sau khi người dùng đồng ý; model phải được phép theo gói.
   - AC-66.9: Không cung cấp công cụ Admin cho AI Assistant; mọi thao tác thực tế tuân theo RBAC, ownership, validation và backend result.
   - AC-66.10: Trong một phiên ngắn hạn, transcript và ngữ cảnh hội thoại được giữ khi đóng/mở khung chat, điều hướng trang và tải lại cùng tab; phiên hết hạn sau thời gian không hoạt động cấu hình (mặc định 30 phút). Người dùng có thể chọn “Cuộc trò chuyện mới” để xóa transcript cùng consent/action đang chờ của phiên và bắt đầu với ngữ cảnh rỗng. Việc này không hoàn tác thao tác nghiệp vụ đã hoàn tất; lịch sử không đồng bộ thành kho hội thoại dài hạn theo tài khoản.
+  - AC-66.11: Ngữ cảnh trang và biểu mẫu được chụp theo từng request; Backend xác thực tài nguyên và quyền trước khi dùng. Đề xuất sửa form chỉ áp dụng vào trường được phép khi form identity và revision còn khớp; giao diện gửi acknowledgement và chỉ xác nhận áp dụng sau khi cập nhật thực tế.
+  - AC-66.12: Khi Expert xác nhận đăng, nội dung được hiển thị để kiểm tra phải khớp payload cuối được Backend xác thực và thực thi một lần; Customer không được đăng. Preview thực đơn AI không ghi lịch ăn; apply chỉ chạy sau xác nhận và dùng nghiệp vụ hiện hành, không áp dụng trùng.
+  - AC-66.13: Khi phản hồi bị mất sau thao tác ghi, hệ thống tra cứu kết quả thực thi đã lưu; không tự phát lại thao tác có trạng thái chưa xác định.

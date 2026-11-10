@@ -65,11 +65,13 @@ class AiMenuServiceTest {
     }
 
     @Test
-    void deniesFreeBeforeReadingHealthProfileOrCallingAi() {
-        doThrow(new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED)).when(entitlements).requirePlusOrPro(17L);
-        assertThatThrownBy(() -> service.createPreview(new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null)))
-                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_SUBSCRIPTION_REQUIRED);
-        verifyNoInteractions(profiles, dietary, recipes, ai);
+    void previewDoesNotRequirePaidSubscription() {
+        prepareCandidates();
+        when(ai.recommendRecipes(any(), anyList(), eq(2))).thenReturn(
+                new AiClient.RecommendationResult("{\"recipeIds\":[11,12]}", 1, 1, 2));
+        assertThat(service.createPreview(new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null)).meals())
+                .isNotEmpty();
+        verifyNoInteractions(entitlements);
     }
 
     @Test
@@ -99,6 +101,32 @@ class AiMenuServiceTest {
         verify(events).publishEvent(event.capture());
         assertThat(event.getValue()).isInstanceOfSatisfying(tech.mamxanh.integration.ai.AiUsageEvent.class,
                 usage -> assertThat(usage).extracting("feature", "promptTokens").containsExactly("FR-36", 1));
+    }
+
+    @Test
+    void adkMenuPreviewUsesOnlyBackendCandidatesAndDoesNotCallNestedAiClient() {
+        prepareCandidates();
+        var request = new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null);
+
+        var candidates = service.getAdkPreviewCandidates(request);
+        var preview = service.createPreviewFromAdkSelection(request, List.of(12L, 11L));
+
+        assertThat(candidates).containsEntry("canGenerate", true);
+        assertThat(candidates.get("candidates").toString()).contains("11", "12", "Canh nấm", "Đậu phụ kho");
+        assertThat(candidates.get("candidates").toString()).doesNotContain("nutritionPerServing");
+        assertThat(candidates).doesNotContainKey("dailyTargets");
+        assertThat(preview.meals()).hasSize(21);
+        verifyNoInteractions(ai, events);
+    }
+
+    @Test
+    void adkMenuPreviewRejectsIdsOutsideBackendCandidateList() {
+        prepareCandidates();
+        assertThatThrownBy(() -> service.createPreviewFromAdkSelection(
+                new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null), List.of(999L)))
+                .isInstanceOf(AppException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_RESPONSE_INVALID);
+        verifyNoInteractions(ai, events, plans, entries);
     }
 
     @Test

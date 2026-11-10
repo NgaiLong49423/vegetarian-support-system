@@ -47,6 +47,35 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 class AdkAssistantEngineTest {
+    @Test
+    void compactsOnlyCompletedCandidatePoolsBeforeCurrentUserTurn() {
+        var oldCandidate = com.google.genai.types.FunctionResponse.builder().id("c1")
+                .name("get_ai_menu_candidates").response(Map.of("status", "SUCCEEDED", "data", Map.of("candidates", "old pool"))).build();
+        var preview = com.google.genai.types.FunctionResponse.builder().id("p1")
+                .name("create_ai_menu_preview").response(Map.of("status", "SUCCEEDED", "data", Map.of("previewId", "preview-1",
+                        "meals", List.of(Map.of("mealDate", "2026-11-03", "mealType", "LUNCH", "recipeId", 57,
+                                "recipeTitle", "Bánh canh", "nutritionPerServing", Map.of("energy", 400)))))).build();
+        var currentCandidate = oldCandidate.toBuilder().id("c2")
+                .response(Map.of("status", "SUCCEEDED", "data", Map.of("candidates", "current pool"))).build();
+        var input = List.of(Content.builder().role("user").parts(Part.fromText("Tạo thực đơn")).build(),
+                Content.builder().role("user").parts(Part.builder().functionResponse(oldCandidate).build(),
+                        Part.builder().functionResponse(preview).build()).build(),
+                Content.builder().role("user").parts(Part.fromText("Tạo lại thực đơn")).build(),
+                Content.builder().role("user").parts(Part.builder().functionResponse(currentCandidate).build()).build());
+
+        var compacted = AdkAssistantEngine.compactPreviousMenuCandidates(input);
+        var oldResponse = compacted.get(1).parts().orElseThrow().get(0).functionResponse().orElseThrow();
+        assertThat(oldResponse.id()).contains("c1");
+        assertThat(oldResponse.response().orElseThrow()).doesNotContainKey("data");
+        var compactPreview = compacted.get(1).parts().orElseThrow().get(1).functionResponse().orElseThrow();
+        assertThat(compactPreview.id()).contains("p1");
+        assertThat(compactPreview.response().toString()).contains("preview-1", "2026-11-03", "LUNCH", "57", "Bánh canh")
+                .doesNotContain("nutritionPerServing");
+        assertThat(compacted.get(3).parts().orElseThrow().get(0).functionResponse()).contains(currentCandidate);
+        assertThat(input.get(1).parts().orElseThrow().get(0).functionResponse()).contains(oldCandidate);
+        assertThat(input.get(1).parts().orElseThrow().get(1).functionResponse()).contains(preview);
+    }
+
     private CurrentUserService users;
     private AiTokenQuotaService aiQuota;
     private AiChatSettingsService chatSettings;
@@ -100,6 +129,305 @@ class AdkAssistantEngineTest {
                 users, aiQuota, chatSettings, sessionStore, toolRegistry,
                 knowledge, promptLoader, aiClient, mapper, events, clock,
                 modelId -> llm, null);
+    }
+
+    @Test
+    void recipeContextSurvivesRetrievalForBothResponseModes() {
+        when(toolRegistry.execute(eq("get_recipe_detail"), any())).thenReturn(
+                new AiAssistantToolRegistry.ToolResult("SUCCEEDED", "Recipe",
+                        Map.of("title", "Đậu hũ sốt cà", "instructions", "Bước 2: nấu sốt"), List.of()));
+        when(knowledge.retrieve(anyString())).thenReturn(List.of(
+                new AiChatResponse.Source("DOMAIN_KNOWLEDGE", "test", "Tài liệu", "Thông tin liên quan", null)));
+        for (boolean streaming : List.of(false, true)) {
+            var captured = new java.util.concurrent.atomic.AtomicReference<String>();
+            ScriptedLlm llm = new ScriptedLlm(request -> {
+                captured.set(request.contents().stream().flatMap(c -> c.parts().stream().flatMap(List::stream))
+                        .flatMap(p -> p.text().stream()).collect(java.util.stream.Collectors.joining("\n")));
+                return textResponse("Bước 2 là nấu sốt.");
+            });
+            var engine = createEngine(llm);
+            var request = new AiChatRequest(ContextType.RECIPE, 57L, "Bước 2 của món này là gì?",
+                    List.of(), null, null, ExecutionMode.CHATBOT, null, null, null, UUID.randomUUID());
+            if (streaming) engine.stream(request, event -> { });
+            else engine.execute(request);
+            assertThat(captured.get()).contains("Đậu hũ sốt cà", "Bước 2: nấu sốt", "Thông tin liên quan");
+        }
+        verify(toolRegistry, times(2)).execute(eq("get_recipe_detail"), eq(Map.of("recipeId", 57L)));
+    }
+
+    @Test
+    void formPatchIsBoundToRequestAndRemainsPendingUntilUiAcknowledges() {
+        when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(10L, Role.EXPERT));
+        when(toolRegistry.definitionsFor("EXPERT")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("propose_recipe_form_patch", "Propose", "{}", false, false, Set.of()),
+                new AiAssistantToolRegistry.ToolDefinition("create_recipe_post", "Publish", "{}", true, true, Set.of()),
+                new AiAssistantToolRegistry.ToolDefinition("update_dietary_preferences", "Unrelated", "{}", true, true, Set.of())));
+        var form = new AiChatRequest.FormContext(UUID.randomUUID(), 4, Map.of("title", "Cũ"), List.of(), 0, false);
+        ScriptedLlm llm = new ScriptedLlm(input -> functionResponseNames(input).isEmpty()
+                ? functionCall("propose_recipe_form_patch", "patch-1", Map.of("fields", Map.of("title", "Mới"), "formId", "forged"))
+                : textResponse("Đã cập nhật biểu mẫu."));
+        var request = new AiChatRequest(ContextType.GENERAL, null, "Viết công thức món chay", List.of(), null, null,
+                ExecutionMode.AGENT, null, null, null, UUID.randomUUID(), null, form);
+        var engine = createEngine(llm);
+        var response = engine.execute(request);
+        assertThat(response.answer()).contains("chờ giao diện xác nhận");
+        assertThat(response.steps()).hasSize(1);
+        var step = response.steps().getFirst();
+        assertThat(step.status()).isEqualTo("UI_ACTION_REQUIRED");
+        @SuppressWarnings("unchecked") var data = (Map<String, Object>) step.result().get("data");
+        assertThat(data).containsEntry("formId", form.formId().toString()).containsEntry("revision", 4L);
+        assertThat(data.get("fields").toString()).contains("Mới").doesNotContain("forged");
+        var ack = new AiChatRequest.FormActionAck(response.sessionId(), UUID.fromString((String) data.get("actionId")),
+                form.formId(), form.revision(), 5L, AiChatRequest.FormActionStatus.APPLIED);
+        assertThat(engine.acknowledgeFormAction(ack)).isEqualTo(ack);
+        assertThat(engine.acknowledgeFormAction(ack)).isEqualTo(ack);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> engine.acknowledgeFormAction(
+                new AiChatRequest.FormActionAck(response.sessionId(), ack.actionId(), form.formId(), 4L, 5L,
+                        AiChatRequest.FormActionStatus.CONFLICT))).isInstanceOf(AppException.class);
+        verify(toolRegistry, never()).execute(eq("propose_recipe_form_patch"), any());
+    }
+
+    @Test
+    void affirmativeReplyAfterAppliedFormPatchStartsPublishConfirmation() {
+        when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(10L, Role.EXPERT));
+        when(toolRegistry.definitionsFor("EXPERT")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("propose_recipe_form_patch", "Propose", "{}", false, false, Set.of()),
+                new AiAssistantToolRegistry.ToolDefinition("create_recipe_post", "Publish", "{}", true, true, Set.of())));
+        var formId = UUID.randomUUID();
+        var firstForm = new AiChatRequest.FormContext(formId, 4, Map.of("title", "Bánh chay"), List.of(), 0, false);
+        var latestForm = new AiChatRequest.FormContext(formId, 5, Map.of("title", "Bánh chay"), List.of(), 0, false,
+                Map.of("title", "Bánh chay"));
+        var calls = new java.util.concurrent.atomic.AtomicInteger();
+        ScriptedLlm llm = new ScriptedLlm(input -> switch (calls.incrementAndGet()) {
+            case 1 -> functionCall("propose_recipe_form_patch", "patch-1", Map.of("fields", Map.of("title", "Bánh chay mới")));
+            case 2 -> textResponse("Đã gửi patch.");
+            case 3 -> functionCall("create_recipe_post", "publish-1", Map.of());
+            default -> textResponse("Vui lòng xem lại và xác nhận nội dung đăng.");
+        });
+        var engine = createEngine(llm);
+        var first = engine.execute(new AiChatRequest(ContextType.GENERAL, null, "Viết nội dung công thức", List.of(), null, null,
+                ExecutionMode.AGENT, null, null, null, UUID.randomUUID(), null, firstForm));
+        @SuppressWarnings("unchecked") var patch = (Map<String, Object>) first.steps().getFirst().result().get("data");
+        engine.acknowledgeFormAction(new AiChatRequest.FormActionAck(first.sessionId(), UUID.fromString((String) patch.get("actionId")),
+                formId, 4, 5L, AiChatRequest.FormActionStatus.APPLIED));
+
+        var continuation = engine.execute(new AiChatRequest(ContextType.GENERAL, null, "Tôi đồng ý", List.of(), null,
+                first.sessionId(), ExecutionMode.AGENT, null, null, null, UUID.randomUUID(), null, latestForm));
+
+        assertThat(continuation.pendingConfirmation()).isNotNull();
+        assertThat(continuation.steps()).extracting(step -> step.tool()).contains("create_recipe_post");
+        verify(toolRegistry).validateRecipePublish(latestForm.publishPayload());
+    }
+
+    @Test
+    void customerCannotSubmitExpertFormContextBeforeModelExecution() {
+        when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(10L, Role.CUSTOMER));
+        var form = new AiChatRequest.FormContext(UUID.randomUUID(), 1, Map.of("title", "Món chay"), List.of(), 0, false);
+        ScriptedLlm llm = new ScriptedLlm(input -> {
+            throw new AssertionError("A Customer form-context request must be rejected before model execution.");
+        });
+        AiChatRequest request = new AiChatRequest(ContextType.GENERAL, null, "Đăng công thức này", List.of(),
+                null, null, ExecutionMode.AGENT, null, null, null, UUID.randomUUID(), null, form);
+
+        assertThatThrownBy(() -> createEngine(llm).execute(request)).isInstanceOf(AppException.class);
+        assertThat(llm.requests).isEmpty();
+        verify(toolRegistry, never()).definitionsFor("CUSTOMER");
+    }
+
+    @Test
+    void formPatchProposesIngredientAdditionWithoutReplacingExistingRows() {
+        when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(10L, Role.EXPERT));
+        when(toolRegistry.definitionsFor("EXPERT")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("propose_recipe_form_patch", "Propose", "{}", false, false, Set.of()),
+                new AiAssistantToolRegistry.ToolDefinition("create_recipe_post", "Publish", "{}", true, true, Set.of()),
+                new AiAssistantToolRegistry.ToolDefinition("search_approved_knowledge", "Knowledge", "{}", false, false, Set.of()),
+                new AiAssistantToolRegistry.ToolDefinition("update_dietary_preferences", "Unrelated", "{}", true, true, Set.of())));
+        var form = new AiChatRequest.FormContext(UUID.randomUUID(), 2, Map.of("title", "Món chay"),
+                List.of(new AiChatRequest.FormIngredient("Bí đỏ", 12L, "100", 1)), 0, false);
+        ScriptedLlm llm = new ScriptedLlm(input -> {
+            assertThat(input.tools().toString()).contains("propose_recipe_form_patch")
+                    .doesNotContain("create_recipe_post", "update_dietary_preferences");
+            return functionResponseNames(input).isEmpty()
+                    ? functionCall("propose_recipe_form_patch", "patch-1", Map.of("fields", Map.of(), "addIngredients",
+                            List.of(Map.of("name", "Đậu hũ", "quantity", "200", "unitCode", "g"))))
+                    : textResponse("Đang chờ giao diện.");
+        });
+        var response = createEngine(llm).execute(new AiChatRequest(ContextType.GENERAL, null, "Thêm đậu hũ", List.of(),
+                null, null, ExecutionMode.AGENT, null, null, null, UUID.randomUUID(), null, form));
+        @SuppressWarnings("unchecked") var action = (Map<String, Object>) response.steps().getFirst().result().get("data");
+        assertThat(action.get("addIngredients").toString()).contains("Đậu hũ", "200", "unitCode=g");
+        assertThat(form.ingredients()).singleElement().satisfies(row -> assertThat(row.name()).isEqualTo("Bí đỏ"));
+    }
+
+    @Test
+    void formPatchAppendsTextToTheCurrentFieldAndLeavesOtherFieldsUntouched() {
+        when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(10L, Role.EXPERT));
+        when(toolRegistry.definitionsFor("EXPERT")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("propose_recipe_form_patch", "Propose", "{}", false, false, Set.of())));
+        var form = new AiChatRequest.FormContext(UUID.randomUUID(), 8,
+                Map.of("title", "Bánh khoai", "description", "Món thuần chay.",
+                        "instructions", "Nghiền khoai và trộn bột."), List.of(), 0, false);
+        ScriptedLlm llm = new ScriptedLlm(input -> functionResponseNames(input).isEmpty()
+                ? functionCall("propose_recipe_form_patch", "append-1",
+                        Map.of("appendText", Map.of("instructions", "Để bánh nghỉ 5 phút trước khi cắt.")))
+                : textResponse("Đang chờ giao diện xác nhận."));
+
+        var response = createEngine(llm).execute(new AiChatRequest(ContextType.GENERAL, null,
+                "Chỉ thêm câu nghỉ bánh vào cuối hướng dẫn", List.of(), null, null, ExecutionMode.AGENT,
+                null, null, null, UUID.randomUUID(), null, form));
+        @SuppressWarnings("unchecked") var action = (Map<String, Object>) response.steps().getFirst().result().get("data");
+        @SuppressWarnings("unchecked") var fields = (Map<String, String>) action.get("fields");
+        assertThat(fields).containsOnlyKeys("instructions");
+        assertThat(fields.get("instructions")).isEqualTo("Nghiền khoai và trộn bột.\n\nĐể bánh nghỉ 5 phút trước khi cắt.");
+        assertThat(form.fields()).containsEntry("title", "Bánh khoai").containsEntry("description", "Món thuần chay.");
+    }
+
+    @Test
+    void recipePublishUsesFormSnapshotAndRejectsChangedRevision() {
+        when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(10L, Role.EXPERT));
+        when(toolRegistry.definitionsFor("EXPERT")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("create_recipe_post", "Đăng công thức", "{}", true, true, Set.of())));
+        var payload = Map.<String, Object>of("title", "Món do người dùng viết");
+        var form = new AiChatRequest.FormContext(UUID.randomUUID(), 4, Map.of("title", "Món do người dùng viết"), List.of(), 0, false, payload);
+        ScriptedLlm llm = new ScriptedLlm(input -> functionResponseNames(input).isEmpty()
+                ? functionCall("create_recipe_post", "publish-1", Map.of("title", "Nội dung giả"))
+                : textResponse("Vui lòng xác nhận."));
+        var engine = createEngine(llm);
+        var staged = engine.execute(new AiChatRequest(ContextType.GENERAL, null, "Đăng công thức này", List.of(),
+                null, null, ExecutionMode.AGENT, null, null, null, UUID.randomUUID(), null, form));
+        assertThat(staged.pendingConfirmation()).isNotNull();
+        assertThat(staged.steps().getFirst().result().get("preview")).isEqualTo(payload);
+        verify(toolRegistry).validateRecipePublish(payload);
+        var changed = new AiChatRequest.FormContext(form.formId(), 5, form.fields(), List.of(), 0, false, payload);
+        var approval = new AiChatRequest(ContextType.GENERAL, null, "Xác nhận", List.of(), null, staged.sessionId(),
+                ExecutionMode.AGENT, null, staged.pendingConfirmation().confirmationId(), ConfirmationDecision.APPROVE,
+                UUID.randomUUID(), null, changed);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> engine.execute(approval)).isInstanceOf(AppException.class);
+        verify(toolRegistry, never()).execute(eq("create_recipe_post"), any());
+    }
+
+    @Test
+    void confirmedRecipeWriteIsRecoverableByConfirmationIdWithoutReplaying() {
+        when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(10L, Role.EXPERT));
+        when(toolRegistry.definitionsFor("EXPERT")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("create_recipe_post", "Đăng công thức", "{}", true, true, Set.of())));
+        var payload = Map.<String, Object>of("title", "Món do người dùng viết");
+        var form = new AiChatRequest.FormContext(UUID.randomUUID(), 4, Map.of("title", "Món do người dùng viết"), List.of(), 0, false, payload);
+        when(toolRegistry.execute(eq("create_recipe_post"), eq(payload))).thenReturn(
+                new AiAssistantToolRegistry.ToolResult("SUCCEEDED", "Đã công khai bài công thức.", Map.of("id", 123L), List.of()));
+        ScriptedLlm llm = new ScriptedLlm(input -> functionResponseNames(input).isEmpty()
+                ? functionCall("create_recipe_post", "publish-1", Map.of()) : textResponse("Vui lòng xác nhận."));
+        var journal = new AiAssistantExecutionJournal();
+        var engine = new AdkAssistantEngine(users, aiQuota, chatSettings, sessionStore, toolRegistry, null,
+                knowledge, promptLoader, aiClient, mapper, events, clock, id -> llm, null, journal, "");
+        var staged = engine.execute(new AiChatRequest(ContextType.GENERAL, null, "Đăng công thức này", List.of(),
+                null, null, ExecutionMode.AGENT, null, null, null, UUID.randomUUID(), null, form));
+        UUID confirmationId = staged.pendingConfirmation().confirmationId();
+        var approval = new AiChatRequest(ContextType.GENERAL, null, "Xác nhận", List.of(), null, staged.sessionId(),
+                ExecutionMode.AGENT, null, confirmationId, ConfirmationDecision.APPROVE, UUID.randomUUID(), null, form);
+        engine.execute(approval);
+        assertThat(journal.findByRequest(10L, confirmationId)).singleElement()
+                .satisfies(entry -> assertThat(entry.state()).isEqualTo(AiAssistantExecutionJournal.ActionState.SUCCEEDED));
+        assertThat(journal.findByRequest(11L, confirmationId)).isEmpty();
+        assertThatThrownBy(() -> engine.execute(approval)).isInstanceOf(AppException.class);
+        verify(toolRegistry, times(1)).execute(eq("create_recipe_post"), eq(payload));
+    }
+
+    @Test
+    void recipeFormContextIsOnlyAvailableToExpert() {
+        var form = new AiChatRequest.FormContext(UUID.randomUUID(), 2L,
+                Map.of("title", "Đậu hũ sốt cà"), List.of(), 0, false);
+        var request = new AiChatRequest(ContextType.GENERAL, null, "Giúp tôi viết công thức", List.of(), null,
+                null, ExecutionMode.AGENT, null, null, null, UUID.randomUUID(), null, form);
+        ScriptedLlm llm = new ScriptedLlm(input -> textResponse("Tôi có thể hỗ trợ."));
+        assertThatThrownBy(() -> createEngine(llm).execute(request)).isInstanceOf(AppException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
+        assertThat(llm.requests).isEmpty();
+        when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(10L, Role.EXPERT));
+        var captured = new java.util.concurrent.atomic.AtomicReference<String>();
+        ScriptedLlm expertLlm = new ScriptedLlm(input -> {
+            captured.set(input.contents().stream().flatMap(c -> c.parts().stream().flatMap(List::stream))
+                    .flatMap(p -> p.text().stream()).collect(java.util.stream.Collectors.joining("\n")));
+            return textResponse("Tôi có thể hỗ trợ.");
+        });
+        createEngine(expertLlm).execute(request);
+        assertThat(captured.get()).contains("Đậu hũ sốt cà", form.formId().toString(), "revision");
+    }
+
+    @Test
+    void menuPreviewUsesAdkRankedBackendCandidatesAndIsBoundToSessionForConfirmation() {
+        when(toolRegistry.definitionsFor("CUSTOMER")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("get_ai_menu_candidates", "Candidates", "{}", false, false,
+                        Set.of(AiChatRequest.ConsentCategory.HEALTH_PROFILE, AiChatRequest.ConsentCategory.DIETARY_PREFERENCES)),
+                new AiAssistantToolRegistry.ToolDefinition("create_ai_menu_preview", "Preview", "{}", false, false,
+                        Set.of(AiChatRequest.ConsentCategory.HEALTH_PROFILE, AiChatRequest.ConsentCategory.DIETARY_PREFERENCES)),
+                new AiAssistantToolRegistry.ToolDefinition("apply_ai_menu_preview", "Apply", "{}", true, true, Set.of(), AiAssistantToolRegistry.RiskTier.HIGH_RISK_WRITE)));
+        when(toolRegistry.execute(eq("get_ai_menu_candidates"), any())).thenReturn(
+                new AiAssistantToolRegistry.ToolResult("SUCCEEDED", "Candidates", Map.of("canGenerate", true,
+                        "candidates", List.of(Map.of("recipeId", 57, "title", "Bánh canh"))), List.of()));
+        when(toolRegistry.execute(eq("create_ai_menu_preview"), any())).thenReturn(
+                new AiAssistantToolRegistry.ToolResult("SUCCEEDED", "Preview", Map.of(
+                        "weekStartDate", "2026-11-02", "meals", List.of(Map.of("mealDate", "2026-11-03", "mealType", "LUNCH", "recipeId", 57))), List.of()),
+                new AiAssistantToolRegistry.ToolResult("SUCCEEDED", "Preview", Map.of(
+                        "weekStartDate", "2026-11-02", "meals", List.of(Map.of("mealDate", "2026-11-04", "mealType", "DINNER", "recipeId", 58))), List.of()));
+        when(toolRegistry.execute(eq("apply_ai_menu_preview"), any())).thenReturn(
+                new AiAssistantToolRegistry.ToolResult("SUCCEEDED", "Applied", Map.of("ok", true), List.of()));
+        var previewId = new java.util.concurrent.atomic.AtomicReference<String>();
+        var calls = new java.util.concurrent.atomic.AtomicInteger();
+        ScriptedLlm llm = new ScriptedLlm(request -> switch (calls.incrementAndGet()) {
+            case 1 -> functionCall("get_ai_menu_candidates", "candidate-call", Map.of("request", Map.of("weekStartDate", "2026-11-02", "mode", "PROFILE")));
+            case 2 -> functionCall("create_ai_menu_preview", "preview-call", Map.of("request", Map.of("weekStartDate", "2026-11-02", "mode", "PROFILE"), "rankedRecipeIds", List.of(57)));
+            case 3 -> textResponse("Đây là bản xem trước.");
+            case 4 -> functionCall("get_ai_menu_candidates", "candidate-call-2", Map.of("request", Map.of("weekStartDate", "2026-11-02", "mode", "PROFILE")));
+            case 5 -> functionCall("create_ai_menu_preview", "preview-call-2", Map.of("request", Map.of("weekStartDate", "2026-11-02", "mode", "PROFILE"), "rankedRecipeIds", List.of(58)));
+            case 6 -> textResponse("Đây là bản xem trước mới.");
+            case 7 -> functionCall("apply_ai_menu_preview", "apply-call", Map.of("previewId", previewId.get(), "request", Map.of("recipeId", 999)));
+            default -> textResponse("Đã xử lý.");
+        });
+        var engine = createEngine(llm);
+        var first = engine.execute(new AiChatRequest(ContextType.GENERAL, null, "Tạo thực đơn tuần này", List.of(),
+                null, null, ExecutionMode.AGENT, new AiChatRequest.ConsentDecision(AiChatRequest.ConsentAction.GRANT,
+                        List.of(new ConsentScope(ConsentCategory.HEALTH_PROFILE, ConsentPurpose.HEALTH_PROFILE_READ),
+                                new ConsentScope(ConsentCategory.DIETARY_PREFERENCES, ConsentPurpose.DIETARY_READ))),
+                null, null, UUID.randomUUID()));
+        assertThat(first.steps()).extracting(step -> step.status()).containsExactly("SUCCEEDED", "SUCCEEDED");
+        String toolSchemas = llm.requests.getFirst().tools().values().stream()
+                .map(tool -> tool.declaration().orElseThrow().toJson())
+                .collect(java.util.stream.Collectors.joining("\n"));
+        assertThat(toolSchemas).contains("weekStartDate", "rankedRecipeIds", "preferredIngredientIds");
+        verify(toolRegistry).execute(eq("get_ai_menu_candidates"), any());
+        @SuppressWarnings("unchecked") var data = (Map<String, Object>) first.steps().getLast().result().get("data");
+        previewId.set((String) data.get("previewId"));
+        assertThat(previewId.get()).isNotBlank();
+        String firstPreviewId = previewId.get();
+        var second = engine.execute(new AiChatRequest(ContextType.GENERAL, null, "Tạo lại thực đơn", List.of(),
+                null, first.sessionId(), ExecutionMode.AGENT, null, null, null, UUID.randomUUID()));
+        assertThat(second.steps()).extracting(step -> step.status()).containsExactly("SUCCEEDED", "SUCCEEDED");
+        assertThat(llm.requests.get(3).contents().toString()).contains("Earlier candidate pool omitted", firstPreviewId)
+                .doesNotContain("Bánh canh");
+        @SuppressWarnings("unchecked") var secondData = (Map<String, Object>) second.steps().getLast().result().get("data");
+        previewId.set((String) secondData.get("previewId"));
+        assertThat(previewId.get()).isNotBlank().isNotEqualTo(firstPreviewId);
+        var foreignCalls = new java.util.concurrent.atomic.AtomicInteger();
+        ScriptedLlm foreignLlm = new ScriptedLlm(request -> foreignCalls.incrementAndGet() == 1
+                ? functionCall("apply_ai_menu_preview", "foreign-apply", Map.of("previewId", previewId.get()))
+                : textResponse("Không tìm thấy bản xem trước."));
+        var foreign = createEngine(foreignLlm).execute(new AiChatRequest(ContextType.GENERAL, null,
+                "Áp dụng thực đơn", List.of(), null, null, ExecutionMode.AGENT, null, null, null, UUID.randomUUID()));
+        assertThat(foreign.pendingConfirmation()).isNull();
+        verify(toolRegistry, never()).execute(eq("apply_ai_menu_preview"), any());
+        var staged = engine.execute(new AiChatRequest(ContextType.GENERAL, null, "Áp dụng preview", List.of(),
+                null, first.sessionId(), ExecutionMode.AGENT, null, null, null, UUID.randomUUID()));
+        assertThat(staged.pendingConfirmation()).isNotNull();
+        assertThat(llm.requests.get(6).contents().toString()).contains("Earlier candidate pool omitted", previewId.get())
+                .doesNotContain("Bánh canh");
+        verify(toolRegistry, never()).execute(eq("apply_ai_menu_preview"), any());
+        engine.execute(new AiChatRequest(ContextType.GENERAL, null, "Xác nhận", List.of(), null, first.sessionId(),
+                ExecutionMode.AGENT, null, staged.pendingConfirmation().confirmationId(), ConfirmationDecision.APPROVE, UUID.randomUUID()));
+        @SuppressWarnings("unchecked") var captured = ArgumentCaptor.forClass(Map.class);
+        verify(toolRegistry).execute(eq("apply_ai_menu_preview"), captured.capture());
+        assertThat(captured.getValue()).containsEntry("previewId", previewId.get());
+        assertThat(captured.getValue().get("request").toString()).contains("58").doesNotContain("57", "999");
     }
 
     @Test
@@ -247,6 +575,35 @@ class AdkAssistantEngineTest {
         assertThat(response.consentRequest()).isNotNull();
         assertThat(response.consentRequest().scopes()).contains(new ConsentScope(ConsentCategory.HEALTH_PROFILE, ConsentPurpose.AI_CHAT));
         assertThat(llm.requests).isEmpty();
+    }
+
+    @Test
+    void grantedConsentIsPassedAsExplicitContinuationToAdk() {
+        AtomicReference<String> capturedPrompt = new AtomicReference<>();
+        ScriptedLlm llm = new ScriptedLlm(request -> {
+            capturedPrompt.set(request.contents().stream().flatMap(content -> content.parts().stream().flatMap(List::stream))
+                    .flatMap(part -> part.text().stream()).collect(java.util.stream.Collectors.joining("\n")));
+            return textResponse("Đang tiếp tục yêu cầu.");
+        });
+        AiChatRequest request = new AiChatRequest(ContextType.GENERAL, null,
+                "Tạo bản xem trước thực đơn tuần này", List.of(), null, null, ExecutionMode.AGENT,
+                new AiChatRequest.ConsentDecision(AiChatRequest.ConsentAction.GRANT, List.of(
+                        new ConsentScope(ConsentCategory.HEALTH_PROFILE, ConsentPurpose.HEALTH_PROFILE_READ),
+                        new ConsentScope(ConsentCategory.DIETARY_PREFERENCES, ConsentPurpose.DIETARY_READ))),
+                null, null, UUID.randomUUID());
+
+        createEngine(llm).execute(request);
+
+        assertThat(capturedPrompt.get()).contains("[TIẾP TỤC SAU KHI NGƯỜI DÙNG ĐỒNG Ý DỮ LIỆU]",
+                "thử lại công cụ đọc cần thiết", "không áp dụng hoặc lưu dữ liệu");
+    }
+
+    @Test
+    void editingRecipeNameDoesNotRequestPersonalProfileConsent() {
+        assertThat(AdkAssistantEngine.personalCategory("Sửa tên thành Bánh khoai tím mới")).isNull();
+        assertThat(AdkAssistantEngine.personalCategory("Sửa tên hiển thị của tôi thành Trúc")).isEqualTo(ConsentCategory.BASIC_PROFILE);
+        assertThat(AdkAssistantEngine.personalCategory("Tạo thực đơn theo hồ sơ dinh dưỡng của tôi"))
+                .isEqualTo(ConsentCategory.HEALTH_PROFILE);
     }
 
     @Test
@@ -424,8 +781,11 @@ class AdkAssistantEngineTest {
 
             var engine = createEngine(llm);
 
+            var form = "create_recipe_post".equals(toolName)
+                    ? new AiChatRequest.FormContext(UUID.randomUUID(), 1L, Map.of("title", "Món chay"), List.of(),
+                            0, false, Map.of("title", "Món chay")) : null;
             AiChatRequest req = new AiChatRequest(ContextType.GENERAL, null, "Thực hiện " + toolName,
-                    List.of(), null, null, ExecutionMode.AUTO, null, null, null, UUID.randomUUID());
+                    List.of(), null, null, ExecutionMode.AUTO, null, null, null, UUID.randomUUID(), null, form);
 
             AiChatResponse resp = engine.execute(req);
 

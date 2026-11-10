@@ -15,8 +15,9 @@ public interface AiTokenUsageLedgerRepository extends JpaRepository<AiTokenUsage
             @Param("periodEnd") LocalDateTime periodEnd);
 
     @Query("select coalesce(sum(row.tokenCount), 0) from AiTokenUsageLedgerEntity row "
-            + "where row.anonymousSessionId = :sessionId")
-    long sumGuestTokens(@Param("sessionId") String sessionId);
+            + "where row.anonymousSessionId = :sessionId and row.occurredAt >= :periodStart and row.occurredAt < :periodEnd")
+    long sumGuestTokens(@Param("sessionId") String sessionId, @Param("periodStart") LocalDateTime periodStart,
+            @Param("periodEnd") LocalDateTime periodEnd);
 
     @Query("select coalesce(sum(row.tokenCount), 0) from AiTokenUsageLedgerEntity row "
             + "where row.userId = :userId and row.periodStart = :periodStart and row.periodEnd = :periodEnd "

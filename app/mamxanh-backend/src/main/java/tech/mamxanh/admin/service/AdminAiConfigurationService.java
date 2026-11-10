@@ -118,7 +118,7 @@ public class AdminAiConfigurationService {
                 throw validation("Danh sách model có model ID bị trùng.");
             }
             models.add(new Model(modelId, value.displayName().strip(), value.enabled(), value.freeAllowed(),
-                    value.freeDefault(), value.plusAllowed(), value.plusDefault(), value.proAllowed(), value.proDefault()));
+                    value.freeDefault(), value.enabled(), value.freeDefault(), value.enabled(), value.freeDefault()));
         }
         return List.copyOf(models);
     }

@@ -20,11 +20,30 @@ class BusinessKnowledgeTest {
         assertThat(after.embeddingAttempts()).isEqualTo(471);
         assertThat(after.generationAttempts()).isEqualTo(4);
         assertThat(after.reservedUpperUsd()).isGreaterThan(.65);
+        budget.generation(0, 8192);
+        var withLargerOutput = json.readValue(java.nio.file.Files.readString(file), tech.mamxanh.integration.ai.adk.PilotLiveBudget.State.class);
+        assertThat(withLargerOutput.reservedUpperUsd() - after.reservedUpperUsd()).isCloseTo(8192 * 3.75 / 1_000_000,
+                within(0.0000001));
+        budget.generation(129_694, 2048);
+        var withLargeAdkRequest = json.readValue(java.nio.file.Files.readString(file),
+                tech.mamxanh.integration.ai.adk.PilotLiveBudget.State.class);
+        assertThat(withLargeAdkRequest.generationAttempts()).isEqualTo(6);
+        assertThat(withLargeAdkRequest.reservedUpperUsd()).isGreaterThan(withLargerOutput.reservedUpperUsd());
+        assertThatThrownBy(() -> budget.generation(160_001, 2048)).isInstanceOf(IllegalArgumentException.class);
         java.nio.file.Files.writeString(file,json.writeValueAsString(new tech.mamxanh.integration.ai.adk.PilotLiveBudget.State(
-                4.999,471,4,tech.mamxanh.integration.ai.adk.PilotLiveBudget.PRICING_DATE)));
+                20.001,471,6,tech.mamxanh.integration.ai.adk.PilotLiveBudget.PRICING_DATE)));
+        budget.generation(0);
+        assertThat(json.readValue(java.nio.file.Files.readString(file),tech.mamxanh.integration.ai.adk.PilotLiveBudget.State.class)
+                .reservedUpperUsd()).isGreaterThan(20.001);
+        java.nio.file.Files.writeString(file,json.writeValueAsString(new tech.mamxanh.integration.ai.adk.PilotLiveBudget.State(
+                49.999,471,6,tech.mamxanh.integration.ai.adk.PilotLiveBudget.PRICING_DATE)));
         assertThatThrownBy(() -> budget.generation(0)).isInstanceOf(IllegalArgumentException.class);
         assertThat(json.readValue(java.nio.file.Files.readString(file),tech.mamxanh.integration.ai.adk.PilotLiveBudget.State.class)
-                .reservedUpperUsd()).isEqualTo(4.999);
+                .reservedUpperUsd()).isEqualTo(49.999);
+        java.nio.file.Files.writeString(file,json.writeValueAsString(new tech.mamxanh.integration.ai.adk.PilotLiveBudget.State(
+                1.0,471,tech.mamxanh.integration.ai.adk.PilotLiveBudget.MAX_GENERATION_ATTEMPTS,
+                tech.mamxanh.integration.ai.adk.PilotLiveBudget.PRICING_DATE)));
+        assertThatThrownBy(() -> budget.generation(0)).isInstanceOf(IllegalStateException.class);
     }
 
     @Test

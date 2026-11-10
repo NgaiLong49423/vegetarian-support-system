@@ -94,6 +94,8 @@ public final class AdkSingleStepTaskRunner {
 
         if ("CHAT_SCOPE".equals(taskName)) {
             configBuilder.thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build());
+        } else if ("RECOMMENDATIONS".equals(taskName)) {
+            ModelThinkingPolicy.resolveConfig(targetGateway.model(), null).ifPresent(configBuilder::thinkingConfig);
         }
 
         AtomicReference<String> activeRun = new AtomicReference<>();

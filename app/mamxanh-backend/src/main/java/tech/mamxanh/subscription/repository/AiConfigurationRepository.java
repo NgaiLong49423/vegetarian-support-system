@@ -20,6 +20,11 @@ public class AiConfigurationRepository {
 
     public AiConfigurationRepository(JdbcTemplate jdbc) { this.jdbc = jdbc; }
 
+    public LocalDateTime paidQuotaPolicyCutover() {
+        return jdbc.queryForObject("SELECT paid_quota_policy_cutover_at FROM AI_PLAN_CONFIGURATION WHERE plan_tier = 'PLUS'",
+                LocalDateTime.class);
+    }
+
     public long currentFreeQuota(Instant now) {
         LocalDateTime utcNow = LocalDateTime.ofInstant(now, ZoneOffset.UTC);
         Long quota = jdbc.queryForObject("""

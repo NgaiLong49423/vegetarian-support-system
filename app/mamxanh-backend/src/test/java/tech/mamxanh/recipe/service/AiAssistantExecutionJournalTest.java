@@ -31,6 +31,40 @@ class AiAssistantExecutionJournalTest {
     }
 
     @Test
+    void persistentLookupFailureDoesNotPretendRequestHasNoActions() {
+        JdbcTemplate jdbc = mock(JdbcTemplate.class);
+        var persistent = new AiAssistantExecutionJournal(jdbc, null);
+        doThrow(new org.springframework.dao.DataAccessResourceFailureException("disconnected"))
+                .when(jdbc).query(anyString(), any(org.springframework.jdbc.core.RowMapper.class), any(), any());
+        assertThatThrownBy(() -> persistent.findByRequest(42L, UUID.randomUUID()))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("Không thể xác minh");
+    }
+
+    @Test
+    void indeterminateActionIsNeverReplayed() {
+        UUID requestId = UUID.randomUUID();
+        journal.recordReservation(42L, requestId, "action", "create_recipe_post");
+        journal.updateState(42L, requestId, "action", ActionState.INDETERMINATE, null, null);
+        AtomicInteger calls = new AtomicInteger();
+        assertThatThrownBy(() -> journal.executeWithJournal(42L, requestId, "action", "create_recipe_post", () -> {
+            calls.incrementAndGet();
+            return "created";
+        })).isInstanceOf(AppException.class);
+        assertThat(calls).hasValue(0);
+    }
+
+    @Test
+    void failedPersistentStateUpdateDoesNotReportSuccess() {
+        JdbcTemplate jdbc = mock(JdbcTemplate.class);
+        var persistent = new AiAssistantExecutionJournal(jdbc, null);
+        doThrow(new org.springframework.dao.DataAccessResourceFailureException("disconnected"))
+                .when(jdbc).update(contains("UPDATE AI_ASSISTANT_ACTION_JOURNAL"), any(), any(), any(), any(), any(), any());
+        assertThatThrownBy(() -> persistent.updateState(42L, UUID.randomUUID(), "action", ActionState.SUCCEEDED, null, null))
+                .isInstanceOf(AppException.class);
+    }
+
+    @Test
     void multiActionRecordingInSingleClientRequest() {
         long ownerId = 42L;
         UUID clientRequestId = UUID.randomUUID();
@@ -95,6 +129,32 @@ class AiAssistantExecutionJournalTest {
         });
         assertThat(replayResult).isEqualTo("ShoppingList#999");
         assertThat(invocationCount.get()).isEqualTo(1); // Not incremented!
+    }
+
+    @Test
+    void committedResultIsReturnedWhenTheActionResponseIsLost() {
+        long ownerId = 42L;
+        UUID clientRequestId = UUID.randomUUID();
+        String actionId = "create_recipe_post_1";
+        AtomicInteger invocationCount = new AtomicInteger();
+        AiAssistantToolRegistry.ToolResult committed = new AiAssistantToolRegistry.ToolResult(
+                "SUCCEEDED", "Recipe published", Map.of("recipeId", 901L), List.of());
+
+        var recovered = journal.executeWithJournal(ownerId, clientRequestId, actionId, "create_recipe_post", () -> {
+            invocationCount.incrementAndGet();
+            // Simulate domain data and the journal success row committing before the HTTP/SSE response is lost.
+            journal.updateState(ownerId, clientRequestId, actionId, ActionState.SUCCEEDED, committed, null);
+            throw new IllegalStateException("client disconnected after commit");
+        });
+
+        assertThat(recovered).isEqualTo(committed);
+        assertThat(invocationCount).hasValue(1);
+        var replayed = journal.executeWithJournal(ownerId, clientRequestId, actionId, "create_recipe_post", () -> {
+            invocationCount.incrementAndGet();
+            return new AiAssistantToolRegistry.ToolResult("SUCCEEDED", "duplicate", Map.of("recipeId", 902L), List.of());
+        });
+        assertThat(replayed).isEqualTo(committed);
+        assertThat(invocationCount).hasValue(1);
     }
 
     @Test

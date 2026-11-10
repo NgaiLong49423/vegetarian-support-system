@@ -28,16 +28,15 @@ last_verified: 2026-11-01
 
 Mâm Xanh cung cấp các gói dịch vụ hội viên (**Subscription Tiers**) nhằm phục vụ nhu cầu tương tác và hỗ trợ từ Trợ lý AI ở các cấp độ khác nhau. Bạn có thể xem bảng so sánh chi tiết và lựa chọn nâng cấp tại trang **Gói dịch vụ AI** (`/goi-ai`).
 
-Gói dịch vụ AI quyết định **hạn mức token hàng tháng** và **mô hình AI Gemini được phép sử dụng**, giúp bạn có câu trả lời sâu sắc, tư vấn thực đơn linh hoạt và xử lý tác vụ nhanh hơn.
+Gói dịch vụ AI quyết định **hạn mức token**. Các gói thành viên dùng chung danh mục model AI khả dụng và phạm vi chức năng theo vai trò, điều kiện nghiệp vụ.
 
 ## Bảng so sánh chi tiết các gói
 
 | Tiêu chí | Gói Miễn Phí (Free) | Gói Nâng Cao (Plus) | Gói Chuyên Nghiệp (Pro) |
 |---|:---:|:---:|:---:|
 | **Giá dịch vụ** | **0 đ** | **99.000 đ** / tháng (30 ngày) | **199.000 đ** / tháng (30 ngày) |
-| **Hạn mức token tháng** | **50.000 token** | **300.000 token** | **600.000 token** |
-| **Mô hình AI mặc định** | Gemini Flash-Lite | Gemini Flash | Gemini Flash |
-| **Quyền chọn mô hình AI** | Cố định Flash-Lite | Tùy chọn Flash-Lite hoặc Flash | Tùy chọn Flash-Lite hoặc Flash |
+| **Hạn mức token** | **50.000 token / tháng** | **200.000 token / chu kỳ** | **500.000 token / chu kỳ** |
+| **Quyền chọn mô hình AI** | Danh mục chung | Danh mục chung | Danh mục chung |
 | **Khả năng nạp AI Credit** | Có | Có | Có |
 | **Lưu công thức, Lịch ăn, Đi chợ** | Miễn phí trọn đời | Miễn phí trọn đời | Miễn phí trọn đời |
 | **Xem phân tích dinh dưỡng** | Đầy đủ | Đầy đủ | Đầy đủ |
@@ -48,17 +47,17 @@ Gói dịch vụ AI quyết định **hạn mức token hàng tháng** và **mô
 ### 1. Gói Miễn Phí (Free Tier)
 - **Đối tượng:** Mọi thành viên vừa đăng ký tài khoản Mâm Xanh.
 - **Quyền lợi:** Nhận ngay 50.000 token miễn phí mỗi tháng dương lịch (được làm mới vào ngày mùng 1 hàng tháng theo giờ Việt Nam).
-- **Mô hình AI:** Sử dụng mô hình `Gemini Flash-Lite` tối ưu tốc độ phản hồi cực nhanh, phù hợp cho nhu cầu hỏi đáp nấu nướng cơ bản hàng ngày.
+- **Mô hình AI:** Chọn từ danh mục model thành viên đang khả dụng trong phần Cài đặt chat.
 
 ### 2. Gói Nâng Cao (Plus Tier)
 - **Giá:** 99.000 đ / chu kỳ 30 ngày.
-- **Quyền lợi:** Nhận 300.000 token trong chu kỳ.
-- **Mô hình AI:** Mở khóa mô hình `Gemini Flash` thông minh hơn, có khả năng tư duy ngữ cảnh ẩm thực phức tạp, gợi ý thực đơn tuần mượt mà và hiểu sâu các biến tấu gia vị. Bạn có thể tự do chuyển đổi giữa mô hình Flash và Flash-Lite trong phần Cài đặt chat.
+- **Quyền lợi:** Nhận 200.000 token trong chu kỳ.
+- **Mô hình AI:** Chọn từ cùng danh mục model thành viên.
 
 ### 3. Gói Chuyên Nghiệp (Pro Tier)
 - **Giá:** 199.000 đ / chu kỳ 30 ngày.
-- **Quyền lợi:** Hạn mức dồi dào 600.000 token trong chu kỳ.
-- **Mô hình AI:** Sử dụng mô hình `Gemini Flash` mạnh mẽ nhất, phục vụ nhu cầu lên kế hoạch ăn uống liên tục cho cả gia đình lớn, hoặc dành cho Chuyên gia thường xuyên sử dụng AI để soạn thảo các bài công thức chi tiết.
+- **Quyền lợi:** Nhận 500.000 token trong chu kỳ.
+- **Mô hình AI:** Chọn từ cùng danh mục model thành viên.
 
 ## Những điều cần lưu ý
 

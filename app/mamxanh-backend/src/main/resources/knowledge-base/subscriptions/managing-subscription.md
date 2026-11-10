@@ -36,7 +36,7 @@ Trang **Lịch sử giao dịch** (`/giao-dich`) và trang thông tin **Gói c�
 1. Truy cập vào trang **Gói dịch vụ AI** (`/goi-ai`) hoặc mở Cài đặt trong mục Hồ sơ.
 2. Tại phần **Gói của bạn**, hệ thống hiển thị:
    - **Tên gói hiện tại:** Ví dụ *Gói Nâng Cao (Plus)*.
-   - **Thanh đo lượng token:** Đã dùng bao nhiêu / Tổng số token của gói (ví dụ: `125.430 / 300.000 token`).
+   - **Thanh đo lượng token:** Đã dùng bao nhiêu / Tổng số token của gói (ví dụ: `125.430 / 200.000 token`).
    - **Mốc thời gian:** Ngày bắt đầu và ngày kết thúc chu kỳ (ví dụ: *Hết hạn vào ngày 28/11/2026*).
    - **Số dư AI Credit:** Hiển thị số Credit khả dụng còn lại trong ví.
 

@@ -217,6 +217,10 @@ class GuestAiChatControllerTest {
                         .header("Access-Control-Request-Headers", "content-type,x-guest-chat-id"))
                 .andExpect(status().isOk()).andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"))
                 .andExpect(header().string("Access-Control-Expose-Headers", "Retry-After"));
+        mvc.perform(options(URL + "/stream").header("Origin", "http://localhost:5173")
+                        .header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers", "content-type,x-guest-chat-id"))
+                .andExpect(status().isOk()).andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
         mvc.perform(options(URL).header("Origin", "https://untrusted.example")
                         .header("Access-Control-Request-Method", "POST"))
                 .andExpect(status().isForbidden());

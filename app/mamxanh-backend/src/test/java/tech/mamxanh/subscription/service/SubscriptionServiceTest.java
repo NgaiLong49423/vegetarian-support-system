@@ -85,8 +85,8 @@ class SubscriptionServiceTest {
         );
         lenient().when(aiConfiguration.findConfiguration()).thenReturn(new tech.mamxanh.subscription.entity.AiConfigurationSnapshot(
                 List.of(new tech.mamxanh.subscription.entity.AiConfigurationSnapshot.Plan("FREE", 0, 50_000, null, null),
-                        new tech.mamxanh.subscription.entity.AiConfigurationSnapshot.Plan("PLUS", 99_000, 300_000, null, null),
-                        new tech.mamxanh.subscription.entity.AiConfigurationSnapshot.Plan("PRO", 199_000, 600_000, null, null)),
+                        new tech.mamxanh.subscription.entity.AiConfigurationSnapshot.Plan("PLUS", 99_000, 200_000, null, null),
+                        new tech.mamxanh.subscription.entity.AiConfigurationSnapshot.Plan("PRO", 199_000, 500_000, null, null)),
                 List.of(new tech.mamxanh.subscription.entity.AiConfigurationSnapshot.Model("gemini-3.5-flash-lite", "Gemini Flash-Lite", true,
                                 true, true, true, false, true, false),
                         new tech.mamxanh.subscription.entity.AiConfigurationSnapshot.Model("gemini-3.8-flash", "Gemini Flash", true,
@@ -108,7 +108,8 @@ class SubscriptionServiceTest {
 
         PlanResponse plus = plans.get(1);
         assertThat(plus.tier()).isEqualTo("PLUS");
-        assertThat(plus.features()).anyMatch(feature -> feature.contains("300.000 token mỗi tháng"));
+        assertThat(plus.features()).anyMatch(feature -> feature.contains("200.000 token mỗi tháng"));
+        assertThat(free.features()).anyMatch(feature -> feature.contains("Gemini Flash-Lite") && feature.contains("Gemini Flash"));
         assertThat(plus.features()).anyMatch(feature -> feature.contains("Gemini Flash-Lite") && feature.contains("Gemini Flash"));
         assertThat(plus.features()).noneMatch(feature -> feature.contains("Toàn bộ quyền lợi") || feature.contains("AI lập thực đơn"));
         assertThat(plus.priceVnd()).isEqualTo(99_000);
@@ -116,7 +117,7 @@ class SubscriptionServiceTest {
 
         PlanResponse pro = plans.get(2);
         assertThat(pro.tier()).isEqualTo("PRO");
-        assertThat(pro.features()).anyMatch(feature -> feature.contains("600.000 token mỗi tháng"));
+        assertThat(pro.features()).anyMatch(feature -> feature.contains("500.000 token mỗi tháng"));
         assertThat(pro.priceVnd()).isEqualTo(199_000);
         assertThat(pro.billingPeriod()).containsIgnoringCase("tháng");
 
@@ -156,6 +157,8 @@ class SubscriptionServiceTest {
         LocalDateTime startsAt = LocalDateTime.now(clock).minusDays(5);
         LocalDateTime endsAt = LocalDateTime.now(clock).plusDays(25);
         SubscriptionEntity activeSub = new SubscriptionEntity(userId, SubscriptionTier.PRO, startsAt, endsAt);
+        activeSub.setTokenQuota(600_000L);
+        when(aiConfiguration.paidQuotaPolicyCutover()).thenReturn(startsAt.plusDays(1));
 
         when(subscriptionRepository.findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE))
                 .thenReturn(Optional.of(activeSub));
@@ -166,7 +169,7 @@ class SubscriptionServiceTest {
         assertThat(response.status()).isEqualTo("ACTIVE");
         assertThat(response.active()).isTrue();
         assertThat(response.startsAt()).isEqualTo(startsAt);
-        assertThat(response.unlockedFeatures()).contains("Hạn mức 600.000 token mỗi tháng", "Model Gemini: Gemini Flash-Lite, Gemini Flash (mặc định)")
+        assertThat(response.unlockedFeatures()).contains("Hạn mức 500.000 token mỗi tháng", "Model Gemini: Gemini Flash-Lite (mặc định), Gemini Flash")
                 .anyMatch(feature -> feature.contains("theo vai trò và quyền nghiệp vụ"));
     }
 
@@ -221,7 +224,7 @@ class SubscriptionServiceTest {
         verify(orders).create(captured.capture());
         assertThat(captured.getValue().getCreatedAt()).isEqualTo(LocalDateTime.ofInstant(FIXED_INSTANT, ZoneOffset.UTC));
         assertThat(captured.getValue().getSubscriptionTier()).isEqualTo(SubscriptionTier.PLUS);
-        assertThat(captured.getValue().getTokenQuotaSnapshot()).isEqualTo(300_000L);
+        assertThat(captured.getValue().getTokenQuotaSnapshot()).isEqualTo(200_000L);
     }
 
     @Test
@@ -345,7 +348,7 @@ class SubscriptionServiceTest {
         MySubscriptionResponse response = subscriptionService.getMySubscription(userId);
 
         assertThat(response.tier()).isEqualTo("PLUS");
-        assertThat(response.unlockedFeatures()).contains("Hạn mức 300.000 token mỗi tháng", "Model Gemini: Gemini Flash-Lite, Gemini Flash (mặc định)")
+        assertThat(response.unlockedFeatures()).contains("Hạn mức 200.000 token mỗi tháng", "Model Gemini: Gemini Flash-Lite (mặc định), Gemini Flash")
                 .noneMatch(feature -> feature.contains("Toàn bộ quyền lợi") || feature.contains("AI lập thực đơn"));
     }
 

@@ -52,7 +52,7 @@ const sectionDescriptions: Record<ConfigurationSection, string> = {
   plans:
     "Đặt giá và hạn mức token cho từng gói. Giá và quota gói trả phí áp dụng cho lần kích hoạt mới.",
 
-  models: "Quản lý model Gemini, bật/tắt và quyền truy cập theo từng gói.",
+  models: "Quản lý catalog Gemini dùng chung cho Member; cấu hình quyền Guest riêng.",
 
   credit:
     "Cấu hình quy đổi AI Credit, mức sử dụng vượt quota và giới hạn nạp tiền.",
@@ -172,9 +172,19 @@ export function AdminAiConfigurationPage({
         current && {
           ...current,
 
-          models: current.models.map((model, row) =>
-            row === index ? { ...model, [key]: value } : model,
-          ),
+          models: current.models.map((model, row) => {
+            if (row !== index) return model
+            if (key === "enabled" && value === false)
+              return {
+                ...model,
+                enabled: false,
+                freeAllowed: false,
+                freeDefault: false,
+                plusDefault: false,
+                proDefault: false,
+              }
+            return { ...model, [key]: value }
+          }),
         },
     )
   }
@@ -267,44 +277,16 @@ export function AdminAiConfigurationPage({
 
           continue
         }
-
         const fields: string[] = []
-
         if (before.displayName !== model.displayName)
           fields.push(`Tên: ${before.displayName} → ${model.displayName}`)
-
         if (before.enabled !== model.enabled)
-          fields.push(
-            `Trạng thái: ${before.enabled ? "Bật" : "Tắt"} → ${
-              model.enabled ? "Bật" : "Tắt"
-            }`,
-          )
-
-        for (const tier of ["free", "plus", "pro"] as const) {
-          const label =
-            tierLabels[(tier.toUpperCase() as keyof typeof tierLabels)]
-
-          const allowedKey = `${tier}Allowed` as keyof AiModelSetting
-
-          const defaultKey = `${tier}Default` as keyof AiModelSetting
-
-          if (
-            before[allowedKey] !== model[allowedKey] ||
-            before[defaultKey] !== model[defaultKey]
-          ) {
-            const describe = (item: AiModelSetting) =>
-              !item[allowedKey]
-                ? "Không cấp"
-                : item[defaultKey]
-                  ? "Mặc định"
-                  : "Cho phép"
-
-            fields.push(`${label}: ${describe(before)} → ${describe(model)}`)
-          }
-        }
-
-        if (fields.length)
-          changes.push(`${model.modelId}: ${fields.join("; ")}`)
+          fields.push(`Trạng thái: ${before.enabled ? "Bật" : "Tắt"} → ${model.enabled ? "Bật" : "Tắt"}`)
+        if (before.freeAllowed !== model.freeAllowed)
+          fields.push(`Guest: ${before.freeAllowed ? "Cho phép" : "Không cấp"} → ${model.freeAllowed ? "Cho phép" : "Không cấp"}`)
+        if (before.freeDefault !== model.freeDefault)
+          fields.push(`Mặc định chung: ${before.freeDefault ? "Có" : "Không"} → ${model.freeDefault ? "Có" : "Không"}`)
+        if (fields.length) changes.push(`${model.modelId}: ${fields.join("; ")}`)
       }
 
       for (const model of savedConfiguration.models) {
@@ -351,28 +333,13 @@ export function AdminAiConfigurationPage({
 
       return
     }
-
     if (editingSection === "models") {
-      for (const tier of ["free", "plus", "pro"] as const) {
-        const defaults = configuration.models.filter(
-          (model) =>
-            model.enabled && model[`${tier}Allowed`] && model[`${tier}Default`],
-        )
-
-        const available = configuration.models.some(
-          (model) => model.enabled && model[`${tier}Allowed`],
-        )
-
-        if (!available || defaults.length !== 1) {
-          const label =
-            tierLabels[(tier.toUpperCase() as keyof typeof tierLabels)]
-
-          setError(
-            `Gói ${label} cần có ít nhất một model đang bật và đúng một model mặc định. Hãy chọn model mặc định trước khi lưu.`,
-          )
-
-          return
-        }
+      const defaults = configuration.models.filter(
+        (model) => model.enabled && model.freeAllowed && model.freeDefault,
+      )
+      if (defaults.length !== 1) {
+        setError("Cần đúng một model mặc định đang bật và được phép cho Guest.")
+        return
       }
     }
 
@@ -757,7 +724,7 @@ export function AdminAiConfigurationPage({
           <div className="flex flex-wrap items-center justify-between gap-3">
             {sectionHeader(
               "models",
-              "Model ID mới được kiểm tra với Gemini trước khi lưu; mỗi tier cần đúng một model mặc định đang bật.",
+              "Free, Plus và Pro dùng chung model đang bật; Guest chỉ dùng model được cấp. Model mới được kiểm tra với Gemini trước khi lưu.",
             )}
             {editingSection === "models" && (
               <Button
@@ -854,77 +821,58 @@ export function AdminAiConfigurationPage({
                     </span>
                   </div>
                 )}
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  {(["FREE", "PLUS", "PRO"] as const).map((tier) => {
-                    const allowedKey =
-                      `${tier.toLowerCase()}Allowed` as keyof AiModelSetting
-
-                    const defaultKey =
-                      `${tier.toLowerCase()}Default` as keyof AiModelSetting
-
-                    const describe = !model[allowedKey]
-                      ? "Không cấp"
-                      : model[defaultKey]
-                        ? "Mặc định"
-                        : "Cho phép"
-
-                    return (
-                      <div
-                        key={tier}
-                        className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-raised px-3 py-2.5 text-sm"
-                      >
-                        <strong>{tierLabels[tier]}</strong>
-                        {editingSection === "models" ? (
-                          <>
-                            <label className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                checked={Boolean(model[allowedKey])}
-                                onChange={(event) =>
-                                  updateModel(
-                                    index,
-                                    allowedKey,
-                                    event.target.checked,
-                                  )
-                                }
-                              />
-                              Cho phép
-                            </label>
-                            <label className="flex items-center gap-2">
-                              <input
-                                type="radio"
-                                name={`default-${tier}`}
-                                checked={Boolean(model[defaultKey])}
-                                disabled={
-                                  !model[
-                                    (`${tier.toLowerCase()}Allowed` as keyof AiModelSetting)
-                                  ]
-                                }
-                                onChange={() =>
-                                  setConfiguration(
-                                    (current) =>
-                                      current && {
-                                        ...current,
-                                        models: current.models.map(
-                                          (entry, row) => ({
-                                            ...entry,
-                                            [`${tier.toLowerCase()}Default`]:
-                                              row === index,
-                                          }),
-                                        ),
-                                      },
-                                  )
-                                }
-                              />
-                              Mặc định
-                            </label>
-                          </>
-                        ) : (
-                          <span className="text-ink-muted">{describe}</span>
-                        )}
-                      </div>
-                    )
-                  })}
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-raised px-3 py-2.5 text-sm">
+                    <strong>Free / Plus / Pro</strong>
+                    <span className="text-ink-muted">
+                      {model.enabled ? "Cho phép dùng chung" : "Không cấp"}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-raised px-3 py-2.5 text-sm">
+                    <strong>Guest</strong>
+                    {editingSection === "models" ? (
+                      <>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={model.freeAllowed}
+                            disabled={model.freeDefault}
+                            onChange={(event) =>
+                              updateModel(index, "freeAllowed", event.target.checked)
+                            }
+                          />
+                          Cho phép
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="common-default"
+                            checked={model.freeDefault}
+                            disabled={!model.enabled || !model.freeAllowed}
+                            onChange={() =>
+                              setConfiguration(
+                                (current) =>
+                                  current && {
+                                    ...current,
+                                    models: current.models.map((entry, row) => ({
+                                      ...entry,
+                                      freeDefault: row === index,
+                                      plusDefault: row === index,
+                                      proDefault: row === index,
+                                    })),
+                                  },
+                              )
+                            }
+                          />
+                          Mặc định chung
+                        </label>
+                      </>
+                    ) : (
+                      <span className="text-ink-muted">
+                        {!model.freeAllowed ? "Không cấp" : model.freeDefault ? "Mặc định chung" : "Cho phép"}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </section>
             ))}
@@ -1026,7 +974,7 @@ export function AdminAiConfigurationPage({
                 {confirmSection === "plans"
                   ? "Giá và quota Plus/Pro áp dụng cho lần kích hoạt mới; thay đổi quota Free có hiệu lực từ chu kỳ tháng kế tiếp. Chu kỳ gói đang chạy giữ nguyên snapshot."
                   : confirmSection === "models"
-                    ? "Quyền model theo từng gói có hiệu lực sau khi lưu. Model mới sẽ được kiểm tra với Gemini trước khi hệ thống ghi cấu hình."
+                    ? "Catalog model dùng chung cho Member; Guest chỉ dùng model được cấp. Thay đổi áp dụng sau khi lưu. Model mới sẽ được kiểm tra với Gemini trước khi hệ thống ghi cấu hình."
                     : "Tỷ lệ overage mới có hiệu lực cho lượt AI mới; tỷ lệ quy đổi/nạp và giới hạn mới áp dụng cho đơn nạp mới. Đơn đang chờ giữ nguyên snapshot."}
               </p>
               <p className="mt-1">

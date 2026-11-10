@@ -62,7 +62,6 @@ public class RelatedRecipeService {
     public RelatedRecipesResponse recommend(long recipeId, int limit) {
         validate(recipeId, limit);
         var user = users.requireActiveMember();
-        entitlement.requirePro(user.id());
         RecipePostResponse original = source(recipeId);
         List<RecipePostResponse> candidates = recipes.getPublishedCards(
                 repository.findCandidates(recipeId, CANDIDATE_LIMIT, true));
