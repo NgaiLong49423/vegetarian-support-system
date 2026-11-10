@@ -1,3 +1,4 @@
+import { AdminPageHeader } from "../components/AdminPageHeader"
 import { useCallback, useEffect, useState, type FormEvent } from "react"
 
 import { Link, useSearchParams } from "react-router-dom"
@@ -342,24 +343,23 @@ export function AdminReportsPage() {
 
   return (
     <div className="space-y-5 py-2">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
-            Hậu kiểm nội dung
-          </h1>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setError("")
-            void load()
-          }}
-          disabled={loading}
-        >
-          <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" /> Làm mới
-        </Button>
-      </header>
+      <AdminPageHeader
+        title="Hậu kiểm nội dung"
+        description="Xem các bài công thức bị báo cáo, tiếp nhận từng báo cáo rồi ghi kết luận kèm lý do. Mỗi báo cáo chỉ do một quản trị viên xử lý."
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setError("")
+              void load()
+            }}
+            disabled={loading}
+          >
+            <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" /> Làm mới
+          </Button>
+        }
+      />
 
       {error && (
         <div

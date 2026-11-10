@@ -1,3 +1,4 @@
+import { AdminPageHeader } from "../components/AdminPageHeader"
 import { useEffect, useState } from "react"
 
 import { Link } from "react-router-dom"
@@ -438,21 +439,24 @@ export function AdminAiConfigurationPage({
 
   return (
     <div className="space-y-6 py-2">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
-            {section ? sectionTitles[section] : "Cấu hình AI"}
-          </h1>
-        </div>
-        <Button
-          onClick={() => void load()}
-          disabled={saving || Boolean(editingSection)}
-          variant="outline"
-        >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Tải lại
-        </Button>
-      </div>
+      <AdminPageHeader
+        title={section ? sectionTitles[section] : "Cấu hình AI"}
+        description={
+          section
+            ? sectionDescriptions[section]
+            : "Tổng quan các cấu hình AI. Chọn một mục để xem chi tiết, chỉnh sửa và xác nhận thay đổi."
+        }
+        actions={
+          <Button
+            onClick={() => void load()}
+            disabled={saving || Boolean(editingSection)}
+            variant="outline"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Tải lại
+          </Button>
+        }
+      />
 
       {error && (
         <div

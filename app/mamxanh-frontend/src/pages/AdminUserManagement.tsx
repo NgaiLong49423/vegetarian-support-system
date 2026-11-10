@@ -1,3 +1,4 @@
+import { AdminPageHeader } from "../components/AdminPageHeader"
 import { useCallback, useEffect, useState } from "react"
 
 import {
@@ -380,24 +381,12 @@ export function AdminUserManagement() {
 
   return (
     <div className="space-y-6 py-2">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
-            Quản lý tài khoản &amp; phân quyền
-          </h1>
-        </div>
-      </div>
-
-      {notice && (
-        <div
-          role="status"
-          className="rounded-xl border border-leaf-200 bg-leaf-50 p-3 text-sm text-leaf-800"
-        >
-          {notice}
-        </div>
-      )}
-
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <AdminPageHeader
+        title="Quản lý tài khoản & phân quyền"
+        description="Tra cứu tài khoản và quản lý vai trò, trạng thái từ dữ liệu hệ thống."
+      >
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          
         <SummaryCard
           label="Tổng tài khoản"
           value={summary?.totalUsers}
@@ -418,7 +407,18 @@ export function AdminUserManagement() {
           value={summary?.lockedUsers}
           icon={<Lock className="h-4 w-4" />}
         />
-      </div>
+      
+        </div>
+      </AdminPageHeader>
+
+      {notice && (
+        <div
+          role="status"
+          className="rounded-xl border border-leaf-200 bg-leaf-50 p-3 text-sm text-leaf-800"
+        >
+          {notice}
+        </div>
+      )}
 
       <Card className="p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

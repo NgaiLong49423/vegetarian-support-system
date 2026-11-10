@@ -881,6 +881,9 @@ export function AdminCatalogPage() {
             <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
               Danh mục nguyên liệu dinh dưỡng
             </h1>
+            <p className="mt-1 text-sm text-ink-muted">
+              Quản lý tên chuẩn, nguồn tham khảo và dữ liệu dinh dưỡng. Nguyên liệu đã được dùng chỉ có thể ngừng sử dụng, công thức cũ vẫn giữ liên kết.
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">

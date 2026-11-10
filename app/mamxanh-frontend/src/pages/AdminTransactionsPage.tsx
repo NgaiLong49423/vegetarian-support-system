@@ -1,3 +1,4 @@
+import { AdminPageHeader } from "../components/AdminPageHeader"
 import { useEffect, useRef, useState, type FormEvent } from "react"
 
 import {
@@ -251,35 +252,34 @@ export function AdminTransactionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between xl:gap-6">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-balance text-2xl leading-tight font-extrabold text-ink sm:text-3xl">
-            Giám sát giao dịch gói AI
-          </h1>
-        </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2 xl:pt-0.5">
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-11 whitespace-nowrap"
-            disabled={loading}
-            onClick={() => setReload((value) => value + 1)}
-          >
-            <RefreshCw className="h-4 w-4" aria-hidden="true" />
-            Làm mới
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-11 whitespace-nowrap"
-            disabled={loading || exporting || !summary?.total}
-            onClick={exportCsv}
-          >
-            <Download className="h-4 w-4" aria-hidden="true" />
-            {exporting ? "Đang xuất…" : "Xuất đối soát CSV"}
-          </Button>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="Giám sát giao dịch gói AI"
+        description="Theo dõi thanh toán Plus và Pro qua payOS. Số liệu phản ánh giao dịch hệ thống đã ghi nhận. Thời gian hiển thị theo giờ Việt Nam."
+        actions={
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 whitespace-nowrap"
+              disabled={loading}
+              onClick={() => setReload((value) => value + 1)}
+            >
+              <RefreshCw className="h-4 w-4" aria-hidden="true" />
+              Làm mới
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 whitespace-nowrap"
+              disabled={loading || exporting || !summary?.total}
+              onClick={exportCsv}
+            >
+              <Download className="h-4 w-4" aria-hidden="true" />
+              {exporting ? "Đang xuất…" : "Xuất đối soát CSV"}
+            </Button>
+          </div>
+        }
+      />
       <Card className="p-4 sm:p-5">
         <form
           onSubmit={submit}
