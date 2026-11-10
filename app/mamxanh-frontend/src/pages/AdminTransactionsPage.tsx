@@ -251,15 +251,11 @@ export function AdminTransactionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between xl:gap-6">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between xl:gap-6">
         <div className="min-w-0 flex-1">
           <h1 className="text-balance text-2xl leading-tight font-extrabold text-ink sm:text-3xl">
             Giám sát giao dịch gói AI
           </h1>
-          <p className="mt-3 max-w-[72ch] text-pretty text-sm leading-6 text-ink-muted">
-            Theo dõi thanh toán Plus và Pro qua payOS. Số liệu phản ánh giao
-            dịch hệ thống đã ghi nhận. Thời gian hiển thị theo giờ Việt Nam.
-          </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2 xl:pt-0.5">
           <Button

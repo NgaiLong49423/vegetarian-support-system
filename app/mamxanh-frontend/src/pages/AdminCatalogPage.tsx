@@ -876,16 +876,11 @@ export function AdminCatalogPage() {
           aria-hidden="true"
           className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-brand-500/10 blur-3xl"
         />
-        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-2xl">
             <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
               Danh mục nguyên liệu dinh dưỡng
             </h1>
-            <p className="mt-1 text-sm text-ink-muted">
-              Quản lý tên chuẩn, nguồn tham khảo và dữ liệu dinh dưỡng. Nguyên
-              liệu đã được dùng chỉ có thể ngừng sử dụng, công thức cũ vẫn giữ
-              liên kết.
-            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">

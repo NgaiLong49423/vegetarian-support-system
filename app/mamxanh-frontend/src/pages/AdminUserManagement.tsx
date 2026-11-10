@@ -380,19 +380,11 @@ export function AdminUserManagement() {
 
   return (
     <div className="space-y-6 py-2">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
             Quản lý tài khoản &amp; phân quyền
           </h1>
-          <p className="mt-1 text-xs text-ink-muted sm:text-sm">
-            Tra cứu tài khoản và quản lý vai trò, trạng thái từ dữ liệu hệ
-            thống.
-          </p>
-          <p className="mt-1 text-xs text-ink-muted sm:text-sm">
-            Tặng gói AI cho Thành viên hoặc Chuyên gia bằng biểu tượng quà; AI
-            Credit có thể cộng cho mọi tài khoản.
-          </p>
         </div>
       </div>
 

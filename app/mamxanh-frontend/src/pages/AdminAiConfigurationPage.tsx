@@ -438,16 +438,11 @@ export function AdminAiConfigurationPage({
 
   return (
     <div className="space-y-6 py-2">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
             {section ? sectionTitles[section] : "Cấu hình AI"}
           </h1>
-          <p className="mt-1 max-w-3xl text-sm text-ink-muted">
-            {section
-              ? sectionDescriptions[section]
-              : "Tổng quan các cấu hình AI. Chọn một mục để xem chi tiết, chỉnh sửa và xác nhận thay đổi."}
-          </p>
         </div>
         <Button
           onClick={() => void load()}

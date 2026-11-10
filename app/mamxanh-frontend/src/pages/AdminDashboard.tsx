@@ -134,10 +134,6 @@ export function AdminDashboard() {
           <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
             Bảng điều phối hệ thống
           </h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            Giám sát danh mục nguyên liệu, xét duyệt hồ sơ chuyên gia và theo
-            dõi trạng thái tích hợp dịch vụ.
-          </p>
         </div>
         <div className="flex items-center gap-3">
           <Button

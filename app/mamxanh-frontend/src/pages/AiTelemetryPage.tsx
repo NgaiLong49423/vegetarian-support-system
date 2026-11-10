@@ -131,16 +131,11 @@ export function AiTelemetryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between xl:gap-6">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between xl:gap-6">
         <div className="min-w-0 flex-1">
           <h1 className="text-balance text-2xl leading-tight font-extrabold text-ink sm:text-3xl">
             Mức sử dụng AI
           </h1>
-          <p className="mt-3 max-w-[72ch] text-pretty text-sm leading-6 text-ink-muted">
-            Theo dõi token và chi phí quy đổi ước tính theo giá Standard trả
-            phí. Số liệu không phải hóa đơn Google và không ảnh hưởng quyền sử
-            dụng gói AI.
-          </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2 xl:pt-0.5">
           <Button

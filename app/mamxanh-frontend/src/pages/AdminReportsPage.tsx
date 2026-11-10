@@ -342,15 +342,11 @@ export function AdminReportsPage() {
 
   return (
     <div className="space-y-5 py-2">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
             Hậu kiểm nội dung
           </h1>
-          <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-            Xem các bài công thức bị báo cáo, tiếp nhận từng báo cáo rồi ghi kết
-            luận kèm lý do. Mỗi báo cáo chỉ do một quản trị viên xử lý.
-          </p>
         </div>
         <Button
           variant="outline"
