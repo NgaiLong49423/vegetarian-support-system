@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
 
-import { Link } from "react-router-dom"
-
 import {
-  ArrowLeft,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -385,20 +382,7 @@ export function AdminUserManagement() {
     <div className="space-y-6 py-2">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <Link
-              to="/admin"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-brand-600"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Dashboard
-            </Link>
-            <span className="text-xs text-ink-muted">/</span>
-            <span className="text-xs font-semibold text-brand-700">
-              Quản lý người dùng
-            </span>
-          </div>
-          <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
+          <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
             Quản lý tài khoản &amp; phân quyền
           </h1>
           <p className="mt-1 text-xs text-ink-muted sm:text-sm">

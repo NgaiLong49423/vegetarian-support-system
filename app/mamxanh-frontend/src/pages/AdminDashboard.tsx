@@ -131,14 +131,10 @@ export function AdminDashboard() {
       {/* 1. Command Center Hero Header */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-leaf-200 bg-leaf-50/80 px-3 py-1 text-xs font-bold text-leaf-800">
-            <ShieldCheck className="h-3.5 w-3.5 text-leaf-700" /> Trung tâm quản
-            trị Mầm Xanh
-          </div>
-          <h1 className="text-2xl font-black tracking-tight text-ink sm:text-3xl lg:text-4xl">
+          <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
             Bảng điều phối hệ thống
           </h1>
-          <p className="mt-1.5 text-xs text-ink-muted sm:text-sm">
+          <p className="mt-1 text-sm text-ink-muted">
             Giám sát danh mục nguyên liệu, xét duyệt hồ sơ chuyên gia và theo
             dõi trạng thái tích hợp dịch vụ.
           </p>

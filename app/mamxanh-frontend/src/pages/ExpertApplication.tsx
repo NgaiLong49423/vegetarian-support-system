@@ -338,13 +338,10 @@ export function ExpertApplicationPage() {
           />
           <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-2xl">
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-leaf-200/80 bg-leaf-50/90 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-leaf-700">
-                <ShieldCheck className="h-3.5 w-3.5" /> Khu vực Administrator
-              </div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
+              <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
                 Xét duyệt Chuyên gia
               </h1>
-              <p className="mt-2.5 text-sm leading-6 text-ink-muted">
+              <p className="mt-1 text-sm text-ink-muted">
                 Thẩm định hồ sơ của thành viên, mỗi quyết định được ghi nhận một
                 lần.
               </p>

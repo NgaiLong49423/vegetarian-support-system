@@ -18,8 +18,6 @@ import {
   Trash2,
 } from "lucide-react"
 
-import { PageContainer } from "../components/Layout"
-
 import { Button, Card, AnimatedNumber, HamsterLoader } from "../components/ui"
 
 import { asApiError } from "../lib/apiClient"
@@ -174,15 +172,6 @@ export function AdminAiConfigurationPage({
 
           models: current.models.map((model, row) => {
             if (row !== index) return model
-            if (key === "enabled" && value === false)
-              return {
-                ...model,
-                enabled: false,
-                freeAllowed: false,
-                freeDefault: false,
-                plusDefault: false,
-                proDefault: false,
-              }
             return { ...model, [key]: value }
           }),
         },
@@ -427,14 +416,14 @@ export function AdminAiConfigurationPage({
 
   if (loading)
     return (
-      <PageContainer className="py-16">
+      <div className="py-16 text-center">
         <HamsterLoader size="md" text="Đang tải cấu hình AI…" />
-      </PageContainer>
+      </div>
     )
 
   if (!configuration)
     return (
-      <PageContainer className="py-10">
+      <div className="py-10">
         <Card className="p-6">
           <p role="alert" className="text-sm text-red-700">
             {error || "Không tải được cấu hình."}
@@ -444,20 +433,17 @@ export function AdminAiConfigurationPage({
             Thử lại
           </Button>
         </Card>
-      </PageContainer>
+      </div>
     )
 
   return (
-    <PageContainer className="space-y-6 py-6 sm:py-8">
+    <div className="space-y-6 py-2">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-leaf-700">
-            Quản trị hệ thống
-          </p>
-          <h1 className="mt-2 text-3xl font-black text-ink">
+          <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
             {section ? sectionTitles[section] : "Cấu hình AI"}
           </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-muted">
+          <p className="mt-1 max-w-3xl text-sm text-ink-muted">
             {section
               ? sectionDescriptions[section]
               : "Tổng quan các cấu hình AI. Chọn một mục để xem chi tiết, chỉnh sửa và xác nhận thay đổi."}
@@ -1047,6 +1033,6 @@ export function AdminAiConfigurationPage({
           </section>
         </div>
       )}
-    </PageContainer>
+    </div>
   )
 }
