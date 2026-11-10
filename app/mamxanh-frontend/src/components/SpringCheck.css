@@ -107,10 +107,16 @@
 .spring-check__label {
   position: relative;
   display: inline-block;
+  vertical-align: middle;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .spring-check__word {
   display: inline-block;
+  vertical-align: middle;
+  min-width: 0;
+  max-width: 100%;
   color: var(--sc-text, inherit);
 }
 
