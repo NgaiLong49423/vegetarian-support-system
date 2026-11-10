@@ -419,12 +419,12 @@ export function AdminTransactionsPage() {
       )}
       {summary && report && (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[
               {
                 label: "Doanh thu ghi nhận",
                 value: (
-                  <AnimatedNumber value={summary.revenueVnd ?? 0} suffix=" ₫" />
+                  <span className="inline-block whitespace-nowrap"><AnimatedNumber value={summary.revenueVnd ?? 0} suffix={"\u00A0₫"} /></span>
                 ),
                 hint: "Chỉ tính giao dịch thành công",
                 icon: <TrendingUp className="h-4 w-4" />,
@@ -523,7 +523,7 @@ export function AdminTransactionsPage() {
                     </div>
                     <p
                       className={
-                        "mt-3 break-words text-2xl font-black tracking-tight sm:text-3xl " +
+                        "mt-3 whitespace-nowrap text-2xl font-black tracking-tight sm:text-3xl " +
                         valueClass
                       }
                     >
