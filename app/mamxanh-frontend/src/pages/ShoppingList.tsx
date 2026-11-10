@@ -596,7 +596,7 @@ function ShoppingWorkspace() {
               fillColor="#f97316"
               className="min-w-0 w-full"
             />
-            <span className={`text-xs font-semibold sm:text-sm ${item.bought ? "text-ink-muted line-through" : "text-ink-soft"}`}>
+            <span className={`inline-flex items-center text-xs font-semibold sm:text-sm ${item.bought ? "text-ink-muted line-through" : "text-ink-soft"}`}>
               {quantityText(item)}
             </span>
             {item.sources?.length ? (
