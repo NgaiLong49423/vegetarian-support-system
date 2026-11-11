@@ -170,7 +170,7 @@ export function AdminDashboard() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           
         {/* KPI 1: Pending Expert Applications */}
-        <Card className="group relative flex flex-col justify-between overflow-hidden border-brand-200/80 bg-paper p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-900/5">
+        <Card className="group relative flex flex-col justify-between overflow-hidden border-brand-200/80 bg-paper p-4 xl:p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-900/5">
           <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-500 via-brand-400 to-transparent" />
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -189,16 +189,16 @@ export function AdminDashboard() {
               <Award className="h-5 w-5" />
             </span>
           </div>
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 border-t border-brand-100/70 pt-3">
+          <div className="mt-5 flex items-center justify-between gap-2 border-t border-brand-100/70 pt-3">
             <span
               className={
-                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap " +
+                "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap " +
                 (pendingCount > 0
                   ? "border border-amber-200/80 bg-amber-50 text-amber-800"
                   : "border border-leaf-200/80 bg-leaf-50 text-leaf-800")
               }
             >
-              <Clock className="h-3.5 w-3.5" />{" "}
+              <Clock className="h-3 w-3" />{" "}
               {pendingCount > 0 ? (
                 <>
                   <AnimatedNumber value={pendingCount} /> cần xử lý
@@ -209,7 +209,7 @@ export function AdminDashboard() {
             </span>
             <Link
               to="/admin/xet-duyet-chuyen-gia"
-              className="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-brand-600 whitespace-nowrap transition-colors hover:text-brand-700 hover:underline"
+              className="inline-flex shrink-0 items-center gap-1 text-[11px] font-bold text-brand-600 whitespace-nowrap transition-colors hover:text-brand-700 hover:underline"
             >
               Xem hàng đợi <ArrowRight className="h-3 w-3" />
             </Link>
@@ -217,7 +217,7 @@ export function AdminDashboard() {
         </Card>
 
         {/* KPI 2: Total Ingredients */}
-        <Card className="group relative flex flex-col justify-between overflow-hidden border-brand-200/80 bg-paper p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-900/5">
+        <Card className="group relative flex flex-col justify-between overflow-hidden border-brand-200/80 bg-paper p-4 xl:p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-900/5">
           <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-leaf-500 via-leaf-400 to-transparent" />
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -236,13 +236,13 @@ export function AdminDashboard() {
               <Boxes className="h-5 w-5" />
             </span>
           </div>
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 border-t border-brand-100/70 pt-3">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-leaf-200/80 bg-leaf-50 px-2.5 py-0.5 text-xs font-semibold text-leaf-800 whitespace-nowrap">
-              <CheckCircle2 className="h-3.5 w-3.5" /> Chuẩn 9 chỉ tiêu
+          <div className="mt-5 flex items-center justify-between gap-2 border-t border-brand-100/70 pt-3">
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-leaf-200/80 bg-leaf-50 px-2 py-0.5 text-[11px] font-semibold text-leaf-800 whitespace-nowrap">
+              <CheckCircle2 className="h-3 w-3" /> Chuẩn 9 chỉ tiêu
             </span>
             <Link
               to="/quan-tri/danh-muc"
-              className="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-brand-600 whitespace-nowrap transition-colors hover:text-brand-700 hover:underline"
+              className="inline-flex shrink-0 items-center gap-1 text-[11px] font-bold text-brand-600 whitespace-nowrap transition-colors hover:text-brand-700 hover:underline"
             >
               Quản lý kho <ArrowRight className="h-3 w-3" />
             </Link>
@@ -250,7 +250,7 @@ export function AdminDashboard() {
         </Card>
 
         {/* KPI 3: Food Groups */}
-        <Card className="group relative flex flex-col justify-between overflow-hidden border-brand-200/80 bg-paper p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-900/5">
+        <Card className="group relative flex flex-col justify-between overflow-hidden border-brand-200/80 bg-paper p-4 xl:p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-900/5">
           <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-500 via-amber-400 to-transparent" />
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -269,18 +269,18 @@ export function AdminDashboard() {
               <Layers className="h-5 w-5" />
             </span>
           </div>
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 border-t border-brand-100/70 pt-3">
-            <span className="text-xs text-ink-muted whitespace-nowrap truncate">
+          <div className="mt-5 flex items-center justify-between gap-2 border-t border-brand-100/70 pt-3">
+            <span className="text-[11px] text-ink-muted whitespace-nowrap truncate">
               <AnimatedNumber value={catalogOptions?.sources?.length ?? 0} /> nguồn kiểm định
             </span>
-            <span className="rounded-full border border-brand-200/60 bg-cream-soft px-2.5 py-0.5 text-xs font-semibold text-ink-soft whitespace-nowrap shrink-0">
+            <span className="rounded-full border border-brand-200/60 bg-cream-soft px-2 py-0.5 text-[11px] font-semibold text-ink-soft whitespace-nowrap shrink-0">
               Danh mục chuẩn
             </span>
           </div>
         </Card>
 
         {/* KPI 4: Security & Role status */}
-        <Card className="group relative flex flex-col justify-between overflow-hidden border-brand-200/80 bg-paper p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-900/5">
+        <Card className="group relative flex flex-col justify-between overflow-hidden border-brand-200/80 bg-paper p-4 xl:p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-900/5">
           <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-leaf-600 via-brand-500 to-transparent" />
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -298,9 +298,9 @@ export function AdminDashboard() {
               <ShieldCheck className="h-5 w-5" />
             </span>
           </div>
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 border-t border-brand-100/70 pt-3">
-            <Badge tone="leaf" className="whitespace-nowrap shrink-0">Quyền: ADMIN</Badge>
-            <span className="text-xs font-medium text-leaf-700 whitespace-nowrap shrink-0">
+          <div className="mt-5 flex items-center justify-between gap-2 border-t border-brand-100/70 pt-3">
+            <Badge tone="leaf" className="whitespace-nowrap shrink-0 text-[11px]">Quyền: ADMIN</Badge>
+            <span className="text-[11px] font-medium text-leaf-700 whitespace-nowrap shrink-0">
               Xác thực hợp lệ
             </span>
           </div>
