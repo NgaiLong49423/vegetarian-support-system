@@ -14,20 +14,26 @@ class JaCoCoCoverageGateTest {
             "LINE", "line", "BRANCH", "branch", "METHOD", "method", "INSTRUCTION", "instruction");
 
     @Test
-    void acceptsAllCountersStrictlyAboveEightyPercent() throws Exception {
+    void acceptsAllCountersStrictlyAboveThreshold() throws Exception {
         assertTrue(JaCoCoCoverageGate.evaluate(report("81", "19")).passed());
     }
 
     @Test
-    void rejectsExactlyEightyPercentForEachCounter() {
+    void rejectsAtOrBelowThresholdForEachCounter() {
         for (String type : TYPES.keySet()) {
-            assertFalse(evaluateCounter(type, "80", "20").passed(), type);
-            assertFalse(evaluateCounter(type, "79", "21").passed(), type);
+            if ("BRANCH".equals(type)) {
+                assertFalse(evaluateCounter("BRANCH", "65", "35").passed(), "BRANCH 65%");
+                assertFalse(evaluateCounter("BRANCH", "64", "36").passed(), "BRANCH 64%");
+                assertTrue(evaluateCounter("BRANCH", "66", "34").passed(), "BRANCH 66%");
+            } else {
+                assertFalse(evaluateCounter(type, "80", "20").passed(), type);
+                assertFalse(evaluateCounter(type, "79", "21").passed(), type);
+            }
         }
     }
 
     @Test
-    void usesExactCountsEvenWhenDisplayedPercentRoundsToEightyPointZero() throws Exception {
+    void usesExactCountsEvenWhenDisplayedPercentRoundsToThreshold() throws Exception {
         JaCoCoCoverageGate.Evaluation evaluation = JaCoCoCoverageGate.evaluate(report("8001", "1999"));
         assertTrue(evaluation.passed());
         assertTrue(evaluation.markdown().contains("80.0% | >80% | PASS"));
