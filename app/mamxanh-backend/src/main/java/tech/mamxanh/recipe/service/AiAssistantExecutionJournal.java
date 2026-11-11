@@ -135,7 +135,7 @@ public class AiAssistantExecutionJournal {
         }
         JournalEntry existing = jdbc == null ? entries.putIfAbsent(key, entry) : null;
         if (existing != null) {
-            if (existing.argumentsHash() != null && !existing.argumentsHash().equalsIgnoreCase(finalHash)) {
+            if (existing.argumentsHash() != null && !existing.argumentsHash().trim().equalsIgnoreCase(finalHash.trim())) {
                 throw new AppException(ErrorCode.VALIDATION_FAILED, "Tham số của yêu cầu không khớp với bản ghi đã tồn tại.");
             }
             if (existing.state() == ActionState.RESERVED || existing.state() == ActionState.WRITING) {
@@ -323,7 +323,7 @@ public class AiAssistantExecutionJournal {
         Optional<JournalEntry> existing = find(ownerId, clientRequestId, actionId);
         if (existing.isPresent()) {
             JournalEntry entry = existing.get();
-            if (entry.argumentsHash() != null && !entry.argumentsHash().equalsIgnoreCase(finalHash)) {
+            if (entry.argumentsHash() != null && !entry.argumentsHash().trim().equalsIgnoreCase(finalHash.trim())) {
                 throw new AppException(ErrorCode.VALIDATION_FAILED, "Tham số của yêu cầu không khớp với bản ghi đã tồn tại.");
             }
             if (entry.state() == ActionState.SUCCEEDED) {
