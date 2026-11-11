@@ -51,10 +51,10 @@ test('FR-10: real JWT and SQL subscription changes select the correct upgrade an
     const futurePlan = await request.get(`${backend}/subscriptions/my-subscription`, { headers });
     expect(futurePlan.status()).toBe(200);
     expect(await futurePlan.json()).toMatchObject({ tier: 'FREE' });
-    const futureWeekly = await request.post(`${backend}/recipes/ai/weekly-menu`, { headers,
-      data: { ingredientIds: [ingredients[0].ingredientId] } });
-    expect(futureWeekly.status()).toBe(403);
-    expect(await futureWeekly.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PLUS' });
+    const futureChat = await chatMenu();
+
+    expect(futureChat.status()).toBe(403);
+    expect(await futureChat.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PLUS' });
     expect(sql(`SELECT COUNT(*) FROM [SUBSCRIPTION] WHERE user_id=${member} AND tier='PRO' AND status='ACTIVE'`)).toBe('1');
     sql(`DELETE FROM [SUBSCRIPTION] WHERE user_id=${member} AND tier='PRO'`);
     sql(`INSERT INTO [SUBSCRIPTION] (user_id,tier,status,starts_at,ends_at)

@@ -646,8 +646,8 @@ function ShoppingWorkspace() {
   )
   return (
     <PageContainer className="max-w-6xl py-6">
-      <div className="grid items-start gap-5 md:grid-cols-[225px_minmax(0,1fr)]">
-        <aside className="space-y-4 md:sticky md:top-20">
+      <div className="grid min-w-0 max-w-full items-start gap-5 md:grid-cols-[225px_minmax(0,1fr)]">
+        <aside className="min-w-0 max-w-full space-y-4 md:sticky md:top-20">
           <h1
             id="shopping-title"
             tabIndex={-1}
@@ -765,7 +765,7 @@ function ShoppingWorkspace() {
             </div>
           )}
         </aside>
-        <Card className="min-w-0 p-4 sm:p-6">
+        <Card className="min-w-0 max-w-full overflow-hidden p-4 sm:p-6">
           {requested && !id ? (
             <p role="alert" className="text-sm text-ink">
               Mã danh sách không hợp lệ. Hãy chọn một danh sách đã lưu.
@@ -814,7 +814,7 @@ function ShoppingWorkspace() {
               </div>
             )
           ) : (
-            <div aria-busy={busy}>
+            <div aria-busy={busy} className="min-w-0 max-w-full">
               <header className="mb-4 rounded-xl border border-brand-200 bg-gradient-to-r from-orange-50 via-brand-50/70 to-paper px-3.5 py-2.5 shadow-sm sm:px-4 sm:py-3">
                 <div className="flex min-w-0 items-center gap-3">
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-600 sm:h-10 sm:w-10">
@@ -829,7 +829,7 @@ function ShoppingWorkspace() {
                 </div>
               </header>
               {!!list.recipeSources?.length && (
-                <section aria-label="Công thức trong danh sách" className="mb-5 rounded-2xl border border-brand-200 bg-cream-soft p-4 sm:p-5">
+                <section aria-label="Công thức trong danh sách" className="mb-5 min-w-0 max-w-full overflow-hidden rounded-2xl border border-brand-200 bg-cream-soft p-4 sm:p-5">
                   <div className="flex items-end justify-between gap-3">
                     <div>
                       <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-brand-700">Từ công thức</p>
@@ -837,8 +837,8 @@ function ShoppingWorkspace() {
                     </div>
                     <span className="text-xs text-ink-muted">{list.recipeSources.length} món</span>
                   </div>
-                  <div className="relative mt-4">
-                    <ul ref={recipeCarousel} aria-label="Công thức trong danh sách mua sắm" className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-2 pr-12">
+                  <div className="relative mt-4 min-w-0 max-w-full">
+                    <ul ref={recipeCarousel} aria-label="Công thức trong danh sách mua sắm" className="flex min-w-0 max-w-full snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-2 pr-12">
                       {list.recipeSources.map((source) => (
                         <li key={source.recipeId} className="relative w-40 shrink-0 snap-start sm:w-48">
                           <button type="button" disabled={busy} aria-label={`Thao tác với ${source.title ?? "công thức"}`} title="Thao tác với công thức"
