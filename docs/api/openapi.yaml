@@ -3654,6 +3654,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
+      - {}
       - bearerAuth: []
   /api/v1/recipes/ai/chat/cancel:
     post:
@@ -3699,6 +3700,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
+      - {}
       - bearerAuth: []
   /api/v1/recipes/ai-assistance:
     post:

@@ -966,7 +966,12 @@ export function AiChatPage() {
           aria-label="Cuộc trò chuyện"
         >
           {recipeArticle && (
-            <details className="overflow-hidden rounded-xl border border-brand-200 bg-paper text-ink shadow-xs">
+            <details
+              open
+              role="article"
+              aria-label={`Bài công thức: ${recipeArticle.title}`}
+              className="overflow-hidden rounded-xl border border-brand-200 bg-paper text-ink shadow-xs"
+            >
               <summary className="flex cursor-pointer list-none items-center gap-3 p-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600">
                 {recipeArticle.coverUrl ? (
                   <img src={recipeArticle.coverUrl} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
