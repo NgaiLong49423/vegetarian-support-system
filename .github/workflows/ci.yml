@@ -44,7 +44,9 @@ jobs:
         run: npm run build
 
       - name: Install Playwright Chromium and Linux dependencies
-        run: npx playwright install --with-deps chromium
+        run: |
+          sudo sed -i "s|azure.archive.ubuntu.com|archive.ubuntu.com|g" /etc/apt/sources.list /etc/apt/sources.list.d/* /etc/apt/apt-mirrors.txt 2>/dev/null || true
+          npx playwright install --with-deps chromium
 
       - name: Test strict frontend coverage gate
         run: npm run test:e2e:coverage:gate-tests
@@ -184,6 +186,7 @@ jobs:
         working-directory: app/mamxanh-frontend
         run: |
           npm ci
+          sudo sed -i "s|azure.archive.ubuntu.com|archive.ubuntu.com|g" /etc/apt/sources.list /etc/apt/sources.list.d/* /etc/apt/apt-mirrors.txt 2>/dev/null || true
           npx playwright install --with-deps chromium
 
       - name: Build and smoke-test the shared development stack
