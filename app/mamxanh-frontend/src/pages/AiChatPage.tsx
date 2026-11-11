@@ -781,8 +781,8 @@ export function AiChatPage() {
       }
       else pendingAiChatRequest(ownerKey, null)
       const apiError = asApiError(cause)
-      if (apiError.code === "AI_GUEST_RATE_LIMITED" && apiError.retryAfter) {
-        const wait = Math.ceil(apiError.retryAfter ?? 60)
+      if (apiError.code === "AI_GUEST_RATE_LIMITED" || apiError.status === 429) {
+        const wait = Math.ceil(apiError.retryAfter || 60)
         setRetryAt(Date.now() + wait * 1000)
         setRetrySeconds(wait)
       }

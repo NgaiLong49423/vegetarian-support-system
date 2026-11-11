@@ -645,7 +645,7 @@ function ShoppingWorkspace() {
     </section>
   )
   return (
-    <PageContainer className="max-w-6xl py-6">
+    <PageContainer className="max-w-6xl py-6 overflow-x-clip">
       <div className="grid min-w-0 max-w-full items-start gap-5 md:grid-cols-[225px_minmax(0,1fr)]">
         <aside className="min-w-0 max-w-full space-y-4 md:sticky md:top-20">
           <h1
@@ -712,7 +712,7 @@ function ShoppingWorkspace() {
                   onClick={() => { setListActionMenuId(null); setParams({ listId: String(summary.id) }) }}
                   className="min-w-0 flex-1 rounded-lg px-1.5 py-1 text-left text-sm focus-visible:outline-2 focus-visible:outline-brand-400"
                 >
-                  <span className={`block break-words leading-5 ${summary.id === id ? "font-bold text-brand-900" : "font-medium"}`}>{summary.name}</span>
+                  <span className={`block break-words [overflow-wrap:anywhere] break-all leading-5 ${summary.id === id ? "font-bold text-brand-900" : "font-medium"}`}>{summary.name}</span>
                 </button>
                 <div className="relative mt-0.5 shrink-0">
                   <button
@@ -822,7 +822,7 @@ function ShoppingWorkspace() {
                   </span>
                   <div className="min-w-0">
                     <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-brand-700 sm:text-[11px]">Danh sách đang mở</p>
-                    <h2 className="break-words text-lg font-bold leading-tight tracking-tight text-ink sm:text-xl">
+                    <h2 className="break-words [overflow-wrap:anywhere] break-all text-lg font-bold leading-tight tracking-tight text-ink sm:text-xl">
                       {list.name}
                     </h2>
                   </div>
@@ -837,7 +837,7 @@ function ShoppingWorkspace() {
                     </div>
                     <span className="text-xs text-ink-muted">{list.recipeSources.length} món</span>
                   </div>
-                  <div className="relative mt-4 min-w-0 max-w-full">
+                  <div className="relative mt-4 min-w-0 max-w-full overflow-hidden">
                     <ul ref={recipeCarousel} aria-label="Công thức trong danh sách mua sắm" className="flex min-w-0 max-w-full snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-2 pr-12">
                       {list.recipeSources.map((source) => (
                         <li key={source.recipeId} className="relative w-40 shrink-0 snap-start sm:w-48">
