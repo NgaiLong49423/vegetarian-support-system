@@ -5,7 +5,6 @@ export interface AdminPageHeaderProps {
   description?: string
   actions?: ReactNode
   children?: ReactNode
-  className?: string
 }
 
 export function AdminPageHeader({
@@ -13,12 +12,9 @@ export function AdminPageHeader({
   description,
   actions,
   children,
-  className = "",
 }: AdminPageHeaderProps) {
   return (
-    <div
-      className={`relative mb-7 overflow-hidden rounded-3xl border border-brand-200/80 bg-gradient-to-br from-paper via-paper to-brand-50/40 p-6 shadow-sm sm:p-8 ${className}`}
-    >
+    <div className="relative mb-7 overflow-hidden rounded-3xl border border-brand-200/80 bg-gradient-to-br from-paper via-paper to-brand-50/40 p-6 shadow-sm sm:p-8">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-brand-500/10 blur-3xl"

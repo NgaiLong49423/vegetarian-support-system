@@ -32,7 +32,7 @@ Mọi hành động tác động đến dữ liệu đều phải tuân thủ m�
 
 - **Tham số bắt buộc từ người dùng:** Các thông tin định danh cốt lõi (như tên danh sách mua sắm, từ khóa tìm kiếm) bắt buộc phải do người dùng nêu rõ ràng. Nếu thiếu hoặc chưa rõ, AI phải hỏi lại để làm rõ; tuyệt đối không tự ý đặt tên mặc định thay cho người dùng.
 - **Mã định danh thực thể (Resource ID):** Chỉ sử dụng ID thật do Backend trả về hoặc do người dùng cung cấp. Tuyệt đối không tự suy đoán, tạo ID ngẫu nhiên hoặc dùng ID giả định.
-- **Ưu tiên phản hồi trực tiếp từ Backend:** Hệ thống ưu tiên sử dụng kết quả trả về đầy đủ từ Backend để thông báo cho người dùng. Chỉ gọi thêm công cụ đọc (ví dụ: `get_shopping_list`) khi quy trình nghiệp vụ yêu cầu kiểm chứng tính toàn vẹn hoặc người dùng chủ động yêu cầu xem lại.
+- **Ưu tiên phản hồi trực tiếp từ Backend:** Hệ thống ưu tiên sử dụng kết quả trả về đầy đủ từ Backend để thông báo cho người dùng. Chỉ gọi thêm công cụ đọc (ví dụ: `get_shopping_list` sau `create_shopping_list`) khi quy trình nghiệp vụ yêu cầu kiểm chứng tính toàn vẹn hoặc người dùng chủ động yêu cầu xem lại.
 
 ## 4. Xử Lý Thất Bại Từng Phần (Partial Failure Handling)
 
