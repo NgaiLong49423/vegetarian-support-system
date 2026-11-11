@@ -175,7 +175,7 @@ export function AdminDashboard() {
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
-                Đơn Chuyên gia chờ duyệt
+                Chuyên gia chờ duyệt
               </p>
               <p className="mt-2 text-3xl font-black text-ink sm:text-4xl">
                 {loading ? (
@@ -185,14 +185,14 @@ export function AdminDashboard() {
                 )}
               </p>
             </div>
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-600 shadow-xs ring-1 ring-brand-200/70 transition-transform duration-200 group-hover:scale-105">
-              <Award className="h-6 w-6" />
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-600 shadow-xs ring-1 ring-brand-200/70 transition-transform duration-200 group-hover:scale-105">
+              <Award className="h-5 w-5" />
             </span>
           </div>
-          <div className="mt-5 flex items-center justify-between border-t border-brand-100/70 pt-3">
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 border-t border-brand-100/70 pt-3">
             <span
               className={
-                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold " +
+                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap " +
                 (pendingCount > 0
                   ? "border border-amber-200/80 bg-amber-50 text-amber-800"
                   : "border border-leaf-200/80 bg-leaf-50 text-leaf-800")
@@ -201,7 +201,7 @@ export function AdminDashboard() {
               <Clock className="h-3.5 w-3.5" />{" "}
               {pendingCount > 0 ? (
                 <>
-                  <AnimatedNumber value={pendingCount} /> đơn cần xử lý
+                  <AnimatedNumber value={pendingCount} /> cần xử lý
                 </>
               ) : (
                 "Đã xử lý xong"
@@ -209,7 +209,7 @@ export function AdminDashboard() {
             </span>
             <Link
               to="/admin/xet-duyet-chuyen-gia"
-              className="inline-flex items-center gap-1 text-xs font-bold text-brand-600 transition-colors hover:text-brand-700 hover:underline"
+              className="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-brand-600 whitespace-nowrap transition-colors hover:text-brand-700 hover:underline"
             >
               Xem hàng đợi <ArrowRight className="h-3 w-3" />
             </Link>
@@ -232,17 +232,17 @@ export function AdminDashboard() {
                 )}
               </p>
             </div>
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-leaf-50 text-leaf-700 shadow-xs ring-1 ring-leaf-200/70 transition-transform duration-200 group-hover:scale-105">
-              <Boxes className="h-6 w-6" />
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-leaf-50 text-leaf-700 shadow-xs ring-1 ring-leaf-200/70 transition-transform duration-200 group-hover:scale-105">
+              <Boxes className="h-5 w-5" />
             </span>
           </div>
-          <div className="mt-5 flex items-center justify-between border-t border-brand-100/70 pt-3">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-leaf-200/80 bg-leaf-50 px-2.5 py-0.5 text-xs font-semibold text-leaf-800">
-              <CheckCircle2 className="h-3.5 w-3.5" /> Chuẩn 9 chỉ tiêu vi chất
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 border-t border-brand-100/70 pt-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-leaf-200/80 bg-leaf-50 px-2.5 py-0.5 text-xs font-semibold text-leaf-800 whitespace-nowrap">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Chuẩn 9 chỉ tiêu
             </span>
             <Link
               to="/quan-tri/danh-muc"
-              className="inline-flex items-center gap-1 text-xs font-bold text-brand-600 transition-colors hover:text-brand-700 hover:underline"
+              className="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-brand-600 whitespace-nowrap transition-colors hover:text-brand-700 hover:underline"
             >
               Quản lý kho <ArrowRight className="h-3 w-3" />
             </Link>
@@ -265,16 +265,15 @@ export function AdminDashboard() {
                 )}
               </p>
             </div>
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-700 shadow-xs ring-1 ring-amber-200/70 transition-transform duration-200 group-hover:scale-105">
-              <Layers className="h-6 w-6" />
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-700 shadow-xs ring-1 ring-amber-200/70 transition-transform duration-200 group-hover:scale-105">
+              <Layers className="h-5 w-5" />
             </span>
           </div>
-          <div className="mt-5 flex items-center justify-between border-t border-brand-100/70 pt-3">
-            <span className="text-xs text-ink-muted">
-              <AnimatedNumber value={catalogOptions?.sources?.length ?? 0} />{" "}
-              nguồn kiểm định
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 border-t border-brand-100/70 pt-3">
+            <span className="text-xs text-ink-muted whitespace-nowrap truncate">
+              <AnimatedNumber value={catalogOptions?.sources?.length ?? 0} /> nguồn kiểm định
             </span>
-            <span className="rounded-full border border-brand-200/60 bg-cream-soft px-2.5 py-0.5 text-xs font-semibold text-ink-soft">
+            <span className="rounded-full border border-brand-200/60 bg-cream-soft px-2.5 py-0.5 text-xs font-semibold text-ink-soft whitespace-nowrap shrink-0">
               Danh mục chuẩn
             </span>
           </div>
@@ -295,13 +294,13 @@ export function AdminDashboard() {
                 {account?.email || "admin@mamxanh.local"}
               </p>
             </div>
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-leaf-50 text-leaf-800 shadow-xs ring-1 ring-leaf-200/70 transition-transform duration-200 group-hover:scale-105">
-              <ShieldCheck className="h-6 w-6" />
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-leaf-50 text-leaf-800 shadow-xs ring-1 ring-leaf-200/70 transition-transform duration-200 group-hover:scale-105">
+              <ShieldCheck className="h-5 w-5" />
             </span>
           </div>
-          <div className="mt-5 flex items-center justify-between border-t border-brand-100/70 pt-3">
-            <Badge tone="leaf">Quyền: ADMIN</Badge>
-            <span className="text-xs font-medium text-leaf-700">
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 border-t border-brand-100/70 pt-3">
+            <Badge tone="leaf" className="whitespace-nowrap shrink-0">Quyền: ADMIN</Badge>
+            <span className="text-xs font-medium text-leaf-700 whitespace-nowrap shrink-0">
               Xác thực hợp lệ
             </span>
           </div>
