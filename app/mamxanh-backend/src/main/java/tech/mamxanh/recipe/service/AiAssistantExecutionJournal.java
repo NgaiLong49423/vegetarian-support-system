@@ -1,5 +1,6 @@
 package tech.mamxanh.recipe.service;
 
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,7 +134,7 @@ public class AiAssistantExecutionJournal {
         if (jdbc != null && requiresNewTransaction == null) {
             throw new AppException(ErrorCode.AI_RESPONSE_INVALID, "Không thể xác minh trạng thái thao tác.");
         }
-        JournalEntry existing = jdbc == null ? entries.putIfAbsent(key, entry) : null;
+        JournalEntry existing = entries.putIfAbsent(key, entry);
         if (existing != null) {
             if (existing.argumentsHash() != null && !existing.argumentsHash().trim().equalsIgnoreCase(finalHash.trim())) {
                 throw new AppException(ErrorCode.VALIDATION_FAILED, "Tham số của yêu cầu không khớp với bản ghi đã tồn tại.");
@@ -187,7 +188,7 @@ public class AiAssistantExecutionJournal {
 
     public void updateState(long ownerId, UUID clientRequestId, String actionId, ActionState newState, Object resultData, String errorMessage) {
         ActionKey key = new ActionKey(ownerId, clientRequestId, actionId);
-        if (jdbc == null) entries.compute(key, (k, existing) -> {
+        entries.compute(key, (k, existing) -> {
             String tool = existing != null ? existing.toolName() : "unknown";
             String argHash = existing != null ? existing.argumentsHash() : null;
             Instant created = existing != null ? existing.createdAt() : Instant.now();
@@ -220,7 +221,7 @@ public class AiAssistantExecutionJournal {
 
     public Optional<JournalEntry> find(long ownerId, UUID clientRequestId, String actionId) {
         ActionKey key = new ActionKey(ownerId, clientRequestId, actionId);
-        JournalEntry mem = jdbc == null ? entries.get(key) : null;
+        JournalEntry mem = entries.get(key);
         if (mem != null) {
             return Optional.of(mem);
         }
@@ -247,7 +248,7 @@ public class AiAssistantExecutionJournal {
                             rs.getString("tool_name"),
                             rs.getString("arguments_hash"),
                             state,
-                            resultJson == null ? null : mapper.readValue(resultJson, AiAssistantToolRegistry.ToolResult.class),
+                            resultJson == null ? null : deserializeResult(resultJson),
                             rs.getString("error_message"),
                             rs.getTimestamp("created_at").toInstant()
                     );
@@ -255,6 +256,7 @@ public class AiAssistantExecutionJournal {
 
                 if (!rows.isEmpty()) {
                     JournalEntry fromDb = rows.getFirst();
+                    entries.put(key, fromDb);
                     return Optional.of(fromDb);
                 }
             } catch (Exception ex) {
@@ -280,7 +282,7 @@ public class AiAssistantExecutionJournal {
                     String resultJson = rs.getString("result_json");
                     return new JournalEntry(rs.getLong("owner_id"), UUID.fromString(rs.getString("client_request_id")),
                             rs.getString("action_id"), rs.getString("tool_name"), rs.getString("arguments_hash"),
-                            state, resultJson == null ? null : mapper.readValue(resultJson, AiAssistantToolRegistry.ToolResult.class),
+                            state, resultJson == null ? null : deserializeResult(resultJson),
                             rs.getString("error_message"), rs.getTimestamp("created_at").toInstant());
                 }, ownerId, clientRequestId);
             } catch (Exception failure) {
@@ -291,6 +293,21 @@ public class AiAssistantExecutionJournal {
                 .filter(e -> e.ownerId() == ownerId && Objects.equals(e.clientRequestId(), clientRequestId))
                 .sorted(Comparator.comparing(JournalEntry::createdAt).thenComparing(JournalEntry::actionId))
                 .toList();
+    }
+
+    private Object deserializeResult(String resultJson) {
+        if (resultJson == null || resultJson.isBlank()) {
+            return null;
+        }
+        try {
+            JsonNode node = mapper.readTree(resultJson);
+            if (node.isObject() && (node.has("status") || node.has("summary") || node.has("sources"))) {
+                return mapper.treeToValue(node, AiAssistantToolRegistry.ToolResult.class);
+            }
+            return mapper.treeToValue(node, Object.class);
+        } catch (Exception ex) {
+            return resultJson;
+        }
     }
 
     public boolean isSucceeded(long ownerId, UUID clientRequestId, String actionId) {
