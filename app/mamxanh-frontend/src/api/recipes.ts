@@ -429,9 +429,7 @@ export async function streamAiChat(
         // not json
       }
       const message = errorData?.message || errorData?.detail || `HTTP ${response.status}`;
-      const retryAfterHeader = response.headers.get('retry-after');
-      const retryAfter = retryAfterHeader ? Number(retryAfterHeader) : undefined;
-      throw new ApiError(message, response.status, errorData?.code, errorData?.errors ?? [], errorData?.requiredTier, retryAfter);
+      throw new ApiError(message, response.status, errorData?.code);
     }
     return (await response.json()) as AiChatResponse;
   }
@@ -444,9 +442,7 @@ export async function streamAiChat(
       // not json
     }
     const message = errorData?.message || errorData?.detail || `HTTP ${response.status}`;
-    const retryAfterHeader = response.headers.get('retry-after');
-    const retryAfter = retryAfterHeader ? Number(retryAfterHeader) : undefined;
-    throw new ApiError(message, response.status, errorData?.code, errorData?.errors ?? [], errorData?.requiredTier, retryAfter);
+    throw new ApiError(message, response.status, errorData?.code);
   }
 
   if (!response.body) {
