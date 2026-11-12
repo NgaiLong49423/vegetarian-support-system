@@ -21,7 +21,6 @@ import {
   RefreshCw,
   Search,
   ShieldAlert,
-  ShieldCheck,
   Sparkles,
   X,
 } from "lucide-react"
@@ -871,43 +870,19 @@ export function AdminCatalogPage() {
 
   return (
     <PageContainer className="w-full max-w-none px-0 py-2 sm:py-4">
-      {/* Breadcrumb Navigation */}
-      <nav
-        aria-label="Đường dẫn trang"
-        className="mb-4 flex flex-wrap items-center gap-2 text-xs font-medium text-ink-muted"
-      >
-        <Link
-          to="/trang-chu"
-          className="transition-colors hover:text-brand-600"
-        >
-          Trang chủ
-        </Link>
-        <span className="text-brand-300">/</span>
-        <span>Quản trị hệ thống</span>
-        <span className="text-brand-300">/</span>
-        <span className="font-bold text-brand-600">
-          Danh mục nguyên liệu dinh dưỡng
-        </span>
-      </nav>
-
       {/* Admin Command Hero Banner */}
       <div className="relative mb-7 overflow-hidden rounded-3xl border border-brand-200/80 bg-gradient-to-br from-paper via-paper to-brand-50/40 p-6 shadow-sm sm:p-8">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-brand-500/10 blur-3xl"
         />
-        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-2xl">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-leaf-200/80 bg-leaf-50/90 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-leaf-700">
-              <ShieldCheck className="h-3.5 w-3.5" /> Khu vực Administrator
-            </div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
+            <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
               Danh mục nguyên liệu dinh dưỡng
             </h1>
-            <p className="mt-2.5 text-sm leading-6 text-ink-muted">
-              Quản lý tên chuẩn, nguồn tham khảo và dữ liệu dinh dưỡng. Nguyên
-              liệu đã được dùng chỉ có thể ngừng sử dụng, công thức cũ vẫn giữ
-              liên kết.
+            <p className="mt-1 text-sm text-ink-muted">
+              Quản lý tên chuẩn, nguồn tham khảo và dữ liệu dinh dưỡng. Nguyên liệu đã được dùng chỉ có thể ngừng sử dụng, công thức cũ vẫn giữ liên kết.
             </p>
           </div>
 

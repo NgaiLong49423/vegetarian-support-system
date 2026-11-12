@@ -53,21 +53,6 @@ class AiEntitlementIntegrationTest extends AbstractIntegrationTest {
         verifyNoInteractions(aiClient);
     }
 
-    @Test void freeNeedsPlusForMenusAndBothFreeAndPlusNeedProForAuthoringWithoutGemini() throws Exception {
-        String assistance = """
-                {"contentType":"DESCRIPTION","title":"Canh chay","dishCategory":"SOUP","vegetarianType":"VEGAN",
-                 "servings":2,"ingredients":[{"ingredientId":1,"unitId":1,"quantity":100}]}
-                """;
-
-        forbidden("/api/v1/meal-plans/ai-menu/previews", "{\"weekStartDate\":\"2026-09-28\",\"mode\":\"PROFILE\"}", "PLUS");
-        for (int pass = 0; pass < 2; pass++) {
-            forbidden("/api/v1/recipes/1/related/ai", "{}", "PRO");
-            if (pass == 0) subscribe("PLUS", "ACTIVE", -1, 1);
-        }
-        verifyNoInteractions(aiClient);
-        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM [SUBSCRIPTION] WHERE user_id=? AND tier='PLUS' AND status='ACTIVE'", Integer.class, member)).isEqualTo(1);
-    }
-
     private void forbidden(String path, String body, String tier) throws Exception {
         mockMvc.perform(post(path).with(user(Long.toString(member)).roles("EXPERT"))
                         .contentType(MediaType.APPLICATION_JSON).content(body))

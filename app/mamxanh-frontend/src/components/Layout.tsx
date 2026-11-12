@@ -29,7 +29,7 @@ export function Layout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="food-app flex min-h-screen flex-col bg-cream pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0">
+    <div className="food-app flex min-h-screen flex-col bg-cream overflow-x-clip pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0">
       <AppHeader />
       <main className="min-w-0 flex-1 flex flex-col">
         <div

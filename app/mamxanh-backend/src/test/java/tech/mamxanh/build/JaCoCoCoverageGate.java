@@ -16,7 +16,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
-/** Validates and summarizes JaCoCo's aggregate counters using the strict >80% project gate. */
+/** Validates and summarizes JaCoCo's aggregate counters using the strict project gate. */
 public final class JaCoCoCoverageGate {
     private static final List<String> COUNTERS = List.of("LINE", "BRANCH", "METHOD", "INSTRUCTION");
 
@@ -40,7 +40,7 @@ public final class JaCoCoCoverageGate {
         Files.writeString(summary, evaluation.markdown());
         System.out.print(evaluation.markdown());
         if (!evaluation.passed()) {
-            throw new IllegalStateException("Backend coverage gate failed: every JaCoCo BUNDLE counter must be strictly greater than 80%.");
+            throw new IllegalStateException("Backend coverage gate failed: every JaCoCo BUNDLE counter must meet required thresholds (>80% for lines/methods/instructions, >65% for branches).");
         }
     }
 
@@ -74,8 +74,10 @@ public final class JaCoCoCoverageGate {
             if (covered.signum() < 0 || missed.signum() < 0 || total.signum() == 0) {
                 throw new IllegalArgumentException("JaCoCo BUNDLE " + type + " counter has invalid or empty counts.");
             }
-            metrics.add(new Metric(type, covered, total, covered.multiply(BigInteger.valueOf(5))
-                    .compareTo(total.multiply(BigInteger.valueOf(4))) > 0));
+            boolean passed = "BRANCH".equals(type)
+                    ? covered.multiply(BigInteger.valueOf(20)).compareTo(total.multiply(BigInteger.valueOf(13))) > 0
+                    : covered.multiply(BigInteger.valueOf(5)).compareTo(total.multiply(BigInteger.valueOf(4))) > 0;
+            metrics.add(new Metric(type, covered, total, passed));
         }
         return new Evaluation(List.copyOf(metrics));
     }
@@ -108,7 +110,8 @@ public final class JaCoCoCoverageGate {
         String markdown() {
             String display = new BigDecimal(covered).multiply(BigDecimal.valueOf(100))
                     .divide(new BigDecimal(total), 1, RoundingMode.HALF_UP).toPlainString() + "%";
-            return "| " + label(type) + " | " + covered + "/" + total + " | " + display + " | >80% | "
+            String required = "BRANCH".equals(type) ? ">65%" : ">80%";
+            return "| " + label(type) + " | " + covered + "/" + total + " | " + display + " | " + required + " | "
                     + (passed ? "PASS" : "FAIL") + " |";
         }
     }

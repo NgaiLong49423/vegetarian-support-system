@@ -376,8 +376,8 @@ export function AppHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-header-border bg-header/95 backdrop-blur-md shadow-2xs transition-colors">
-        <div className="mx-auto flex h-14 max-w-[1344px] items-center gap-2.5 px-3.5 sm:h-16 sm:gap-5 sm:px-6">
+      <header className="sticky top-0 z-30 border-b border-header-border bg-header/95 backdrop-blur-md shadow-2xs transition-colors overflow-x-clip">
+        <div className="mx-auto flex h-14 max-w-[1344px] items-center gap-2 px-3 sm:h-16 sm:gap-5 sm:px-6">
           <button
             type="button"
             aria-label="Menu"
@@ -499,7 +499,7 @@ export function AppHeader() {
               })}
             </nav>
           </div>
-          <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3 xl:ml-0">
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-3 xl:ml-0">
             <form
               onSubmit={(event) => {
                 event.preventDefault()
@@ -531,7 +531,7 @@ export function AppHeader() {
               type="button"
               aria-label="Tìm kiếm"
               onClick={() => navigate("/kham-pha")}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted hover:bg-paper 2xl:hidden"
+              className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-ink-muted hover:bg-paper 2xl:hidden"
             >
               <Search className="h-4 w-4" />
             </button>
@@ -548,7 +548,7 @@ export function AppHeader() {
                   : "Chuyển sang chế độ sáng"
               }
               onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted hover:bg-paper hover:text-brand-600 transition-colors"
+              className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-ink-muted hover:bg-paper hover:text-brand-600 transition-colors"
             >
               {theme === "light" ? (
                 <Moon className="h-4 w-4" aria-hidden="true" />
@@ -560,10 +560,10 @@ export function AppHeader() {
               <Link
                 to="/dang-cong-thuc"
                 aria-label="Đăng công thức"
-                className="inline-flex items-center gap-1.5 rounded-full bg-brand-600 px-2.5 py-2 text-xs font-semibold text-on-brand hover:bg-brand-500 sm:px-3"
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-brand-600 px-3 py-2 text-xs font-semibold text-on-brand hover:bg-brand-500"
               >
                 <Plus className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Đăng công thức</span>
+                <span>Đăng công thức</span>
               </Link>
             )}
             {isAuthenticated && <NotificationBell />}

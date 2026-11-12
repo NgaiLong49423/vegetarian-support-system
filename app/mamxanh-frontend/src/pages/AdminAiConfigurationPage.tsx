@@ -1,3 +1,4 @@
+import { AdminPageHeader } from "../components/AdminPageHeader"
 import { useEffect, useState } from "react"
 
 import { Link } from "react-router-dom"
@@ -17,8 +18,6 @@ import {
   Save,
   Trash2,
 } from "lucide-react"
-
-import { PageContainer } from "../components/Layout"
 
 import { Button, Card, AnimatedNumber, HamsterLoader } from "../components/ui"
 
@@ -174,15 +173,6 @@ export function AdminAiConfigurationPage({
 
           models: current.models.map((model, row) => {
             if (row !== index) return model
-            if (key === "enabled" && value === false)
-              return {
-                ...model,
-                enabled: false,
-                freeAllowed: false,
-                freeDefault: false,
-                plusDefault: false,
-                proDefault: false,
-              }
             return { ...model, [key]: value }
           }),
         },
@@ -427,14 +417,14 @@ export function AdminAiConfigurationPage({
 
   if (loading)
     return (
-      <PageContainer className="py-16">
+      <div className="py-16 text-center">
         <HamsterLoader size="md" text="Đang tải cấu hình AI…" />
-      </PageContainer>
+      </div>
     )
 
   if (!configuration)
     return (
-      <PageContainer className="py-10">
+      <div className="py-10">
         <Card className="p-6">
           <p role="alert" className="text-sm text-red-700">
             {error || "Không tải được cấu hình."}
@@ -444,34 +434,29 @@ export function AdminAiConfigurationPage({
             Thử lại
           </Button>
         </Card>
-      </PageContainer>
+      </div>
     )
 
   return (
-    <PageContainer className="space-y-6 py-6 sm:py-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-leaf-700">
-            Quản trị hệ thống
-          </p>
-          <h1 className="mt-2 text-3xl font-black text-ink">
-            {section ? sectionTitles[section] : "Cấu hình AI"}
-          </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-muted">
-            {section
-              ? sectionDescriptions[section]
-              : "Tổng quan các cấu hình AI. Chọn một mục để xem chi tiết, chỉnh sửa và xác nhận thay đổi."}
-          </p>
-        </div>
-        <Button
-          onClick={() => void load()}
-          disabled={saving || Boolean(editingSection)}
-          variant="outline"
-        >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Tải lại
-        </Button>
-      </div>
+    <div className="space-y-6 py-2">
+      <AdminPageHeader
+        title={section ? sectionTitles[section] : "Cấu hình AI"}
+        description={
+          section
+            ? sectionDescriptions[section]
+            : "Tổng quan các cấu hình AI. Chọn một mục để xem chi tiết, chỉnh sửa và xác nhận thay đổi."
+        }
+        actions={
+          <Button
+            onClick={() => void load()}
+            disabled={saving || Boolean(editingSection)}
+            variant="outline"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Tải lại
+          </Button>
+        }
+      />
 
       {error && (
         <div
@@ -1047,6 +1032,6 @@ export function AdminAiConfigurationPage({
           </section>
         </div>
       )}
-    </PageContainer>
+    </div>
   )
 }

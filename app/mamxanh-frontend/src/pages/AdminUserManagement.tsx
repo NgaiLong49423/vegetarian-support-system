@@ -1,9 +1,7 @@
+import { AdminPageHeader } from "../components/AdminPageHeader"
 import { useCallback, useEffect, useState } from "react"
 
-import { Link } from "react-router-dom"
-
 import {
-  ArrowLeft,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -383,45 +381,12 @@ export function AdminUserManagement() {
 
   return (
     <div className="space-y-6 py-2">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <Link
-              to="/admin"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-brand-600"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Dashboard
-            </Link>
-            <span className="text-xs text-ink-muted">/</span>
-            <span className="text-xs font-semibold text-brand-700">
-              Quản lý người dùng
-            </span>
-          </div>
-          <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
-            Quản lý tài khoản &amp; phân quyền
-          </h1>
-          <p className="mt-1 text-xs text-ink-muted sm:text-sm">
-            Tra cứu tài khoản và quản lý vai trò, trạng thái từ dữ liệu hệ
-            thống.
-          </p>
-          <p className="mt-1 text-xs text-ink-muted sm:text-sm">
-            Tặng gói AI cho Thành viên hoặc Chuyên gia bằng biểu tượng quà; AI
-            Credit có thể cộng cho mọi tài khoản.
-          </p>
-        </div>
-      </div>
-
-      {notice && (
-        <div
-          role="status"
-          className="rounded-xl border border-leaf-200 bg-leaf-50 p-3 text-sm text-leaf-800"
-        >
-          {notice}
-        </div>
-      )}
-
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <AdminPageHeader
+        title="Quản lý tài khoản & phân quyền"
+        description="Tra cứu tài khoản và quản lý vai trò, trạng thái từ dữ liệu hệ thống."
+      >
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          
         <SummaryCard
           label="Tổng tài khoản"
           value={summary?.totalUsers}
@@ -442,7 +407,18 @@ export function AdminUserManagement() {
           value={summary?.lockedUsers}
           icon={<Lock className="h-4 w-4" />}
         />
-      </div>
+      
+        </div>
+      </AdminPageHeader>
+
+      {notice && (
+        <div
+          role="status"
+          className="rounded-xl border border-leaf-200 bg-leaf-50 p-3 text-sm text-leaf-800"
+        >
+          {notice}
+        </div>
+      )}
 
       <Card className="p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

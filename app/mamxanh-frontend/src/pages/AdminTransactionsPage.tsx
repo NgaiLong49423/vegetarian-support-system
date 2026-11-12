@@ -1,3 +1,4 @@
+import { AdminPageHeader } from "../components/AdminPageHeader"
 import { useEffect, useRef, useState, type FormEvent } from "react"
 
 import {
@@ -251,39 +252,34 @@ export function AdminTransactionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between xl:gap-6">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-balance text-2xl leading-tight font-extrabold text-ink sm:text-3xl">
-            Giám sát giao dịch gói AI
-          </h1>
-          <p className="mt-3 max-w-[72ch] text-pretty text-sm leading-6 text-ink-muted">
-            Theo dõi thanh toán Plus và Pro qua payOS. Số liệu phản ánh giao
-            dịch hệ thống đã ghi nhận. Thời gian hiển thị theo giờ Việt Nam.
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2 xl:pt-0.5">
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-11 whitespace-nowrap"
-            disabled={loading}
-            onClick={() => setReload((value) => value + 1)}
-          >
-            <RefreshCw className="h-4 w-4" aria-hidden="true" />
-            Làm mới
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-11 whitespace-nowrap"
-            disabled={loading || exporting || !summary?.total}
-            onClick={exportCsv}
-          >
-            <Download className="h-4 w-4" aria-hidden="true" />
-            {exporting ? "Đang xuất…" : "Xuất đối soát CSV"}
-          </Button>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="Giám sát giao dịch gói AI"
+        description="Theo dõi thanh toán Plus và Pro qua payOS. Số liệu phản ánh giao dịch hệ thống đã ghi nhận. Thời gian hiển thị theo giờ Việt Nam."
+        actions={
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 whitespace-nowrap"
+              disabled={loading}
+              onClick={() => setReload((value) => value + 1)}
+            >
+              <RefreshCw className="h-4 w-4" aria-hidden="true" />
+              Làm mới
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 whitespace-nowrap"
+              disabled={loading || exporting || !summary?.total}
+              onClick={exportCsv}
+            >
+              <Download className="h-4 w-4" aria-hidden="true" />
+              {exporting ? "Đang xuất…" : "Xuất đối soát CSV"}
+            </Button>
+          </div>
+        }
+      />
       <Card className="p-4 sm:p-5">
         <form
           onSubmit={submit}
@@ -423,21 +419,21 @@ export function AdminTransactionsPage() {
       )}
       {summary && report && (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 xl:gap-2.5">
             {[
               {
-                label: "Doanh thu ghi nhận",
+                label: "Doanh thu",
                 value: (
-                  <AnimatedNumber value={summary.revenueVnd ?? 0} suffix=" ₫" />
+                  <span className="inline-block whitespace-nowrap"><AnimatedNumber value={summary.revenueVnd ?? 0} suffix={"\u00A0₫"} /></span>
                 ),
-                hint: "Chỉ tính giao dịch thành công",
+                hint: "Giao dịch thành công",
                 icon: <TrendingUp className="h-4 w-4" />,
                 iconClass: "bg-leaf-50 text-leaf-700 ring-1 ring-leaf-200/70",
                 accent: "from-leaf-500 via-leaf-400 to-transparent",
                 valueClass: "text-leaf-700 dark:text-leaf-400",
               },
               {
-                label: "Giao dịch thành công",
+                label: "Thành công",
                 value: <AnimatedNumber value={summary.paid ?? 0} />,
                 hint: (
                   <>
@@ -451,7 +447,7 @@ export function AdminTransactionsPage() {
                       decimals={1}
                       suffix="%"
                     />{" "}
-                    trên tổng đơn
+                    tổng đơn
                   </>
                 ),
                 icon: <CheckCircle2 className="h-4 w-4" />,
@@ -463,7 +459,7 @@ export function AdminTransactionsPage() {
               {
                 label: "Chờ thanh toán",
                 value: <AnimatedNumber value={summary.pending ?? 0} />,
-                hint: "Phiên thanh toán đang mở",
+                hint: "Phiên đang mở",
                 icon: <Clock className="h-4 w-4" />,
                 iconClass:
                   "bg-amber-50 text-amber-700 ring-1 ring-amber-200/70",
@@ -473,7 +469,7 @@ export function AdminTransactionsPage() {
               {
                 label: "Đã hủy",
                 value: <AnimatedNumber value={summary.cancelled ?? 0} />,
-                hint: "Đã hủy trước khi quét mã",
+                hint: "Trước khi quét mã",
                 icon: <Ban className="h-4 w-4" />,
                 iconClass: "bg-raised text-ink-muted ring-1 ring-brand-200/50",
                 accent: "from-slate-400 via-slate-300 to-transparent",
@@ -484,7 +480,7 @@ export function AdminTransactionsPage() {
                 value: (
                   <AnimatedNumber value={summary.needsReconciliation ?? 0} />
                 ),
-                hint: "Cần kiểm tra trạng thái ngân hàng",
+                hint: "Kiểm tra ngân hàng",
                 icon: <AlertTriangle className="h-4 w-4" />,
                 iconClass:
                   "bg-amber-50 text-amber-800 ring-1 ring-amber-300/70",
@@ -494,7 +490,7 @@ export function AdminTransactionsPage() {
               {
                 label: "Thất bại",
                 value: <AnimatedNumber value={summary.failed ?? 0} />,
-                hint: "Thanh toán không thành công",
+                hint: "Không thành công",
                 icon: <XCircle className="h-4 w-4" />,
                 iconClass: "bg-rose-50 text-rose-700 ring-1 ring-rose-200/70",
                 accent: "from-rose-500 via-rose-400 to-transparent",
@@ -504,39 +500,43 @@ export function AdminTransactionsPage() {
               ({ label, value, hint, icon, iconClass, accent, valueClass }) => (
                 <Card
                   key={label}
-                  className="group relative flex flex-col justify-between overflow-hidden border-brand-200/80 bg-paper p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-900/5"
+                  className="group relative flex items-center gap-2.5 overflow-hidden border-brand-200/80 bg-paper p-2.5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md hover:shadow-brand-900/5 sm:p-3"
                 >
                   <div
                     className={
                       "absolute inset-x-0 top-0 h-1 bg-gradient-to-r " + accent
                     }
                   />
-                  <div>
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
-                        {label}
-                      </p>
-                      <span
-                        className={
-                          "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl shadow-2xs transition-transform duration-200 group-hover:scale-110 " +
-                          iconClass
-                        }
-                      >
-                        {icon}
-                      </span>
-                    </div>
+                  <span
+                    className={
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-2xs transition-transform duration-200 group-hover:scale-105 " +
+                      iconClass
+                    }
+                  >
+                    {icon}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className="truncate text-[10px] font-bold uppercase tracking-wider text-ink-muted xl:text-[11px]"
+                      title={label}
+                    >
+                      {label}
+                    </p>
                     <p
                       className={
-                        "mt-3 break-words text-2xl font-black tracking-tight sm:text-3xl " +
+                        "truncate text-base font-black tracking-tight xl:text-lg " +
                         valueClass
                       }
                     >
                       {value}
                     </p>
+                    <p
+                      className="truncate text-[10px] text-ink-muted xl:text-[11px]"
+                      title={typeof hint === "string" ? hint : undefined}
+                    >
+                      {hint}
+                    </p>
                   </div>
-                  <p className="mt-3 border-t border-brand-100/60 pt-2.5 text-xs leading-5 text-ink-muted">
-                    {hint}
-                  </p>
                 </Card>
               ),
             )}

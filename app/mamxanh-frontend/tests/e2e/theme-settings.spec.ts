@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './baseFixtures'
 
 test('theme can be changed from the menu and persists after reload', async ({ page }) => {
   await page.addInitScript(() => {

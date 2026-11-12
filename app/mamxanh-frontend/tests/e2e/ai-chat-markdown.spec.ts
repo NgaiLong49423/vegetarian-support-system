@@ -1,7 +1,8 @@
-import { test, expect, type Page } from '@playwright/test';
+import { expect, test } from './baseFixtures';
+import type { Page } from '@playwright/test';
 
 async function answer(page: Page, content: string) {
-  await page.route('**/api/v1/recipes/ai/chat', route => route.fulfill({ json: {
+  await page.route('**/api/v1/recipes/ai/chat*', route => route.fulfill({ json: {
     contextType: 'GENERAL', recipeId: null, answer: content, recommendations: [],
   } }));
   await page.goto('/trang-chu');

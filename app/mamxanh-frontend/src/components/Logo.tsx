@@ -7,7 +7,7 @@ export function Logo({ compact = false, to = '/' }: { compact?: boolean; to?: st
         <img src="/logo.png" alt="" className="absolute -left-4 -top-[10px] h-16 w-16 max-w-none" />
       </span>
       {!compact && (
-        <span className="text-lg font-semibold tracking-tight text-ink">Mâm Xanh</span>
+        <span className="hidden sm:inline text-lg font-semibold tracking-tight text-ink">Mâm Xanh</span>
       )}
     </Link>
   );

@@ -11,6 +11,7 @@ import tech.mamxanh.recipe.service.AiAssistantExecutionJournal.ActionState;
 import tech.mamxanh.recipe.service.AiAssistantExecutionJournal.JournalEntry;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.*;
@@ -289,5 +290,113 @@ class AiAssistantExecutionJournalTest {
         assertThatThrownBy(() -> dbJournal.recordReservation(ownerId, clientRequestId, actionId, toolName, "some_hash"))
                 .isInstanceOf(AppException.class)
                 .hasMessageContaining("Thao tác đang được xử lý trong một yêu cầu khác");
+    }
+
+    @Test
+    void persistentFindDeserializesVariousResultsAndCachesInMemory() throws Exception {
+        JdbcTemplate mockJdbc = mock(JdbcTemplate.class);
+        AiAssistantExecutionJournal dbJournal = new AiAssistantExecutionJournal(mockJdbc, null);
+
+        long ownerId = 100L;
+        UUID clientRequestId = UUID.randomUUID();
+        String actionId = "act_tool";
+
+        java.sql.ResultSet rs = mock(java.sql.ResultSet.class);
+        when(rs.getString("state")).thenReturn("SUCCEEDED");
+        when(rs.getLong("owner_id")).thenReturn(ownerId);
+        when(rs.getString("client_request_id")).thenReturn(clientRequestId.toString());
+        when(rs.getString("action_id")).thenReturn(actionId);
+        when(rs.getString("tool_name")).thenReturn("my_tool");
+        when(rs.getString("arguments_hash")).thenReturn("hash123");
+        when(rs.getString("error_message")).thenReturn(null);
+        when(rs.getTimestamp("created_at")).thenReturn(java.sql.Timestamp.from(java.time.Instant.now()));
+
+        // Case 1: ToolResult json
+        when(rs.getString("result_json")).thenReturn("{\"status\":\"SUCCESS\",\"summary\":\"done\"}");
+        when(mockJdbc.query(contains("SELECT owner_id"), any(org.springframework.jdbc.core.RowMapper.class), eq(ownerId), eq(clientRequestId), eq(actionId)))
+                .thenAnswer(inv -> {
+                    org.springframework.jdbc.core.RowMapper<JournalEntry> mapper = inv.getArgument(1);
+                    return List.of(mapper.mapRow(rs, 0));
+                });
+
+        Optional<JournalEntry> entry = dbJournal.find(ownerId, clientRequestId, actionId);
+        assertThat(entry).isPresent();
+        assertThat(entry.get().resultData()).isInstanceOf(AiAssistantToolRegistry.ToolResult.class);
+
+        // Verify cache hit (mockJdbc is not queried again for the same key)
+        reset(mockJdbc);
+        Optional<JournalEntry> cached = dbJournal.find(ownerId, clientRequestId, actionId);
+        assertThat(cached).isPresent();
+        verifyNoInteractions(mockJdbc);
+
+        // Case 2: Generic object json
+        String actionId2 = "act_generic";
+        when(rs.getString("action_id")).thenReturn(actionId2);
+        when(rs.getString("result_json")).thenReturn("{\"count\":5}");
+        when(mockJdbc.query(contains("SELECT owner_id"), any(org.springframework.jdbc.core.RowMapper.class), eq(ownerId), eq(clientRequestId), eq(actionId2)))
+                .thenAnswer(inv -> {
+                    org.springframework.jdbc.core.RowMapper<JournalEntry> mapper = inv.getArgument(1);
+                    return List.of(mapper.mapRow(rs, 0));
+                });
+        Optional<JournalEntry> entry2 = dbJournal.find(ownerId, clientRequestId, actionId2);
+        assertThat(entry2).isPresent();
+        assertThat(entry2.get().resultData()).isInstanceOf(Map.class);
+
+        // Case 3: Blank/null result_json
+        String actionId3 = "act_blank";
+        when(rs.getString("action_id")).thenReturn(actionId3);
+        when(rs.getString("result_json")).thenReturn("   ");
+        when(mockJdbc.query(contains("SELECT owner_id"), any(org.springframework.jdbc.core.RowMapper.class), eq(ownerId), eq(clientRequestId), eq(actionId3)))
+                .thenAnswer(inv -> {
+                    org.springframework.jdbc.core.RowMapper<JournalEntry> mapper = inv.getArgument(1);
+                    return List.of(mapper.mapRow(rs, 0));
+                });
+        Optional<JournalEntry> entry3 = dbJournal.find(ownerId, clientRequestId, actionId3);
+        assertThat(entry3).isPresent();
+        assertThat(entry3.get().resultData()).isNull();
+
+        // Case 4: Malformed json fallback
+        String actionId4 = "act_malformed";
+        when(rs.getString("action_id")).thenReturn(actionId4);
+        when(rs.getString("result_json")).thenReturn("{invalid-json");
+        when(mockJdbc.query(contains("SELECT owner_id"), any(org.springframework.jdbc.core.RowMapper.class), eq(ownerId), eq(clientRequestId), eq(actionId4)))
+                .thenAnswer(inv -> {
+                    org.springframework.jdbc.core.RowMapper<JournalEntry> mapper = inv.getArgument(1);
+                    return List.of(mapper.mapRow(rs, 0));
+                });
+        Optional<JournalEntry> entry4 = dbJournal.find(ownerId, clientRequestId, actionId4);
+        assertThat(entry4).isPresent();
+        assertThat(entry4.get().resultData()).isEqualTo("{invalid-json");
+    }
+
+    @Test
+    void persistentFindByRequestDeserializesRows() throws Exception {
+        JdbcTemplate mockJdbc = mock(JdbcTemplate.class);
+        AiAssistantExecutionJournal dbJournal = new AiAssistantExecutionJournal(mockJdbc, null);
+
+        long ownerId = 100L;
+        UUID clientRequestId = UUID.randomUUID();
+
+        java.sql.ResultSet rs = mock(java.sql.ResultSet.class);
+        when(rs.getString("state")).thenReturn("SUCCEEDED");
+        when(rs.getLong("owner_id")).thenReturn(ownerId);
+        when(rs.getString("client_request_id")).thenReturn(clientRequestId.toString());
+        when(rs.getString("action_id")).thenReturn("act_1");
+        when(rs.getString("tool_name")).thenReturn("my_tool");
+        when(rs.getString("arguments_hash")).thenReturn("hash123");
+        when(rs.getString("error_message")).thenReturn(null);
+        when(rs.getTimestamp("created_at")).thenReturn(java.sql.Timestamp.from(java.time.Instant.now()));
+        when(rs.getString("result_json")).thenReturn("{\"status\":\"SUCCESS\",\"summary\":\"done\"}");
+
+        when(mockJdbc.query(anyString(),
+                any(org.springframework.jdbc.core.RowMapper.class), eq(ownerId), eq(clientRequestId)))
+                .thenAnswer(inv -> {
+                    org.springframework.jdbc.core.RowMapper<JournalEntry> mapper = inv.getArgument(1);
+                    return List.of(mapper.mapRow(rs, 0));
+                });
+
+        List<JournalEntry> entries = dbJournal.findByRequest(ownerId, clientRequestId);
+        assertThat(entries).hasSize(1);
+        assertThat(entries.getFirst().resultData()).isInstanceOf(AiAssistantToolRegistry.ToolResult.class);
     }
 }

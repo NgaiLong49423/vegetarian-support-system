@@ -18,7 +18,7 @@ test('FR-02: real Backend blocks the eleventh Guest request before provider acce
   await page.goto('/trang-chu');
   await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
   await page.getByLabel('Câu hỏi của bạn').fill('Cách nấu đậu?');
-  const blocked = page.waitForResponse((response) => response.url() === `${backend}/recipes/ai/chat`);
+  const blocked = page.waitForResponse((response) => response.url().startsWith(`${backend}/recipes/ai/chat`));
   await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
   const response = await blocked;
   expect(response.status()).toBe(429);
@@ -38,7 +38,7 @@ test('FR-02: live Guest uses general and public-recipe contexts', async ({ page,
   await page.goto('/trang-chu');
   await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
   await page.getByLabel('Câu hỏi của bạn').fill('Luộc rau xanh thế nào? Trả lời ngắn trong một câu.');
-  let received = page.waitForResponse((response) => response.url() === `${backend}/recipes/ai/chat`);
+  let received = page.waitForResponse((response) => response.url().startsWith(`${backend}/recipes/ai/chat`));
   await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
   let response = await received;
   expect(response.status()).toBe(200);
@@ -48,7 +48,7 @@ test('FR-02: live Guest uses general and public-recipe contexts', async ({ page,
   await page.goto(`/cong-thuc/id/${recipeId}`);
   await page.getByRole('button', { name: 'Hỏi AI về công thức này' }).click();
   await page.getByLabel('Câu hỏi của bạn').fill('Bài này ghi thời gian nấu bao lâu? Trả lời ngắn trong một câu.');
-  received = page.waitForResponse((result) => result.url() === `${backend}/recipes/ai/chat`);
+  received = page.waitForResponse((result) => result.url().startsWith(`${backend}/recipes/ai/chat`));
   await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
   response = await received;
   expect(response.status()).toBe(200);

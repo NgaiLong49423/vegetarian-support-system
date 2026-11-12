@@ -88,7 +88,7 @@ class AiTokenQuotaIntegrationTest extends AbstractIntegrationTest {
                 firstMember);
 
         // FREE tier cannot use PLUS/PRO-only model without entitlement
-        assertThatThrownBy(() -> quota.beginCall(firstMember, null, "FR-51", "gemini-3.8-flash", clock.instant()))
+        assertThatThrownBy(() -> quota.beginCall(firstMember, null, "FR-51", "unknown-model", clock.instant()))
                 .isInstanceOf(tech.mamxanh.common.exception.ApiException.class);
 
         // Begin ADK call snapshot with FREE-allowed model

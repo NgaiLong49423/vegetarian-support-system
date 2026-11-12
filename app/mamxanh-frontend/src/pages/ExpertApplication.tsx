@@ -336,17 +336,13 @@ export function ExpertApplicationPage() {
             aria-hidden="true"
             className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-brand-500/10 blur-3xl"
           />
-          <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-2xl">
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-leaf-200/80 bg-leaf-50/90 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-leaf-700">
-                <ShieldCheck className="h-3.5 w-3.5" /> Khu vực Administrator
-              </div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
+              <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
                 Xét duyệt Chuyên gia
               </h1>
-              <p className="mt-2.5 text-sm leading-6 text-ink-muted">
-                Thẩm định hồ sơ của thành viên, mỗi quyết định được ghi nhận một
-                lần.
+              <p className="mt-1 text-sm text-ink-muted">
+                Thẩm định hồ sơ của thành viên, mỗi quyết định được ghi nhận một lần.
               </p>
             </div>
             <div className="inline-flex items-center self-start rounded-full border border-brand-200/80 bg-cream-soft/80 p-1">
