@@ -1,8 +1,8 @@
 > **Document:** Repository Layout and Document Register  
 > **File:** `docs/README.md`  
-> **Version:** v4.4.0
+> **Version:** v4.5.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-11-03
+> **Last Updated:** 2026-11-12
 > **Status:** Active  
 
 # Repository Layout and Document Register
@@ -78,6 +78,7 @@ Only entries below are maintained documentation. Read entries by task, not as a 
 | requirements/use-cases/README.md and `*.md` | Use Case Specification contract, module index, actor/system interactions and Acceptance Coverage mappings; FR remains the owner of required behavior and canonical Acceptance Criteria | Designing, implementing or testing actor-goal flows |
 | archive/requirements/v1/ | Frozen historical Requirements Baseline v1; not a current implementation source | Comparing historical requirements or investigating past decisions |
 | architecture/ARCHITECTURE.md | High-level runtime parts, boundaries, communication paths, trust boundaries and architectural constraints | Architecture or cross-component integration work |
+| architecture/DATABASE-DESIGN-CURRENT.md | Current implemented database snapshot and extensions, distinct from the protected 22-table core ERD/Data Dictionary | Database or SDS design work requiring the current schema scope |
 | architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md | Approved Backend package structure specification; mandatory architectural standard for all Backend source code and package placement | Planning, implementing or reviewing any Backend package, class or vertical slice |
 | architecture/TECHNOLOGY-STACK.md | Selected technologies, purpose, rationale, benefits, trade-offs and unresolved choices | Dependency or technology decisions |
 | testing/TEST-STRATEGY.md | Project-level test levels, evidence boundaries, traceability, coverage interpretation and completion relationship | Test planning, quality gates or verification design |
@@ -96,6 +97,7 @@ Only entries below are maintained documentation. Read entries by task, not as a 
 | ../app/mamxanh-frontend/README.md | Frontend setup/state, Playwright commands and contribution guidance | Frontend work |
 | ../app/mamxanh-backend/README.md | Backend setup/state and contribution guidance | Backend work |
 | ../database/README.md | SQL/Flyway ownership and database state | Database work |
+| SWP391 PROJECT REPORT - Software Design Specification Overview.docx | Academic submission in English; Software Design Specification for the implemented Mâm Xanh design | SWP391 design review, report completion or defense preparation |
 | ../.github/pull_request_template.md | PR evidence and release checklist template | Opening or reviewing a PR |
 
 Paths above are relative to docs/. Skill procedures are registered separately in AGENTS.md and are not onboarding documents. Generated output, scratch files and unknown files are excluded.

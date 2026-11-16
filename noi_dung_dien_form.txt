@@ -1,0 +1,32 @@
+﻿BỘ DỮ LIỆU DEMO — ĐĂNG KÝ CHUYÊN GIA MÂM XANH
+================================================
+Dữ liệu mô phỏng để kiểm thử/giao diện. Không phải hồ sơ, ảnh hoặc chứng chỉ thật.
+
+[1] Kinh nghiệm ẩm thực chay (20–2.000 ký tự)
+Tôi có hơn 5 năm tìm hiểu và thực hành ẩm thực chay tại gia, tập trung vào các món Việt dễ nấu và cân bằng dinh dưỡng. Tôi thường xuyên xây dựng thực đơn chay hằng tuần, thử nghiệm công thức với đậu hũ, nấm, rau củ và các loại hạt; đồng thời chia sẻ cách chọn nguyên liệu, sơ chế và bảo quản thực phẩm. Tôi mong muốn đóng góp những công thức rõ ràng, dễ áp dụng cho cộng đồng Mâm Xanh.
+
+[2] Trường phái
+Thuần chay
+
+[3] Tóm tắt công thức sở trường (30–2.000 ký tự)
+Tôi dự định chia sẻ các công thức sở trường như bún riêu chay từ sữa đậu nành, nấm kho tiêu, đậu hũ sốt cà chua, gỏi cuốn rau củ và canh chua nấm. Mỗi công thức có định lượng nguyên liệu, thời gian chuẩn bị, các bước chế biến, mẹo thay thế nguyên liệu và lưu ý về dị ứng.
+
+[4] Đường dẫn portfolio (không bắt buộc)
+ĐỂ TRỐNG (không dùng liên kết giả làm hồ sơ thật)
+
+[5] Chứng chỉ hoặc văn bằng chuyên môn (không bắt buộc)
+Chọn file: chung_chi_DEMO.pdf
+
+[6] Ảnh thẻ 3×4 cho hồ sơ (không bắt buộc)
+Chọn file: anh_the_3x4_DEMO.png
+
+[7] Cam kết
+Đánh dấu ô xác nhận CHỈ khi đang demo bằng dữ liệu giả lập đã được cho phép trong môi trường thử nghiệm.
+
+[8] Thao tác
+Bấm Gửi đơn đăng ký. Xem thông báo và trạng thái thực tế của hệ thống; không giả định hệ thống sẽ tự phê duyệt.
+
+GHI CHÚ
+- File chứng chỉ có chữ DEMO / KHÔNG CÓ GIÁ TRỊ CHỨNG NHẬN.
+- Ảnh là minh họa đồ họa, không phải ảnh chân dung người thật.
+- Không sử dụng những file này để xác thực danh tính/chuyên môn trên hệ thống thật.

@@ -1,11 +1,15 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.69.0
+> **Version:** v0.70.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-11-02
+> **Last Updated:** 2026-11-12
 > **Status:** Active  
 
 # Backend Workspace
+
+## Trạng thái AI hiện hành
+
+Luồng Chatbox chính hiện định tuyến từ `AiChatService` tới `AdkAssistantEngine` bằng Google ADK Java và Gemini. Các tool được đăng ký theo role và gọi Backend business services; `AiAssistantExecutionService` là đường điều phối legacy, không phải kiến trúc chat chính. Các mục G1/G2 bên dưới giữ bằng chứng lịch sử/pilot và phải được đọc theo trạng thái hiện hành này. Runtime knowledge hiện vẫn sử dụng cả `knowledge-base/` và `ai-knowledge/`; việc hội tụ về một nguồn chưa hoàn tất.
 
 ## G4 — Session và phục hồi kết quả tối thiểu
 
@@ -32,7 +36,7 @@ docker compose --env-file app/mamxanh-backend/.env -p mamxanh-g4 -f docker-compo
 
 Từ Frontend đặt `MAMXANH_G4_FIXTURE=true`, `MAMXANX_E2E_FRONTEND_URL=http://localhost:15174`, `MAMXANX_E2E_BACKEND_URL=http://localhost:18084/api/v1`, rồi chạy `npx playwright test --config playwright.integration.config.ts tests/integration/g4-session-recovery.spec.ts`. Giữ cùng project/ports cho mọi lifecycle command. Override không gọi SMTP, Azure, payOS hoặc Gemini. Dừng stack bằng cùng lệnh Compose với `down` thay `up`; không dùng `--volumes` nếu muốn giữ fixtures.
 
-## ADK G1 — spike độc lập, chưa chuyển đường chat mặc định
+## ADK G1 — spike lịch sử, sau đó đã chuyển luồng chat chính sang ADK
 
 `integration.ai.adk.AdkModelGateway` triển khai ADK `BaseLlm` boundary và giữ nguyên structured tool/history data. `AdkSpikeSession` dựng một native runner với session RAM, tối đa 6 lượt model logic/run (mỗi lượt có tối đa hai provider attempts khi đủ điều kiện retry), tools tuần tự, 512 output tokens/call, 10 giây/model call (gồm retry) và 30 giây/run hoặc resume. Chờ người dùng giữa hai lần thực thi không tính vào run deadline. Các class này không có Spring component annotation hoặc public endpoint; G1 tự nó không chuyển routing; pilot opt-in G3 bên dưới tái dùng runner này.
 
@@ -46,7 +50,7 @@ Chạy fake verification từ component: `./mvnw.cmd -Dtest=AdkSpikeTest test`. 
 
 Live test mặc định skip. Trong shell đã được cấp `GEMINI_API_KEY` hợp lệ theo cơ chế local hiện có, đặt `MAMXANH_G1_LIVE=true` rồi chạy `./mvnw.cmd -Dtest=AdkLiveTest test`. Test chỉ dùng model ID baseline `gemini-3.8-flash`, fixture list ID 42, một read tool và một lượt hỏi tiếp; không đọc dữ liệu user thật, không debit wallet và không ghi SQL. Không tự đổi model khi lỗi. Sau kiểm tra, bỏ flag live khỏi process. Xem Surefire reports để phân biệt kết quả live và mock; không in credential hoặc toàn bộ `.env`.
 
-Rollback spike bằng cách ngừng tạo `AdkSpikeSession`; chưa có routing production để chuyển ngược, không replay pending writes sang executor cũ.
+Phần spike G1 độc lập không phải đường chat hiện hành. Luồng Chatbox chính đã được chuyển sang `AdkAssistantEngine`; do đó không dùng hướng dẫn rollback spike như rollback cho Chatbox hiện tại và không replay pending writes sang executor legacy.
 
 ## Chat local G3 — Shopping List bằng ADK (opt-in)
 
@@ -68,7 +72,7 @@ Rollback: tắt pilot cho session mới, vô hiệu pending G3 và đóng contex
 
 ## Knowledge pilot G2 — độc lập với chat
 
-`integration/ai/knowledge` hiện cung cấp catalog allowlist, Markdown chunking, BM25 tiếng Việt, cosine và RRF (`k=60`, trọng số bằng nhau). **Runtime hiện trạng:** `KnowledgeCatalog.agent()` kết hợp 38 tài liệu `knowledge-base/` với năm playbook `PILOT` trong `ai-knowledge/`; index agent và index G2/G3 cũng nằm dưới `ai-knowledge/`. Đây là trạng thái code hiện tại, không phải quy tắc kiến trúc đích. Theo kiến trúc đích, catalog `knowledge-base/` sẽ là nguồn tri thức duy nhất; `ai/` chỉ cung cấp chỉ dẫn/policy. Hai native ADK tools chỉ nhận query hoặc knowledge ID, không nhận path và không có quyền ghi nghiệp vụ. CUSTOMER/EXPERT dùng cùng instruction. Chưa có Spring bean, public API hoặc routing từ chat hiện hành ngoài pilot được mô tả ở trên.
+`integration/ai/knowledge` hiện cung cấp catalog allowlist, Markdown chunking, BM25 tiếng Việt, cosine và RRF (`k=60`, trọng số bằng nhau). **Runtime hiện trạng:** `KnowledgeCatalog.agent()` kết hợp 38 tài liệu `knowledge-base/` với năm playbook `PILOT` trong `ai-knowledge/`; index agent và index G2/G3 cũng nằm dưới `ai-knowledge/`. Đây là trạng thái code hiện tại, không phải quy tắc kiến trúc đích. Theo kiến trúc đích, catalog `knowledge-base/` sẽ là nguồn tri thức duy nhất; `ai/` chỉ cung cấp chỉ dẫn/policy. Các knowledge tools được `AiAssistantToolRegistry` đăng ký cho Chatbox ADK hiện hành và chỉ nhận query hoặc knowledge ID, không nhận path và không có quyền ghi nghiệp vụ. Việc dùng chung công cụ không có nghĩa mọi retrieval workflow đã được runtime-acceptance; đây là tài liệu kiến trúc và trạng thái implementation tĩnh.
 
 Index JSON lưu corpus hash, source revision, index revision, model/dimension/input format, ngưỡng semantic và normalized vectors. Build/startup không gọi API. Nguồn nghỉ hiệu lực (`RETIRED` hoặc không bật pilot) bị loại trước retrieval. Index thiếu/hỏng/lệch corpus/configuration thì dùng corpus hiện hành ở `keyword_degraded`; embedding lỗi cũng degrade, không retry query hoặc tự đổi provider. Query tối đa 1.000 ký tự, document 12.000, tổng payload knowledge trả mỗi run 24.000; top 3 tài liệu khác nhau. RAM cache theo phiên, tối đa 30 phút; không lưu query vectors/query thật vào artifact.
 

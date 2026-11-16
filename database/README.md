@@ -1,11 +1,15 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.41.0<br>
+> **Version:** v0.42.0<br>
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-11-01<br>
+> **Last Updated:** 2026-11-12<br>
 > **Status:** Active  
 
 # Database Workspace
+
+## Phạm vi schema hiện hành
+
+Flyway executable migration history hiện đạt V44; `database/schema.sql` là snapshot bootstrap và chứa các bảng core cùng các extension được bổ sung sau baseline. ERD/Data Dictionary trong `docs/diagrams/ERD/` mô tả core baseline 22 bảng, không phải inventory đầy đủ của schema hiện tại. Xem [Thiết kế cơ sở dữ liệu hiện hành](../docs/architecture/DATABASE-DESIGN-CURRENT.md) để biết inventory theo domain và giới hạn của các nguồn. Các migration bên dưới ghi lại trạng thái lịch sử tại thời điểm phát hành và không nên được hiểu là danh sách migration mới nhất.
 
 ## Migration V41 — Journal đa tác vụ bền vững cho AI Assistant
 

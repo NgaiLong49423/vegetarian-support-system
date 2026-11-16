@@ -1,10 +1,10 @@
 > **Document:** System Architecture  
 > **File:** `docs/architecture/ARCHITECTURE.md`  
-> **Version:** v2.0.0
+> **Version:** v2.1.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-11-01
+> **Last Updated:** 2026-11-12
 > **Status:** Active  
-> **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/TECHNOLOGY-STACK.md`, `docs/diagrams/C4 Container Diagram/README.md`, `docs/diagrams/ERD/README.md`
+> **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/TECHNOLOGY-STACK.md`, `docs/architecture/DATABASE-DESIGN-CURRENT.md`, `docs/diagrams/C4 Container Diagram/README.md`, `docs/diagrams/ERD/README.md`
 
 # Architecture Document — Mâm Xanh
 
@@ -42,7 +42,7 @@ Hệ thống cung cấp nền tảng web responsive phục vụ người ăn cha
                                └── YouTube (Embed player)
 ```
 
-Frontend được host trên **Vercel**. Backend và data services được triển khai trên **Microsoft Azure** để tận dụng Java 21 SE trên App Service, Azure SQL Database Serverless và Azure Blob Storage.
+Technology Stack ghi nhận Vercel cho Frontend và Microsoft Azure cho Backend/data services như deployment target đã chọn. Sơ đồ này mô tả kiến trúc mục tiêu; tài liệu này không xác minh việc triển khai hiện hành hoặc trạng thái production.
 
 ## 3. Các thành phần runtime chính
 
@@ -98,44 +98,27 @@ Luồng ban đầu giữ authorization cho upload và kiểm tra file (JPEG/PNG/
 
 Recipe Post lưu link YouTube hoặc video ID được hỗ trợ. Browser nhúng YouTube iframe player; ứng dụng không upload, sao chép hoặc lưu trữ file video YouTube.
 
-### 4.4 Kiến trúc AI Agent Orchestration, Knowledge Base & Behavioral Policies
+### 4.4 Kiến trúc AI Assistant và Google ADK
 
-Mâm Xanh không sử dụng mô hình Chatbot thụ động mà vận hành một **AI Agent nội bộ đa năng (Internal AI Agent)** tích hợp chặt chẽ trong ứng dụng Spring Boot Backend. Trợ lý AI có khả năng hiểu mục tiêu người dùng, tra cứu kho tri thức nghiệp vụ chuyên biệt, tự động lập kế hoạch và điều phối công cụ đa bước theo các chế độ thực thi an toàn.
+Chatbox hiện hành được điều phối bên trong Spring Boot modular monolith. `AiChatController` nhận request; `AiChatService` áp dụng các kiểm tra và định tuyến cần thiết; các lượt chat chính được xử lý qua `AdkAssistantEngine` bằng Google ADK Java và Gemini. Đây là thành phần Backend, không phải microservice độc lập. `AiAssistantExecutionService` là bộ điều phối JSON plan-then-execute cũ và đã được thay thế cho luồng chat chính; một số API AI chuyên biệt vẫn là luồng riêng.
 
 ```text
-Browser Client (AiChatRequest: sessionId, executionMode, consentDecision, confirmationDecision)
-       │
-       ▼
-Spring Boot Backend (Modular Monolith)
- ├── Security & Rate Limiting (Stateless JWT / Anonymous Guest Cookie, Quota & Entitlements)
- ├── Scope Classification (classifyScope: MX_CHAT_OK, MX_CHAT_OFF_TOPIC, MX_CHAT_SENSITIVE)
- ├── AI Agent Orchestrator (AiAssistantExecutionService / AdkShoppingPilotService)
- │     ├── Session & Consent Store (AiAssistantSessionStore, RAM TTL 30m, ConsentScopes)
- │     ├── System Instructions & Dynamic Policy Loader (AiPromptLoader)
- │     │     ├── classpath:ai/prompts/system.md
- │     │     └── classpath:ai/policies/ (scope, safety, security, response-style)
- │     ├── Knowledge Base Retriever (ApprovedAiKnowledgeRetriever / HybridKnowledgeRetriever)
- │     │     └── classpath:knowledge-base/ (catalog allowlist + all registered domain topics)
- │     └── Tool Registry (AiAssistantToolRegistry, filtered by Role: GUEST, CUSTOMER, EXPERT)
- │           ├── Read/Search Tools (search_recipes, get_recipe, get_meal_plan, get_shopping_list)
- │           └── Write Tools (create_shopping_list, update_profile, navigate_to_page)
- │                 └── Hard Safeguards (alwaysConfirm = true for destructive / publishing actions)
- └── AiClient (GeminiAiClient) -> Google Gen AI SDK (gemini-3.8-flash)
+Browser Chatbox
+  -> AiChatController / AiChatService
+  -> AdkAssistantEngine (Google ADK agent and Gemini model)
+       -> role-scoped FunctionTools (AdkDomainTools / tool registry)
+       -> existing Backend business services for permitted data/actions
+       -> knowledge retrieval and configured prompts/policies
+  -> Backend checks, persistence where applicable, and chat response
 ```
 
-- **Mô hình Vận hành Nội bộ (Internal Module):** AI Agent là một service nội bộ thuộc Spring Boot, chia sẻ chung cơ sở dữ liệu, mô hình xác thực và transaction boundary với toàn bộ hệ thống; không phải microservice độc lập hay chatbot bên ngoài.
-- **Nguồn tri thức duy nhất:** `app/mamxanh-backend/src/main/resources/knowledge-base/` là kho tri thức nghiệp vụ duy nhất cho các luồng AI, được quản lý bằng `catalog.json` và nạp qua Spring Classpath Resource. Tài liệu trong catalog là nguồn cho RAG; AI không quét toàn repository và không coi `ai-knowledge/`, prompt hay policy là tri thức nghiệp vụ hoặc nguồn thay thế. Tri thức tĩnh trong kho không thay thế dữ liệu hiện tại của hệ thống; khi cần dữ liệu tài khoản/nghiệp vụ, Agent phải dùng tool được cấp và Backend kiểm tra quyền.
-- **Chỉ dẫn và chính sách AI (System Instructions & Behavioral Policies):** `app/mamxanh-backend/src/main/resources/ai/` chỉ định nghĩa AI phải làm gì, trả lời thế nào và những giới hạn phải tuân thủ. Nội dung gồm system prompt và các policy; đây không phải kho tri thức nghiệp vụ và không được dùng làm nguồn sự thật về trạng thái dữ liệu động.
-  - Được lưu trữ dưới dạng Markdown kết hợp YAML Front Matter tại `src/main/resources/ai/prompts/system.md` và `src/main/resources/ai/policies/` (`scope-policy.md`, `safety-policy.md`, `security-policy.md`, `response-style.md`).
-  - Được nạp, bóc tách front matter, tổng hợp và cache trong bộ nhớ bởi `AiPromptLoader`. Cơ chế này hoạt động độc lập với filesystem vật lý, tương thích 100% khi đóng gói thành file JAR trong Docker Container.
-- **Quy tắc loại trừ nguồn cũ:** `ai-knowledge/` không thuộc kiến trúc kho tri thức đích. Không thêm nội dung nghiệp vụ hoặc duy trì catalog/index tri thức độc lập tại đó. Mọi tài liệu nghiệp vụ đang nằm ở nguồn này phải được đối chiếu và chuyển vào `knowledge-base/` trước khi ngừng sử dụng. Việc runtime hiện tại còn nạp nguồn này được ghi nhận là khoảng trống chuyển đổi trong Backend Workspace Guide; tài liệu kiến trúc này không khẳng định code đã hoàn tất chuyển đổi.
-- **Thứ bậc Quyền lực Bất khả xâm phạm (Hierarchy of Authority):**
-  $\textbf{System Instruction / Policies} \gg \textbf{Backend Tool Results} \gg \textbf{Knowledge Base (RAG)} \gg \textbf{User Inputs}$
-  Dữ liệu RAG và nội dung người dùng luôn là Untrusted Data; AI tuyệt đối không bị thao túng bởi các thủ thuật Prompt Injection / Jailbreak.
-- **Nguyên tắc Phân quyền (Server-Side RBAC Enforcement):** AI Agent không tự ý phân quyền. Toàn bộ quyền truy cập dữ liệu, kiểm tra quyền sở hữu (`Ownership`) và thẩm quyền vai trò (`GUEST`, `CUSTOMER`, `EXPERT`) được mã nguồn Java Spring Boot kiểm soát triệt để khi gọi Tool.
-- **Chốt chặn An toàn Cứng (Hard Safeguards):** Các thao tác có rủi ro cao (đăng công thức, xóa công thức, xóa danh sách đi chợ) luôn kích hoạt cờ `alwaysConfirm = true` và bắt buộc có xác nhận rõ ràng của người dùng (`AWAITING_CONFIRMATION` $\rightarrow$ `APPROVE`) mới được ghi vào cơ sở dữ liệu.
-- **SDK, Model & Resilience:** Dùng Google Gen AI Java SDK chính thức (`com.google.genai:google-genai`), khóa model ID cố định `gemini-3.8-flash`. Đóng gói qua interface `AiClient` để dễ dàng mock test; cấu hình timeout và tối đa 1 lần retry cho transient errors.
-- **Output:** Áp dụng Native Structured Outputs (JSON Schema) để nhận kết quả gợi ý món ăn/thực đơn có cấu trúc chặt chẽ.
+Backend đăng ký một tập FunctionTools giới hạn theo Guest, Customer và Expert. Tool đọc hoặc thay đổi dữ liệu thông qua các business service hiện có; model không có quyền SQL trực tiếp và không tự cấp quyền. Backend tiếp tục thực thi xác thực, entitlement, consent, validation, ownership và các bước xác nhận phù hợp. Các action nhạy cảm được xác nhận theo từng workflow; không phải mọi tool đều có cùng chính sách xác nhận.
+
+Session/consent/pending confirmation state của Agent được giữ trong store trong bộ nhớ theo thời hạn. Frontend giữ lịch sử Chatbox trong session storage. Hai cơ chế này không tạo thành kho hội thoại bền vững dùng chung. Các bảng action/execution journal theo migration V40–V41 ghi nhận một số workflow được chọn, không phải mọi lượt hội thoại hay mọi side effect.
+
+Prompt và policy trong `src/main/resources/ai/` định hướng phản hồi và giới hạn Agent; dữ liệu tri thức được retrieval qua module Knowledge. **Runtime hiện tại vẫn kết hợp catalog trong `knowledge-base/` với playbook và index trong `ai-knowledge/`.** Đây là khoảng trống migration so với kiến trúc mục tiêu chỉ dùng `knowledge-base/`, được ghi nhận trong Backend README. Không mô tả việc chuyển đổi corpus là đã hoàn tất.
+
+G3 shopping pilot là luồng opt-in riêng, không phải mặc định cho mọi lượt chat. Việc tồn tại code cho pilot, tool hoặc API không tự xác nhận rằng mọi workflow đã được kiểm chứng khi chạy. Giới hạn đã biết gồm session state trong bộ nhớ, phạm vi action journal chọn lọc và hai nguồn knowledge đang được đọc trong runtime.
 
 ### 4.5 Capability Google Maps không thuộc baseline hiện hành
 
@@ -232,6 +215,7 @@ Backend phát hành Stateless JWT Access Token
   - Thực thể đánh giá chất lượng công thức được chuẩn hóa thành `RECIPE_REACTION` (lưu trữ phản hồi Like/Dislike với `reaction_type: LIKE | DISLIKE`, ràng buộc `UNIQUE(user_id, recipe_id)` để đảm bảo mỗi thành viên có tối đa 1 phản hồi hiệu lực trên một bài công thức theo `BR-69`, `FR-57`).
   - Không sử dụng các bảng phân loại động `CATEGORY` và `RECIPE_CATEGORY`; thể loại món ăn được chuẩn hóa trực tiếp thành trường thuộc tính `dish_category` trên thực thể bài công thức (`RECIPE_POST` theo BR-19).
   - Không duy trì bảng độc lập cho các bước chế biến; toàn bộ hướng dẫn được lưu trong trường văn bản `instructions` (10–5.000 ký tự) trên `RECIPE_POST` (FR-16, BR-19).
+  - Baseline ERD 22 bảng mô tả mô hình cốt lõi đã được duyệt, không phải inventory đầy đủ của schema hiện hành. Schema triển khai mở rộng qua Flyway; xem [thiết kế database hiện hành](DATABASE-DESIGN-CURRENT.md) để biết phạm vi snapshot và extensions đã xác minh.
 - Backend giữ cấu trúc Modular Monolith; MVC/layered structure bên trong từng module.
 - Không tự ý thêm microservices, Kafka, Redis, Kubernetes hay vector database khi chưa có quyết định kiến trúc mới.
 - **Kiến trúc tìm kiếm, sắp xếp và xếp hạng không dùng AI (Non-AI Ranking Architecture):**
@@ -245,7 +229,7 @@ Backend phát hành Stateless JWT Access Token
 | Vấn đề | Trạng thái hiện tại | Giải pháp đã xác nhận / Ghi chú |
 |---|---|---|
 | Role-Based Authorization & Expert Authorship | **Confirmed** | Phân quyền 3 vai trò (`ROLE_CUSTOMER`, `ROLE_EXPERT`, `ROLE_ADMIN`); chỉ EXPERT được tạo/sửa recipe của mình; Customer nộp đơn văn bản, ADMIN phê duyệt đơn và hậu kiểm nội dung (`BR-07`, `BR-74`, `FR-06`) |
-| AI Provider & Model | **Confirmed** | Google Gemini model `gemini-3.8-flash` qua Google Gen AI Java SDK, bọc qua `AiClient`, timeout + retry, structured output |
+| AI Assistant orchestration | **Implemented with known gaps** | Main Chatbox uses Google ADK Java through `AdkAssistantEngine`; Gemini is the model provider. Legacy `AiAssistantExecutionService` is superseded for main chat. Runtime still reads both knowledge sources and G3 remains opt-in. |
 | Payment Provider | **Confirmed** | `payOS` (REST API qua Spring `RestClient` + Webhook HMAC-SHA256, xử lý idempotent theo `order_code`) |
 | Email Service | **Confirmed** | `Brevo` qua Spring Boot Mail (SMTP), xử lý bất đồng bộ `@Async`, lỗi không rollback |
 | Authentication Detail | **Confirmed** | Google Identity Services + `GoogleIdTokenVerifier` + Stateless JWT Access Token (Spring Security OAuth2 Resource Server, Nimbus) |
