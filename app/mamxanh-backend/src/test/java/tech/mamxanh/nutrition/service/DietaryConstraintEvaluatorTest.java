@@ -50,6 +50,28 @@ class DietaryConstraintEvaluatorTest {
     }
 
     @Test
+    void classifiesEveryCatalogDairyCheeseVariantAsIncompatibleWithVeganAndOvoProfiles() {
+        var catalog = Map.of(54L, ingredientRef(54, "Sữa & Trứng"),
+                55L, ingredientRef(55, "Sữa & Trứng"), 56L, ingredientRef(56, "Sữa & Trứng"),
+                57L, ingredientRef(57, "Sữa & Trứng"), 58L, ingredientRef(58, "Sữa & Trứng"),
+                59L, ingredientRef(59, "Sữa & Trứng"));
+        var cheeseNames = List.of("Phô mai cheddar", "Phô mai cottage", "Phô mai cream cheese",
+                "Phô mai mozzarella", "Phô mai parmesan", "Phô mai xanh");
+
+        for (int index = 0; index < cheeseNames.size(); index++) {
+            var cheese = recipe(20 + index, "VEGAN", ingredient(54L + index, cheeseNames.get(index)));
+            assertThat(evaluator.evaluate(cheese, "VEGAN", List.of(), List.of(), List.of(), List.of(), catalog)
+                    .hasVegetarianConflict()).as(cheeseNames.get(index) + " in a VEGAN recipe").isTrue();
+            assertThat(evaluator.evaluate(cheese, "OVO", List.of(), List.of(), List.of(), List.of(), catalog)
+                    .hasVegetarianConflict()).as(cheeseNames.get(index) + " in an OVO profile").isTrue();
+            assertThat(evaluator.evaluate(cheese, "LACTO", List.of(), List.of(), List.of(), List.of(), catalog)
+                    .hasVegetarianConflict()).as(cheeseNames.get(index) + " in a LACTO profile").isFalse();
+            assertThat(evaluator.evaluate(cheese, "LACTO_OVO", List.of(), List.of(), List.of(), List.of(), catalog)
+                    .hasVegetarianConflict()).as(cheeseNames.get(index) + " in a LACTO_OVO profile").isFalse();
+        }
+    }
+
+    @Test
     void marksUnknownIngredientUnverifiedAndKeepsDislikeAsSeparateSoftConflict() {
         var profile = new DietaryPreferencesResponse(VegetarianType.LACTO_OVO,
                 new DietaryPreferencesResponse.IngredientPreferences(true, List.of()),

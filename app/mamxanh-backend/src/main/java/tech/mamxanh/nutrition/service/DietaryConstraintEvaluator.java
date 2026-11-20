@@ -170,7 +170,9 @@ public class DietaryConstraintEvaluator {
         add(result, "SOY", "đậu nành", "đậu tương", "đậu hũ", "đậu phụ", "tàu hũ", "tàu hũ ky",
                 "váng đậu", "sữa đậu nành", "nước tương", "tempeh", "miso", "tofu", "soy", "soy milk", "soy sauce");
         add(result, "PEANUT", "đậu phộng", "lạc", "đậu phộng rang", "bơ đậu phộng", "dầu đậu phộng", "peanut", "peanut butter");
-        add(result, "DAIRY", "sữa bò", "sữa tươi", "sữa đặc", "bơ sữa", "phô mai", "pho mát", "kem sữa", "whey", "casein", "milk", "cheese");
+        add(result, "DAIRY", "sữa bò", "sữa tươi", "sữa đặc", "bơ sữa", "phô mai", "pho mát",
+                "phô mai cheddar", "phô mai cottage", "phô mai cream cheese", "phô mai mozzarella",
+                "phô mai parmesan", "phô mai xanh", "kem sữa", "whey", "casein", "milk", "cheese");
         add(result, "EGG", "trứng", "trứng gà", "trứng vịt", "lòng đỏ trứng", "lòng trắng trứng", "egg", "egg yolk", "egg white");
         add(result, "HONEY", "mật ong", "honey");
         add(result, "FISH", "cá", "cá hồi", "cá ngừ", "nước mắm", "fish", "fish sauce");
