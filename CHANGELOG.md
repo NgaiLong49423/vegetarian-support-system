@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.151.0
+> **Version:** v2.152.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-11-20<br>
 > **Status:** Active
@@ -8,6 +8,25 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-11-20 — Unify AI Features Across Subscription Tiers
+
+**Status:** Committed — 9089fe1b.
+
+**Scope:** Make AI feature availability consistent for Free, Plus and Pro while preserving each tier's token quota and existing role, profile and consent rules.
+
+### Added
+
+- Add coverage for the weekly-menu and Expert recipe-authoring chat workflows across Free, Plus and Pro.
+
+### Changed
+
+- Remove Plus/Pro entitlement checks from AI workflows and retain subscription tiers only for quota accounting.
+- Remove paid-tier upgrade prompts from AI feature errors and update API descriptions to document authentication, role and eligibility requirements.
+
+### Fixed
+
+- Stop describing AI features as locked behind Plus or Pro when token quota is the only tier-based AI limit.
 
 ## 2026-11-20 — Remove Three Local Demo Posts
 
