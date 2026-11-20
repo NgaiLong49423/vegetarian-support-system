@@ -24,6 +24,12 @@ async function api(page: Page, initialLikes = 9, initialDislikes = 1) {
   const mutations: string[] = [];
   const stats = () => ({ likes, dislikes, reactionCount: likes + dislikes, likePercentage: likes + dislikes ? Math.round(likes / (likes + dislikes) * 100) : null, viewCount: 0 });
   await page.route('**/api/v1/recipes/901', (route) => route.fulfill({ json: { ...detail, statistics: stats() } }));
+  await page.route('**/api/v1/nutrition/dietary-preferences/recipes/901/safety-assessment', (route) => route.fulfill({ json: {
+    recipeId: 901, recipeTitle: detail.title, recipeTypeCompatible: true,
+    hasAllergenOrAvoidConflict: false, hasVegetarianConflict: false,
+    hasDislikedIngredients: false, unverifiedIngredients: [],
+    requiresRiskAcknowledgement: false, assessmentToken: null, ingredients: [],
+  } }));
   await page.route('**/api/v1/recipes/901/related**', (route) => route.fulfill({ json: { items: [] } }));
   await page.route(/\/api\/v1\/recipes(?:\/discovery)?\?/, (route) => route.fulfill({ json: {
     items: [{ id: 901, authorId: 22, authorName: detail.author.displayName, title: detail.title, vegetarianType: 'VEGAN', dishCategory: 'SOUP', prepTimeMin: 10, cookTimeMin: 15, servings: 2, media: [], ingredients: [], ...stats() }],
@@ -49,6 +55,7 @@ test('Member thêm, đổi, hủy; tải lại giữ lựa chọn và card nhậ
   await session(page);
   const { mutations } = await api(page);
   await page.goto('/cong-thuc/id/901');
+  await expect(page.getByRole('heading', { name: detail.title })).toBeVisible();
   const like = page.getByRole('button', { name: 'Thích', exact: true });
   const dislike = page.getByRole('button', { name: 'Không thích', exact: true });
   await expect(like).toBeEnabled();
