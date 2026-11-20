@@ -1,8 +1,8 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.151.0
+> **Version:** v2.152.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-11-20<br>
+> **Last Updated:** 2026-11-21<br>
 > **Status:** Active
 
 # Changelog
@@ -28,6 +28,24 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Prevent recipe actions from silently bypassing current dietary constraints.
+
+## 2026-11-21 — Recognize Dairy Cheese Variants in Dietary Checks
+
+**Status:** Committed — 55155ad6.
+
+**Scope:** Prevent catalog cheese variants from bypassing vegetarian compatibility checks.
+
+### Added
+
+None.
+
+### Changed
+
+- Classify the six dairy cheese variants in the active ingredient catalog as dairy while preserving plant-based cheese behavior.
+
+### Fixed
+
+- Flag those dairy variants as incompatible with VEGAN and OVO profiles while allowing LACTO and LACTO_OVO profiles.
 
 ## 2026-11-20 — Remove Three Local Demo Posts
 
