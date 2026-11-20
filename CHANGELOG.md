@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-11-21 — Enforce Dietary Safety Across Recipe Actions
 
-**Status:** Committed — c369c09f.
+**Status:** Committed — 600046c2.
 
 **Scope:** Apply declared vegetarian, avoid, and dislike preferences to recipe recommendations and meal-plan actions, with explicit review for recipes that may conflict with current dietary constraints.
 
