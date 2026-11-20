@@ -6,7 +6,7 @@ last_updated: 2026-11-21
 # BUG-066 được cấp khi đồng bộ PR #161 ngày 2026-10-25 vì BUG-065 đã được dùng cho lỗi OpenAPI.
 # BUG-078–080 đã được cấp trên nhánh feature/17-ai-usage-telemetry, tránh cấp trùng khi tích hợp.
 # Đồng bộ PR #227: bản ghi quyền FR-21 của nhánh feature đổi BUG-086 → BUG-095; BUG-086 trên develop được giữ nguyên.
-next_id: 114
+next_id: 117
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -16,6 +16,33 @@ status_definitions:
 # Đồng bộ PR #194: mã gốc FR-10 → mã sau tích hợp: BUG-054 → BUG-070, BUG-055 → BUG-071, BUG-056 → BUG-072, BUG-057 → BUG-073, BUG-058 → BUG-074, BUG-059 → BUG-075, BUG-060 → BUG-076, BUG-066 → BUG-077.
 # Bản ghi BUG-060 của FR-11 tại 79394340 trùng lỗi privacy đã hợp nhất dưới BUG-076; giữ BUG-060 của develop.
 bugs:
+  - id: BUG-116
+    title: Docker CI báo contract OpenAPI lệch snapshot
+    status: TRACKING
+    severity: Unknown
+    area: Backend/API/OpenAPI CI
+    file: .agents/outputs/bugs/BUG-116.md
+    created: 2026-11-21
+    updated: 2026-11-21
+    related_issue: Unknown
+  - id: BUG-115
+    title: Test quyền Expert thất bại vì Mockito có stub không dùng
+    status: TRACKING
+    severity: Unknown
+    area: Backend/AI/Unit test
+    file: .agents/outputs/bugs/BUG-115.md
+    created: 2026-11-21
+    updated: 2026-11-21
+    related_issue: Unknown
+  - id: BUG-114
+    title: Index tri thức AI đóng gói không khớp catalog hiện hành
+    status: TRACKING
+    severity: Unknown
+    area: Backend/AI/Knowledge Index
+    file: .agents/outputs/bugs/BUG-114.md
+    created: 2026-11-21
+    updated: 2026-11-21
+    related_issue: Unknown
   - id: BUG-113
     title: Flyway dừng khi tiêu đề bài demo bị trùng
     status: TRACKING
