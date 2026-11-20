@@ -1,4 +1,4 @@
--- Local demo only: curated quantities and seasonings for exactly 54 fixture recipes.
+-- Local demo only: curated quantities and seasonings for 52 fixture recipes.
 -- Ingredient quantities describe edible ingredient weights for the full recipe.
 -- Dry grains/legumes are weighed before cooking; tofu/seitan/noodles follow their catalog form.
 -- Water in this list is retained recipe water; discard soaking and boiling process water.
@@ -676,12 +676,18 @@ IF EXISTS (SELECT 1 FROM @ingredients seed WHERE NOT EXISTS (
     THROW 51002, 'A required active demo ingredient is missing.', 1;
 
 DECLARE @targets TABLE (recipe_id BIGINT PRIMARY KEY, title NVARCHAR(120) NOT NULL);
+;WITH named_matches AS (
+    SELECT post.recipe_id, post.title,
+           COUNT(*) OVER (PARTITION BY post.title) AS identity_count
+    FROM [RECIPE_POST] post
+    JOIN @recipes seed ON seed.title = post.title
+    WHERE post.author_id = @author_id
+)
 INSERT INTO @targets (recipe_id, title)
-SELECT post.recipe_id, post.title FROM [RECIPE_POST] post
-JOIN @recipes seed ON seed.title = post.title WHERE post.author_id = @author_id;
+SELECT recipe_id, title FROM named_matches WHERE identity_count = 1;
 
-IF (SELECT COUNT(*) FROM @targets) <> 52
-    THROW 51004, 'Named demo recipe identities must be unambiguous.', 1;
+-- If a demo title also belongs to another post by this author, do not guess which
+-- post is the fixture. Leave every post with that ambiguous title unchanged.
 
 -- Preserve additional ingredients on these named fixtures, converting their units only
 -- when there is a real mass factor or a per-ingredient conversion to grams.
