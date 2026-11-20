@@ -101,7 +101,7 @@ test('ingredient lookup cannot apply a patch after the form changes', async ({ p
   await page.getByLabel('Tên món *').fill('Tên tôi vừa sửa');
   await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
   release?.();
-  await expect(page.getByText('Biểu mẫu đã thay đổi trong lúc chờ; đề xuất chưa được áp dụng.')).toBeVisible();
+  await expect(page.getByText('Biểu mẫu đã thay đổi trong lúc chờ. Đề xuất chưa được áp dụng.')).toBeVisible();
   await expect(page.getByLabel('Tên món *')).toHaveValue('Tên tôi vừa sửa');
   await expect(page.getByLabel('Chọn nguyên liệu 1')).toHaveValue('');
   expect(acknowledgements[0].status).toBe('CONFLICT');
@@ -169,7 +169,7 @@ test('expert form patch rejects a stale revision and acknowledges conflict', asy
   await page.getByLabel('Tên món *').fill('Tên đã sửa');
   await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
   release?.();
-  await expect(page.getByText('Biểu mẫu đã thay đổi trong lúc chờ; đề xuất chưa được áp dụng.')).toBeVisible();
+  await expect(page.getByText('Biểu mẫu đã thay đổi trong lúc chờ. Đề xuất chưa được áp dụng.')).toBeVisible();
   await expect(page.getByLabel('Tên món *')).toHaveValue('Tên đã sửa');
   expect(acknowledgements[0].status).toBe('CONFLICT');
 });
@@ -219,7 +219,7 @@ test('AI menu tool result shows a preview without applying it', async ({ page })
   await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
   const preview = page.getByRole('region', { name: 'Xem trước thực đơn AI' });
   await expect(preview).toContainText('2026-11-03 · Trưa: Đậu hũ sốt cà');
-  await expect(preview).toContainText('chưa lưu vào lịch ăn');
+  await expect(preview).toContainText('Chưa lưu vào lịch ăn.');
   expect(applyCalls).toBe(0);
 });
 
@@ -566,7 +566,7 @@ test('a user route change while Agent is responding is never overwritten by the 
   });
   await expect(page).toHaveURL('/kham-pha');
   finishResponse();
-  await expect(page.getByText('Bạn đã chuyển sang trang khác trong lúc trợ lý xử lý; hệ thống giữ nguyên trang bạn chọn.')).toBeVisible();
+  await expect(page.getByText('Bạn đã chuyển sang trang khác trong lúc trợ lý xử lý. Hệ thống giữ nguyên trang bạn chọn.')).toBeVisible();
   await expect(page).toHaveURL('/kham-pha');
   await expect(page.getByRole('heading', { name: 'Khám phá công thức chay' })).toBeVisible();
 });
@@ -708,7 +708,7 @@ test('expired Backend session keeps transcript and retry continues without the s
   await page.getByLabel('Câu hỏi của bạn').fill('Tiếp tục nhé');
   await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
   await expect(page.getByRole('alert').filter({ hasText: 'Phiên AI đã hết hạn' }))
-    .toContainText('lịch sử trò chuyện vẫn được giữ');
+    .toContainText(/lịch sử trò chuyện vẫn được giữ/i);
   await expect(page.getByText('Lần trước tôi hỏi về món đậu hũ')).toBeVisible();
   await page.getByRole('alert').filter({ hasText: 'Phiên AI đã hết hạn' })
     .getByRole('button', { name: 'Thử lại' }).click();

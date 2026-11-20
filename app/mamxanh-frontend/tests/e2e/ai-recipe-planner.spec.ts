@@ -116,6 +116,6 @@ test('weekly menu provider errors do not suggest buying a plan', async ({ page }
   await page.getByRole('tab', { name: 'Thực đơn tuần', exact: true }).click();
   await page.getByRole('button', { name: 'Tạo thực đơn tuần', exact: true }).click();
   const alert = page.getByRole('alert');
-  await expect(alert).toContainText('Dịch vụ AI đang tạm thời không khả dụng.');
+  await expect(alert).toContainText('Chưa thể tạo đề xuất lúc này. Bạn có thể thử lại sau.');
   await expect(alert.getByRole('link', { name: /Nâng cấp gói AI/ })).toHaveCount(0);
 });

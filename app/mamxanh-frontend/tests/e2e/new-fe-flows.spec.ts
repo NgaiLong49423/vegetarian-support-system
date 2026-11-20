@@ -211,8 +211,8 @@ test('avatar menu displays the authenticated Backend identity and opens the API-
   await seedDemoSession(page, 'CUSTOMER');
   await page.route('**/api/v1/subscriptions/plans', (route) => route.fulfill({ json: [
     { tier: 'FREE', name: 'FREE', priceVnd: 0, description: '', features: [], billingPeriod: 'Không thời hạn' },
-    { tier: 'PLUS', name: 'PLUS', priceVnd: 49000, description: '', features: [], billingPeriod: 'Tháng' },
-    { tier: 'PRO', name: 'PRO', priceVnd: 99000, description: '', features: [], billingPeriod: 'Tháng' },
+    { tier: 'PLUS', name: 'PLUS', priceVnd: 99000, description: '', features: [], billingPeriod: 'Tháng' },
+    { tier: 'PRO', name: 'PRO', priceVnd: 199000, description: '', features: [], billingPeriod: 'Tháng' },
   ] }));
   await page.route('**/api/v1/subscriptions/my-subscription', (route) => {
     expect(route.request().headers().authorization).toBe('Bearer header.payload.signature');
@@ -317,8 +317,8 @@ test('nutrition profile requires real authentication and plan/history pages do n
   await expect(page.getByText('Chỉ số BMI tham khảo')).toHaveCount(0);
 
   await page.goto('/goi-ai');
-  await expect(page.getByText('49.000')).toBeVisible();
-  await expect(page.getByText('99.000')).toBeVisible();
+  await expect(page.getByText('99.000 VNĐ / tháng', { exact: true })).toBeVisible();
+  await expect(page.getByText('199.000 VNĐ / tháng', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Thanh toán chưa khả dụng' }).first()).toBeDisabled();
   await page.getByRole('link', { name: 'Xem lịch sử giao dịch' }).click();
   await expect(page.getByText('Chưa có dữ liệu giao dịch')).toBeVisible();

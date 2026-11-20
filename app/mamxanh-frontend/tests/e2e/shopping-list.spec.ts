@@ -812,7 +812,7 @@ test("quick recipe serving change previews ingredient deltas before saving to th
   await dialog.getByRole("button", { name: "Xem thay đổi" }).click()
   await expect(dialog).toContainText("Giảm 30 g")
   await expect(dialog).toContainText("Khẩu phần: 2 → 1")
-  await expect(dialog).toContainText("phần người dùng thêm và phần mất xác định được giữ nguyên")
+  await expect(dialog).toContainText("Phần người dùng thêm và phần mất xác định được giữ nguyên")
   await expect.poll(() => state.writes.length).toBe(0)
   await dialog.getByRole("button", { name: "Xác nhận thay đổi" }).click()
   await expect(dialog).toHaveCount(0)

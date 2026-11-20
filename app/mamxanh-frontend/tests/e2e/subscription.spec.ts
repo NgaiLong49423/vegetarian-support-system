@@ -8,27 +8,26 @@ const mockPlans = [
     name: 'FREE',
     priceVnd: 0,
     billingPeriod: 'Hàng tháng',
-    description: 'Trải nghiệm các tính năng AI cơ bản',
-    features: ['AI Chatbot cơ bản', 'Gợi ý món chay cơ bản'],
+    description: 'Dùng các chức năng AI phù hợp với vai trò và điều kiện tài khoản',
+    features: ['Các chức năng AI theo vai trò và điều kiện nghiệp vụ', '50.000 token mỗi tháng'],
   },
   {
     tier: 'PLUS',
     name: 'PLUS',
-    priceVnd: 49000,
+    priceVnd: 99000,
     billingPeriod: 'Hàng tháng',
-    description: 'Dành cho người ăn chay chuyên sâu & tối ưu dinh dưỡng',
-    features: ['Toàn bộ quyền của FREE', 'AI lập thực đơn tuần 7 ngày', 'AI lập thực đơn theo dinh dưỡng cá nhân'],
+    description: 'Tăng hạn mức token AI theo tháng',
+    features: ['Các chức năng AI theo vai trò và điều kiện nghiệp vụ', '200.000 token mỗi tháng'],
   },
   {
     tier: 'PRO',
     name: 'PRO',
-    priceVnd: 99000,
+    priceVnd: 199000,
     billingPeriod: 'Hàng tháng',
-    description: 'Dành cho người ăn chay muốn sáng tạo thực đơn',
+    description: 'Tăng hạn mức token AI theo tháng',
     features: [
-      'Toàn bộ quyền của PLUS',
-      'AI hỗ trợ soạn bài viết và công thức',
-      'AI gợi ý biến tấu món chay sáng tạo',
+      'Các chức năng AI theo vai trò và điều kiện nghiệp vụ',
+      '500.000 token mỗi tháng',
     ],
   },
 ];
@@ -97,7 +96,7 @@ async function setupMockSubscriptionApis(page: Page, subscriptionData = mockFree
   await page.route('**/api/v1/subscriptions/transactions/*', async route => {
     const orderCode = new URL(route.request().url()).pathname.split('/').pop()!;
     const cancelled = orderCode === '1728038400999';
-    return route.fulfill({ json: { orderCode, tier: 'PLUS', amountVnd: 49000,
+    return route.fulfill({ json: { orderCode, tier: 'PLUS', amountVnd: 99000,
       status: cancelled ? 'CANCELLED' : 'PAID', activated: !cancelled,
       paidAt: cancelled ? null : '2026-10-17T00:00:00', subscription: subscriptionData } });
   });
@@ -112,7 +111,7 @@ async function setupMockSubscriptionApis(page: Page, subscriptionData = mockFree
 }
 
 test.describe('[FR-13] Gói AI & Thanh toán payOS', () => {
-  test('AC-13.1: Trang bảng giá hiển thị chính xác 3 gói FREE 0 đ, PLUS 49.000 đ, PRO 99.000 đ', async ({ page }) => {
+  test('AC-13.1: Trang bảng giá hiển thị chính xác 3 gói FREE 0 đ, PLUS 99.000 đ, PRO 199.000 đ', async ({ page }) => {
     await setupMockSubscriptionApis(page, mockFreeSubscription);
     await page.goto('/goi-ai');
 
@@ -126,8 +125,8 @@ test.describe('[FR-13] Gói AI & Thanh toán payOS', () => {
 
     // Prices
     await expect(page.getByText('0 VNĐ / tháng', { exact: true })).toBeVisible();
-    await expect(page.getByText('49.000 VNĐ / tháng', { exact: true })).toBeVisible();
     await expect(page.getByText('99.000 VNĐ / tháng', { exact: true })).toBeVisible();
+    await expect(page.getByText('199.000 VNĐ / tháng', { exact: true })).toBeVisible();
 
     // No annual plans, coupons, or trial packages
     await expect(page.getByText(/gói năm|coupon|khuyến mãi|dùng thử/i)).toHaveCount(0);
@@ -162,7 +161,7 @@ test.describe('[FR-13] Gói AI & Thanh toán payOS', () => {
         body: JSON.stringify({
           orderCode: 1728038400123,
           checkoutUrl: 'https://pay.payos.vn/web/test-checkout-url',
-          amountVnd: 49000,
+          amountVnd: 99000,
           tier: 'PLUS',
           qrCode: 'test-qr',
         }),
@@ -234,17 +233,14 @@ for (const fallback of [false, true]) {
     await page.goto('/goi-ai');
     const plus = page.locator('[data-tier="PLUS"]');
     const pro = page.locator('[data-tier="PRO"]');
-    await expect(plus).toContainText('49.000');
-    await expect(plus).toContainText('AI lập thực đơn tuần 7 ngày');
-    await expect(plus).toContainText('AI lập thực đơn theo dinh dưỡng cá nhân');
-    await expect(plus).not.toContainText('soạn bài');
-    await expect(plus).not.toContainText('biến tấu');
-    await expect(plus).not.toContainText('AI đề xuất điều chỉnh dinh dưỡng');
-    await expect(pro).toContainText('99.000');
-    await expect(pro).toContainText('Toàn bộ quyền');
-    await expect(pro).not.toContainText('Chuyên gia');
-    await expect(pro).toContainText('AI gợi ý biến tấu món chay sáng tạo');
-    await expect(pro).not.toContainText('AI đề xuất điều chỉnh dinh dưỡng');
+    const free = page.locator('[data-tier="FREE"]');
+    await expect(free).toContainText('50.000 token mỗi tháng');
+    await expect(plus).toContainText('99.000');
+    await expect(plus).toContainText('Các chức năng AI theo vai trò và điều kiện nghiệp vụ');
+    await expect(plus).toContainText('200.000 token mỗi tháng');
+    await expect(pro).toContainText('199.000');
+    await expect(pro).toContainText('Các chức năng AI theo vai trò và điều kiện nghiệp vụ');
+    await expect(pro).toContainText('500.000 token mỗi tháng');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath(`plans-${fallback ? 'mobile-fallback' : 'desktop-api'}.png`), fullPage: true, animations: 'disabled' });
   });
