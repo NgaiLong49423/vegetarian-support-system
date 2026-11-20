@@ -38,7 +38,7 @@ public class PasswordConstraintValidator implements ConstraintValidator<ValidPas
         if (length > MAX_LENGTH) {
             problems.add("Mật khẩu tối đa 64 ký tự.");
         } else if (password.getBytes(StandardCharsets.UTF_8).length > MAX_UTF8_BYTES) {
-            problems.add("Mật khẩu vượt quá 72 byte; ký tự có dấu chiếm nhiều byte hơn, hãy rút ngắn mật khẩu.");
+            problems.add("Mật khẩu vượt quá 72 byte. Ký tự có dấu chiếm nhiều byte hơn, hãy rút ngắn mật khẩu.");
         }
         if (password.codePoints().noneMatch(Character::isUpperCase)) {
             problems.add("Mật khẩu cần ít nhất 1 chữ in hoa.");

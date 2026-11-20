@@ -1030,7 +1030,7 @@ function ShoppingWorkspace() {
               <section className="space-y-2 rounded-xl border border-brand-100 p-4" aria-live="polite">
                 <h4 className="font-semibold text-ink">{recipeAction.mode === "remove" ? `Nguyên liệu bị ảnh hưởng · ${changedRecipeItemCount} mặt hàng` : `Xác nhận thay đổi · ${changedRecipeItemCount} mặt hàng`}</h4>
                 {recipeAction.mode === "servings" && (
-                  <p className="text-sm text-ink-muted">Khẩu phần: {recipeAction.source.servings?.toLocaleString("vi-VN")} → <strong className="text-ink">{requestedRecipeServings.toLocaleString("vi-VN")}</strong>. Chỉ các nguyên liệu từ món này thay đổi; phần người dùng thêm và phần mất xác định được giữ nguyên.</p>
+                  <p className="text-sm text-ink-muted">Khẩu phần: {recipeAction.source.servings?.toLocaleString("vi-VN")} → <strong className="text-ink">{requestedRecipeServings.toLocaleString("vi-VN")}</strong>. Chỉ các nguyên liệu từ món này thay đổi. Phần người dùng thêm và phần mất xác định được giữ nguyên.</p>
                 )}
                 {recipeActionChanges.length ? (
                   <ul className="max-h-64 space-y-2 overflow-y-auto">
@@ -1046,7 +1046,7 @@ function ShoppingWorkspace() {
                     ))}
                   </ul>
                 ) : <p className="rounded-lg bg-cream-soft px-3 py-3 text-sm text-ink-muted">Không có định lượng nguyên liệu nào thay đổi.</p>}
-                <p className="text-xs text-ink-muted">Thay đổi chỉ áp dụng cho danh sách mua sắm này; bài công thức và Lịch ăn không bị sửa.</p>
+                <p className="text-xs text-ink-muted">Thay đổi chỉ áp dụng cho danh sách mua sắm này. Bài công thức và Lịch ăn không bị sửa.</p>
               </section>
             )}
             {error && <p role="alert" className="text-sm text-red-700">{error}</p>}

@@ -146,7 +146,7 @@ public class NotificationService {
     public void aiCreditTopUpNeedsReconciliation(long userId, String orderCode, int amountVnd) {
         jdbc.update("INSERT INTO [NOTIFICATION](user_id,notification_type,title,message,target_path,created_at) VALUES(?,?,?,?,?,?)",
                 userId, "AI_CREDIT_RECONCILE", "Cần đối soát giao dịch nạp AI Credit",
-                "Giao dịch nạp AI Credit đơn #" + orderCode + " cần đối soát vì thanh toán được ghi nhận sau hạn hoặc chưa xác minh được thời điểm. AI Credit chưa được cộng tự động; bộ phận hỗ trợ sẽ đối soát khoản "
+                "Giao dịch nạp AI Credit đơn #" + orderCode + " cần đối soát vì thanh toán được ghi nhận sau hạn hoặc chưa xác minh được thời điểm. AI Credit chưa được cộng tự động. Bộ phận hỗ trợ sẽ đối soát khoản "
                         + amountVnd + "đ.",
                 "/giao-dich", LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC));
     }

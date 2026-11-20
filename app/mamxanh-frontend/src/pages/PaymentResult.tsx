@@ -88,7 +88,7 @@ function PaymentResultDetails({ orderCode, signedIn }: { orderCode: string; sign
             : success ? result?.productType === 'AI_CREDIT'
               ? `${result.creditAmount?.toLocaleString('vi-VN', { maximumFractionDigits: 9 })} AI Credit đã được cộng vào ví của bạn.`
               : `Gói ${result?.tier} của đơn này đã được kích hoạt sau khi xác minh thanh toán.`
-            : state === 'reconciliation' ? 'Thanh toán được ghi nhận sau hạn đơn hoặc chưa xác minh được thời điểm. AI Credit chưa được cộng tự động; hệ thống đã gửi thông báo để bộ phận hỗ trợ đối soát.'
+            : state === 'reconciliation' ? 'Thanh toán được ghi nhận sau hạn đơn hoặc chưa xác minh được thời điểm. AI Credit chưa được cộng tự động. Hệ thống đã gửi thông báo để bộ phận hỗ trợ đối soát.'
             : state === 'paid' ? 'Thanh toán của đơn này đã được xác nhận. Gói của đơn hiện không còn hiệu lực. Xem gói đang sử dụng bên dưới.'
             : state === 'cancelled' ? 'Đơn đã bị hủy, hết hạn hoặc thất bại theo kết quả máy chủ. Quyền lợi tài khoản của bạn được bảo toàn.'
             : state === 'error' ? error

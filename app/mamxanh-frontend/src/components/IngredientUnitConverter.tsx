@@ -113,7 +113,7 @@ export function IngredientUnitConverter({ ingredientId, ingredientName }: { ingr
                 </select>
               </div>
             </div>
-            {units.some((unit) => unit.approximate) && <p className="mt-3 text-xs leading-5 text-ink-muted">Một số quy đổi của nguyên liệu này là ước tính; kết quả mang tính tham khảo.</p>}
+            {units.some((unit) => unit.approximate) && <p className="mt-3 text-xs leading-5 text-ink-muted">Một số quy đổi của nguyên liệu này là ước tính. Kết quả mang tính tham khảo.</p>}
           </>}
   </section>;
 }

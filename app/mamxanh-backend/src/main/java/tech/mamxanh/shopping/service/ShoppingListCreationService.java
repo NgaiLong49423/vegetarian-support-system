@@ -156,7 +156,7 @@ public class ShoppingListCreationService {
         if (request == null || request.weekStartDate() == null) throw invalid("Cần chọn tuần bắt đầu vào thứ Hai.");
         LocalDate start = request.weekStartDate();
         if (!java.time.DayOfWeek.MONDAY.equals(start.getDayOfWeek()) || start.getYear() < 1
-                || start.isAfter(LocalDate.of(9999, 12, 31).minusDays(6))) throw invalid("Tuần không hợp lệ; ngày bắt đầu phải là thứ Hai.");
+                || start.isAfter(LocalDate.of(9999, 12, 31).minusDays(6))) throw invalid("Tuần không hợp lệ. Ngày bắt đầu phải là thứ Hai.");
         var dates = request.selectedDates();
         if (dates != null && (dates.isEmpty() || dates.size() > 7 || new HashSet<>(dates).size() != dates.size()
                 || dates.stream().anyMatch(date -> date == null || date.isBefore(start) || date.isAfter(start.plusDays(6))))) {

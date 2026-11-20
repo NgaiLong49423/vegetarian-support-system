@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class MealPlanNutritionService {
-    public static final String DISCLAIMER = "Thông tin dinh dưỡng trong báo cáo chỉ mang tính tham khảo, được ước tính từ thực đơn dự kiến; không phải kết quả khám, chẩn đoán hay điều trị y tế, và không thay thế tư vấn của bác sĩ hoặc chuyên gia dinh dưỡng. Kết quả không có giá trị pháp lý hoặc y tế.";
+    public static final String DISCLAIMER = "Thông tin dinh dưỡng trong báo cáo chỉ mang tính tham khảo, được ước tính từ thực đơn dự kiến. Đây không phải kết quả khám, chẩn đoán hay điều trị y tế và không thay thế tư vấn của bác sĩ hoặc chuyên gia dinh dưỡng. Kết quả không có giá trị pháp lý hoặc y tế.";
     private static final List<String> KEYS = List.of("ENERGY_KCAL", "PROTEIN_G", "CARBOHYDRATE_G", "TOTAL_FAT_G",
             "FIBER_G", "CALCIUM_MG", "IRON_MG", "VITAMIN_B12_MCG", "ZINC_MG");
     private final CurrentUserService users;
@@ -88,7 +88,7 @@ public class MealPlanNutritionService {
                 .filter(entry -> !entry.complete()).map(entry -> new MissingEntry(entry.entryId(), entry.date(), entry.mealType(),
                         entry.recipeTitle(), entry.ingredientsMissingData())).toList();
         String basis = personalized.isPresent()
-                ? "Mục tiêu tham khảo cá nhân từ hồ sơ đã lưu" : "Giá trị tham khảo chung FDA Daily Values; năng lượng theo hướng dẫn FDA lưu trong danh mục";
+                ? "Mục tiêu tham khảo cá nhân từ hồ sơ đã lưu" : "Giá trị tham khảo chung FDA Daily Values, năng lượng theo hướng dẫn FDA lưu trong danh mục";
         boolean personal = personalized.isPresent();
         Map<String, BigDecimal> weeklyAverage = average(days);
         Map<String, Integer> attainmentDays = attainment(days, targets);
