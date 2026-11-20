@@ -68,6 +68,8 @@ UPDATE u SET vegetarian_type = CASE WHEN c.ordinal % 4 = 0 THEN 'LACTO_OVO' ELSE
     date_of_birth = DATEADD(YEAR, -(20 + c.ordinal % 25), CONVERT(DATE, GETDATE())),
     biological_sex = CASE WHEN c.ordinal % 2 = 0 THEN 'FEMALE' ELSE 'MALE' END,
     height_cm = 150 + (c.ordinal % 21), weight_kg = 48 + (c.ordinal % 26),
+    nutrition_bmi = CONVERT(DECIMAL(18,12), ((48 + (c.ordinal % 26)) * 10000.0)
+        / ((150 + (c.ordinal % 21)) * (150 + (c.ordinal % 21)))),
     activity_level = CASE c.ordinal % 4 WHEN 0 THEN 'VERY_ACTIVE' WHEN 1 THEN 'LIGHTLY_ACTIVE'
         WHEN 2 THEN 'MODERATELY_ACTIVE' ELSE 'SEDENTARY' END,
     nutrition_goal = CASE c.ordinal % 3 WHEN 0 THEN 'MAINTAIN_WEIGHT' WHEN 1 THEN 'IMPROVE_HEALTH'

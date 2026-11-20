@@ -146,6 +146,20 @@ class NutritionProfileServiceTest {
     }
 
     @Test
+    void mealPlanNutritionRecoversWhenPersistedBmiIsMissing() {
+        NutritionProfileEntity member = completeMember();
+        member.setNutritionBmi(null);
+        when(repository.findById(42L)).thenReturn(Optional.of(member));
+
+        var results = service.targetsIfProfileExists(42L).orElseThrow();
+
+        assertEquals(0, new BigDecimal("22.491349481").compareTo(results.bmi()));
+        assertEquals("Bình thường", results.bmiCategory());
+        assertEquals(null, member.getNutritionBmi()); // Recovery is read-only; saving a profile persists BMI.
+        verify(repository, never()).save(any());
+    }
+
+    @Test
     void blocksResultCalculationWhenAnyExclusionIsConfirmed() {
         NutritionProfileEntity member = eligibleMember();
         member.setDateOfBirth(LocalDate.of(2000, 7, 1));

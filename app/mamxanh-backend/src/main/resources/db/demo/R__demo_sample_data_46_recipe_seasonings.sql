@@ -205,10 +205,6 @@ DECLARE @recipe_json NVARCHAR(MAX) = N'[
     "instructions": "Ngâm nấm hương rồi bỏ nước ngâm, rửa sạch. Áp chảo nhẹ đậu phụ non trong dầu. Đun nấm với gừng và lượng nước đã cân, hạ lửa rồi hòa miso vào. Rưới sốt lên đậu phụ, rắc hành lá và tiêu.\n\nĐịnh lượng cho 2 phần: đậu phụ non 220 g, tương miso 15 g, nấm hương 40 g, gừng 5 g, dầu ăn 8 g, nước 150 g, hành lá 8 g, tiêu đen 0.3 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
   },
   {
-    "title": "Salad cải bó xôi bơ lựu",
-    "instructions": "Rửa cải bó xôi, để ráo; cắt bơ và tách hạt lựu. Hòa nước cốt chanh với dầu, muối và tiêu. Trộn nhẹ cùng rau, bơ, lựu và óc chó ngay trước khi dùng.\n\nĐịnh lượng cho 2 phần: cải bó xôi 100 g, bơ 80 g, lựu 50 g, óc chó 15 g, chanh 10 g, dầu ăn 6 g, muối ăn 0.8 g, tiêu đen 0.2 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
-  },
-  {
     "title": "Bánh mì kẹp seitan rau thơm",
     "instructions": "Cắt seitan, ướp với nước tương, tiêu và tỏi rồi áp chảo trong dầu. Làm nóng bánh mì, kẹp seitan với xà lách romaine, dưa leo, cà chua và húng quế. Dùng ngay khi bánh còn ấm.\n\nĐịnh lượng cho 2 phần: bánh mì nguyên cám 100 g, seitan 100 g, xà lách romaine 40 g, dưa leo 40 g, cà chua 40 g, húng quế 5 g, dầu ăn 8 g, nước tương 12 g, tiêu đen 0.4 g, tỏi 4 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
   },
@@ -219,10 +215,6 @@ DECLARE @recipe_json NVARCHAR(MAX) = N'[
   {
     "title": "Bánh yến mạch trứng chuối",
     "instructions": "Nghiền chuối, trộn với trứng đã bỏ vỏ, bột yến mạch, muối và quế. Để hỗn hợp nghỉ vài phút. Quét dầu lên chảo, áp chảo từng bánh nhỏ ở lửa vừa đến khi trứng chín kỹ hai mặt. Dùng cùng dâu tây.\n\nĐịnh lượng cho 2 phần: bột yến mạch 60 g, trứng gà 100 g, chuối 80 g, dâu tây 50 g, dầu ăn 6 g, muối ăn 0.3 g, quế 0.5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
-  },
-  {
-    "title": "Chè kê vàng chà là dừa",
-    "instructions": "Vo kê vàng, nấu với lượng nước đã cân và lá dứa buộc gọn đến khi kê mềm. Thêm chà là, dừa nạo và muối, đun thêm vài phút. Vớt lá dứa ra trước khi dùng; phần lá chỉ tạo hương, không ăn. Không thêm đường vì chà là đã ngọt.\n\nĐịnh lượng cho 2 phần: kê vàng 60 g, chà là 25 g, dừa nạo 20 g, nước 550 g, muối ăn 0.3 g, lá dứa 5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
   },
   {
     "title": "Khổ qua nhồi đậu phụ non",
@@ -410,11 +402,6 @@ INSERT INTO @ingredients (title, ingredient_name, quantity) VALUES
     (N'Đậu phụ non sốt miso nấm', N'Tương miso', 15),
     (N'Đậu phụ non sốt miso nấm', N'Nấm hương', 40),
     (N'Đậu phụ non sốt miso nấm', N'Gừng', 5),
-    (N'Salad cải bó xôi bơ lựu', N'Cải bó xôi', 100),
-    (N'Salad cải bó xôi bơ lựu', N'Bơ', 80),
-    (N'Salad cải bó xôi bơ lựu', N'Lựu', 50),
-    (N'Salad cải bó xôi bơ lựu', N'Óc chó', 15),
-    (N'Salad cải bó xôi bơ lựu', N'Chanh', 10),
     (N'Bánh mì kẹp seitan rau thơm', N'Bánh mì nguyên cám', 100),
     (N'Bánh mì kẹp seitan rau thơm', N'Seitan', 100),
     (N'Bánh mì kẹp seitan rau thơm', N'Xà lách romaine', 40),
@@ -428,9 +415,6 @@ INSERT INTO @ingredients (title, ingredient_name, quantity) VALUES
     (N'Bánh yến mạch trứng chuối', N'Trứng gà', 100),
     (N'Bánh yến mạch trứng chuối', N'Chuối', 80),
     (N'Bánh yến mạch trứng chuối', N'Dâu tây', 50),
-    (N'Chè kê vàng chà là dừa', N'Kê vàng', 60),
-    (N'Chè kê vàng chà là dừa', N'Chà là', 25),
-    (N'Chè kê vàng chà là dừa', N'Dừa nạo', 20),
     (N'Khổ qua nhồi đậu phụ non', N'Khổ qua', 200),
     (N'Khổ qua nhồi đậu phụ non', N'Đậu phụ non', 120),
     (N'Khổ qua nhồi đậu phụ non', N'Nấm mộc nhĩ', 15),
@@ -667,9 +651,6 @@ INSERT INTO @ingredients (title, ingredient_name, quantity) VALUES
     (N'Đậu phụ non sốt miso nấm', N'Nước', 150),
     (N'Đậu phụ non sốt miso nấm', N'Hành lá', 8),
     (N'Đậu phụ non sốt miso nấm', N'Tiêu đen', 0.3),
-    (N'Salad cải bó xôi bơ lựu', N'Dầu ăn', 6),
-    (N'Salad cải bó xôi bơ lựu', N'Muối ăn', 0.8),
-    (N'Salad cải bó xôi bơ lựu', N'Tiêu đen', 0.2),
     (N'Bánh mì kẹp seitan rau thơm', N'Dầu ăn', 8),
     (N'Bánh mì kẹp seitan rau thơm', N'Nước tương', 12),
     (N'Bánh mì kẹp seitan rau thơm', N'Tiêu đen', 0.4),
@@ -680,9 +661,6 @@ INSERT INTO @ingredients (title, ingredient_name, quantity) VALUES
     (N'Bánh yến mạch trứng chuối', N'Dầu ăn', 6),
     (N'Bánh yến mạch trứng chuối', N'Muối ăn', 0.3),
     (N'Bánh yến mạch trứng chuối', N'Quế', 0.5),
-    (N'Chè kê vàng chà là dừa', N'Nước', 550),
-    (N'Chè kê vàng chà là dừa', N'Muối ăn', 0.3),
-    (N'Chè kê vàng chà là dừa', N'Lá dứa', 5),
     (N'Khổ qua nhồi đậu phụ non', N'Nước', 800),
     (N'Khổ qua nhồi đậu phụ non', N'Muối ăn', 2),
     (N'Khổ qua nhồi đậu phụ non', N'Nước tương', 10),
@@ -702,7 +680,7 @@ INSERT INTO @targets (recipe_id, title)
 SELECT post.recipe_id, post.title FROM [RECIPE_POST] post
 JOIN @recipes seed ON seed.title = post.title WHERE post.author_id = @author_id;
 
-IF (SELECT COUNT(*) FROM @targets) <> 54
+IF (SELECT COUNT(*) FROM @targets) <> 52
     THROW 51004, 'Named demo recipe identities must be unambiguous.', 1;
 
 -- Preserve additional ingredients on these named fixtures, converting their units only

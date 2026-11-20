@@ -1,13 +1,31 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.150.0
+> **Version:** v2.151.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-11-06<br>
+> **Last Updated:** 2026-11-20<br>
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-11-20 — Remove Three Local Demo Posts
+
+**Status:** Working tree — not committed.
+
+**Scope:** Remove two recipe posts from the local-only Flyway demo fixtures and retire one existing AI-test post from local demo databases.
+
+### Added
+
+- Add a repeatable local demo migration that marks the selected existing demo posts as deleted.
+
+### Changed
+
+- Stop seeding “Salad cải bó xôi bơ lựu” and “Chè kê vàng chà là dừa” and remove their ingredient enrichment data.
+
+### Fixed
+
+- Hide the selected posts from the recipe feed after local demo migrations run.
 
 ## 2026-11-09 — Continue AI Recipe Actions Across Turns
 

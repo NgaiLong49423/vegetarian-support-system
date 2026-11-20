@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, Info, LoaderCircle, LockKeyhole, Sparkles } from 'lucide-react';
+import { CheckCircle2, Info, LoaderCircle, Sparkles } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Card } from '../components/ui';
 import { useAuth } from '../components/AuthContext';
@@ -59,7 +59,6 @@ export function DietaryPreferencesPage() {
           <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-4xl">Sở thích ăn uống</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-muted">Cập nhật loại ăn chay, nguyên liệu cần tránh và món không thích. Thay đổi áp dụng cho các yêu cầu AI tiếp theo, không sửa thực đơn đã lưu.</p>
         </div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-leaf-100 bg-paper px-3 py-2 text-xs font-semibold text-ink-soft"><LockKeyhole aria-hidden="true" className="h-4 w-4 text-leaf-700" /> Chỉ bạn xem được</div>
       </div>
 
       {!isAuthenticated && (

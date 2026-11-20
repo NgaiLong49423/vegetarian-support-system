@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, AlertCircle, CheckCircle2, Info, LoaderCircle, LockKeyhole, Save, Calculator } from 'lucide-react';
+import { Activity, AlertCircle, CheckCircle2, ChevronDown, Info, LoaderCircle, Save, Calculator } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Card } from '../components/ui';
 import { ApiError, hasAccessToken } from '../lib/apiClient';
@@ -22,10 +22,19 @@ const emptyForm: FormState = {
 };
 
 const activities: { value: ActivityLevel; label: string; description: string }[] = [
-  { value: 'SEDENTARY', label: 'Ít vận động', description: 'Chủ yếu sinh hoạt nhẹ hằng ngày' },
-  { value: 'LIGHTLY_ACTIVE', label: 'Vận động nhẹ', description: 'Có thêm hoạt động nhẹ thường xuyên' },
-  { value: 'MODERATELY_ACTIVE', label: 'Vận động vừa', description: 'Hoạt động thể chất mức vừa thường xuyên' },
-  { value: 'VERY_ACTIVE', label: 'Vận động nhiều', description: 'Hoạt động thể chất cường độ cao thường xuyên' },
+  { value: 'SEDENTARY', label: 'Ít vận động (0 buổi/tuần)', description: 'Chủ yếu ngồi học/làm việc, ít đi lại, không tập thể dục.' },
+  { value: 'LIGHTLY_ACTIVE', label: 'Vận động nhẹ (1–3 buổi/tuần)', description: 'Đi bộ, yoga hoặc tập nhẹ 20–30 phút/buổi.' },
+  { value: 'MODERATELY_ACTIVE', label: 'Vận động vừa (4–5 buổi/tuần)', description: 'Chạy bộ, tập gym hoặc thể thao 30–60 phút/buổi.' },
+  { value: 'VERY_ACTIVE', label: 'Vận động nhiều (6–7 buổi/tuần)', description: 'Tập cường độ cao thường xuyên hoặc làm công việc thể lực cao.' },
+];
+
+const nutritionGoals: { value: NutritionGoal; label: string; description: string }[] = [
+  { value: 'MAINTAIN_WEIGHT', label: 'Duy trì cân nặng', description: 'Duy trì cân nặng hiện tại, cân bằng năng lượng nạp vào và tiêu hao.' },
+  { value: 'LOSE_WEIGHT', label: 'Giảm cân', description: 'Giảm cân từ từ thông qua chế độ ăn kiểm soát năng lượng.' },
+  { value: 'GAIN_WEIGHT', label: 'Tăng cân', description: 'Tăng cân lành mạnh bằng cách bổ sung năng lượng và dưỡng chất.' },
+  { value: 'BUILD_MUSCLE', label: 'Tăng cơ', description: 'Ưu tiên bổ sung chất đạm và năng lượng để phát triển cơ bắp kết hợp tập luyện.' },
+  { value: 'IMPROVE_HEALTH', label: 'Cải thiện sức khỏe chung', description: 'Ăn uống cân bằng, đa dạng thực phẩm và đảm bảo đầy đủ dưỡng chất.' },
+  { value: 'SUPPORT_TRAINING', label: 'Hỗ trợ tập luyện', description: 'Đảm bảo năng lượng, nâng cao hiệu suất tập luyện và hỗ trợ phục hồi cơ thể.' },
 ];
 
 function ageFromDate(date: string): number | null {
@@ -298,6 +307,7 @@ export function NutritionProfile() {
 
   const fieldClass = 'mt-2 w-full rounded-xl border border-leaf-200 bg-paper px-3.5 py-3 text-sm text-ink outline-none transition focus:border-leaf-600 focus:ring-2 focus:ring-leaf-100 disabled:bg-raised';
   const miniLabelClass = 'block text-sm font-semibold text-ink';
+  const selectedNutritionGoal = nutritionGoals.find((goal) => goal.value === form.nutritionGoal);
 
   return <PageContainer className="py-8 md:py-10">
     <nav aria-label="Điều hướng trang" className="mb-5 text-sm text-ink-muted">
@@ -310,7 +320,6 @@ export function NutritionProfile() {
         <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-4xl">Hồ sơ dinh dưỡng cá nhân</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">Khai báo thông tin để xem các chỉ số dinh dưỡng tham khảo theo dữ liệu của bạn.</p>
       </div>
-      <div className="inline-flex items-center gap-2 rounded-full border border-leaf-100 bg-paper px-3 py-2 text-xs font-semibold text-ink-soft"><LockKeyhole className="h-4 w-4 text-leaf-700" /> Hồ sơ riêng tư</div>
     </div>
 
     <aside role="note" className="mt-6 flex gap-3 rounded-2xl border border-leaf-100 bg-leaf-50 p-4 text-sm leading-6 text-ink-soft md:p-5">
@@ -320,7 +329,7 @@ export function NutritionProfile() {
 
     {loadError && <div role="alert" className="mt-5 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950"><AlertCircle className="mt-0.5 h-5 w-5 shrink-0" /><p>{loadError}</p></div>}
 
-    {(!authenticated || !eligibility || eligibility !== 'ELIGIBLE' || editingEligibility) ? <Card className="mt-6 max-w-3xl border-leaf-100 p-5 shadow-sm shadow-leaf-900/5 md:p-7">
+    {(!authenticated || !eligibility || eligibility !== 'ELIGIBLE' || editingEligibility) ? <Card className="mt-6 w-full border-leaf-100 p-5 shadow-sm shadow-leaf-900/5 md:p-7">
       <h2 className="text-xl font-bold text-ink">Xác nhận phạm vi hỗ trợ dinh dưỡng</h2>
       <p className="mt-2 text-sm leading-6 text-ink-muted">Các tính năng dinh dưỡng chỉ hỗ trợ người từ đủ 18 tuổi, không mang thai hoặc cho con bú, và không cần chế độ ăn điều trị theo hướng dẫn y tế.</p>
       <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
@@ -392,18 +401,52 @@ export function NutritionProfile() {
                 {activities.map((item) => <option key={item.value} value={item.value}>{item.label} — {item.description}</option>)}
               </select>
             </label>
-            <label className={`${miniLabelClass} sm:col-span-2`} htmlFor="nutrition-goal">Mục tiêu dinh dưỡng chung (không bắt buộc)
-              <select id="nutrition-goal" className={fieldClass} value={form.nutritionGoal} onChange={(event) => setField('nutritionGoal', event.target.value as NutritionGoal | '')}>
-                <option value="">Chưa chọn mục tiêu</option>
-                <option value="MAINTAIN_WEIGHT">Duy trì cân nặng</option>
-                <option value="LOSE_WEIGHT">Giảm cân</option>
-                <option value="GAIN_WEIGHT">Tăng cân</option>
-                <option value="BUILD_MUSCLE">Tăng cơ</option>
-                <option value="IMPROVE_HEALTH">Cải thiện sức khỏe chung</option>
-                <option value="SUPPORT_TRAINING">Hỗ trợ tập luyện</option>
-              </select>
-              <span className="mt-1 block text-xs font-normal text-ink-muted">Mục tiêu này dùng cho gợi ý thực đơn theo hồ sơ. Bạn có thể để trống và chọn mục tiêu riêng khi lập lịch cho một tuần.</span>
-            </label>
+            <fieldset className="min-w-0 border-0 p-0 sm:col-span-2">
+              <legend id="nutrition-goal-label" className={miniLabelClass}>Mục tiêu dinh dưỡng cá nhân (không bắt buộc)</legend>
+              <p id="nutrition-goal-help" className="mt-1 text-xs font-normal leading-5 text-ink-muted">Lựa chọn mục tiêu phù hợp để chúng tôi đề xuất thực đơn dành riêng cho bạn.</p>
+              <details className="group mt-2" onBlur={(event) => {
+                const nextTarget = event.relatedTarget;
+                if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) event.currentTarget.open = false;
+              }} onKeyDown={(event) => {
+                if (event.key === 'Escape') {
+                  event.preventDefault();
+                  event.currentTarget.open = false;
+                  event.currentTarget.querySelector('summary')?.focus();
+                }
+              }}>
+                <summary id="nutrition-goal-trigger" aria-labelledby="nutrition-goal-label nutrition-goal-value" aria-describedby="nutrition-goal-help" aria-disabled={!authenticated} onClick={(event) => { if (!authenticated) event.preventDefault(); }} className={`${fieldClass} mt-0 flex cursor-pointer list-none items-center justify-between gap-3 text-left focus-visible:ring-2 focus-visible:ring-leaf-200 [&::-webkit-details-marker]:hidden`}>
+                  <span id="nutrition-goal-value" className="min-w-0 break-words">{selectedNutritionGoal?.label ?? 'Chọn mục tiêu của bạn'}</span>
+                  <ChevronDown aria-hidden="true" className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
+                </summary>
+                <div id="nutrition-goal-options" className="mt-2 rounded-xl border border-leaf-100 bg-paper p-2">
+                  <fieldset className="m-0 min-w-0 space-y-2 border-0 p-0">
+                    <legend className="sr-only">Chọn mục tiêu dinh dưỡng cá nhân</legend>
+                    <label className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition focus-within:ring-2 focus-within:ring-leaf-200 ${!form.nutritionGoal ? 'border-leaf-300 bg-leaf-50' : 'border-transparent hover:bg-raised'}`}>
+                      <input className="mt-1 shrink-0 accent-leaf-700" type="radio" name="nutritionGoal" value="" checked={!form.nutritionGoal} onChange={(event) => {
+                        setField('nutritionGoal', '');
+                        const details = event.currentTarget.closest('details');
+                        if (details) { details.open = false; details.querySelector('summary')?.focus(); }
+                      }} />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-bold text-ink">Chưa chọn mục tiêu</span>
+                        <span className="mt-1 block text-xs leading-5 text-ink-muted">Bạn có thể để trống mục tiêu này.</span>
+                      </span>
+                    </label>
+                    {nutritionGoals.map((goal) => <label key={goal.value} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition focus-within:ring-2 focus-within:ring-leaf-200 ${form.nutritionGoal === goal.value ? 'border-leaf-300 bg-leaf-50' : 'border-transparent hover:bg-raised'}`}>
+                      <input className="mt-1 shrink-0 accent-leaf-700" type="radio" name="nutritionGoal" value={goal.value} checked={form.nutritionGoal === goal.value} onChange={(event) => {
+                        setField('nutritionGoal', goal.value);
+                        const details = event.currentTarget.closest('details');
+                        if (details) { details.open = false; details.querySelector('summary')?.focus(); }
+                      }} />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-bold text-ink">{goal.label}</span>
+                        <span className="mt-1 block text-xs leading-5 text-ink-muted">{goal.description}</span>
+                      </span>
+                    </label>)}
+                  </fieldset>
+                </div>
+              </details>
+            </fieldset>
           </div>
 
           <div className="rounded-xl border border-leaf-100 bg-leaf-50/40 p-4 text-sm leading-6 text-ink-muted">

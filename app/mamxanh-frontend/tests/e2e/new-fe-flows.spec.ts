@@ -72,7 +72,7 @@ async function mockNutritionEligibility(page: Page, initial: 'NOT_CONFIRMED' | '
   return confirmations;
 }
 
-async function prepareMockAuthenticatedNutritionPage(page: Page) {
+async function prepareMockAuthenticatedNutritionPage(page: Page, profileResponse = emptyNutritionResponse) {
   await page.addInitScript(() => { window.__nutritionE2eAccessToken = 'test-only-token'; });
   await page.route('**/api/v1/nutrition/profile**', async (route) => {
     const path = new URL(route.request().url()).pathname;
@@ -82,7 +82,7 @@ async function prepareMockAuthenticatedNutritionPage(page: Page) {
     } else if (method === 'PUT') {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(savedNutritionResponse) });
     } else {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(emptyNutritionResponse) });
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(profileResponse) });
     }
   });
   const confirmations = await mockNutritionEligibility(page);
@@ -96,9 +96,74 @@ async function fillEligibleNutritionProfile(page: Page) {
   await page.getByLabel('Chiều cao *').fill(String(exampleProfile.heightCm));
   await page.getByLabel('Cân nặng *').fill(String(exampleProfile.weightKg));
   await page.getByLabel('Mức độ vận động *').selectOption(exampleProfile.activityLevel);
-  await page.getByLabel('Mục tiêu dinh dưỡng chung (không bắt buộc)').selectOption(exampleProfile.nutritionGoal);
+  await selectNutritionGoal(page, 'Duy trì cân nặng');
   await page.getByRole('checkbox').check();
 }
+
+async function selectNutritionGoal(page: Page, label: string) {
+  await page.locator('#nutrition-goal-trigger').click();
+  await page.getByRole('radio', { name: new RegExp(label) }).check();
+}
+
+test('nutrition goal dropdown explains each optional choice and restores a saved goal', async ({ page }) => {
+  await prepareMockAuthenticatedNutritionPage(page, savedNutritionResponse);
+
+  const trigger = page.locator('#nutrition-goal-trigger');
+  await expect(page.getByText('Mục tiêu dinh dưỡng cá nhân (không bắt buộc)')).toBeVisible();
+  await expect(page.getByText('Lựa chọn mục tiêu phù hợp để chúng tôi đề xuất thực đơn dành riêng cho bạn.')).toBeVisible();
+  await expect(trigger).toContainText('Duy trì cân nặng');
+  await trigger.click();
+
+  for (const description of [
+    'Duy trì cân nặng hiện tại, cân bằng năng lượng nạp vào và tiêu hao.',
+    'Giảm cân từ từ thông qua chế độ ăn kiểm soát năng lượng.',
+    'Tăng cân lành mạnh bằng cách bổ sung năng lượng và dưỡng chất.',
+    'Ưu tiên bổ sung chất đạm và năng lượng để phát triển cơ bắp kết hợp tập luyện.',
+    'Ăn uống cân bằng, đa dạng thực phẩm và đảm bảo đầy đủ dưỡng chất.',
+    'Đảm bảo năng lượng, nâng cao hiệu suất tập luyện và hỗ trợ phục hồi cơ thể.',
+  ]) {
+    await expect(page.getByText(description, { exact: true })).toBeVisible();
+  }
+
+  await expect(page.getByRole('radio', { name: /Duy trì cân nặng/ })).toBeChecked();
+  await page.getByRole('radio', { name: /Chưa chọn mục tiêu/ }).check();
+  await expect(trigger).toContainText('Chọn mục tiêu của bạn');
+
+  let previousMenuBackground = '';
+  for (const view of [{ theme: 'dark', width: 390 }, { theme: 'light', width: 1280 }] as const) {
+    await page.setViewportSize({ width: view.width, height: 844 });
+    await page.evaluate((theme) => { document.documentElement.dataset.theme = theme; }, view.theme);
+    await trigger.click();
+    const layout = await page.locator('#nutrition-goal-options').evaluate((element) => {
+      const panel = element.getBoundingClientRect();
+      const row = element.querySelectorAll('label')[1];
+      const content = row.querySelector(':scope > span');
+      const [title, description] = content.querySelectorAll(':scope > span');
+      return {
+        viewportWidth: window.innerWidth,
+        panelLeft: panel.left,
+        panelRight: panel.right,
+        panelWidth: element.clientWidth,
+        panelScrollWidth: element.scrollWidth,
+        rowRight: row.getBoundingClientRect().right,
+        titleBottom: title.getBoundingClientRect().bottom,
+        descriptionTop: description.getBoundingClientRect().top,
+        titleFontSize: Number.parseFloat(getComputedStyle(title).fontSize),
+        descriptionFontSize: Number.parseFloat(getComputedStyle(description).fontSize),
+        background: getComputedStyle(element).backgroundColor,
+      };
+    });
+    expect(layout.panelLeft).toBeGreaterThanOrEqual(0);
+    expect(layout.panelRight).toBeLessThanOrEqual(layout.viewportWidth);
+    expect(layout.rowRight).toBeLessThanOrEqual(layout.panelRight);
+    expect(layout.panelScrollWidth).toBeLessThanOrEqual(layout.panelWidth);
+    expect(layout.titleBottom).toBeLessThanOrEqual(layout.descriptionTop);
+    expect(layout.titleFontSize).toBeGreaterThan(layout.descriptionFontSize);
+    if (previousMenuBackground) expect(layout.background).not.toBe(previousMenuBackground);
+    previousMenuBackground = layout.background;
+    await trigger.click();
+  }
+});
 
 test('meal serving selector accepts half portions', async ({ page }) => {
   await page.goto('/ke-hoach?demo=true');
@@ -313,7 +378,7 @@ test('nutrition profile hides all metrics for underage and excluded declarations
   await page.getByLabel('Chiều cao *').fill('160');
   await page.getByLabel('Cân nặng *').fill('55');
   await page.getByLabel('Mức độ vận động *').selectOption('SEDENTARY');
-  await page.getByLabel('Mục tiêu dinh dưỡng chung (không bắt buộc)').selectOption('MAINTAIN_WEIGHT');
+  await selectNutritionGoal(page, 'Duy trì cân nặng');
   await page.getByRole('checkbox').check();
 
   await expect(page.getByText('Ứng dụng hiện không hỗ trợ hồ sơ dinh dưỡng cho người dưới 18 tuổi.')).toBeVisible();

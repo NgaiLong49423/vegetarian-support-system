@@ -235,6 +235,11 @@ public class NutritionProfileService {
 
     private NutritionProfileResponse response(NutritionProfileEntity user, int age) {
         var bmi = user.getNutritionBmi();
+        // Keep using the saved BMI for normal profile reads. Older seeded or migrated rows may have
+        // valid measurements and consent but no persisted BMI, so recover that inconsistent state.
+        if (bmi == null) {
+            bmi = calculations.bmi(user.getWeightKg(), user.getHeightCm());
+        }
         var energy = calculations.energyKcal(age, user.getBiologicalSex(), user.getHeightCm(), user.getWeightKg(), user.getActivityLevel());
         var profile = new Profile(user.getDateOfBirth(), user.getBiologicalSex(), user.getHeightCm(), user.getWeightKg(), user.getActivityLevel(), user.getNutritionGoal());
         var results = new Results(bmi, calculations.bmiCategory(bmi), energy,
