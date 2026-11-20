@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M04
 > **File:** `docs/requirements/use-cases/recipe-discovery-and-classification.md`
-> **Version:** v2.10.0
+> **Version:** v2.10.1
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-30
+> **Last Updated:** 2026-11-21
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -409,7 +409,7 @@ Kết quả gợi ý tham chiếu tới Recipe Post công khai thực tế; hệ
 
 #### Traceability
 - **Parent FR:** [FR-34](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34).
-- **Related FR:** [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) (quyền model/quota theo gói, không khóa capability); [FR-31](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-31) (hồ sơ tối thiểu).
+- **Related FR:** [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) (catalog model Member dùng chung, quota theo gói, không khóa capability); [FR-31](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-31) (hồ sơ tối thiểu).
 - **Relevant BR:** [BR-31](../srs/BUSINESS-RULES.md#br-31) (thiếu thông tin thì chặn cá nhân hóa); [BR-38](../srs/BUSINESS-RULES.md#br-38) (AI chỉ dùng công thức công khai có sẵn).
 - **Relevant NFR:** [NFR-03](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03) (thời gian phản hồi AI); [NFR-18](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-18) (provider fallback); [NFR-25](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-25) (chất lượng và tuân thủ nội dung AI).
 
@@ -452,7 +452,7 @@ Preview được hiển thị; chưa có thay đổi nào được ghi vào Meal
 
 #### Traceability
 - **Parent FR:** [FR-34](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34).
-- **Related FR:** [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) (model/quota theo gói, không khóa capability); [FR-31](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-31) (hồ sơ tối thiểu); [FR-09](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) (đích áp dụng sau xác nhận).
+- **Related FR:** [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) (catalog model Member dùng chung, quota theo gói, không khóa capability); [FR-31](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-31) (hồ sơ tối thiểu); [FR-09](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) (đích áp dụng sau xác nhận).
 - **Relevant BR:** [BR-31](../srs/BUSINESS-RULES.md#br-31) (chặn khi thiếu hồ sơ); [BR-38](../srs/BUSINESS-RULES.md#br-38) (chỉ dùng công thức công khai).
 - **Relevant NFR:** [NFR-03](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03); [NFR-18](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-18); [NFR-25](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-25).
 
@@ -604,7 +604,7 @@ Khi yêu cầu hợp lệ và Gemini thành công, kết quả xuất hiện tro
 #### Traceability
 - **Parent FR:** [FR-47](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-47).
 - **Related FR:** [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) (model/quota); [FR-11](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-11) (telemetry); [FR-13](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13) (thông tin gói).
-- **Relevant BR:** [BR-02](../srs/BUSINESS-RULES.md#br-02) (model/quota theo gói); [BR-03](../srs/BUSINESS-RULES.md#br-03) (kiểm tra quyền/model/ngân sách trước khi gọi); [BR-04](../srs/BUSINESS-RULES.md#br-04) (provider error/telemetry); [BR-05](../srs/BUSINESS-RULES.md#br-05) (giới hạn dữ liệu riêng tư Guest).
+- **Relevant BR:** [BR-02](../srs/BUSINESS-RULES.md#br-02) (quota theo gói, catalog model Member dùng chung); [BR-03](../srs/BUSINESS-RULES.md#br-03) (kiểm tra quyền/model/ngân sách trước khi gọi); [BR-04](../srs/BUSINESS-RULES.md#br-04) (provider error/telemetry); [BR-05](../srs/BUSINESS-RULES.md#br-05) (giới hạn dữ liệu riêng tư Guest).
 - **Relevant NFR:** [NFR-03](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03) (thời gian phản hồi AI); [NFR-18](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-18) (provider fallback).
 
 #### Acceptance Coverage

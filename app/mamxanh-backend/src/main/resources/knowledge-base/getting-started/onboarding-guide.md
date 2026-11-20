@@ -18,7 +18,7 @@ source_files:
   - app/mamxanh-frontend/src/pages/DietaryPreferencesPage.tsx
   - app/mamxanh-backend/src/main/java/tech/mamxanh/nutrition/controller/DietaryPreferenceController.java
 implementation_status: verified
-last_verified: 2026-11-01
+last_verified: 2026-11-21
 ---
 
 # Khởi tạo sở thích ăn uống ban đầu (Onboarding)
@@ -60,9 +60,10 @@ Những dữ liệu này giúp hệ thống và Trợ lý AI:
 
 ## Những điều cần lưu ý
 
-1. **Điều kiện để sử dụng AI gợi ý cá nhân hóa:**
+1. **Điều kiện để sử dụng AI gợi ý món theo hồ sơ sở thích:**
    - Nếu bạn bỏ qua Onboarding, bạn vẫn có thể xem công thức, tìm kiếm, tự thêm món vào lịch ăn và trò chuyện hỏi đáp thông thường với AI.
-   - Tuy nhiên, trước khi dùng các chức năng **AI gợi ý món theo sở thích** hoặc **AI lập thực đơn tuần cá nhân hóa**, hệ thống bắt buộc bạn phải hoàn thành đầy đủ 3 nhóm thông tin tối thiểu kể trên. Nếu thiếu thông tin, AI sẽ nhắc bạn vào bổ sung sở thích trước khi tiếp tục.
+   - Luồng AI gợi ý món cá nhân hóa theo hồ sơ yêu cầu bạn xác nhận đủ 3 nhóm thông tin tối thiểu kể trên. Nếu thiếu, hệ thống sẽ hướng dẫn bạn cập nhật hồ sơ trước khi gửi yêu cầu tới AI.
+   - Luồng AI lập thực đơn dinh dưỡng cần hồ sơ dinh dưỡng hợp lệ và xác nhận đủ điều kiện sử dụng. Bạn không bắt buộc hoàn tất Onboarding sở thích trước luồng này. Hệ thống vẫn áp dụng các ràng buộc ăn uống bạn đã khai báo, còn thông tin chưa khai báo được giữ là chưa biết.
 2. **Không mặc định để trống là "Không có":**
    - Để tránh rủi ro dị ứng, hệ thống không tự hiểu việc bỏ trống là bạn không kiêng gì. Bạn phải chủ động xác nhận "Không có" nếu không có mục kiêng.
 3. **Cập nhật sở thích bất cứ lúc nào:**

@@ -17,7 +17,6 @@ import tech.mamxanh.recipe.dto.response.AiChatResponse;
 import tech.mamxanh.recipe.dto.response.AiChatStreamEvent;
 import tech.mamxanh.subscription.service.AiChatSettingsService;
 import tech.mamxanh.subscription.service.AiTokenQuotaService;
-import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Clock;
@@ -53,7 +52,6 @@ public class AiChatService {
     @org.springframework.beans.factory.annotation.Autowired(required = false) private java.time.Clock clock;
     @org.springframework.beans.factory.annotation.Autowired(required = false) private tech.mamxanh.subscription.service.AiTokenQuotaService aiQuota;
     @org.springframework.beans.factory.annotation.Autowired(required = false) private tech.mamxanh.subscription.service.AiChatSettingsService chatSettings;
-    @org.springframework.beans.factory.annotation.Autowired(required = false) private tech.mamxanh.subscription.service.SubscriptionEntitlementService entitlements;
 
     public void setOrchestratorMode(String orchestratorMode) {
         this.orchestratorMode = orchestratorMode;
@@ -99,7 +97,7 @@ public class AiChatService {
 
     public AiChatService(CurrentUserService users, RecipeService recipes,
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
-            ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
+            ApplicationEventPublisher events, Clock clock,
             AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings,
             AiAssistantExecutionService assistantExecution,
             AdkShoppingPilotService adkShoppingPilot,
@@ -113,7 +111,7 @@ public class AiChatService {
 
     public AiChatService(CurrentUserService users, RecipeService recipes,
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
-            ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
+            ApplicationEventPublisher events, Clock clock,
             AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings,
             AiAssistantExecutionService assistantExecution,
             AdkShoppingPilotService adkShoppingPilot) {
@@ -122,14 +120,14 @@ public class AiChatService {
 
     public AiChatService(CurrentUserService users, RecipeService recipes,
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
-            ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
+            ApplicationEventPublisher events, Clock clock,
             AiTokenQuotaService aiQuota, AiChatSettingsService chatSettings) {
         this(users, recipes, null, null, null, "ADK", true);
     }
 
     public AiChatService(CurrentUserService users, RecipeService recipes,
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
-            ApplicationEventPublisher events, Clock clock, SubscriptionEntitlementService entitlements,
+            ApplicationEventPublisher events, Clock clock,
             AiTokenQuotaService aiQuota) {
         this(users, recipes, null, null, null, "ADK", true);
     }
@@ -286,25 +284,23 @@ public class AiChatService {
     }
 
     private AiChatResponse checkWorkflowRedirect(AiChatRequest request, Long userId) {
-        if (request.question() == null || entitlements == null) return null;
+        if (request.question() == null) return null;
         String q = normalize(request.question());
         boolean isMenu = (q.contains("thuc don") || q.contains("menu") || q.contains("ke hoach an") || q.contains("lich an"))
                 && (q.contains("tuan") || q.contains("7 ngay") || q.contains("bay ngay") || q.contains("dinh duong ca nhan") || q.contains("theo dinh duong"));
         if (isMenu) {
             if (userId == null) throw new AppException(ErrorCode.UNAUTHENTICATED,
-                    "Bạn cần đăng nhập để sử dụng chức năng AI nâng cao và kiểm tra gói tài khoản.");
-            entitlements.requirePlusOrPro(userId);
+                    "Bạn cần đăng nhập để lập thực đơn cá nhân hóa.");
             return new AiChatResponse(request.contextType(), request.recipeId(),
-                    "Bạn có thể lập thực đơn tuần trong Lịch ăn, mục Dành cho bạn. Hệ thống sẽ kiểm tra hồ sơ và các điều kiện ăn uống; bạn xem trước rồi chủ động xác nhận áp dụng.",
+                    "Bạn có thể lập thực đơn tuần trong Lịch ăn, mục Dành cho bạn. Hệ thống sẽ kiểm tra hồ sơ và các điều kiện ăn uống. Bạn xem trước rồi chủ động xác nhận áp dụng.",
                     java.util.List.of(), "/ke-hoach?view=for-you");
         }
         boolean isAuthoring = (q.contains("bai dang") || q.contains("bai viet") || q.contains("bai cong thuc") || q.contains("cong thuc"))
                 && (q.contains("viet") || q.contains("soan") || q.contains("tao") || q.contains("mo ta"));
         if (isAuthoring && (q.contains("bai dang") || q.contains("bai viet") || q.contains("bai cong thuc"))) {
             if (userId == null) throw new AppException(ErrorCode.UNAUTHENTICATED,
-                    "Bạn cần đăng nhập để sử dụng chức năng AI nâng cao và kiểm tra gói tài khoản.");
+                    "Bạn cần đăng nhập bằng tài khoản Chuyên gia để soạn bài công thức.");
             users.requireActiveExpert();
-            entitlements.requirePro(userId);
             return new AiChatResponse(request.contextType(), request.recipeId(),
                     "Bạn hãy mở biểu mẫu soạn công thức, chọn nguyên liệu và dùng Trợ lý AI để gợi ý mô tả hoặc bước làm. Nội dung vẫn cần bạn kiểm tra và chủ động công khai.",
                     java.util.List.of(), "/dang-cong-thuc");

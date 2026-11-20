@@ -44,7 +44,6 @@ import tech.mamxanh.shopping.dto.request.CreateShoppingItemRequest;
 import tech.mamxanh.shopping.dto.request.RenameShoppingListRequest;
 import tech.mamxanh.shopping.dto.response.ShoppingListResponse;
 import tech.mamxanh.shopping.service.ShoppingListService;
-import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
@@ -85,7 +84,6 @@ class AiAssistantToolIntegrationTest {
     @Mock private ShoppingListService shoppingLists;
     @Mock private ApprovedAiKnowledgeRetriever knowledge;
     @Mock private CurrentUserService users;
-    @Mock private SubscriptionEntitlementService entitlements;
 
     private Validator validator;
     private ObjectMapper mapper;
@@ -98,7 +96,7 @@ class AiAssistantToolIntegrationTest {
         registry = new AiAssistantToolRegistry(
                 recipePosts, recipeService, ingredientCatalog, reactions, comments,
                 follows, profiles, dietaryPreferences, nutritionProfiles, mealPlanReads,
-                mealPlans, aiMenus, shoppingLists, knowledge, validator, mapper, users, entitlements
+                mealPlans, aiMenus, shoppingLists, knowledge, validator, mapper, users
         );
     }
 

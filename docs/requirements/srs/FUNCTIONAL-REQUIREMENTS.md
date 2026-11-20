@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.61.0
+> **Version:** v2.61.3
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-11-05
+> **Last Updated:** 2026-11-21
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -733,7 +733,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 ---
 
 <a id="fr-10"></a>
-### FR-10 — Quyền sử dụng và lựa chọn Gemini Model theo gói
+### FR-10 — Quyền sử dụng AI và lựa chọn model Gemini chung cho Member
 
 - **Mã yêu cầu:** FR-10
 - **Module:** M06
@@ -745,7 +745,7 @@ Hệ thống cho phép Guest và Member sử dụng chức năng AI theo quyền
 #### Actors và Use Cases
 - Primary Actor: Guest, Member (Free/Plus/Pro).
 - `UC-10.1`: Kiểm tra quyền chức năng, model và ngân sách trước khi gọi Gemini.
-- `UC-10.2`: Chọn model Gemini khả dụng theo gói.
+- `UC-10.2`: Chọn model Gemini trong catalog dùng chung.
 
 #### Phân quyền và ràng buộc
 - Free/Plus/Pro dùng chung catalog Gemini đang bật và model mặc định hợp lệ. Guest giữ các giới hạn Guest và không lưu preference; Admin chỉ thêm model đã được xác minh. Chưa hỗ trợ model ngoài Gemini.
@@ -760,7 +760,7 @@ Hệ thống cho phép Guest và Member sử dụng chức năng AI theo quyền
 - **AC-10.4:** Thiếu quyền dữ liệu/chức năng hoặc consent thì không gửi dữ liệu tương ứng tới Gemini; mọi luồng dùng model đã được Backend xác thực và không đưa Gemini API key ra Frontend.
 - **AC-10.5:** Khi model lỗi/không hỗ trợ, hệ thống báo lý do và đề xuất model hợp lệ; chỉ retry đúng một lần sau khi người dùng đồng ý, không đổi preference tài khoản.
 - **AC-10.6:** Model picker nằm trong chatbox dùng chung; Guest không lưu preference, Member preference được lưu theo tài khoản và khôi phục khi đăng nhập lại.
-- **AC-10.7:** Preference chỉ đọc/sửa cho tài khoản hiện tại; Guest dùng default của cấu hình Free (pilot là Flash-Lite) và Backend không nhận account ID do client chỉ định.
+- **AC-10.7:** Preference chỉ đọc/sửa cho tài khoản hiện tại; Guest dùng model mặc định chung nếu model đó được phép cho Guest và Backend không nhận account ID do client chỉ định.
 - **AC-10.8:** Member có thể chọn và lưu model preference cho mọi chức năng AI được phép; preference được xác thực lại theo catalog đang bật trước mỗi provider call.
 
 ---
@@ -866,7 +866,7 @@ Hệ thống cho phép Guest và Member sử dụng chức năng AI theo quyền
 #### Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
   - [BR-01](BUSINESS-RULES.md#br-01): Quyền sử dụng AI Chat cho Guest và Member Free.
-  - [BR-02](BUSINESS-RULES.md#br-02): Hạn mức token và quyền chọn Gemini Model theo gói.
+  - [BR-02](BUSINESS-RULES.md#br-02): Hạn mức token theo gói và danh mục Gemini dùng chung.
   - [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest.
 - **Yêu cầu phi chức năng liên quan:**
   - [NFR-05](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-05): Khả năng chịu tải đồng thời của hệ thống.
@@ -1508,7 +1508,7 @@ Hệ thống cho phép Guest và Member sử dụng chức năng AI theo quyền
 #### Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
   - [BR-01](BUSINESS-RULES.md#br-01): Quyền sử dụng AI Chat cho Guest và Member Free.
-  - [BR-02](BUSINESS-RULES.md#br-02): Hạn mức token và quyền chọn Gemini Model theo gói.
+  - [BR-02](BUSINESS-RULES.md#br-02): Hạn mức token theo gói và danh mục Gemini dùng chung.
   - [BR-03](BUSINESS-RULES.md#br-03): Xác thực quyền tính năng trước khi gọi dịch vụ AI.
   - [BR-04](BUSINESS-RULES.md#br-04): Xử lý lỗi provider, timeout AI và lưu trữ telemetry.
   - [BR-06](BUSINESS-RULES.md#br-06): Bảo mật API Key của AI Provider.
@@ -2057,7 +2057,7 @@ Tối ưu hóa quy trình tiếp nhận thông tin phản ánh; chống hành vi
 
 - **Mã yêu cầu:** FR-31
 - **Module:** M02, M05, M06
-- **Tóm tắt yêu cầu:** Sau lần xác thực thành công đầu tiên, hệ thống mời Member vừa đăng ký thực hiện bảng câu hỏi Onboarding một lần; lời mời không tự xuất hiện lại sau Skip hoặc ở các lần đăng nhập sau, nhưng Member có thể mở mục sở thích ăn uống trong Cài đặt để hoàn tất/cập nhật hồ sơ. Tài khoản đã tồn tại không tự động bị hỏi. Skip không khóa tính năng thông thường. Trước khi gọi AI gợi ý món hoặc tạo thực đơn cá nhân hóa, hồ sơ phải hoàn tất ba nhóm thông tin tối thiểu (loại ăn chay, nguyên liệu cần tránh do dị ứng/kiêng, món hoặc nguyên liệu không thích); chặn gọi Gemini khi thiếu thông tin; không áp dụng quota lượt/ngày.
+- **Tóm tắt yêu cầu:** Sau lần xác thực thành công đầu tiên, hệ thống mời Member vừa đăng ký thực hiện bảng câu hỏi Onboarding một lần; lời mời không tự xuất hiện lại sau Skip hoặc ở các lần đăng nhập sau, nhưng Member có thể mở mục sở thích ăn uống trong Cài đặt để hoàn tất/cập nhật hồ sơ. Tài khoản đã tồn tại không tự động bị hỏi. Skip không khóa tính năng thông thường. Trước khi gọi AI gợi ý món cá nhân hóa theo hồ sơ trong các luồng FR-34, ba nhóm thông tin tối thiểu phải được xác nhận gồm loại ăn chay, nguyên liệu cần tránh do dị ứng/kiêng, món hoặc nguyên liệu không thích. Nếu thiếu dữ liệu bắt buộc, Backend chặn Gemini. FR-36 là ngoại lệ được định nghĩa riêng, hồ sơ sở thích có thể chưa hoàn tất nhưng hồ sơ dinh dưỡng hợp lệ và điều kiện FR-38 vẫn bắt buộc. Không áp dụng quota theo số lượt/ngày.
 
 - **Use Case detail:** [Open interaction flows](../use-cases/identity-and-access.md#fr-31).
 
@@ -2086,7 +2086,7 @@ Thu thập và chuẩn hóa dữ liệu sở thích, thói quen và các ràng b
   - `US-31.2`: Là một thành viên mới, tôi muốn có nút "Bỏ qua" để vào ngay ứng dụng khám phá công thức mà không bị ép buộc điền thông tin ngay lập tức.
   - `US-31.3`: Là một thành viên chưa hoàn thành Onboarding, tôi muốn vẫn sử dụng được toàn bộ các tính năng thông thường (tìm kiếm, xem bài, lưu công thức, lập lịch ăn thủ công, đăng bài, bình luận, hỏi đáp AI cơ bản) mà không bị khóa tài khoản.
   - `US-31.4`: Là một thành viên, tôi muốn vào phần Cài đặt tài khoản để cập nhật lại loại ăn chay hoặc danh sách dị ứng bất cứ khi nào có thay đổi.
-  - `US-31.5`: Là một thành viên, khi tôi yêu cầu AI gợi ý món hoặc tạo thực đơn cá nhân hóa mà chưa hoàn tất 3 thông tin tối thiểu, tôi muốn hệ thống giải thích rõ lý do, hướng dẫn tôi điền thông tin và không gọi Gemini khi thông tin chưa đầy đủ.
+  - `US-31.5`: Là một thành viên, khi tôi yêu cầu AI gợi ý món cá nhân hóa trong luồng FR-34 mà chưa hoàn tất 3 thông tin tối thiểu, tôi muốn hệ thống giải thích rõ lý do, hướng dẫn tôi điền thông tin và không gọi Gemini. Với thực đơn dinh dưỡng FR-36, hồ sơ sở thích chưa hoàn tất không tự chặn yêu cầu nếu hồ sơ dinh dưỡng và điều kiện FR-38 hợp lệ.
 
 #### Quy tắc phân quyền và bảo mật (Permissions & Security)
 - Khách vãng lai (Guest) không có hồ sơ cá nhân và không thể gọi AI cá nhân hóa (BR-05).
@@ -2123,20 +2123,20 @@ Thu thập và chuẩn hóa dữ liệu sở thích, thói quen và các ràng b
   - **When:** Member nhấn nút "Bỏ qua" (Skip).
   - **Then:** Hệ thống ghi nhận trạng thái chưa hoàn tất Onboarding; Member vẫn có thể thực hiện tìm kiếm bài viết, lưu công thức, xếp lịch ăn thủ công và bình luận; riêng Chuyên gia vẫn có thể tạo Recipe Post bình thường mà không bị ngăn cản (BR-30).
 
-- **AC-31.4 — Chặn gọi AI cá nhân hóa khi chưa chọn loại ăn chay:**
+- **AC-31.4 — Chặn luồng FR-34 khi chưa chọn loại ăn chay:**
   - **Given:** Member chưa chọn loại ăn chay trong hồ sơ sở thích và có quyền nghiệp vụ sử dụng tính năng tương ứng.
-  - **When:** Member nhấn yêu cầu "AI gợi ý món cho tôi" hoặc "AI tạo thực đơn tuần".
-  - **Then:** Hệ thống kiểm tra và chặn yêu cầu; tuyệt đối KHÔNG gửi yêu cầu tới dịch vụ AI; hệ thống hiển thị thông báo yêu cầu chọn loại ăn chay trước (BR-31).
+  - **When:** Member nhấn yêu cầu gợi ý món cá nhân hóa theo hồ sơ trong luồng FR-34.
+  - **Then:** Hệ thống kiểm tra và chặn yêu cầu; tuyệt đối KHÔNG gửi yêu cầu tới dịch vụ AI; hệ thống hiển thị thông báo yêu cầu chọn loại ăn chay trước (BR-31). Điều kiện của thực đơn dinh dưỡng FR-36 được xác định riêng tại FR-36 và BR-31.
 
 - **AC-31.5 — Chặn gọi AI cá nhân hóa khi chưa xác nhận thông tin dị ứng/kiêng cử:**
   - **Given:** Member đã chọn loại ăn chay nhưng chưa khai báo danh sách dị ứng và cũng chưa tích xác nhận "Không có dị ứng/kiêng cử".
-  - **When:** Member nhấn yêu cầu chức năng AI cá nhân hóa.
-  - **Then:** Hệ thống kiểm tra và chặn yêu cầu; tuyệt đối KHÔNG gửi yêu cầu tới dịch vụ AI; hệ thống thông báo yêu cầu xác nhận thông tin dị ứng trước (BR-31).
+  - **When:** Member nhấn yêu cầu gợi ý món cá nhân hóa theo hồ sơ trong luồng FR-34.
+  - **Then:** Hệ thống kiểm tra và chặn yêu cầu; tuyệt đối KHÔNG gửi yêu cầu tới dịch vụ AI; hệ thống thông báo yêu cầu xác nhận thông tin dị ứng trước (BR-31). Điều kiện của thực đơn dinh dưỡng FR-36 được xác định riêng tại FR-36 và BR-31.
 
 - **AC-31.6 — Chặn gọi AI cá nhân hóa khi chưa xác nhận món hoặc nguyên liệu không thích:**
   - **Given:** Member đã chọn loại ăn chay và xác nhận dị ứng, nhưng chưa khai báo món không thích và chưa tích xác nhận "Không có món không thích".
-  - **When:** Member nhấn yêu cầu chức năng AI cá nhân hóa.
-  - **Then:** Hệ thống kiểm tra và chặn yêu cầu; tuyệt đối KHÔNG gửi yêu cầu tới dịch vụ AI; hệ thống thông báo yêu cầu xác nhận thông tin món không thích trước (BR-31).
+  - **When:** Member nhấn yêu cầu gợi ý món cá nhân hóa theo hồ sơ trong luồng FR-34.
+  - **Then:** Hệ thống kiểm tra và chặn yêu cầu; tuyệt đối KHÔNG gửi yêu cầu tới dịch vụ AI; hệ thống thông báo yêu cầu xác nhận thông tin món không thích trước (BR-31). Điều kiện của thực đơn dinh dưỡng FR-36 được xác định riêng tại FR-36 và BR-31.
 
 - **AC-31.7 — Từ chối lưu hồ sơ khi để trống trường dị ứng mà không tích xác nhận "Không có":**
   - **Given:** Member đang ở màn hình Cập nhật sở thích ăn uống.
@@ -3147,7 +3147,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 #### Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
   - [BR-01](BUSINESS-RULES.md#br-01): Quyền sử dụng AI Chat cho Guest và Member Free.
-  - [BR-02](BUSINESS-RULES.md#br-02): Hạn mức token và quyền chọn Gemini Model theo gói.
+  - [BR-02](BUSINESS-RULES.md#br-02): Hạn mức token theo gói và danh mục Gemini dùng chung.
   - [BR-03](BUSINESS-RULES.md#br-03): Xác thực quyền tính năng trước khi gọi dịch vụ AI.
   - [BR-04](BUSINESS-RULES.md#br-04): Xử lý lỗi provider, timeout AI và lưu trữ telemetry.
   - [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest.
@@ -3175,7 +3175,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **AC-47.4 (Xác thực quyền dữ liệu, model và ngân sách):**
   - *Given* Guest hoặc Member chủ động yêu cầu AI gợi ý trên bài công khai,
   - *When* Backend kiểm tra access/model/quota trước Gemini,
-  - *Then* yêu cầu được gọi nếu đủ điều kiện; nếu thiếu budget thì thông báo nạp/đợi quota, Guest dùng model theo cấu hình Free (pilot mặc định Flash-Lite) và không truy cập dữ liệu riêng tư. Free không bị chặn chỉ vì hạng gói.
+  - *Then* yêu cầu được gọi nếu đủ điều kiện; nếu thiếu budget thì thông báo nạp/đợi quota, Guest chỉ dùng model được phép theo cấu hình Guest và không truy cập dữ liệu riêng tư. Free không bị chặn chỉ vì hạng gói.
 
 ---
 
@@ -3377,7 +3377,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 #### Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
   - [BR-01](BUSINESS-RULES.md#br-01): Quyền sử dụng AI Chat cho Guest và Member Free.
-  - [BR-02](BUSINESS-RULES.md#br-02): Hạn mức token và quyền chọn Gemini Model theo gói.
+  - [BR-02](BUSINESS-RULES.md#br-02): Hạn mức token theo gói và danh mục Gemini dùng chung.
   - [BR-03](BUSINESS-RULES.md#br-03): Xác thực quyền tính năng trước khi gọi dịch vụ AI.
   - [BR-04](BUSINESS-RULES.md#br-04): Xử lý lỗi provider, timeout AI và lưu trữ telemetry.
   - [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest (không lưu lịch sử theo tài khoản).
@@ -4056,7 +4056,7 @@ Trang này là cách duyệt trực tiếp từ điển nguyên liệu hiện c�
   - AC-66.5: AI chỉ mở trang mua gói/nạp và hướng dẫn trang bảo mật tài khoản; không tự thanh toán, không nhập bí mật.
   - AC-66.6: Personal data chỉ gửi tới Gemini sau consent; consent có hiệu lực trong hội thoại đến hết session/thu hồi và xin lại khi đổi loại dữ liệu, mục đích hoặc bên nhận. Scope Shopping List bao gồm nội dung yêu cầu liên quan, tên, ID và kết quả; mục đích tìm hướng dẫn/điều phối, bên nhận Google Gemini, áp dụng cả trước query embedding có dữ liệu này. Consent tách khỏi confirmation ghi. Thu hồi chặn các lần gửi/bước ghi tiếp theo, hủy pending và loại context nhạy cảm khỏi session.
   - AC-66.7: Tác vụ nhiều bước lỗi hoặc hết ngân sách thì dừng, giữ bước thành công, báo từng bước và hỏi trước khi tiếp tục.
-  - AC-66.8: Model thay thế sau lỗi chỉ được dùng sau khi người dùng đồng ý; model phải được phép theo gói.
+  - AC-66.8: Model thay thế sau lỗi chỉ được dùng sau khi người dùng đồng ý; Member chỉ dùng model trong catalog chung đang bật, còn Guest phải dùng model được phép trong cấu hình Guest.
   - AC-66.9: Không cung cấp công cụ Admin cho AI Assistant; mọi thao tác thực tế tuân theo RBAC, ownership, validation và backend result.
   - AC-66.10: Trong một phiên ngắn hạn, transcript và ngữ cảnh hội thoại được giữ khi đóng/mở khung chat, điều hướng trang và tải lại cùng tab; phiên hết hạn sau thời gian không hoạt động cấu hình (mặc định 30 phút). Người dùng có thể chọn “Cuộc trò chuyện mới” để xóa transcript cùng consent/action đang chờ của phiên và bắt đầu với ngữ cảnh rỗng. Việc này không hoàn tác thao tác nghiệp vụ đã hoàn tất; lịch sử không đồng bộ thành kho hội thoại dài hạn theo tài khoản.
   - AC-66.11: Ngữ cảnh trang và biểu mẫu được chụp theo từng request; Backend xác thực tài nguyên và quyền trước khi dùng. Đề xuất sửa form chỉ áp dụng vào trường được phép khi form identity và revision còn khớp; giao diện gửi acknowledgement và chỉ xác nhận áp dụng sau khi cập nhật thực tế.

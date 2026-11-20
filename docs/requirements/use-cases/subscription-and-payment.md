@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M08
 > **File:** `docs/requirements/use-cases/subscription-and-payment.md`
-> **Version:** v2.6.0
+> **Version:** v2.6.1
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-31
+> **Last Updated:** 2026-11-21
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -53,7 +53,7 @@ Người dùng đã xem được giá và quyền lợi để so sánh các gói
 
 #### Traceability
 - **Parent FR:** [FR-13](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13).
-- **Relevant BR:** [BR-01](../srs/BUSINESS-RULES.md#br-01) (quyền AI theo capability); [BR-02](../srs/BUSINESS-RULES.md#br-02) (quota và model theo gói).
+- **Relevant BR:** [BR-01](../srs/BUSINESS-RULES.md#br-01) (quyền AI theo capability); [BR-02](../srs/BUSINESS-RULES.md#br-02) (quota theo gói và catalog model Member dùng chung).
 - **Relevant NFR:** [NFR-13](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13) (giao diện tiếng Việt, responsive).
 
 #### Acceptance Coverage

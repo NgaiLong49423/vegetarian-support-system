@@ -31,7 +31,7 @@ public class AiCookingGuideService {
     private static final int MIN_STEPS = 6;
     private static final int MAX_STEPS = 10;
     private static final int MAX_GUIDE_LENGTH = 8000;
-    private static final String AI_NOTICE = "Hướng dẫn bổ trợ do AI tạo từ công thức nguồn. Thời gian hoặc nhiệt độ không có trong bài gốc được ghi rõ là ước tính; hãy quan sát thực phẩm và điều chỉnh phù hợp.";
+    private static final String AI_NOTICE = "Hướng dẫn bổ trợ do AI tạo từ công thức nguồn. Thời gian hoặc nhiệt độ không có trong bài gốc được ghi rõ là ước tính. Hãy quan sát thực phẩm và điều chỉnh phù hợp.";
 
     private final CurrentUserService users;
     private final DietaryPreferenceService preferences;

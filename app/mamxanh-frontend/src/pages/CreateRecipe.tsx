@@ -1,4 +1,3 @@
-import { aiRequiredTier, aiUpgradeMessage, type AiPaidTier } from '../lib/aiUpgrade';
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { AlertCircle, Check, Info, LoaderCircle, Plus, Sparkles, Trash2 } from 'lucide-react';
@@ -121,7 +120,7 @@ function CreateRecipeForm() {
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [aiLoading, setAiLoading] = useState<RecipeAiContentType | null>(null);
-  const [aiError, setAiError] = useState<{ contentType: RecipeAiContentType; message: string; upgradeRequired?: boolean; requiredTier?: AiPaidTier } | null>(null);
+  const [aiError, setAiError] = useState<{ contentType: RecipeAiContentType; message: string } | null>(null);
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [aiNotice, setAiNotice] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -332,9 +331,7 @@ function CreateRecipeForm() {
       else setInstructions(result.content);
     } catch (cause) {
       const error = asApiError(cause);
-      setAiError({ contentType, upgradeRequired: error.code === 'AI_SUBSCRIPTION_REQUIRED', requiredTier: aiRequiredTier(error, 'PRO'), message: error.code === 'AI_SUBSCRIPTION_REQUIRED'
-        ? aiUpgradeMessage(error, 'PRO', 'AI soạn nội dung công thức') + ' Bạn vẫn có thể tự viết và đăng công thức.'
-        : error.code === 'AI_PROVIDER_UNAVAILABLE' || error.code === 'AI_RESPONSE_INVALID'
+      setAiError({ contentType, message: error.code === 'AI_PROVIDER_UNAVAILABLE' || error.code === 'AI_RESPONSE_INVALID'
           ? 'AI hiện không tạo được nội dung hợp lệ. Bạn vẫn có thể tự viết và đăng công thức.'
           : error.message });
     } finally {
@@ -488,7 +485,7 @@ function CreateRecipeForm() {
             </Field>
             <Field label="Mô tả (không bắt buộc, tối đa 2.000 ký tự)" error={errorFor('description')}>
               <textarea aria-label="Mô tả" value={description} onChange={(event) => setDescription(event.target.value)} maxLength={2000} rows={3} placeholder="Giới thiệu ngắn về món ăn" className={`${inputClass} resize-y`} />
-              <RecipeAiAssistance requiredTier={aiError?.requiredTier} upgradeRequired={aiError?.upgradeRequired} contentType="DESCRIPTION" loading={aiLoading} error={aiError?.contentType === 'DESCRIPTION' ? aiError.message : ''} onGenerate={generateWithAi} />
+              <RecipeAiAssistance contentType="DESCRIPTION" loading={aiLoading} error={aiError?.contentType === 'DESCRIPTION' ? aiError.message : ''} onGenerate={generateWithAi} />
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Thể loại món *" error={errorFor('dishCategory')}>
@@ -559,7 +556,7 @@ function CreateRecipeForm() {
             <Field label="Hướng dẫn * (10–5.000 ký tự)" error={errorFor('instructions')}>
               <textarea aria-label="Hướng dẫn * (10–5.000 ký tự)" value={instructions} onChange={(event) => setInstructions(event.target.value)} rows={8} placeholder="Viết hướng dẫn theo cách của bạn, có thể chia theo từng bước hoặc cách nấu chi tiết." className={`${inputClass} resize-y`} />
               <p className="mt-1 text-right text-xs text-ink-muted">{instructions.trim().length}/5.000 ký tự</p>
-              <RecipeAiAssistance requiredTier={aiError?.requiredTier} upgradeRequired={aiError?.upgradeRequired} contentType="INSTRUCTIONS" loading={aiLoading} error={aiError?.contentType === 'INSTRUCTIONS' ? aiError.message : ''} onGenerate={generateWithAi} />
+              <RecipeAiAssistance contentType="INSTRUCTIONS" loading={aiLoading} error={aiError?.contentType === 'INSTRUCTIONS' ? aiError.message : ''} onGenerate={generateWithAi} />
             </Field>
           </Card>
 

@@ -82,7 +82,7 @@ public class AiChatController {
                     + "General context or the latest public RecipePost is loaded server-side. "
                     + "Recipe discovery selects only current public RecipePosts from the Backend catalog; explicitly requested recipe drafts remain chat text only. "
                     + "Legacy conversation history is request-scoped. Orchestration clients may use a bounded Backend session with consent and confirmation; prompts are not persisted. Guest has no account dietary context. "
-                    + "Explicit weekly-menu and recipe-authoring requests are checked for entitlement and routed to their dedicated workflow without calling Gemini. "
+                    + "Explicit weekly-menu and recipe-authoring requests are routed to their dedicated workflow without calling Gemini; the destination enforces its own role, profile and consent requirements. "
                     + "Follow-up recipe searches use current public data; assistant recipe IDs are untrusted exclusion hints only.")
     @ApiResponse(responseCode = "200", description = "AI answer and, when relevant, selected public recipe cards generated.")
     @ApiResponse(responseCode = "400", description = "Invalid question, history, or context fields.")

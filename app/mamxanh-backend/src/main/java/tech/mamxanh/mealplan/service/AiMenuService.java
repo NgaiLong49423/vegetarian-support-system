@@ -21,7 +21,6 @@ import tech.mamxanh.nutrition.service.*;
 import tech.mamxanh.recipe.dto.response.RecipePostResponse;
 import tech.mamxanh.recipe.service.RecipePostService;
 import tech.mamxanh.subscription.service.AiTokenQuotaService;
-import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Clock;
@@ -33,10 +32,9 @@ import java.util.stream.Collectors;
 public class AiMenuService {
     private static final int CANDIDATE_LIMIT = 50;
     private static final List<String> MEALS = List.of("BREAKFAST", "LUNCH", "DINNER");
-    private static final String DISCLAIMER = "Dinh dưỡng là giá trị dự kiến theo dữ liệu công thức; mục tiêu chỉ dùng để ưu tiên món, không phải cam kết kết quả sức khỏe.";
+    private static final String DISCLAIMER = "Dinh dưỡng là giá trị dự kiến theo dữ liệu công thức. Mục tiêu chỉ dùng để ưu tiên món, không phải cam kết kết quả sức khỏe.";
 
     private final CurrentUserService users;
-    private final SubscriptionEntitlementService entitlements;
     private final NutritionProfileService nutritionProfiles;
     private final DietaryPreferenceService dietaryPreferences;
     private final RecipePostService recipes;
@@ -53,7 +51,7 @@ public class AiMenuService {
     private final AiTokenQuotaService aiQuota;
     private final AiMenuOptimizer optimizer = new AiMenuOptimizer();
 
-    public AiMenuService(CurrentUserService users, SubscriptionEntitlementService entitlements,
+    public AiMenuService(CurrentUserService users,
             NutritionProfileService nutritionProfiles, DietaryPreferenceService dietaryPreferences,
             RecipePostService recipes, RecipeNutritionService recipeNutrition,
             IngredientCatalogLookupService ingredientCatalog, IngredientConversionLookupService conversions,
@@ -61,7 +59,6 @@ public class AiMenuService {
             MealPlanRepository plans, MealPlanEntryRepository entries,
             MealPlanReadService readService, AiTokenQuotaService aiQuota) {
         this.users = users;
-        this.entitlements = entitlements;
         this.nutritionProfiles = nutritionProfiles;
         this.dietaryPreferences = dietaryPreferences;
         this.recipes = recipes;

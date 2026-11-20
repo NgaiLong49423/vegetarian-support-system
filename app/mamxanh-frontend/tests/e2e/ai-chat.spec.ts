@@ -359,22 +359,24 @@ test('follow-up chat includes only IDs of recipe cards shown in assistant histor
   expect(requests[1].history[1]).toMatchObject({ speaker: 'ASSISTANT', recommendedRecipeIds: [3] });
 });
 
-for (const tier of ['PLUS', 'PRO'] as const) {
-  test(`advanced chat denial names the server-required ${tier} plan without a futile retry`, async ({ page }) => {
-    await signInAsMember(page);
-    await page.route('**/api/v1/recipes/ai/chat', route => route.fulfill({ status: 403, json: {
-      status: 403, code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: tier, upgradeUrl: '/goi-ai',
-      detail: 'Gói hiện tại chưa hỗ trợ tính năng này.',
-    } }));
+for (const tier of ['FREE', 'PLUS', 'PRO'] as const) {
+  test(`${tier} can route weekly-menu and expert-authoring chat workflows`, async ({ page }) => {
+    await signInAsMember(page, 'EXPERT');
+    await page.route('**/api/v1/recipes/ai/chat', route => {
+      const question = route.request().postDataJSON().question as string;
+      return route.fulfill({ json: { contextType: 'GENERAL', recipeId: null,
+        answer: question.includes('thực đơn') ? 'Mở Lịch ăn.' : 'Mở biểu mẫu soạn công thức.', recommendations: [],
+        workflowUrl: question.includes('thực đơn') ? '/ke-hoach?view=for-you' : '/dang-cong-thuc' } });
+    });
     await page.goto('/trang-chu');
     await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
-    await page.getByLabel('Câu hỏi của bạn').fill(tier === 'PLUS' ? 'Lập thực đơn tuần' : 'Soạn bài đăng công thức');
+    await page.getByLabel('Câu hỏi của bạn').fill('Lập thực đơn tuần 7 ngày');
     await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
-    const alert = page.getByRole('dialog').getByRole('alert');
-    await expect(alert).toContainText(`yêu cầu gói AI ${tier}`);
-    await expect(alert.getByRole('link', { name: `Nâng cấp gói AI ${tier}` })).toHaveAttribute('href', '/goi-ai');
-    await expect(alert).not.toContainText(tier === 'PLUS' ? 'PRO' : 'PLUS');
-    await expect(alert.getByRole('button', { name: 'Thử lại' })).toHaveCount(0);
+    await expect(page).toHaveURL(/\/ke-hoach\?.*view=for-you/);
+    await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+    await page.getByLabel('Câu hỏi của bạn').fill('Viết bài đăng công thức');
+    await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+    await expect(page).toHaveURL(/\/dang-cong-thuc/);
   });
 }
 

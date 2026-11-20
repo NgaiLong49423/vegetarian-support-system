@@ -112,9 +112,10 @@ public class DietaryPreferenceService {
     }
 
     /**
-     * BR-31 gate for personalized AI (dish suggestions, weekly menus): call it before any work is
-     * done for the request. It throws {@code 409 DIETARY_PROFILE_INCOMPLETE} with a {@code missing}
-     * list, so no Gemini call and no partial Meal Plan entry can follow.
+     * BR-31 gate for FR-34 workflows that require the dietary profile. Call it before request work.
+     * FR-36 uses {@link #menuConstraints(long)} instead, allowing unanswered preference fields to
+     * remain null while retaining declared hard constraints. This method throws
+     * {@code 409 DIETARY_PROFILE_INCOMPLETE} with a {@code missing} list when required fields are absent.
      */
     @Transactional(readOnly = true)
     public void requirePersonalizedAiEligible(long userId) {

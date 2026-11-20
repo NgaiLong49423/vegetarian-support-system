@@ -16,7 +16,6 @@ import tech.mamxanh.recipe.dto.response.AiRecipeRecommendationResponse;
 import tech.mamxanh.recipe.dto.response.AiWeeklyMenuPreviewResponse;
 import tech.mamxanh.recipe.dto.response.RecipePostResponse;
 import tech.mamxanh.subscription.service.AiTokenQuotaService;
-import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
@@ -33,7 +32,6 @@ public class AiRecipeRecommendationService {
     private final RecipePostService recipes;
     private final CurrentUserService users;
     private final DietaryPreferenceService preferences;
-    private final SubscriptionEntitlementService entitlements;
     private final AiClient ai;
     private final ObjectMapper mapper;
     private final ApplicationEventPublisher events;
@@ -41,13 +39,12 @@ public class AiRecipeRecommendationService {
     private final AiTokenQuotaService aiQuota;
 
     public AiRecipeRecommendationService(RecipePostService recipes, CurrentUserService users,
-            DietaryPreferenceService preferences, SubscriptionEntitlementService entitlements,
+            DietaryPreferenceService preferences,
             AiClient ai, ObjectMapper mapper, ApplicationEventPublisher events, Clock clock,
             AiTokenQuotaService aiQuota) {
         this.recipes = recipes;
         this.users = users;
         this.preferences = preferences;
-        this.entitlements = entitlements;
         this.ai = ai;
         this.mapper = mapper;
         this.events = events;

@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M02
 > **File:** `docs/requirements/use-cases/identity-and-access.md`
-> **Version:** v2.8.0
+> **Version:** v2.8.1
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-30
+> **Last Updated:** 2026-11-21
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -840,7 +840,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-31).
    - Bước 1: Member nhấn yêu cầu tính năng AI cá nhân hóa (gợi ý món hoặc tạo thực đơn tuần).
    - Bước 2: Hệ thống tiếp nhận yêu cầu và kiểm tra dữ liệu hồ sơ sở thích của Member.
    - Bước 3: Hệ thống xác nhận: Đã chọn loại ăn chay hợp lệ VÀ (có danh sách dị ứng hoặc đã tích xác nhận "Không có") VÀ (có danh sách món không thích hoặc đã tích xác nhận "Không có").
-   - Bước 4: Điều kiện tối thiểu thỏa mãn -> Hệ thống tiếp tục kiểm tra quyền gói tính năng AI (FR-10, BR-02), đưa hồ sơ sở thích vào ngữ cảnh xử lý và gửi yêu cầu tới dịch vụ Google Gemini.
+   - Bước 4: Điều kiện tối thiểu thỏa mãn -> Hệ thống kiểm tra quyền nghiệp vụ, consent khi dữ liệu cá nhân được gửi, model trong catalog và ngân sách theo FR-10/BR-02/03. Gói không khóa chức năng AI, chỉ quyết định quota token. Hồ sơ sở thích được áp dụng vào xử lý an toàn trước khi gửi dữ liệu phù hợp tới Google Gemini.
 2. **Luồng Rẽ nhánh An toàn (Thiếu thông tin tối thiểu — Chặn an toàn & Không gọi AI):**
    - Bước 1: Member (chưa hoàn thành Onboarding hoặc hồ sơ chưa đầy đủ) yêu cầu tính năng AI cá nhân hóa.
    - Bước 2: Hệ thống kiểm tra hồ sơ sở thích và phát hiện thiếu ít nhất một trong ba nhóm thông tin tối thiểu.

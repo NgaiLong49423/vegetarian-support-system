@@ -58,7 +58,6 @@ import tech.mamxanh.shopping.dto.response.ShoppingListResponse;
 import tech.mamxanh.shopping.service.ShoppingListService;
 import tech.mamxanh.subscription.service.AiChatSettingsService;
 import tech.mamxanh.subscription.service.AiTokenQuotaService;
-import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -489,7 +488,6 @@ class AdkShoppingPilotServiceTest {
         RecipePostService recipePosts = mock(RecipePostService.class);
         DietaryPreferenceService preferences = mock(DietaryPreferenceService.class);
         AiClient ai = mock(AiClient.class);
-        SubscriptionEntitlementService entitlements = mock(SubscriptionEntitlementService.class);
         when(ai.classifyChatScope(anyString(), anyString())).thenReturn(
                 new AiClient.ChatResult(null, "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 1, 1, 2));
         when(ai.answerChat(anyString(), anyString())).thenReturn(new AiClient.ChatResult("Trả lời legacy.", 1, 2, 3));
@@ -506,7 +504,7 @@ class AdkShoppingPilotServiceTest {
                     List.of(), AiAssistantSessionStore.ENGINE_LEGACY, "COMPLETED", h.expiresAt(), null);
         });
         var chatService = new AiChatService(
-                users, recipes, recipePosts, preferences, ai, new JsonMapper(), events, clock, entitlements, aiQuota,
+                users, recipes, recipePosts, preferences, ai, new JsonMapper(), events, clock, aiQuota,
                 chatSettings, legacyExecution, pilotService);
 
         // 1. New GENERAL session for CUSTOMER when pilotEnabled=true routes to ADK_SHOPPING_PILOT

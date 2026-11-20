@@ -30,7 +30,7 @@ public class AiTelemetryReportService {
         if (from == null || to == null || from.isAfter(to) || to.isAfter(today)
                 || from.isBefore(today.minusDays(90)) || !java.util.Set.of("DAY", "WEEK", "MONTH").contains(granularity)
                 || feature != null && !AiTelemetryWriter.FEATURES.contains(feature)) {
-            throw new AppException(ErrorCode.VALIDATION_FAILED, "Khoảng ngày tối đa 90 ngày gần nhất; kiểm tra ngày, chu kỳ và tính năng.");
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "Khoảng ngày tối đa 90 ngày gần nhất. Kiểm tra ngày, chu kỳ và tính năng.");
         }
         var retainedFrom = clock.instant().minus(Duration.ofDays(90));
         var start = from.atStartOfDay(ZONE).toInstant();

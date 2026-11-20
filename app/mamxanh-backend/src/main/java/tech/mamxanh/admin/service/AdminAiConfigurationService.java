@@ -193,7 +193,7 @@ public class AdminAiConfigurationService {
                 if (!java.util.Objects.equals(old.pendingTokenQuota(), updated.pendingTokenQuota())) {
                     String oldValue = old.pendingTokenQuota() == null ? "Không có thay đổi chờ" : quota(old.pendingTokenQuota());
                     String newValue = updated.pendingTokenQuota() == null ? "Không có thay đổi chờ" : quota(updated.pendingTokenQuota());
-                    changes.add("Quota Free: " + oldValue + " → " + newValue + "; có hiệu lực "
+                    changes.add("Quota Free: " + oldValue + " → " + newValue + ". Có hiệu lực "
                             + (updated.pendingEffectiveAt() == null ? "từ chu kỳ tháng kế tiếp" : LOCAL_DATE_TIME.format(updated.pendingEffectiveAt()) + " (Asia/Saigon)"));
                 }
                 continue;
@@ -201,11 +201,11 @@ public class AdminAiConfigurationService {
             String label = "PLUS".equals(updated.tier()) ? "Plus" : "Pro";
             if (old.priceVnd() != updated.priceVnd()) {
                 changes.add("Giá gói " + label + ": " + money(old.priceVnd()) + " → " + money(updated.priceVnd())
-                        + "; áp dụng cho đơn mua/kích hoạt mới từ " + LOCAL_DATE_TIME.format(now) + " (Asia/Saigon).");
+                        + ". Áp dụng cho đơn mua/kích hoạt mới từ " + LOCAL_DATE_TIME.format(now) + " (Asia/Saigon).");
             }
             if (old.tokenQuota() != updated.tokenQuota()) {
                 changes.add("Quota gói " + label + ": " + quota(old.tokenQuota()) + " → " + quota(updated.tokenQuota())
-                        + "; áp dụng cho chu kỳ mua/kích hoạt mới từ " + LOCAL_DATE_TIME.format(now) + " (Asia/Saigon).");
+                        + ". Áp dụng cho chu kỳ mua/kích hoạt mới từ " + LOCAL_DATE_TIME.format(now) + " (Asia/Saigon).");
             }
         }
 
@@ -218,7 +218,7 @@ public class AdminAiConfigurationService {
             Model updated = newModels.get(id);
             if (!java.util.Objects.equals(old, updated)) {
                 changes.add("Gemini model " + id + ": " + modelSummary(old) + " → " + modelSummary(updated)
-                        + "; có hiệu lực ngay từ " + LOCAL_DATE_TIME.format(now) + " (Asia/Saigon).");
+                        + ". Có hiệu lực ngay từ " + LOCAL_DATE_TIME.format(now) + " (Asia/Saigon).");
             }
         }
 
@@ -227,18 +227,18 @@ public class AdminAiConfigurationService {
         if (!oldCredit.creditsPer1000Vnd().equals(newCredit.creditsPer1000Vnd())) {
             changes.add("Tỷ lệ nạp: " + oldCredit.creditsPer1000Vnd().stripTrailingZeros().toPlainString()
                     + " → " + newCredit.creditsPer1000Vnd().stripTrailingZeros().toPlainString()
-                    + " Credit/1.000đ; áp dụng cho đơn mới từ " + LOCAL_DATE_TIME.format(now) + " (Asia/Saigon).");
+                    + " Credit/1.000đ, áp dụng cho đơn mới từ " + LOCAL_DATE_TIME.format(now) + " (Asia/Saigon).");
         }
         if (oldCredit.creditsPer1000OverageTokens() != newCredit.creditsPer1000OverageTokens()) {
             changes.add("Tỷ lệ overage: " + number(oldCredit.creditsPer1000OverageTokens()) + " → "
                     + number(newCredit.creditsPer1000OverageTokens())
-                    + " Credit/1.000 token; có hiệu lực ngay từ " + LOCAL_DATE_TIME.format(now) + " (Asia/Saigon).");
+                    + " Credit/1.000 token, có hiệu lực ngay từ " + LOCAL_DATE_TIME.format(now) + " (Asia/Saigon).");
         }
         if (oldCredit.minimumTopUpVnd() != newCredit.minimumTopUpVnd()
                 || oldCredit.maximumTopUpVnd() != newCredit.maximumTopUpVnd()) {
             changes.add("Giới hạn nạp: " + money(oldCredit.minimumTopUpVnd()) + "–" + money(oldCredit.maximumTopUpVnd())
                     + " → " + money(newCredit.minimumTopUpVnd()) + "–" + money(newCredit.maximumTopUpVnd())
-                    + "; áp dụng cho đơn mới từ " + LOCAL_DATE_TIME.format(now) + " (Asia/Saigon).");
+                    + ", áp dụng cho đơn mới từ " + LOCAL_DATE_TIME.format(now) + " (Asia/Saigon).");
         }
         return List.copyOf(changes);
     }

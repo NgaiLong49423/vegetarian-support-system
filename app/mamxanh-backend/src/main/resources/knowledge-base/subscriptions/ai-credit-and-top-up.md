@@ -14,7 +14,7 @@ source_files:
   - app/mamxanh-backend/src/main/java/tech/mamxanh/subscription/service/AiTokenQuotaService.java
   - app/mamxanh-backend/src/main/java/tech/mamxanh/subscription/controller/SubscriptionController.java
 implementation_status: verified
-last_verified: 2026-11-01
+last_verified: 2026-11-21
 ---
 
 # AI Credit và hướng dẫn nạp thêm ngân sách
@@ -36,7 +36,7 @@ Mâm Xanh cung cấp ví **AI Credit** tại trang `/nap-ai-credit`. AI Credit l
 3. **Tỷ lệ trừ phí khi vượt hạn mức gói (Overage Rate):**
    $$\text{1.000 token vượt mức} = \text{400 AI Credit} \quad (\text{tương đương } 0.4\text{ Credit} / \text{token})$$
    - Mức phí được tính chính xác theo số lượng token thực tế bạn sử dụng, có hỗ trợ số lẻ thập phân, không làm tròn lên từng block gây thiệt thòi cho bạn.
-   - Cùng một tỷ lệ ưu đãi này được áp dụng cho mọi mô hình Gemini (cả Flash và Flash-Lite).
+   - Cùng một tỷ lệ ưu đãi này được áp dụng cho mọi model Gemini đang được hệ thống cho phép.
 
 ## Thứ tự tiêu thụ token thông minh
 

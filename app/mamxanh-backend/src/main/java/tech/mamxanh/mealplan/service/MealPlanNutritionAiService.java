@@ -19,7 +19,6 @@ import tech.mamxanh.recipe.dto.response.RecipePostResponse;
 import tech.mamxanh.recipe.service.RecipePostService;
 import tech.mamxanh.recipe.service.RecipeService;
 import tech.mamxanh.subscription.service.AiTokenQuotaService;
-import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
@@ -35,7 +34,6 @@ public class MealPlanNutritionAiService {
     private static final Logger LOG = LoggerFactory.getLogger(MealPlanNutritionAiService.class);
     private final CurrentUserService users;
     private final NutritionProfileService profiles;
-    private final SubscriptionEntitlementService entitlements;
     private final MealPlanRepository plans;
     private final MealPlanEntryRepository entries;
     private final RecipeService nutrition;
@@ -48,11 +46,11 @@ public class MealPlanNutritionAiService {
     private final AiTokenQuotaService aiQuota;
 
     public MealPlanNutritionAiService(CurrentUserService users, NutritionProfileService profiles,
-            SubscriptionEntitlementService entitlements, MealPlanRepository plans, MealPlanEntryRepository entries,
+            MealPlanRepository plans, MealPlanEntryRepository entries,
             RecipeService nutrition, RecipePostService recipePosts, AiClient ai, ObjectMapper mapper,
             ApplicationEventPublisher events, Clock clock, MealPlanNutritionService analysisService,
             AiTokenQuotaService aiQuota) {
-        this.users = users; this.profiles = profiles; this.entitlements = entitlements; this.plans = plans;
+        this.users = users; this.profiles = profiles; this.plans = plans;
         this.entries = entries; this.nutrition = nutrition; this.recipePosts = recipePosts; this.ai = ai;
         this.mapper = mapper; this.events = events; this.clock = clock; this.analysisService = analysisService;
         this.aiQuota = aiQuota;

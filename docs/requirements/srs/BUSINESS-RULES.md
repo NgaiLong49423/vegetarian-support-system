@@ -1,8 +1,8 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v2.26.0
+> **Version:** v2.26.1
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-11-05
+> **Last Updated:** 2026-11-21
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -19,7 +19,7 @@ This document contains only requirements included in Requirements / Implementati
 ---
 
 <a id="br-02"></a>
-### BR-02 — Hạn mức token và quyền chọn Gemini Model theo gói
+### BR-02 — Hạn mức token theo gói và danh mục Gemini dùng chung
 
 - **Mã quy tắc:** BR-02
 - **Nội dung:** Gói không khóa riêng chức năng AI; các chức năng vẫn chịu role, ownership, eligibility và validation của chức năng gốc. Chính sách được duyệt là Guest/Free 50.000 token mỗi tháng dương lịch `Asia/Saigon`, Plus 99.000đ/200.000 token và Pro 199.000đ/500.000 token mỗi chu kỳ thuê bao. Trần Plus/Pro mới áp dụng ngay cả chu kỳ đang hoạt động, giữ nguyên thời gian chu kỳ, usage, ledger và AI Credit, không hoàn Credit hồi tố. Quota không cộng dồn; định danh Guest không phụ thuộc session AI. Thay đổi quota Free về sau có hiệu lực từ tháng tiếp theo; các thay đổi giá/quota trả phí về sau áp dụng lần mua/kích hoạt mới. Chỉ hỗ trợ Gemini; Free/Plus/Pro dùng chung danh mục model đang bật và phạm vi chức năng phù hợp role, còn Guest giữ giới hạn chức năng Guest. Admin quản lý catalog và model mặc định hợp lệ; model ID mới phải được xác minh với Gemini trước khi lưu. Member lưu model preference theo tài khoản; Guest không lưu preference. Backend xác thực quyền, preference và catalog trước mỗi provider call. Nếu preference không còn hợp lệ hoặc model bị tắt, yêu cầu chọn lại và không gọi Gemini. Khi model lỗi, chỉ retry một lần bằng model thay thế sau khi người dùng đồng ý; preference đã lưu không đổi.

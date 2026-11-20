@@ -32,7 +32,6 @@ import tech.mamxanh.nutrition.service.NutritionProfileService;
 import tech.mamxanh.recipe.dto.response.RecipePostResponse;
 import tech.mamxanh.recipe.service.RecipePostService;
 import tech.mamxanh.recipe.service.RecipeService;
-import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 import tools.jackson.databind.json.JsonMapper;
 
 class MealPlanNutritionAiServiceTest {
@@ -40,7 +39,6 @@ class MealPlanNutritionAiServiceTest {
     private static final LocalDate MONDAY = LocalDate.of(2026, 10, 12);
     private final CurrentUserService users = mock(CurrentUserService.class);
     private final NutritionProfileService profiles = mock(NutritionProfileService.class);
-    private final SubscriptionEntitlementService entitlements = mock(SubscriptionEntitlementService.class);
     private final MealPlanRepository plans = mock(MealPlanRepository.class);
     private final MealPlanEntryRepository entries = mock(MealPlanEntryRepository.class);
     private final RecipeService nutrition = mock(RecipeService.class);
@@ -49,7 +47,7 @@ class MealPlanNutritionAiServiceTest {
     private final AiClient ai = mock(AiClient.class);
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
     private final tech.mamxanh.subscription.service.AiTokenQuotaService aiQuota = mock(tech.mamxanh.subscription.service.AiTokenQuotaService.class);
-    private final MealPlanNutritionAiService service = new MealPlanNutritionAiService(users, profiles, entitlements,
+    private final MealPlanNutritionAiService service = new MealPlanNutritionAiService(users, profiles,
             plans, entries, nutrition, recipePosts, ai, new JsonMapper(), events, Clock.systemUTC(), analysis, aiQuota);
 
     @BeforeEach
@@ -73,7 +71,6 @@ class MealPlanNutritionAiServiceTest {
 
         var result = service.recommend(MONDAY, 101L);
 
-        verify(entitlements, never()).requirePro(OWNER);
         assertThat(result.recommendations()).isEmpty();
         assertThat(result.analysis()).contains("Chưa có công thức");
         verifyNoInteractions(nutrition, analysis, recipePosts, ai, events);

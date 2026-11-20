@@ -39,13 +39,11 @@ import tech.mamxanh.nutrition.service.NutritionProfileService;
 import tech.mamxanh.nutrition.service.RecipeNutritionService;
 import tech.mamxanh.recipe.dto.response.RecipePostResponse;
 import tech.mamxanh.recipe.service.RecipePostService;
-import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 
 class AiMenuServiceTest {
     private static final LocalDate MONDAY = LocalDate.of(2026, 10, 26);
     private static final LocalDate TODAY = MONDAY.plusDays(1);
     private final CurrentUserService users = mock(CurrentUserService.class);
-    private final SubscriptionEntitlementService entitlements = mock(SubscriptionEntitlementService.class);
     private final NutritionProfileService profiles = mock(NutritionProfileService.class);
     private final DietaryPreferenceService dietary = mock(DietaryPreferenceService.class);
     private final RecipePostService recipes = mock(RecipePostService.class);
@@ -65,13 +63,12 @@ class AiMenuServiceTest {
     }
 
     @Test
-    void previewDoesNotRequirePaidSubscription() {
+    void previewUsesMemberEligibilityWithoutSubscriptionGate() {
         prepareCandidates();
         when(ai.recommendRecipes(any(), anyList(), eq(2))).thenReturn(
                 new AiClient.RecommendationResult("{\"recipeIds\":[11,12]}", 1, 1, 2));
         assertThat(service.createPreview(new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null)).meals())
                 .isNotEmpty();
-        verifyNoInteractions(entitlements);
     }
 
     @Test
@@ -371,7 +368,7 @@ class AiMenuServiceTest {
     }
 
     private AiMenuService serviceAt(Clock clock) {
-        return new AiMenuService(users, entitlements, profiles, dietary, recipes, nutrition, ingredients,
+        return new AiMenuService(users, profiles, dietary, recipes, nutrition, ingredients,
                 conversions, ai, events, clock, new JsonMapper(), plans, entries, reads,
                 mock(tech.mamxanh.subscription.service.AiTokenQuotaService.class));
     }

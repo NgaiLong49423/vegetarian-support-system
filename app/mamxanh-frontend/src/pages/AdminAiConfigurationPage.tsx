@@ -51,7 +51,7 @@ const sectionDescriptions: Record<ConfigurationSection, string> = {
   plans:
     "Đặt giá và hạn mức token cho từng gói. Giá và quota gói trả phí áp dụng cho lần kích hoạt mới.",
 
-  models: "Quản lý catalog Gemini dùng chung cho Member; cấu hình quyền Guest riêng.",
+  models: "Quản lý catalog Gemini dùng chung cho Member, cấu hình quyền Guest riêng.",
 
   credit:
     "Cấu hình quy đổi AI Credit, mức sử dụng vượt quota và giới hạn nạp tiền.",
@@ -276,7 +276,7 @@ export function AdminAiConfigurationPage({
           fields.push(`Guest: ${before.freeAllowed ? "Cho phép" : "Không cấp"} → ${model.freeAllowed ? "Cho phép" : "Không cấp"}`)
         if (before.freeDefault !== model.freeDefault)
           fields.push(`Mặc định chung: ${before.freeDefault ? "Có" : "Không"} → ${model.freeDefault ? "Có" : "Không"}`)
-        if (fields.length) changes.push(`${model.modelId}: ${fields.join("; ")}`)
+        if (fields.length) changes.push(`${model.modelId}: ${fields.join(", ")}`)
       }
 
       for (const model of savedConfiguration.models) {
@@ -606,7 +606,7 @@ export function AdminAiConfigurationPage({
         <Card className="p-5 sm:p-6">
           {sectionHeader(
             "plans",
-            "Token Free tính theo tháng dương lịch, giờ Việt Nam; Plus/Pro tính theo từng tháng trong chu kỳ gói. Giá và quota Plus/Pro áp dụng cho lần kích hoạt mới.",
+            "Token Free tính theo tháng dương lịch, giờ Việt Nam. Plus/Pro tính theo từng tháng trong chu kỳ gói. Giá và quota Plus/Pro áp dụng cho lần kích hoạt mới.",
           )}
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             {configuration.plans.map((plan) => {
@@ -709,7 +709,7 @@ export function AdminAiConfigurationPage({
           <div className="flex flex-wrap items-center justify-between gap-3">
             {sectionHeader(
               "models",
-              "Free, Plus và Pro dùng chung model đang bật; Guest chỉ dùng model được cấp. Model mới được kiểm tra với Gemini trước khi lưu.",
+              "Free, Plus và Pro dùng chung model đang bật. Guest chỉ dùng model được cấp. Model mới được kiểm tra với Gemini trước khi lưu.",
             )}
             {editingSection === "models" && (
               <Button
@@ -869,7 +869,7 @@ export function AdminAiConfigurationPage({
         <Card className="p-5 sm:p-6">
           {sectionHeader(
             "credit",
-            "Tỷ lệ overage có hiệu lực ngay; tỷ lệ nạp và giới hạn áp dụng cho đơn mới.",
+              "Tỷ lệ overage có hiệu lực ngay. Tỷ lệ nạp và giới hạn áp dụng cho đơn mới.",
           )}
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {([
@@ -957,10 +957,10 @@ export function AdminAiConfigurationPage({
               <strong className="text-ink">Ảnh hưởng khi áp dụng</strong>
               <p className="mt-1">
                 {confirmSection === "plans"
-                  ? "Giá và quota Plus/Pro áp dụng cho lần kích hoạt mới; thay đổi quota Free có hiệu lực từ chu kỳ tháng kế tiếp. Chu kỳ gói đang chạy giữ nguyên snapshot."
+                  ? "Giá và quota Plus/Pro áp dụng cho lần kích hoạt mới. Thay đổi quota Free có hiệu lực từ chu kỳ tháng kế tiếp. Chu kỳ gói đang chạy giữ nguyên snapshot."
                   : confirmSection === "models"
-                    ? "Catalog model dùng chung cho Member; Guest chỉ dùng model được cấp. Thay đổi áp dụng sau khi lưu. Model mới sẽ được kiểm tra với Gemini trước khi hệ thống ghi cấu hình."
-                    : "Tỷ lệ overage mới có hiệu lực cho lượt AI mới; tỷ lệ quy đổi/nạp và giới hạn mới áp dụng cho đơn nạp mới. Đơn đang chờ giữ nguyên snapshot."}
+                    ? "Catalog model dùng chung cho Member. Guest chỉ dùng model được cấp. Thay đổi áp dụng sau khi lưu. Model mới sẽ được kiểm tra với Gemini trước khi hệ thống ghi cấu hình."
+                    : "Tỷ lệ overage mới có hiệu lực cho lượt AI mới. Tỷ lệ quy đổi/nạp và giới hạn mới áp dụng cho đơn nạp mới. Đơn đang chờ giữ nguyên snapshot."}
               </p>
               <p className="mt-1">
                 Hệ thống gửi thông báo in-app về giá trị thay đổi và thời điểm

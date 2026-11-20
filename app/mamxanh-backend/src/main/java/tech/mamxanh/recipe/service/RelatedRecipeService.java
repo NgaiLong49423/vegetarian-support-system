@@ -14,7 +14,6 @@ import tech.mamxanh.recipe.dto.response.RecipePostResponse;
 import tech.mamxanh.recipe.dto.response.RelatedRecipesResponse;
 import tech.mamxanh.recipe.repository.RelatedRecipeRepository;
 import tech.mamxanh.subscription.service.AiTokenQuotaService;
-import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
@@ -31,7 +30,6 @@ public class RelatedRecipeService {
     private final RelatedRecipeRepository repository;
     private final RecipePostService recipes;
     private final CurrentUserService users;
-    private final SubscriptionEntitlementService entitlement;
     private final AiClient ai;
     private final ObjectMapper mapper;
     private final ApplicationEventPublisher events;
@@ -39,12 +37,11 @@ public class RelatedRecipeService {
     private final AiTokenQuotaService aiQuota;
 
     public RelatedRecipeService(RelatedRecipeRepository repository, RecipePostService recipes,
-            CurrentUserService users, SubscriptionEntitlementService entitlement, AiClient ai,
+            CurrentUserService users, AiClient ai,
             ObjectMapper mapper, ApplicationEventPublisher events, Clock clock, AiTokenQuotaService aiQuota) {
         this.repository = repository;
         this.recipes = recipes;
         this.users = users;
-        this.entitlement = entitlement;
         this.ai = ai;
         this.mapper = mapper;
         this.events = events;
