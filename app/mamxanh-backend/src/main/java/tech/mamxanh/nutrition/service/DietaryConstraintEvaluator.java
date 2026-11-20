@@ -17,14 +17,14 @@ public class DietaryConstraintEvaluator {
     public Assessment evaluate(RecipePostResponse recipe, DietaryPreferencesResponse profile,
             Map<Long, IngredientResponse> catalog) {
         return evaluate(recipe, profile.vegetarianType() == null ? null : profile.vegetarianType().name(),
-                ids(profile.avoid().items()), groups(profile.avoid().items()),
+                ids(profile.avoid().items()), exactNames(profile.avoid().items()),
                 ids(profile.dislike().items()), groups(profile.dislike().items()), catalog);
     }
 
     public Assessment evaluate(RecipePostResponse recipe, String vegetarianType,
             List<Long> avoidIds, List<String> avoidNames, List<Long> dislikeIds, List<String> dislikeNames,
             Map<Long, IngredientResponse> catalog) {
-        return evaluate(recipe, vegetarianType, new HashSet<>(avoidIds), canonicalNames(avoidNames),
+        return evaluate(recipe, vegetarianType, new HashSet<>(avoidIds), exactCanonicalNames(avoidNames),
                 new HashSet<>(dislikeIds), canonicalNames(dislikeNames), catalog);
     }
 
@@ -36,8 +36,8 @@ public class DietaryConstraintEvaluator {
         for (RecipePostResponse.Ingredient ingredient : recipe.ingredients()) {
             IngredientResponse metadata = ingredient.ingredientId() == null ? null : catalog.get(ingredient.ingredientId());
             List<Conflict> conflicts = new ArrayList<>();
-            if (matches(ingredient, avoidIds, avoidNames)) conflicts.add(Conflict.ALLERGEN_OR_AVOID);
-            if (matches(ingredient, dislikeIds, dislikeNames)) conflicts.add(Conflict.DISLIKE);
+            if (matchesExactly(ingredient, avoidIds, avoidNames)) conflicts.add(Conflict.ALLERGEN_OR_AVOID);
+            if (matchesWithAliases(ingredient, dislikeIds, dislikeNames)) conflicts.add(Conflict.DISLIKE);
             if (ingredient.ingredientId() == null || metadata == null) {
                 unverified.add(ingredient.name());
                 conflicts.add(Conflict.UNVERIFIED);
@@ -73,13 +73,13 @@ public class DietaryConstraintEvaluator {
     public static int dislikeCount(RecipePostResponse recipe, DietaryPreferencesResponse profile) {
         Set<Long> ids = ids(profile.dislike().items());
         Set<String> names = groups(profile.dislike().items());
-        return (int) recipe.ingredients().stream().filter(ingredient -> matches(ingredient, ids, names)).count();
+        return (int) recipe.ingredients().stream().filter(ingredient -> matchesWithAliases(ingredient, ids, names)).count();
     }
 
     public static int dislikeCount(RecipePostResponse recipe, List<Long> ids, List<String> names) {
         Set<Long> idSet = new HashSet<>(ids);
         Set<String> nameSet = canonicalNames(names);
-        return (int) recipe.ingredients().stream().filter(ingredient -> matches(ingredient, idSet, nameSet)).count();
+        return (int) recipe.ingredients().stream().filter(ingredient -> matchesWithAliases(ingredient, idSet, nameSet)).count();
     }
 
     public record Assessment(long recipeId, String recipeTitle, boolean recipeTypeCompatible,
@@ -96,11 +96,16 @@ public class DietaryConstraintEvaluator {
     public record IngredientStatus(Long ingredientId, String name, String ingredientGroup, List<Conflict> conflicts) { }
     public enum Conflict { ALLERGEN_OR_AVOID, VEGETARIAN_TYPE, DISLIKE, UNVERIFIED }
 
-    private static boolean matches(RecipePostResponse.Ingredient ingredient, Set<Long> ids, Set<String> names) {
-        if (ingredient.ingredientId() != null && ids.contains(ingredient.ingredientId())) return true;
+    private static boolean matchesExactly(RecipePostResponse.Ingredient ingredient, Set<Long> ids, Set<String> names) {
+        return (ingredient.ingredientId() != null && ids.contains(ingredient.ingredientId()))
+                || names.contains(key(ingredient.name()));
+    }
+
+    private static boolean matchesWithAliases(RecipePostResponse.Ingredient ingredient, Set<Long> ids, Set<String> names) {
+        if (matchesExactly(ingredient, ids, names)) return true;
         String key = key(ingredient.name());
         String group = ALIASES.get(key);
-        return names.contains(key) || (group != null && names.contains("@" + group));
+        return group != null && names.contains("@" + group);
     }
 
     private static Set<Long> ids(List<DietaryPreferencesResponse.PreferenceItem> items) {
@@ -117,6 +122,15 @@ public class DietaryConstraintEvaluator {
             if (group != null) result.add("@" + group);
         }
         return result;
+    }
+
+    private static Set<String> exactNames(List<DietaryPreferencesResponse.PreferenceItem> items) {
+        return items.stream().map(DietaryPreferencesResponse.PreferenceItem::name)
+                .map(DietaryConstraintEvaluator::key).collect(Collectors.toSet());
+    }
+
+    private static Set<String> exactCanonicalNames(List<String> values) {
+        return values.stream().map(DietaryConstraintEvaluator::key).collect(Collectors.toSet());
     }
 
     private static Set<String> canonicalNames(List<String> values) {

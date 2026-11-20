@@ -388,7 +388,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
       <div role="alert" aria-live="assertive" className="recipe-detail-no-print mb-4 flex gap-3 rounded-xl border-2 border-red-400 bg-red-50 p-4 text-sm leading-6 text-red-950">
         <AlertTriangle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
         <div><h2 className="font-bold">Cảnh báo dị ứng / nguyên liệu cần tránh</h2>
-          <p className="mt-1">Có nguyên liệu trong danh sách cần tránh của bạn: {dietaryAssessment.ingredients.filter((line) => line.conflicts.includes('ALLERGEN_OR_AVOID')).map((line) => line.name).join(', ')}.</p>
+          <p className="mt-1">Công thức có nguyên liệu bạn đã chọn cần tránh: {dietaryAssessment.ingredients.filter((line) => line.conflicts.includes('ALLERGEN_OR_AVOID')).map((line) => line.name).join(', ')}.</p>
           <p className="mt-1 text-xs">Thông tin này dựa trên thành phần được ghi trong công thức; không xác nhận tình trạng nhiễm chéo.</p>
         </div>
       </div>

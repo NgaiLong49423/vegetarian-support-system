@@ -29,17 +29,24 @@ class DietaryConstraintEvaluatorTest {
     }
 
     @Test
-    void matchesDerivedAllergenAliasesWithoutSubstringFalsePositives() {
-        var profile = profile("đậu phộng", VegetarianType.LACTO_OVO);
-        var derived = recipe(3, "VEGAN", ingredient(8L, "dầu đậu phộng"));
+    void matchesAvoidedIngredientsExactlyAndKeepsDislikesSeparate() {
+        var peanutProfile = profile("đậu phộng", VegetarianType.LACTO_OVO);
+        var derivedPeanutIngredient = recipe(3, "VEGAN", ingredient(8L, "dầu đậu phộng"));
+        var exactPeanutIngredient = recipe(11, "VEGAN", ingredient(11L, "Đậu phộng"));
         var soybeanMilk = recipe(4, "VEGAN", ingredient(9L, "sữa đậu nành"));
         var cowMilk = recipe(5, "VEGAN", ingredient(10L, "sữa bò"));
+        var soyProfile = profile("đậu nành", VegetarianType.LACTO_OVO);
+        var soySauce = recipe(12, "VEGAN", ingredient(12L, "Nước tương"));
         var catalog = Map.of(8L, ingredientRef(8, "Oil"), 9L, ingredientRef(9, "Milk"),
-                10L, ingredientRef(10, "Dairy"));
+                10L, ingredientRef(10, "Dairy"), 11L, ingredientRef(11, "Legume"),
+                12L, ingredientRef(12, "Seasoning"));
 
-        assertThat(evaluator.evaluate(derived, profile, catalog).hasAllergenOrAvoidConflict()).isTrue();
-        assertThat(evaluator.evaluate(soybeanMilk, profile, catalog).hasAllergenOrAvoidConflict()).isFalse();
-        assertThat(evaluator.evaluate(cowMilk, profile, catalog).hasAllergenOrAvoidConflict()).isFalse();
+        assertThat(evaluator.evaluate(derivedPeanutIngredient, peanutProfile, catalog).hasAllergenOrAvoidConflict()).isFalse();
+        assertThat(evaluator.evaluate(exactPeanutIngredient, peanutProfile, catalog).hasAllergenOrAvoidConflict()).isTrue();
+        assertThat(evaluator.evaluate(soybeanMilk, peanutProfile, catalog).hasAllergenOrAvoidConflict()).isFalse();
+        assertThat(evaluator.evaluate(cowMilk, peanutProfile, catalog).hasAllergenOrAvoidConflict()).isFalse();
+        assertThat(evaluator.evaluate(soySauce, soyProfile, catalog).hasAllergenOrAvoidConflict()).isFalse();
+        assertThat(DietaryConstraintEvaluator.dislikeCount(soySauce, List.of(), List.of("đậu nành"))).isEqualTo(1);
         assertThat(evaluator.evaluate(soybeanMilk, "VEGAN", List.of(), List.of(), List.of(), List.of(), catalog)
                 .hasVegetarianConflict()).isFalse();
         assertThat(evaluator.evaluate(cowMilk, "VEGAN", List.of(), List.of(), List.of(), List.of(), catalog)

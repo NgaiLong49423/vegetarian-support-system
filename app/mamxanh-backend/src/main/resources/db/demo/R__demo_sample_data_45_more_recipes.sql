@@ -25,7 +25,6 @@ INSERT INTO @recipes VALUES
  (N'Đậu phụ non sốt miso nấm', N'Đậu phụ non mềm dùng cùng sốt miso và nấm hương.', N'Áp chảo nhẹ đậu phụ non. Đun miso với nấm hương, gừng và một ít nước đến khi thành sốt sánh; rưới lên đậu và dùng nóng.', 'BRAISED', 'VEGAN', 'EASY', 10, 15, '/assets/5a53c.png'),
  (N'Bánh mì kẹp seitan rau thơm', N'Bánh mì nguyên cám kẹp seitan áp chảo, rau romaine và húng quế.', N'Cắt seitan thành lát và áp chảo cùng nước tương. Làm nóng bánh mì, kẹp seitan với romaine, dưa leo, cà chua và húng quế.', 'ROLL', 'VEGAN', 'EASY', 12, 10, '/assets/95427.png'),
  (N'Khoai sọ nướng mè đen', N'Khoai sọ nướng mềm phủ mè đen rang và gừng.', N'Cắt khoai sọ thành miếng vừa ăn, hấp sơ rồi nướng đến khi vàng cạnh. Rang mè đen, trộn với gừng băm và rắc lên khoai trước khi dùng.', 'GRILLED', 'VEGAN', 'EASY', 12, 25, '/assets/8ef48.png'),
- (N'Bánh yến mạch trứng chuối', N'Bánh áp chảo mềm từ bột yến mạch, trứng gà và chuối.', N'Nghiền chuối, trộn với trứng và bột yến mạch. Để hỗn hợp nghỉ vài phút rồi áp chảo từng bánh nhỏ ở lửa vừa đến khi chín hai mặt; dùng cùng dâu tây.', 'FRIED', 'OVO', 'EASY', 10, 12, '/assets/62df0.png'),
  (N'Khổ qua nhồi đậu phụ non', N'Khổ qua nhồi nhân đậu phụ non, nấm mộc nhĩ và cà rốt.', N'Băm đậu phụ non cùng nấm mộc nhĩ, cà rốt và gừng. Nhồi nhân vào khổ qua đã bỏ ruột, xếp vào nồi với nước dùng rau củ và nấu đến khi mềm.', 'SOUP', 'VEGAN', 'MEDIUM', 20, 30, '/assets/40053.png');
 
 INSERT INTO [RECIPE_POST] (
@@ -58,8 +57,6 @@ INSERT INTO @recipe_ingredients VALUES
  (N'Bánh mì kẹp seitan rau thơm', N'Dưa leo', 40), (N'Bánh mì kẹp seitan rau thơm', N'Cà chua', 40),
  (N'Bánh mì kẹp seitan rau thơm', N'Húng quế', 5), (N'Khoai sọ nướng mè đen', N'Khoai sọ', 220),
  (N'Khoai sọ nướng mè đen', N'Mè đen', 8), (N'Khoai sọ nướng mè đen', N'Gừng', 5),
- (N'Bánh yến mạch trứng chuối', N'Bột yến mạch', 60), (N'Bánh yến mạch trứng chuối', N'Trứng gà', 100),
- (N'Bánh yến mạch trứng chuối', N'Chuối', 80), (N'Bánh yến mạch trứng chuối', N'Dâu tây', 50),
  (N'Khổ qua nhồi đậu phụ non', N'Đậu phụ non', 120), (N'Khổ qua nhồi đậu phụ non', N'Nấm mộc nhĩ', 15),
  (N'Khổ qua nhồi đậu phụ non', N'Cà rốt', 40), (N'Khổ qua nhồi đậu phụ non', N'Gừng', 5);
 

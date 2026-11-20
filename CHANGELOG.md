@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.152.0
+> **Version:** v2.154.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-11-21<br>
 > **Status:** Active
@@ -28,6 +28,43 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Prevent recipe actions from silently bypassing current dietary constraints.
+
+## 2026-11-21 — Match Avoided Ingredients Exactly
+
+**Status:** Working tree — not committed.
+
+**Scope:** Stop expanding a member's declared allergen or avoided ingredient into other ingredients through shared aliases.
+
+### Added
+
+None.
+
+### Changed
+
+- Match hard avoid preferences by selected catalog ID or normalized ingredient name; keep alias matching for soft dislikes.
+- Clarify recipe warning text to identify the ingredient selected by the member.
+
+### Fixed
+
+- Prevent a declared soy allergy from automatically flagging soy sauce as a separately selected avoided ingredient.
+
+## 2026-11-21 — Remove the Low-Quality Oat Pancake Demo Recipe
+
+**Status:** Working tree — not committed.
+
+**Scope:** Remove the blurry-image banana oat pancake recipe from local demo seeds and hide any existing seeded copy.
+
+### Added
+
+None.
+
+### Changed
+
+- Reduce the curated recipe fixture count from 52 to 51 and align its validation script and database guide.
+
+### Fixed
+
+- Retire existing `Bánh yến mạch trứng chuối` demo posts so they no longer appear in the local recipe feed.
 
 ## 2026-11-21 — Recognize Dairy Cheese Variants in Dietary Checks
 
