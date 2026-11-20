@@ -234,9 +234,6 @@ class AdkDomainToolsTest {
     @Test
     @DisplayName("FR-21 compliance: Expert role authorizes recipe tools")
     void expertRoleAuthorizesRecipeTools() {
-        CurrentUser expertMember = new CurrentUser(7L, Role.EXPERT);
-        when(users.requireActiveMember()).thenReturn(expertMember);
-
         // Delete recipe post checks expert role only
         registry.execute("delete_own_recipe_post", Map.of("recipeId", 99L));
 

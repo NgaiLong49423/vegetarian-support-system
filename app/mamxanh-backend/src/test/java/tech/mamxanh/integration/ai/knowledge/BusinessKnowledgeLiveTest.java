@@ -57,7 +57,8 @@ class BusinessKnowledgeLiveTest {
                 boolean sameCorpus = catalog.fingerprint().equals(priorIndex.corpusHash());
                 Set<String> changedPlaybookIds = Set.of(
                         "assistant-scope", "execution-confirmation", "session-consent-budget", "shopping-create", "shopping-read",
-                        "ai-assistant-overview", "ai-chat-cooking-guidance", "user-roles-and-permissions",
+                        "ai-assistant-overview", "ai-chat-cooking-guidance", "onboarding-guide", "user-roles-and-permissions",
+                        "ai-credit-and-top-up",
                         "managing-subscription", "plans-overview", "ai-limits-and-errors");
                 for (var chunk : catalog.chunks()) {
                     if ((sameCorpus || !changedPlaybookIds.contains(chunk.documentId())) && priorIndex.vectors().containsKey(chunk.id())) {
