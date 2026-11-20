@@ -31,7 +31,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-11-21 — Match Avoided Ingredients Exactly
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 6c2f6913.
 
 **Scope:** Stop expanding a member's declared allergen or avoided ingredient into other ingredients through shared aliases.
 
@@ -50,7 +50,7 @@ None.
 
 ## 2026-11-21 — Remove the Low-Quality Oat Pancake Demo Recipe
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 6c2f6913.
 
 **Scope:** Remove the blurry-image banana oat pancake recipe from local demo seeds and hide any existing seeded copy.
 
