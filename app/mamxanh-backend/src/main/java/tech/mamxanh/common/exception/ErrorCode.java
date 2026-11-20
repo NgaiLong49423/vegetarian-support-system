@@ -41,6 +41,8 @@ public enum ErrorCode {
             "Tài khoản này hiện không hoạt động nên không thể theo dõi."),
     INGREDIENT_PREFERENCE_CONFLICT(HttpStatus.BAD_REQUEST, "Ingredient preference conflict",
             "Một nguyên liệu chỉ được nằm trong một danh sách: cần tránh hoặc không thích."),
+    DIETARY_RISK_ACKNOWLEDGEMENT_REQUIRED(HttpStatus.CONFLICT, "Dietary risk acknowledgement required",
+            "Công thức có cảnh báo sở thích ăn uống cần được xác nhận trước khi thêm vào lịch."),
     DIETARY_PROFILE_INCOMPLETE(HttpStatus.CONFLICT, "Dietary profile incomplete",
             "Bạn cần hoàn tất 3 thông tin cơ bản về chế độ ăn chay (Loại ăn chay, Nguyên liệu dị ứng/kiêng, Món không thích) để AI có thể gợi ý chính xác và an toàn."),
     UNAUTHENTICATED(HttpStatus.UNAUTHORIZED, "Unauthenticated", "Bạn cần đăng nhập để thực hiện thao tác này."),

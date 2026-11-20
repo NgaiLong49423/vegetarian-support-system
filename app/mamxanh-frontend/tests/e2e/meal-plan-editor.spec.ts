@@ -87,6 +87,21 @@ async function setup(page: Page, initial: ReturnType<typeof entry>[] = []) {
     return route.fulfill({ json: { recipeId: 11, currentReaction: null, likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null } })
   })
   await page.route("**/api/v1/recipes/11/comments**", (route) => route.fulfill({ json: { content: [], page: 0, size: 10, totalElements: 0, totalPages: 0, commentCount: 0 } }))
+  await page.route("**/api/v1/nutrition/dietary-preferences/recipes/*/safety-assessment", (route) => {
+    const recipeId = Number(new URL(route.request().url()).pathname.split("/").at(-2))
+    return route.fulfill({ json: {
+      recipeId,
+      recipeTitle: recipes.find((item) => item.id === recipeId)?.title ?? "Công thức",
+      recipeTypeCompatible: true,
+      hasAllergenOrAvoidConflict: false,
+      hasVegetarianConflict: false,
+      hasDislikedIngredients: false,
+      unverifiedIngredients: [],
+      requiresRiskAcknowledgement: false,
+      assessmentToken: null,
+      ingredients: [],
+    } })
+  })
   await page.route("**/api/v1/recipes?**", (route) => {
     if (state.searchFail)
       return route.fulfill({
@@ -822,7 +837,7 @@ test("adds two different recipes to the same meal and retains them after reload"
     .getByRole("dialog")
     .getByRole("button", { name: "Đậu phụ kho" })
     .click()
-  expect(state.entries).toHaveLength(2)
+  await expect.poll(() => state.entries.length).toBe(2)
   await expect(page.getByRole("article").first()).toHaveAttribute("aria-label", "Đậu phụ kho")
   await page.reload()
   await openMonday(page)
@@ -1009,6 +1024,7 @@ for (const width of [360, 768, 1440]) {
     await page.screenshot({ path: path.join(directory, `nutrition-light-${width}.png`), animations: "disabled" })
     await page.keyboard.press("Escape")
     await page.getByRole("link", { name: "Canh nấm", exact: true }).click()
+    await expect(page.getByRole("heading", { name: "Canh nấm" })).toBeVisible()
     await expect(page.getByRole("button", { name: "Tăng khẩu phần" })).toBeEnabled()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     await page.getByRole("button", { name: "Lưu khẩu phần vào lịch ăn" }).scrollIntoViewIfNeeded()

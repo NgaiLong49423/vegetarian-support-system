@@ -11,7 +11,10 @@ import tech.mamxanh.integration.ai.AiClient;
 import tech.mamxanh.integration.ai.AiUsageEvent;
 import tech.mamxanh.integration.ai.AiProviderException;
 import tech.mamxanh.nutrition.dto.response.DietaryPreferencesResponse;
+import tech.mamxanh.nutrition.dto.response.IngredientResponse;
 import tech.mamxanh.nutrition.service.DietaryPreferenceService;
+import tech.mamxanh.nutrition.service.IngredientCatalogLookupService;
+import tech.mamxanh.nutrition.service.DietaryConstraintEvaluator;
 import tech.mamxanh.recipe.dto.response.AiRecipeRecommendationResponse;
 import tech.mamxanh.recipe.dto.response.AiWeeklyMenuPreviewResponse;
 import tech.mamxanh.recipe.dto.response.RecipePostResponse;
@@ -20,7 +23,6 @@ import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
-import java.text.Normalizer;
 import java.time.Clock;
 import java.util.*;
 
@@ -39,11 +41,14 @@ public class AiRecipeRecommendationService {
     private final ApplicationEventPublisher events;
     private final Clock clock;
     private final AiTokenQuotaService aiQuota;
+    private final IngredientCatalogLookupService ingredientCatalog;
+    private final DietaryConstraintEvaluator dietaryEvaluator;
 
     public AiRecipeRecommendationService(RecipePostService recipes, CurrentUserService users,
             DietaryPreferenceService preferences, SubscriptionEntitlementService entitlements,
             AiClient ai, ObjectMapper mapper, ApplicationEventPublisher events, Clock clock,
-            AiTokenQuotaService aiQuota) {
+            AiTokenQuotaService aiQuota, IngredientCatalogLookupService ingredientCatalog,
+            DietaryConstraintEvaluator dietaryEvaluator) {
         this.recipes = recipes;
         this.users = users;
         this.preferences = preferences;
@@ -53,6 +58,8 @@ public class AiRecipeRecommendationService {
         this.events = events;
         this.clock = clock;
         this.aiQuota = aiQuota;
+        this.ingredientCatalog = ingredientCatalog;
+        this.dietaryEvaluator = dietaryEvaluator;
     }
 
     public AiRecipeRecommendationResponse recommend(List<Long> ingredientIds) {
@@ -69,14 +76,24 @@ public class AiRecipeRecommendationService {
                 prompt("Choose 3 to 5 recipes using as many selected ingredients as possible.", candidates, selected), allowed, 5));
         publishUsage(user.id(), result);
         List<Long> ids = parseIds(result, allowed, 3, 5, false);
-        Map<Long, RecipePostResponse> byId = index(candidates);
-        List<AiRecipeRecommendationResponse.Item> items = ids.stream()
-                .sorted(Comparator.<Long>comparingLong(id -> matchCount(byId.get(id), selected)).reversed())
+        DietaryPreferencesResponse latestProfile = latestProfile(user.id());
+        Map<Long, RecipePostResponse> byId = revalidate(candidates.stream().map(RecipePostResponse::id).toList(), latestProfile);
+        Map<Long, Integer> aiRank = new HashMap<>();
+        for (int i = 0; i < ids.size(); i++) aiRank.put(ids.get(i), i);
+        List<Long> rankedIds = candidates.stream().map(RecipePostResponse::id).filter(byId::containsKey)
+                .sorted(Comparator.<Long>comparingInt(id -> DietaryConstraintEvaluator.dislikeCount(byId.get(id), latestProfile))
+                        .thenComparingInt(id -> aiRank.getOrDefault(id, Integer.MAX_VALUE))
+                        .thenComparing(Comparator.<Long>comparingLong(id -> matchCount(byId.get(id), selected)).reversed())
+                        .thenComparingLong(id -> id))
+                .limit(ids.size()).toList();
+        List<AiRecipeRecommendationResponse.Item> items = rankedIds.stream()
                 .map(id -> {
                     RecipePostResponse recipe = byId.get(id);
                     long matches = matchCount(recipe, selected);
+                    int dislikes = DietaryConstraintEvaluator.dislikeCount(recipe, latestProfile);
                     return new AiRecipeRecommendationResponse.Item(recipe,
-                            "Dùng " + matches + " nguyên liệu bạn đã chọn.");
+                            "Dùng " + matches + " nguyên liệu bạn đã chọn."
+                                    + (dislikes > 0 ? " Chưa có đủ lựa chọn phù hợp hơn; món có nguyên liệu bạn không thích." : ""));
                 }).toList();
         return new AiRecipeRecommendationResponse(items);
     }
@@ -97,17 +114,28 @@ public class AiRecipeRecommendationService {
                 allowed, 21));
         publishUsage(user.id(), result);
         List<Long> ids = parseIds(result, allowed, 21, 21, true);
-        for (int i = 1; i < ids.size(); i++) {
-            if (ids.get(i).equals(ids.get(i - 1))) throw invalid("consecutive menu slots repeat a recipe");
-        }
-        Map<Long, RecipePostResponse> byId = index(candidates);
+        DietaryPreferencesResponse latestProfile = latestProfile(user.id());
+        Map<Long, RecipePostResponse> byId = revalidate(candidates.stream().map(RecipePostResponse::id).toList(), latestProfile);
+        if (byId.size() < 2) throw new AppException(ErrorCode.AI_MENU_UNAVAILABLE);
+        Map<Long, Integer> aiRank = new HashMap<>();
+        for (int i = 0; i < ids.size(); i++) aiRank.putIfAbsent(ids.get(i), i);
+        List<RecipePostResponse> priority = candidates.stream().map(recipe -> byId.get(recipe.id())).filter(Objects::nonNull)
+                .sorted(Comparator.<RecipePostResponse>comparingInt(recipe -> DietaryConstraintEvaluator.dislikeCount(recipe, latestProfile))
+                        .thenComparingInt(recipe -> aiRank.getOrDefault(recipe.id(), Integer.MAX_VALUE))
+                        .thenComparingLong(RecipePostResponse::id)).toList();
         List<AiWeeklyMenuPreviewResponse.Slot> slots = new ArrayList<>(21);
-        for (int i = 0; i < ids.size(); i++) {
-            RecipePostResponse recipe = byId.get(ids.get(i));
+        long previousId = -1;
+        for (int i = 0; i < 21; i++) {
+            long priorId = previousId;
+            RecipePostResponse recipe = priority.stream().filter(candidate -> candidate.id() != priorId)
+                    .findFirst().orElse(priority.getFirst());
+            previousId = recipe.id();
             String cover = recipe.media().stream().filter(RecipePostResponse.Media::cover)
                     .map(RecipePostResponse.Media::url).findFirst().orElse(null);
             slots.add(new AiWeeklyMenuPreviewResponse.Slot(i / 3, MEALS.get(i % 3), recipe.id(), recipe.title(), cover,
-                    recipe.dishCategory(), recipe.vegetarianType(), "Phù hợp với hồ sơ ăn chay của bạn."));
+                    recipe.dishCategory(), recipe.vegetarianType(), DietaryConstraintEvaluator.dislikeCount(recipe, latestProfile) == 0
+                            ? "Ưu tiên công thức không chứa nguyên liệu bạn không thích."
+                            : "Chưa có đủ lựa chọn phù hợp hơn; công thức có nguyên liệu bạn không thích."));
         }
         return new AiWeeklyMenuPreviewResponse(slots);
     }
@@ -117,43 +145,50 @@ public class AiRecipeRecommendationService {
         preferences.requirePersonalizedAiEligible(userId);
         DietaryPreferencesResponse profile = preferences.getOwnPreferences();
         Map<Long, RecipePostResponse> current = index(recipes.getPublishedCards(recipeIds.stream().distinct().toList()));
+        Map<Long, IngredientResponse> catalog = ingredientDetails(current.values());
         if (current.size() != recipeIds.stream().distinct().count()
-                || current.values().stream().anyMatch(recipe -> !eligibleType(recipe.vegetarianType(), profile.vegetarianType().name())
-                        || containsAvoided(recipe, profile))) {
+                || current.values().stream().anyMatch(recipe -> hardConflict(recipe, profile, catalog))) {
             throw new AppException(ErrorCode.RECIPE_NOT_FOUND);
         }
     }
 
     private List<RecipePostResponse> candidateRecipes(Set<Long> selected, DietaryPreferencesResponse profile) {
-        return recipes.searchPublished("", 0, CANDIDATE_LIMIT).items().stream()
-                .filter(recipe -> eligibleType(recipe.vegetarianType(), profile.vegetarianType().name()))
-                .filter(recipe -> !containsAvoided(recipe, profile))
+        List<RecipePostResponse> source = recipes.searchPublished("", 0, CANDIDATE_LIMIT).items();
+        Map<Long, IngredientResponse> catalog = ingredientDetails(source);
+        return source.stream()
+                .filter(recipe -> !hardConflict(recipe, profile, catalog))
                 .filter(recipe -> selected.isEmpty() || matchCount(recipe, selected) > 0)
-                .sorted(Comparator.<RecipePostResponse>comparingLong(recipe -> matchCount(recipe, selected)).reversed()
+                .sorted(Comparator.<RecipePostResponse>comparingInt(recipe -> DietaryConstraintEvaluator.dislikeCount(recipe, profile))
+                        .thenComparing(Comparator.<RecipePostResponse>comparingLong(recipe -> matchCount(recipe, selected)).reversed())
                         .thenComparing(RecipePostResponse::id))
                 .toList();
     }
 
-    private boolean containsAvoided(RecipePostResponse recipe, DietaryPreferencesResponse profile) {
-        Set<Long> avoidIds = new LinkedHashSet<>();
-        Set<String> avoidNames = new LinkedHashSet<>();
-        profile.avoid().items().forEach(item -> {
-            if (item.ingredientId() != null) avoidIds.add(item.ingredientId());
-            avoidNames.add(normalize(item.name()));
-        });
-        return recipe.ingredients().stream().anyMatch(ingredient ->
-                (ingredient.ingredientId() != null && avoidIds.contains(ingredient.ingredientId()))
-                        || avoidNames.contains(normalize(ingredient.name())));
+    private DietaryPreferencesResponse latestProfile(long userId) {
+        preferences.requirePersonalizedAiEligible(userId);
+        return preferences.getOwnPreferences();
     }
 
-    private static boolean eligibleType(String recipeType, String profileType) {
-        return switch (profileType) {
-            case "VEGAN" -> "VEGAN".equals(recipeType);
-            case "LACTO" -> "VEGAN".equals(recipeType) || "LACTO".equals(recipeType);
-            case "OVO" -> "VEGAN".equals(recipeType) || "OVO".equals(recipeType);
-            case "LACTO_OVO" -> List.of("VEGAN", "LACTO", "OVO", "LACTO_OVO").contains(recipeType);
-            default -> false;
-        };
+    private Map<Long, RecipePostResponse> revalidate(List<Long> recipeIds, DietaryPreferencesResponse profile) {
+        Map<Long, RecipePostResponse> current = index(recipes.getPublishedCards(recipeIds.stream().distinct().toList()));
+        Map<Long, IngredientResponse> details = ingredientDetails(current.values());
+        current.values().removeIf(recipe -> hardConflict(recipe, profile, details));
+        return current;
+    }
+
+    private Map<Long, IngredientResponse> ingredientDetails(Collection<RecipePostResponse> source) {
+        List<Long> ids = source.stream().flatMap(recipe -> recipe.ingredients().stream())
+                .map(RecipePostResponse.Ingredient::ingredientId).filter(Objects::nonNull).distinct().toList();
+        return ids.isEmpty() ? Map.of() : ingredientCatalog.findIngredientReferences(ids).stream()
+                .filter(item -> item.id() != null).collect(java.util.stream.Collectors.toMap(
+                        IngredientResponse::id, item -> item, (first, ignored) -> first));
+    }
+
+    private boolean hardConflict(RecipePostResponse recipe, DietaryPreferencesResponse profile,
+            Map<Long, IngredientResponse> catalog) {
+        var result = dietaryEvaluator.evaluate(recipe, profile, catalog);
+        return result.hasAllergenOrAvoidConflict() || result.hasVegetarianConflict()
+                || !result.unverifiedIngredients().isEmpty();
     }
 
     private static long matchCount(RecipePostResponse recipe, Set<Long> selected) {
@@ -223,10 +258,6 @@ public class AiRecipeRecommendationService {
             throw new AppException(ErrorCode.VALIDATION_FAILED);
         }
         return new LinkedHashSet<>(ids);
-    }
-
-    private static String normalize(String text) {
-        return text == null ? "" : Normalizer.normalize(text, Normalizer.Form.NFC).trim().toLowerCase(Locale.ROOT);
     }
 
     private void publishUsage(long userId, AiClient.RecommendationResult result) {

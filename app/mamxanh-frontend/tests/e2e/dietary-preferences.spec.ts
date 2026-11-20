@@ -1,4 +1,6 @@
 import type { Page, Route } from '@playwright/test';
+import { mkdirSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { expect, test } from './baseFixtures';
 
 // FR-31 (#36) Onboarding and dietary preferences. The API is replaced with page.route stubs, so these tests
@@ -90,6 +92,34 @@ async function signOut(page: Page) {
   await page.getByRole('button', { name: 'Đăng xuất' }).click();
 }
 
+async function confirmSave(page: Page, trigger = 'Hoàn tất') {
+  await page.getByRole('button', { name: trigger, exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Xác nhận cập nhật sở thích' });
+  if (await dialog.isVisible()) await dialog.getByRole('button', { name: 'Xác nhận lưu' }).click();
+}
+
+test('settings require explicit save confirmation and show a success toast only after the API succeeds', async ({ page }) => {
+  await seedSession(page);
+  const saved = await stubPreferences(page, completedProfile);
+  await page.goto('/ho-so/so-thich-an-uong');
+  const evidenceDir = resolve(process.cwd(), '../../.agents/outputs/dietary-preference-safety/evidence');
+  mkdirSync(evidenceDir, { recursive: true });
+
+  await page.getByRole('button', { name: 'Lưu thay đổi' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Xác nhận cập nhật sở thích' });
+  await expect(dialog).toBeVisible();
+  expect(saved).toHaveLength(0);
+  await page.screenshot({ path: resolve(evidenceDir, 'preferences-save-confirmation.png'), fullPage: false });
+  await dialog.getByRole('button', { name: 'Hủy' }).click();
+  expect(saved).toHaveLength(0);
+  await expect(page.getByText('Đã lưu sở thích ăn uống.')).toHaveCount(0);
+
+  await confirmSave(page, 'Lưu thay đổi');
+  await expect(page.getByText('Đã lưu sở thích ăn uống.')).toBeVisible();
+  expect(saved).toHaveLength(1);
+  await page.screenshot({ path: resolve(evidenceDir, 'preferences-save-success-toast.png'), fullPage: false });
+});
+
 async function signInAs(page: Page, account = member) {
   await stubApi(page, '/auth/login', async route => route.fulfill(json({ accessToken: 'header.payload.signature', tokenType: 'Bearer', expiresInSeconds: 3600, account })));
   await page.goto('/dang-nhap');
@@ -145,7 +175,7 @@ test('a new member is invited after the first sign-in and completes onboarding w
   await page.getByLabel('Thời gian nấu tối đa (phút)').fill('30');
   await page.getByRole('button', { name: 'Tiếp tục' }).click();
   await page.getByLabel('Độ khó mong muốn').selectOption('EASY');
-  await page.getByRole('button', { name: 'Hoàn tất' }).click();
+  await confirmSave(page);
 
   await expect(page).toHaveURL(/\/kham-pha$/);
   expect(saved).toEqual([{
@@ -173,7 +203,7 @@ test('confirming "none" for both lists completes onboarding (AC-31.2, mock API)'
   await page.getByRole('button', { name: 'Tiếp tục' }).click();
   await page.getByLabel('Tôi không có món không thích').check();
   for (let step = 0; step < 3; step++) await page.getByRole('button', { name: 'Tiếp tục' }).click();
-  await page.getByRole('button', { name: 'Hoàn tất' }).click();
+  await confirmSave(page);
 
   await expect(page).toHaveURL(/\/kham-pha$/);
   expect(saved[0]).toMatchObject({ vegetarianType: 'LACTO_OVO', avoid: { noneConfirmed: true, items: [] }, dislike: { noneConfirmed: true, items: [] } });
@@ -214,7 +244,7 @@ test('questions appear individually, Back preserves answers, and Enter advances 
   expect(saved).toHaveLength(0);
   await page.getByLabel('Thời gian nấu tối đa (phút)').fill('30');
   await page.getByRole('button', { name: 'Tiếp tục' }).click();
-  await page.getByRole('button', { name: 'Hoàn tất' }).click();
+  await confirmSave(page);
   await expect(page).toHaveURL(/\/kham-pha$/);
   expect(saved[0]).toMatchObject({ cuisinePreference: 'Món Việt', maxCookingTimeMinutes: 30, preferredDifficulty: null });
 });
@@ -243,7 +273,7 @@ test('server field errors return to the affected question while retaining the dr
   const saved = await stubPreferences(page, completedProfile, () => problem(400, 'VALIDATION_FAILED', { errors: [{ field: 'avoid.items', message: 'Kiểm tra lại nguyên liệu cần tránh.' }] }));
   await page.goto('/khoi-tao-so-thich');
   for (let step = 1; step < 6; step++) await page.getByRole('button', { name: 'Tiếp tục' }).click();
-  await page.getByRole('button', { name: 'Hoàn tất' }).click();
+  await confirmSave(page);
   await expect(page.getByRole('progressbar')).toHaveAttribute('value', '2');
   await expect(page.getByRole('alert')).toHaveText('Kiểm tra lại nguyên liệu cần tránh.');
   await expect(page.getByRole('list', { name: '2. Nguyên liệu cần tránh (dị ứng/kiêng)' })).toContainText('Nấm');
@@ -342,12 +372,12 @@ test('settings refuse an empty allergy list until "none" is confirmed (AC-31.7, 
   await expect(page.getByLabel('Khẩu vị ẩm thực')).toHaveValue('Món chay Huế');
   await expect(page.getByLabel('Tôi không có món không thích')).toBeChecked();
   await page.getByRole('button', { name: 'Bỏ Nấm' }).click();
-  await page.getByRole('button', { name: 'Lưu thay đổi' }).click();
+  await confirmSave(page, 'Lưu thay đổi');
   await expect(page.getByRole('alert')).toHaveText('Chọn ít nhất một nguyên liệu cần tránh hoặc xác nhận không có dị ứng/kiêng cử.');
   expect(saved).toHaveLength(0);
 
   await page.getByLabel('Tôi không có dị ứng/kiêng cử').check();
-  await page.getByRole('button', { name: 'Lưu thay đổi' }).click();
+  await confirmSave(page, 'Lưu thay đổi');
   await expect(page.getByText('Đã lưu sở thích ăn uống.')).toBeVisible();
   expect(saved[0]).toMatchObject({ vegetarianType: 'VEGAN', avoid: { noneConfirmed: true, items: [] }, maxCookingTimeMinutes: 45, preferredDifficulty: 'MEDIUM' });
 });
@@ -374,9 +404,9 @@ test('server validation and conflicts are shown on the matching list (mock API)'
     : problem(400, 'VALIDATION_FAILED', { errors: [{ field: 'avoid.items[0]', message: 'Tên nguyên liệu tối đa 200 ký tự.' }] })));
   await page.goto('/ho-so/so-thich-an-uong');
 
-  await page.getByRole('button', { name: 'Lưu thay đổi' }).click();
+  await confirmSave(page, 'Lưu thay đổi');
   await expect(page.getByRole('alert')).toHaveText('"Nấm" không thể vừa là nguyên liệu cần tránh vừa là món không thích.');
-  await page.getByRole('button', { name: 'Lưu thay đổi' }).click();
+  await confirmSave(page, 'Lưu thay đổi');
   await expect(page.getByRole('alert')).toHaveText('Tên nguyên liệu tối đa 200 ký tự.');
 });
 
@@ -388,7 +418,7 @@ test('the same name cannot be added to both lists in the browser (mock API)', as
   await page.getByLabel('Tôi không có món không thích').uncheck();
   await page.getByLabel('Thêm vào danh sách 3. món hoặc nguyên liệu không thích', { exact: true }).fill('nấm');
   await page.keyboard.press('Enter');
-  await page.getByRole('button', { name: 'Lưu thay đổi' }).click();
+  await confirmSave(page, 'Lưu thay đổi');
 
   await expect(page.getByRole('alert')).toHaveText('"Nấm" không thể vừa là nguyên liệu cần tránh vừa là món không thích.');
   expect(saved).toHaveLength(0);

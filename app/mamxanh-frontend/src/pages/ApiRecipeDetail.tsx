@@ -6,6 +6,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   ArrowLeftRight,
+  AlertTriangle,
   Check,
   ChefHat,
   ChevronDown,
@@ -40,6 +41,7 @@ import { ShoppingListRecipeServings } from './ShoppingListRecipeServings';
 import { useAiChat } from '../components/AiChatContext';
 import { AddRecipeShoppingDialog } from '../components/AddRecipeShoppingDialog';
 import { useAuth } from '../components/AuthContext';
+import { assessRecipeDietarySafety, type DietarySafetyAssessment } from '../services/dietaryPreferencesApi';
 
 const NUTRIENTS = [
   { key: 'ENERGY_KCAL', label: 'Năng lượng', unit: 'kcal' },
@@ -137,6 +139,8 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
   const [shareMessage, setShareMessage] = useState('');
   const [shoppingOpen, setShoppingOpen] = useState(false);
   const [shoppingSuccess, setShoppingSuccess] = useState<{ id: number; name: string } | null>(null);
+  const [dietaryAssessment, setDietaryAssessment] = useState<DietarySafetyAssessment | null>(null);
+  const [dietaryAssessmentError, setDietaryAssessmentError] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -163,6 +167,17 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
       });
     return () => { alive = false; };
   }, [recipeId]);
+
+  useEffect(() => {
+    setDietaryAssessment(null);
+    setDietaryAssessmentError(false);
+    if (!recipe || !account || account.role === 'ADMIN') return;
+    let alive = true;
+    assessRecipeDietarySafety(recipe.recipeId)
+      .then((result) => { if (alive) setDietaryAssessment(result); })
+      .catch(() => { if (alive) setDietaryAssessmentError(true); });
+    return () => { alive = false; };
+  }, [recipe?.recipeId, account?.id, account?.role]);
 
   const media = useMemo(() => recipe?.media ?? [], [recipe]);
   const activeMedia = media[selectedMedia] ?? media.find((item) => item.cover) ?? media[0];
@@ -363,6 +378,41 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
       </div>
     </Card>
 
+    {dietaryAssessmentError && account && account.role !== 'ADMIN' && (
+      <div role="alert" className="recipe-detail-no-print mb-6 flex gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+        <AlertTriangle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
+        <p>Chưa thể đối chiếu công thức với hồ sơ sở thích của bạn. Hãy thử tải lại trước khi thêm món vào lịch.</p>
+      </div>
+    )}
+    {dietaryAssessment?.hasAllergenOrAvoidConflict && (
+      <div role="alert" aria-live="assertive" className="recipe-detail-no-print mb-4 flex gap-3 rounded-xl border-2 border-red-400 bg-red-50 p-4 text-sm leading-6 text-red-950">
+        <AlertTriangle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
+        <div><h2 className="font-bold">Cảnh báo dị ứng / nguyên liệu cần tránh</h2>
+          <p className="mt-1">Có nguyên liệu trong danh sách cần tránh của bạn: {dietaryAssessment.ingredients.filter((line) => line.conflicts.includes('ALLERGEN_OR_AVOID')).map((line) => line.name).join(', ')}.</p>
+          <p className="mt-1 text-xs">Thông tin này dựa trên thành phần được ghi trong công thức; không xác nhận tình trạng nhiễm chéo.</p>
+        </div>
+      </div>
+    )}
+    {dietaryAssessment?.hasVegetarianConflict && (
+      <div role="alert" className="recipe-detail-no-print mb-4 flex gap-3 rounded-xl border border-orange-300 bg-orange-50 p-4 text-sm leading-6 text-orange-950">
+        <AlertTriangle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
+        <div><h2 className="font-bold">Công thức có thể không phù hợp kiểu ăn chay đã chọn</h2>
+          <p className="mt-1">{dietaryAssessment.ingredients.filter((line) => line.conflicts.includes('VEGETARIAN_TYPE')).map((line) => line.name).join(', ') || 'Loại ăn chay của công thức không phù hợp hồ sơ.'}</p>
+        </div>
+      </div>
+    )}
+    {dietaryAssessment?.hasDislikedIngredients && (
+      <div role="status" className="recipe-detail-no-print mb-6 flex gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+        <AlertTriangle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
+        <div><h2 className="font-bold">Không phù hợp với sở thích</h2>
+          <p className="mt-1">Có nguyên liệu bạn không thích: {dietaryAssessment.ingredients.filter((line) => line.conflicts.includes('DISLIKE')).map((line) => line.name).join(', ')}.</p>
+        </div>
+      </div>
+    )}
+    {!!dietaryAssessment?.unverifiedIngredients.length && (
+      <p role="status" className="recipe-detail-no-print mb-6 rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-950">Chưa xác minh được nguyên liệu: {dietaryAssessment.unverifiedIngredients.join(', ')}. Hệ thống không thể khẳng định công thức phù hợp.</p>
+    )}
+
     {/* Hàng 1: Tổng quan (Ảnh món ăn & Thông tin nhanh) - Luôn cân bằng chiều cao 1:1 tuyệt đối */}
     <div className="mb-8 grid gap-6 lg:grid-cols-12 lg:items-stretch">
       {/* Cột trái (7 cột): Thư viện ảnh */}
@@ -553,6 +603,12 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
                 const isChecked = checkedIngredients.includes(index);
                 const scaled = recipe.servings > 0 ? (item.quantity * servings) / recipe.servings : item.quantity;
                 const unitStr = item.unitCode || item.unitName || '';
+                const ingredientRisk = (dietaryAssessment?.ingredients ?? []).find((line) =>
+                  item.ingredientId != null ? line.ingredientId === item.ingredientId : line.name === item.name,
+                );
+                const allergenRisk = ingredientRisk?.conflicts.includes('ALLERGEN_OR_AVOID') ?? false;
+                const vegetarianRisk = ingredientRisk?.conflicts.includes('VEGETARIAN_TYPE') ?? false;
+                const dislikeRisk = ingredientRisk?.conflicts.includes('DISLIKE') ?? false;
                 const toggle = () => {
                   setCheckedIngredients((current) =>
                     isChecked ? current.filter((checked) => checked !== index) : [...current, index],
@@ -562,8 +618,8 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
                   <li
                     key={`${item.ingredientId ?? item.name}-${index}`}
                     onClick={toggle}
-                    className={`grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-3 py-2.5 cursor-pointer transition-colors sm:grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] sm:px-4 sm:py-2 ${
-                      isChecked ? 'bg-brand-50/25 text-ink-muted' : 'hover:bg-brand-50/40 text-ink'
+                    className={`grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-b border-brand-100 px-3 py-2.5 cursor-pointer transition-colors sm:grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] sm:px-4 sm:py-2 ${
+                      allergenRisk ? 'border-l-4 border-l-red-500 bg-red-50/70 text-red-950' : dislikeRisk ? 'border-l-4 border-l-amber-400 bg-amber-50/70 text-amber-950' : vegetarianRisk ? 'border-l-4 border-l-orange-400 bg-orange-50/70 text-orange-950' : isChecked ? 'bg-brand-50/25 text-ink-muted' : 'hover:bg-brand-50/40 text-ink'
                     }`}
                   >
                     <button
@@ -601,6 +657,9 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
                           {item.name}
                         </Link>
                       ) : item.name}
+                      {allergenRisk && <span className="ml-2 inline-flex rounded-full border border-red-300 bg-red-100 px-2 py-0.5 text-[11px] font-bold text-red-900">Dị ứng / cần tránh</span>}
+                      {!allergenRisk && vegetarianRisk && <span className="ml-2 inline-flex rounded-full border border-orange-300 bg-orange-100 px-2 py-0.5 text-[11px] font-bold text-orange-900">Không phù hợp kiểu chay</span>}
+                      {!allergenRisk && !vegetarianRisk && dislikeRisk && <span className="ml-2 inline-flex rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-900">Không thích</span>}
                       {item.nutritionSupported === false && (
                         <span className="ml-2 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-900">
                           Chưa hỗ trợ tính dinh dưỡng

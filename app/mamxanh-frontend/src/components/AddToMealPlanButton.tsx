@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
-import { ArrowLeftRight, ChevronLeft, ChevronRight, Ellipsis, LoaderCircle } from "lucide-react"
+import { AlertTriangle, ArrowLeftRight, ChevronLeft, ChevronRight, Ellipsis, LoaderCircle } from "lucide-react"
 import { useAuth } from "./AuthContext"
 import { Modal } from "./Modal"
 import { localDateKey, mondayOf } from "./WeekCalendar"
@@ -8,6 +8,7 @@ import { mealPlanApi, type MealPlanWeek } from "../api/recipes"
 import { asApiError } from "../lib/apiClient"
 import { AddRecipeShoppingDialog } from "./AddRecipeShoppingDialog"
 import type { RecipePost } from "../api/recipes"
+import { assessRecipeDietarySafety, type DietarySafetyAssessment } from "../services/dietaryPreferencesApi"
 
 type MealType = MealPlanWeek["entries"][number]["mealType"]
 
@@ -62,6 +63,8 @@ export function AddToMealPlanButton({
   const [error, setError] = useState("")
   const [notice, setNotice] = useState("")
   const [completedSlots, setCompletedSlots] = useState(0)
+  const [riskAssessment, setRiskAssessment] = useState<DietarySafetyAssessment | null>(null)
+  const [riskChecked, setRiskChecked] = useState(false)
 
   const openAction = () => {
     setMenuOpen(false)
@@ -99,10 +102,26 @@ export function AddToMealPlanButton({
 
   if (account?.role === "ADMIN") return null
 
-  const submit = async () => {
+  const submit = async (acknowledgement?: { acknowledged: boolean; token: string | null }) => {
     if (selectedSlots.size === 0) return
     setBusy(true)
     setError("")
+    let currentAssessment: DietarySafetyAssessment
+    try {
+      currentAssessment = await assessRecipeDietarySafety(recipeId)
+    } catch (cause) {
+      setError(asApiError(cause).message || "Chưa thể kiểm tra cảnh báo sở thích ăn uống.")
+      setBusy(false)
+      return
+    }
+    if (currentAssessment.requiresRiskAcknowledgement && (!acknowledgement?.acknowledged
+        || acknowledgement.token !== currentAssessment.assessmentToken)) {
+      setRiskAssessment(currentAssessment)
+      setRiskChecked(false)
+      setBusy(false)
+      return
+    }
+    if (acknowledgement?.acknowledged) setRiskAssessment(null)
     const slots = Array.from(selectedSlots, (key) => {
       const [mealDate, mealType] = key.split(":")
       return { mealDate, mealType: mealType as MealType }
@@ -119,12 +138,21 @@ export function AddToMealPlanButton({
           mealDate: slot.mealDate,
           mealType: slot.mealType,
           recipeId,
+          dietaryRiskAcknowledged: acknowledgement?.acknowledged ?? false,
+          dietaryRiskAssessmentToken: acknowledgement?.token ?? null,
         })
         added.push(slot)
       } catch (cause) {
+        const apiError = asApiError(cause)
+        if (apiError.code === "DIETARY_RISK_ACKNOWLEDGEMENT_REQUIRED") {
+          try {
+            setRiskAssessment(await assessRecipeDietarySafety(recipeId))
+            setRiskChecked(false)
+          } catch { /* The request error below remains visible. */ }
+        }
         failed.push({
           slot,
-          message: asApiError(cause).message || "Vui lòng thử lại.",
+          message: apiError.message || "Vui lòng thử lại.",
         })
       }
     }
@@ -136,6 +164,8 @@ export function AddToMealPlanButton({
 
     if (failed.length === 0) {
       const totalAdded = completedSlots + added.length
+      setRiskAssessment(null)
+      setRiskChecked(false)
       setPlanOpen(false)
       setNotice(`Đã thêm ${totalAdded} ${totalAdded === 1 ? "bữa" : "bữa ăn"} vào Lịch ăn.`)
     } else {
@@ -329,12 +359,37 @@ export function AddToMealPlanButton({
         )}
         <button
           type="button"
-          onClick={submit}
+          onClick={() => { void submit() }}
           disabled={busy || selectedSlots.size === 0}
           className="mt-6 flex h-11 w-full items-center justify-center rounded-full bg-brand-500 px-5 font-semibold text-white transition-colors hover:bg-brand-400 disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/60"
         >
           {busy ? <LoaderCircle className="h-5 w-5 animate-spin" /> : `Hoàn tất${selectedSlots.size > 0 ? ` · ${selectedSlots.size}` : ""}`}
         </button>
+      </Modal>
+      <Modal
+        open={Boolean(riskAssessment)}
+        onClose={() => { if (!busy) { setRiskAssessment(null); setRiskChecked(false) } }}
+        title="Xác nhận cảnh báo trước khi thêm lịch"
+        tone="dark"
+        size="lg"
+      >
+        {riskAssessment && <>
+          <p className="text-sm leading-6 text-white/75">{riskAssessment.recipeTitle} có cảnh báo. Thêm vào lịch không có nghĩa công thức an toàn để ăn.</p>
+          {riskAssessment.hasAllergenOrAvoidConflict && <p className="mt-3 rounded-xl border border-red-400/70 bg-red-950/40 p-3 text-sm text-red-100"><strong>Dị ứng / cần tránh:</strong> {riskAssessment.ingredients.filter((line) => line.conflicts.includes("ALLERGEN_OR_AVOID")).map((line) => line.name).join(", ")}</p>}
+          {riskAssessment.hasVegetarianConflict && <p className="mt-3 rounded-xl border border-orange-300/70 bg-orange-950/30 p-3 text-sm text-orange-100"><strong>Không phù hợp kiểu ăn chay:</strong> {riskAssessment.ingredients.filter((line) => line.conflicts.includes("VEGETARIAN_TYPE")).map((line) => line.name).join(", ")}</p>}
+          {riskAssessment.unverifiedIngredients.length > 0 && <p className="mt-3 rounded-xl border border-amber-300/70 bg-amber-950/30 p-3 text-sm text-amber-100"><strong>Chưa xác minh:</strong> {riskAssessment.unverifiedIngredients.join(", ")}</p>}
+          <label className="mt-4 flex cursor-pointer items-start gap-3 text-sm leading-6 text-white/85">
+            <input type="checkbox" checked={riskChecked} onChange={(event) => setRiskChecked(event.target.checked)} className="mt-1 accent-red-500" />
+            <span>Tôi đã đọc cảnh báo, hiểu rủi ro và vẫn muốn thêm công thức này vào lịch ăn.</span>
+          </label>
+          <div className="mt-5 flex justify-end gap-3">
+            <button type="button" disabled={busy} onClick={() => { setRiskAssessment(null); setRiskChecked(false) }} className="rounded-full px-4 py-2 text-sm text-white/75 hover:bg-white/10">Quay lại</button>
+            <button type="button" disabled={!riskChecked || busy} onClick={() => {
+              const token = riskAssessment.assessmentToken
+              void submit({ acknowledged: true, token })
+            }} className="rounded-full bg-red-600 px-5 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">Vẫn thêm vào lịch</button>
+          </div>
+        </>}
       </Modal>
       <AddRecipeShoppingDialog
         open={shoppingOpen}

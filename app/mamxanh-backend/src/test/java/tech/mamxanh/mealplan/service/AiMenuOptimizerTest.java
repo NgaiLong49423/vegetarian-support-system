@@ -44,7 +44,7 @@ class AiMenuOptimizerTest {
     void improvesOtherDailyNutritionCriteriaWhenEnergyDistributionIsEquivalent() {
         var ranked = List.of(candidate(1, 25), candidate(2, 38), candidate(3, 37),
                 new AiMenuOptimizer.Candidate(4, Map.of("ENERGY_KCAL", BigDecimal.ZERO,
-                        "PROTEIN_G", BigDecimal.TEN)));
+                        "PROTEIN_G", BigDecimal.TEN), 0));
         var protein = new Target("protein", "Chất đạm", BigDecimal.TEN, BigDecimal.valueOf(20), "g", "AMDR", "test");
 
         var result = optimizer.optimize(MONDAY, MONDAY, MONDAY.plusDays(6), 100, ranked, List.of(protein));
@@ -68,6 +68,17 @@ class AiMenuOptimizerTest {
                 .allSatisfy(selection -> assertThat(selection.date()).isAfterOrEqualTo(MONDAY.plusDays(2)));
     }
 
+    @Test
+    void prefersFewerDislikedIngredientsWhenNutritionAndEnergyAreEquivalent() {
+        var disliked = new AiMenuOptimizer.Candidate(1, Map.of("ENERGY_KCAL", BigDecimal.valueOf(125)), 1);
+        var clean = new AiMenuOptimizer.Candidate(2, Map.of("ENERGY_KCAL", BigDecimal.valueOf(125)), 0);
+
+        var result = optimizer.optimize(MONDAY, MONDAY, MONDAY, 500, List.of(disliked, clean), List.of());
+
+        assertThat(result).filteredOn(slot -> slot.mealType().equals("BREAKFAST"))
+                .extracting(AiMenuOptimizer.Selection::recipeId).containsExactly(2L);
+    }
+
     private static int kcal(List<AiMenuOptimizer.Selection> meals, String type,
             List<AiMenuOptimizer.Candidate> candidates) {
         return meals.stream().filter(item -> item.mealType().equals(type)).mapToInt(item -> candidates.stream()
@@ -76,6 +87,6 @@ class AiMenuOptimizerTest {
     }
 
     private static AiMenuOptimizer.Candidate candidate(long id, int kcal) {
-        return new AiMenuOptimizer.Candidate(id, Map.of("ENERGY_KCAL", BigDecimal.valueOf(kcal)));
+        return new AiMenuOptimizer.Candidate(id, Map.of("ENERGY_KCAL", BigDecimal.valueOf(kcal)), 0);
     }
 }

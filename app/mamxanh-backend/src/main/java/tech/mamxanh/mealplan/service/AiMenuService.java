@@ -51,6 +51,7 @@ public class AiMenuService {
     private final MealPlanEntryRepository entries;
     private final MealPlanReadService readService;
     private final AiTokenQuotaService aiQuota;
+    private final DietaryConstraintEvaluator dietaryEvaluator;
     private final AiMenuOptimizer optimizer = new AiMenuOptimizer();
 
     public AiMenuService(CurrentUserService users, SubscriptionEntitlementService entitlements,
@@ -59,7 +60,8 @@ public class AiMenuService {
             IngredientCatalogLookupService ingredientCatalog, IngredientConversionLookupService conversions,
             AiClient ai, ApplicationEventPublisher events, Clock clock, ObjectMapper objectMapper,
             MealPlanRepository plans, MealPlanEntryRepository entries,
-            MealPlanReadService readService, AiTokenQuotaService aiQuota) {
+            MealPlanReadService readService, AiTokenQuotaService aiQuota,
+            DietaryConstraintEvaluator dietaryEvaluator) {
         this.users = users;
         this.entitlements = entitlements;
         this.nutritionProfiles = nutritionProfiles;
@@ -76,6 +78,7 @@ public class AiMenuService {
         this.entries = entries;
         this.readService = readService;
         this.aiQuota = aiQuota;
+        this.dietaryEvaluator = dietaryEvaluator;
     }
 
     public AiMenuPreviewResponse createPreview(CreateAiMenuPreviewRequest request) {
@@ -89,7 +92,7 @@ public class AiMenuService {
                 "Chưa có đủ công thức công khai phù hợp và có dữ liệu dinh dưỡng để tạo thực đơn.");
         List<Long> ids = pool.stream().map(c -> c.recipe().id()).toList();
         String prompt = prompt(context.firstSuggestionDate(), context.lastSuggestionDate(), context.goal(),
-                context.vegetarianType(), context.preferred(), context.allAvoid(), pool, context.profile());
+                context.vegetarianType(), context.preferred(), context.allAvoid(), context.disliked(), pool, context.profile());
         try {
             long userId = users.requireActiveMember().id();
             aiQuota.requireAvailable(userId, null);
@@ -104,12 +107,20 @@ public class AiMenuService {
             Set<Long> rankedSet = Set.copyOf(rankedIds);
             List<Candidate> ranked = java.util.stream.Stream.concat(rankedIds.stream().map(candidateById::get),
                     pool.stream().filter(candidate -> !rankedSet.contains(candidate.recipe().id()))).toList();
+            // Re-read profile, recipe status, ingredient catalog, and constraints after the provider returns.
+            MenuContext verified = resolveMenuContext(request);
+            Map<Long, Candidate> verifiedById = verified.pool().stream()
+                    .collect(Collectors.toMap(candidate -> candidate.recipe().id(), candidate -> candidate));
+            List<Candidate> safeRanked = rankedIds.stream().map(verifiedById::get).filter(Objects::nonNull).toList();
+            Set<Long> safeIds = safeRanked.stream().map(candidate -> candidate.recipe().id()).collect(Collectors.toSet());
+            safeRanked = java.util.stream.Stream.concat(safeRanked.stream(), verified.pool().stream()
+                    .filter(candidate -> !safeIds.contains(candidate.recipe().id()))).toList();
             List<AiMenuOptimizer.Selection> selections = optimizer.optimize(request.weekStartDate(),
-                    context.firstSuggestionDate(), context.lastSuggestionDate(), context.profile().energyKcal().doubleValue(), ranked.stream()
-                            .map(candidate -> new AiMenuOptimizer.Candidate(candidate.recipe().id(), candidate.nutritionPerServing())).toList(),
-                    context.profile().dailyTargets());
-            return preview(request.weekStartDate(), request.mode(), context.goal(), selections, pool,
-                    context.preferred(), context.profile());
+                    verified.firstSuggestionDate(), verified.lastSuggestionDate(), verified.profile().energyKcal().doubleValue(), safeRanked.stream()
+                            .map(candidate -> new AiMenuOptimizer.Candidate(candidate.recipe().id(), candidate.nutritionPerServing(), candidate.dislikeCount())).toList(),
+                    verified.profile().dailyTargets());
+            return preview(request.weekStartDate(), request.mode(), verified.goal(), selections, verified.pool(),
+                    verified.preferred(), verified.profile());
         } catch (AiProviderException exception) {
             throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE,
                     "Không thể tạo thực đơn lúc này. Vui lòng thử lại sau.");
@@ -148,6 +159,7 @@ public class AiMenuService {
         result.put("vegetarianType", context.vegetarianType());
         result.put("preferredIngredientIds", context.preferred());
         result.put("avoidedIngredientIds", context.allAvoid());
+        result.put("dislikedIngredientIds", context.disliked());
         result.put("energyKcal", context.profile().energyKcal());
         result.put("candidates", trustedCandidates);
         return result;
@@ -169,7 +181,7 @@ public class AiMenuService {
                 context.pool().stream().filter(candidate -> !rankedSet.contains(candidate.recipe().id()))).toList();
         List<AiMenuOptimizer.Selection> selections = optimizer.optimize(request.weekStartDate(),
                 context.firstSuggestionDate(), context.lastSuggestionDate(), context.profile().energyKcal().doubleValue(),
-                ranked.stream().map(candidate -> new AiMenuOptimizer.Candidate(candidate.recipe().id(), candidate.nutritionPerServing())).toList(),
+                ranked.stream().map(candidate -> new AiMenuOptimizer.Candidate(candidate.recipe().id(), candidate.nutritionPerServing(), candidate.dislikeCount())).toList(),
                 context.profile().dailyTargets());
         return preview(request.weekStartDate(), request.mode(), context.goal(), selections, context.pool(),
                 context.preferred(), context.profile());
@@ -188,9 +200,10 @@ public class AiMenuService {
         List<Long> allAvoid = java.util.stream.Stream.concat(dietary.avoidedIngredientIds().stream(), weeklyAvoid.stream())
                 .distinct().toList();
         List<Candidate> pool = firstSuggestionDate.isAfter(lastSuggestionDate) ? List.of()
-                : candidates(dietary.vegetarianType(), allAvoid, dietary.avoidedIngredientNames());
+                : candidates(dietary.vegetarianType(), allAvoid, dietary.avoidedIngredientNames(),
+                        dietary.dislikedIngredientIds(), dietary.dislikedIngredientNames());
         return new MenuContext(profile, firstSuggestionDate, lastSuggestionDate, goal, preferred, allAvoid,
-                dietary.vegetarianType(), pool);
+                dietary.dislikedIngredientIds(), dietary.dislikedIngredientNames(), dietary.vegetarianType(), pool);
     }
 
     private static List<Long> normalizeAdkRankedIds(List<Long> rankedIds, List<Long> allowedIds) {
@@ -217,7 +230,8 @@ public class AiMenuService {
         List<Long> weeklyAvoid = normalizedIds(request.avoidedIngredientIds());
         List<Long> avoid = java.util.stream.Stream.concat(dietary.avoidedIngredientIds().stream(), weeklyAvoid.stream())
                 .distinct().toList();
-        List<Candidate> pool = candidates(dietary.vegetarianType(), avoid, dietary.avoidedIngredientNames());
+        List<Candidate> pool = candidates(dietary.vegetarianType(), avoid, dietary.avoidedIngredientNames(),
+                dietary.dislikedIngredientIds(), dietary.dislikedIngredientNames());
         Map<Long, Candidate> allowed = pool.stream().collect(Collectors.toMap(c -> c.recipe().id(), c -> c));
         validateSelectedMeals(request, allowed, firstReplaceDate, lastReplaceDate);
 
@@ -242,15 +256,22 @@ public class AiMenuService {
         return readService.getWeek(request.weekStartDate());
     }
 
-    private List<Candidate> candidates(String vegetarianType, List<Long> avoidedIds, List<String> avoidedNames) {
+    private List<Candidate> candidates(String vegetarianType, List<Long> avoidedIds, List<String> avoidedNames,
+            List<Long> dislikedIds, List<String> dislikedNames) {
         Map<Integer, UnitResponse> units = ingredientCatalog.findActiveUnits().stream()
                 .collect(Collectors.toMap(UnitResponse::id, unit -> unit));
-        Set<Long> avoided = Set.copyOf(avoidedIds);
         List<RecipePostResponse> source = recipes.searchPublished("", 0, CANDIDATE_LIMIT).items();
+        Set<Long> ingredientIds = source.stream().flatMap(recipe -> recipe.ingredients().stream())
+                .map(RecipePostResponse.Ingredient::ingredientId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<Long, tech.mamxanh.nutrition.dto.response.IngredientResponse> catalog = ingredientCatalog
+                .findIngredientReferences(ingredientIds).stream()
+                .collect(Collectors.toMap(tech.mamxanh.nutrition.dto.response.IngredientResponse::id, item -> item));
         List<Candidate> result = new ArrayList<>();
-        Set<String> avoidNameKeys = avoidedNames.stream().map(AiMenuService::ingredientKey).collect(Collectors.toSet());
         for (RecipePostResponse recipe : source) {
-            if (!compatible(vegetarianType, recipe.vegetarianType()) || violatesAvoid(recipe, avoided, avoidNameKeys)) continue;
+            var assessment = dietaryEvaluator.evaluate(recipe, vegetarianType, avoidedIds, avoidedNames,
+                    dislikedIds, dislikedNames, catalog);
+            if (assessment.hasAllergenOrAvoidConflict() || assessment.hasVegetarianConflict()
+                    || !assessment.unverifiedIngredients().isEmpty()) continue;
             List<RecipeNutritionService.RecipeIngredient> lines = new ArrayList<>();
             boolean resolvable = true;
             for (var ingredient : recipe.ingredients()) {
@@ -263,9 +284,10 @@ public class AiMenuService {
             }
             if (!resolvable || lines.isEmpty()) continue;
             var nutrition = recipeNutrition.calculate(lines, recipe.servings());
-            if (nutrition.complete()) result.add(new Candidate(recipe, nutrition.perServing()));
+            if (nutrition.complete()) result.add(new Candidate(recipe, nutrition.perServing(),
+                    DietaryConstraintEvaluator.dislikeCount(recipe, dislikedIds, dislikedNames)));
         }
-        return result;
+        return result.stream().sorted(Comparator.comparingInt(Candidate::dislikeCount)).toList();
     }
 
     private AiMenuPreviewResponse preview(LocalDate start, String mode, String goal,
@@ -333,27 +355,6 @@ public class AiMenuService {
         }
     }
 
-    private static boolean compatible(String requested, String recipe) {
-        if (requested == null) return true;
-        return switch (requested) {
-            case "VEGAN" -> "VEGAN".equals(recipe);
-            case "LACTO" -> List.of("VEGAN", "LACTO").contains(recipe);
-            case "OVO" -> List.of("VEGAN", "OVO").contains(recipe);
-            case "LACTO_OVO" -> List.of("VEGAN", "LACTO", "OVO", "LACTO_OVO").contains(recipe);
-            default -> false;
-        };
-    }
-
-    private static boolean violatesAvoid(RecipePostResponse recipe, Set<Long> avoided, Set<String> avoidedNames) {
-        return recipe.ingredients().stream().anyMatch(ingredient -> avoided.contains(ingredient.ingredientId())
-                || avoidedNames.contains(ingredientKey(ingredient.name())));
-    }
-
-    private static String ingredientKey(String value) {
-        return java.text.Normalizer.normalize(value == null ? "" : value, java.text.Normalizer.Form.NFC)
-                .replaceAll("[\\s\\u00A0]+", " ").trim().toLowerCase(Locale.ROOT);
-    }
-
     private static List<Long> normalizedIds(List<Long> ids) {
         if (ids == null) return List.of();
         if (ids.stream().anyMatch(id -> id == null || id < 1)) throw new AppException(ErrorCode.VALIDATION_FAILED);
@@ -361,7 +362,7 @@ public class AiMenuService {
     }
 
     private static String prompt(LocalDate firstSuggestionDate, LocalDate lastSuggestionDate, String goal, String vegetarianType, Set<Long> preferred,
-            List<Long> avoided, List<Candidate> candidates,
+            List<Long> avoided, List<Long> disliked, List<Candidate> candidates,
             NutritionProfileService.MenuNutritionContext profile) {
         String recipeData = candidates.stream().map(candidate -> "ID " + candidate.recipe().id() + ": "
                 + candidate.recipe().title() + "; ingredients=" + candidate.recipe().ingredients().stream()
@@ -378,7 +379,8 @@ public class AiMenuService {
                 + "; BMI=" + profile.bmi() + " (" + profile.bmiCategory() + "); daily energy target=" + profile.energyKcal()
                 + " kcal; daily nutrient references=" + targets + ". Use these only to personalize recipe suitability; do not infer calorie deficits/surpluses or treatment."
                 + "; declared vegetarian pattern=" + vegetarianType + "; preferred ingredient IDs=" + preferred
-                + "; forbidden ingredient IDs=" + avoided + ". Do not change the supplied target values, promise health outcomes, or invent recipes.\nCandidates:\n" + recipeData;
+                + "; forbidden ingredient IDs=" + avoided + "; soft preference: minimize recipes containing disliked ingredient IDs=" + disliked
+                + ". Forbidden ingredients and vegetarian eligibility are hard constraints; never waive them to fill the menu. Do not change the supplied target values, promise health outcomes, or invent recipes.\nCandidates:\n" + recipeData;
     }
 
     private static String normalizedNutritionKey(String key) {
@@ -415,8 +417,8 @@ public class AiMenuService {
         return LocalDate.now(clock.withZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")));
     }
 
-    private record Candidate(RecipePostResponse recipe, Map<String, java.math.BigDecimal> nutritionPerServing) { }
+    private record Candidate(RecipePostResponse recipe, Map<String, java.math.BigDecimal> nutritionPerServing, int dislikeCount) { }
     private record MenuContext(NutritionProfileService.MenuNutritionContext profile, LocalDate firstSuggestionDate,
             LocalDate lastSuggestionDate, String goal, Set<Long> preferred, List<Long> allAvoid,
-            String vegetarianType, List<Candidate> pool) { }
+            List<Long> disliked, List<String> dislikedNames, String vegetarianType, List<Candidate> pool) { }
 }

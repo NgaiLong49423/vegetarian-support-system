@@ -51,6 +51,12 @@ async function setup(page: import("@playwright/test").Page, sourceOverrides: Rec
   await page.route("**/api/v1/recipes/11/related", (route) => route.fulfill({ json: { items: [] } }))
   await page.route("**/api/v1/recipes/11/reaction", (route) => route.fulfill({ json: { recipeId: 11, currentReaction: null, likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null } }))
   await page.route("**/api/v1/recipes/11/comments**", (route) => route.fulfill({ json: { content: [], page: 0, size: 10, totalElements: 0, totalPages: 0, commentCount: 0 } }))
+  await page.route("**/api/v1/nutrition/dietary-preferences/recipes/11/safety-assessment", (route) => route.fulfill({ json: {
+    recipeId: 11, recipeTitle: recipe.title, recipeTypeCompatible: true,
+    hasAllergenOrAvoidConflict: false, hasVegetarianConflict: false,
+    hasDislikedIngredients: false, unverifiedIngredients: [],
+    requiresRiskAcknowledgement: false, assessmentToken: null, ingredients: [],
+  } }))
   await page.route("**/api/v1/shopping-lists/42/recipes/11/servings", async (route) => {
     if (route.request().method() === "PUT") {
       const body = route.request().postDataJSON()

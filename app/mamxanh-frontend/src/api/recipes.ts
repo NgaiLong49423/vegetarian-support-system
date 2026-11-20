@@ -624,9 +624,12 @@ export const mealPlanApi = {
   }>) => (await apiClient.post<MealPlanWeek>(`/meal-plans/${weekStartDate}/ai-menu`, { slots })).data,
   addEntry: async (weekStartDate: string, payload: {
     mealDate: string; mealType: MealPlanWeek['entries'][number]['mealType']; recipeId: number;
+    dietaryRiskAcknowledged?: boolean; dietaryRiskAssessmentToken?: string | null;
   }) => (await apiClient.post<MealPlanWeek['entries'][number]>(`/meal-plans/${weekStartDate}/entries`, payload)).data,
-  replaceEntry: async (weekStartDate: string, entryId: number, recipeId: number) =>
-    (await apiClient.put<MealPlanWeek['entries'][number]>(`/meal-plans/${weekStartDate}/entries/${entryId}`, { recipeId })).data,
+  replaceEntry: async (weekStartDate: string, entryId: number, recipeId: number,
+    risk?: { dietaryRiskAcknowledged?: boolean; dietaryRiskAssessmentToken?: string | null }) =>
+    (await apiClient.put<MealPlanWeek['entries'][number]>(`/meal-plans/${weekStartDate}/entries/${entryId}`,
+      { recipeId, ...risk })).data,
   removeEntry: async (weekStartDate: string, entryId: number) => {
     await apiClient.delete<void>(`/meal-plans/${weekStartDate}/entries/${entryId}`);
   },

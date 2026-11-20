@@ -15,6 +15,7 @@ import tech.mamxanh.mealplan.repository.MealPlanEntryRepository;
 import tech.mamxanh.mealplan.repository.MealPlanRepository;
 import tech.mamxanh.recipe.service.AiRecipeRecommendationService;
 import tech.mamxanh.recipe.service.RecipePostService;
+import tech.mamxanh.nutrition.service.DietarySafetyAssessmentService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -29,16 +30,18 @@ public class MealPlanService {
     private final MealPlanEntryRepository entries;
     private final RecipePostService recipes;
     private final AiRecipeRecommendationService aiRecommendations;
+    private final DietarySafetyAssessmentService dietarySafety;
 
     public MealPlanService(MealPlanRepository repository, CurrentUserService currentUserService,
             MealPlanReadService readService, MealPlanEntryRepository entries, RecipePostService recipes,
-            AiRecipeRecommendationService aiRecommendations) {
+            AiRecipeRecommendationService aiRecommendations, DietarySafetyAssessmentService dietarySafety) {
         this.repository = repository;
         this.currentUserService = currentUserService;
         this.readService = readService;
         this.entries = entries;
         this.recipes = recipes;
         this.aiRecommendations = aiRecommendations;
+        this.dietarySafety = dietarySafety;
     }
 
     @Transactional
@@ -111,10 +114,12 @@ public class MealPlanService {
         if (request.mealDate().isBefore(weekStartDate) || request.mealDate().isAfter(weekStartDate.plusDays(6))) {
             throw new AppException(ErrorCode.VALIDATION_FAILED, "Ngày ăn phải thuộc tuần được chọn.");
         }
+        recipes.requirePublishedMealPlanRecipe(request.recipeId());
+        dietarySafety.requireRiskAcknowledged(request.recipeId(), request.dietaryRiskAcknowledged(),
+                request.dietaryRiskAssessmentToken());
         repository.createWeekIfAbsent(owner, weekStartDate);
         var plan = requireWeek(owner, weekStartDate);
         rejectDuplicate(plan.getId(), request.mealDate(), request.mealType(), request.recipeId(), 0);
-        recipes.requirePublishedMealPlanRecipe(request.recipeId());
         var entry = new MealPlanEntryEntity();
         entry.setMealPlanId(plan.getId());
         entry.setMealDate(request.mealDate());
@@ -127,15 +132,21 @@ public class MealPlanService {
     }
 
     @Transactional
-    public MealPlanWeekResponse.Entry replaceEntry(LocalDate weekStartDate, long entryId, long recipeId) {
+    public MealPlanWeekResponse.Entry replaceEntry(LocalDate weekStartDate, long entryId, long recipeId,
+            Boolean dietaryRiskAcknowledged, String dietaryRiskAssessmentToken) {
         var plan = ownedWeek(weekStartDate);
         var entry = requireEntry(plan.getId(), entryId);
         rejectDuplicate(plan.getId(), entry.getMealDate(), entry.getMealType(), recipeId, entryId);
         recipes.requirePublishedMealPlanRecipe(recipeId);
+        dietarySafety.requireRiskAcknowledged(recipeId, dietaryRiskAcknowledged, dietaryRiskAssessmentToken);
         entry.setRecipeId(recipeId);
         var saved = entries.saveAndFlush(entry);
         repository.touchWeek(plan.getId());
         return response(saved);
+    }
+
+    public MealPlanWeekResponse.Entry replaceEntry(LocalDate weekStartDate, long entryId, long recipeId) {
+        return replaceEntry(weekStartDate, entryId, recipeId, false, null);
     }
 
     @Transactional

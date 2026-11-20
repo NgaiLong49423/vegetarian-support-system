@@ -9,6 +9,26 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-11-21 — Enforce Dietary Safety Across Recipe Actions
+
+**Status:** Committed — c369c09f.
+
+**Scope:** Apply declared vegetarian, avoid, and dislike preferences to recipe recommendations and meal-plan actions, with explicit review for recipes that may conflict with current dietary constraints.
+
+### Added
+
+- Add Backend dietary safety assessments and a Frontend review flow for adding or replacing a recipe in a meal plan.
+- Add automated unit and end-to-end coverage for dietary safety decisions and preference-aware recommendations.
+
+### Changed
+
+- Apply hard dietary constraints and soft dislikes when selecting AI menu and recipe recommendations.
+- Require an acknowledgement tied to the current dietary assessment when a meal-plan action has a dietary risk.
+
+### Fixed
+
+- Prevent recipe actions from silently bypassing current dietary constraints.
+
 ## 2026-11-20 — Remove Three Local Demo Posts
 
 **Status:** Working tree — not committed.

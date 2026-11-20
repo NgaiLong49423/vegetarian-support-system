@@ -137,12 +137,21 @@ public class DietaryPreferenceService {
                 .map(UserIngredientPreferenceEntity::getIngredientId).filter(java.util.Objects::nonNull).distinct().toList();
         List<String> avoidNames = rows.stream().filter(row -> row.getPreferenceType() == PreferenceType.AVOID)
                 .map(UserIngredientPreferenceEntity::getName).filter(java.util.Objects::nonNull).toList();
+        List<Long> dislikeIds = rows.stream().filter(row -> row.getPreferenceType() == PreferenceType.DISLIKE)
+                .map(UserIngredientPreferenceEntity::getIngredientId).filter(java.util.Objects::nonNull).distinct().toList();
+        List<String> dislikeNames = rows.stream().filter(row -> row.getPreferenceType() == PreferenceType.DISLIKE)
+                .map(UserIngredientPreferenceEntity::getName).filter(java.util.Objects::nonNull).toList();
         return new MenuDietaryConstraints(profile == null || profile.getVegetarianType() == null
-                ? null : profile.getVegetarianType().name(), avoidIds, avoidNames);
+                ? null : profile.getVegetarianType().name(), avoidIds, avoidNames, dislikeIds, dislikeNames);
     }
 
     public record MenuDietaryConstraints(String vegetarianType, List<Long> avoidedIngredientIds,
-            List<String> avoidedIngredientNames) { }
+            List<String> avoidedIngredientNames, List<Long> dislikedIngredientIds, List<String> dislikedIngredientNames) { }
+
+    @Transactional(readOnly = true)
+    public LocalDateTime currentProfileVersion() {
+        return currentMember().getUpdatedAt();
+    }
 
     private DietaryPreferenceEntity currentMember() {
         return currentMember(profiles::findById);
