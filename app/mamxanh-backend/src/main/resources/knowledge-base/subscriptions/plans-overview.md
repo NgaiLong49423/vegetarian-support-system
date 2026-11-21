@@ -1,6 +1,6 @@
 ---
 id: plans-overview
-title: "So sánh các gói dịch vụ AI: Free, Plus và Pro"
+title: Gói dịch vụ và hạn mức AI
 category: subscriptions
 audience:
   - guest
@@ -9,6 +9,7 @@ audience:
 source_requirements:
   - FR-10
   - FR-13
+  - FR-63
   - BR-02
   - BR-78
 source_use_cases:
@@ -17,55 +18,37 @@ source_use_cases:
   - UC-13.1
 source_files:
   - app/mamxanh-frontend/src/pages/AiPlans.tsx
-  - app/mamxanh-backend/src/main/java/tech/mamxanh/subscription/controller/SubscriptionController.java
+  - app/mamxanh-backend/src/main/java/tech/mamxanh/admin/service/AdminAiConfigurationService.java
+  - app/mamxanh-backend/src/main/java/tech/mamxanh/subscription/service/AiTokenQuotaService.java
 implementation_status: verified
-last_verified: 2026-11-01
+last_verified: 2026-11-21
 ---
 
-# So sánh các gói dịch vụ AI: Free, Plus và Pro
+# Gói dịch vụ và hạn mức AI
 
-## Chức năng này dùng để làm gì?
+## Gói AI dùng để làm gì?
 
-Mâm Xanh cung cấp các gói dịch vụ hội viên (**Subscription Tiers**) nhằm phục vụ nhu cầu tương tác và hỗ trợ từ Trợ lý AI ở các cấp độ khác nhau. Bạn có thể xem bảng so sánh chi tiết và lựa chọn nâng cấp tại trang **Gói dịch vụ AI** (`/goi-ai`).
+Gói dịch vụ ảnh hưởng đến quota, model AI được phép sử dụng và một số tính năng có điều kiện theo gói. Gói AI không tự thay đổi vai trò tài khoản: nâng cấp gói không biến Customer thành Expert và không cấp quyền đăng công thức.
 
-Gói dịch vụ AI quyết định **hạn mức token**. Các gói thành viên dùng chung danh mục model AI khả dụng và phạm vi chức năng theo vai trò, điều kiện nghiệp vụ.
+## Xem giá và quyền lợi hiện hành
 
-## Bảng so sánh chi tiết các gói
+Giá, quota, danh sách model và một số giới hạn được quản trị viên cấu hình. Vì vậy, không nên dựa vào con số giá hoặc token cố định trong một câu trả lời cũ. Hãy xem trang **Gói dịch vụ AI** (`/goi-ai`) và phần sử dụng AI của tài khoản để biết lựa chọn, thời hạn, quota và Credit đang áp dụng.
 
-| Tiêu chí | Gói Miễn Phí (Free) | Gói Nâng Cao (Plus) | Gói Chuyên Nghiệp (Pro) |
-|---|:---:|:---:|:---:|
-| **Giá dịch vụ** | **0 đ** | **99.000 đ** / tháng (30 ngày) | **199.000 đ** / tháng (30 ngày) |
-| **Hạn mức token** | **50.000 token / tháng** | **200.000 token / chu kỳ** | **500.000 token / chu kỳ** |
-| **Quyền chọn mô hình AI** | Danh mục chung | Danh mục chung | Danh mục chung |
-| **Khả năng nạp AI Credit** | Có | Có | Có |
-| **Lưu công thức, Lịch ăn, Đi chợ** | Miễn phí trọn đời | Miễn phí trọn đời | Miễn phí trọn đời |
-| **Xem phân tích dinh dưỡng** | Đầy đủ | Đầy đủ | Đầy đủ |
-| **Tự động gia hạn** | Không | Không tự động trừ tiền | Không tự động trừ tiền |
+Nếu Trợ lý không có công cụ đọc cấu hình hiện hành, Trợ lý nên hướng dẫn bạn mở trang trên thay vì tự khẳng định giá, số token, model hoặc quota còn lại.
 
-## Chi tiết từng gói dịch vụ
+## Quota, AI Credit và model
 
-### 1. Gói Miễn Phí (Free Tier)
-- **Đối tượng:** Mọi thành viên vừa đăng ký tài khoản Mâm Xanh.
-- **Quyền lợi:** Nhận ngay 50.000 token miễn phí mỗi tháng dương lịch (được làm mới vào ngày mùng 1 hàng tháng theo giờ Việt Nam).
-- **Mô hình AI:** Chọn từ danh mục model thành viên đang khả dụng trong phần Cài đặt chat.
+- Mỗi yêu cầu AI chịu hạn mức của kỳ hiện tại. Quota theo gói và model được phép có thể khác nhau theo cấu hình tài khoản.
+- AI Credit có thể được dùng theo quy tắc hiện hành khi quota gói không còn. Số dư thật là dữ liệu tài khoản động; cần đọc từ trang hoặc công cụ Backend phù hợp.
+- Nếu hết quota hoặc không còn Credit, yêu cầu có thể bị từ chối cho đến khi kỳ quota được làm mới, có Credit khả dụng hoặc gói được thay đổi.
+- Không kết luận rằng mọi tính năng AI đều có cùng điều kiện gói. Điều kiện truy cập thuộc nghiệp vụ của từng tính năng.
 
-### 2. Gói Nâng Cao (Plus Tier)
-- **Giá:** 99.000 đ / chu kỳ 30 ngày.
-- **Quyền lợi:** Nhận 200.000 token trong chu kỳ.
-- **Mô hình AI:** Chọn từ cùng danh mục model thành viên.
+## Gói AI và thực đơn dinh dưỡng
 
-### 3. Gói Chuyên Nghiệp (Pro Tier)
-- **Giá:** 199.000 đ / chu kỳ 30 ngày.
-- **Quyền lợi:** Nhận 500.000 token trong chu kỳ.
-- **Mô hình AI:** Chọn từ cùng danh mục model thành viên.
+FR-36 xác định gói dịch vụ không phải điều kiện nghiệp vụ để truy cập chức năng tạo thực đơn dinh dưỡng. Yêu cầu vẫn phải đáp ứng hồ sơ dinh dưỡng, eligibility và quota/model hiện hành. Xem [AI tạo thực đơn dinh dưỡng](../ai-features/ai-meal-recommendations.md) để biết luồng cụ thể.
 
-## Những điều cần lưu ý
+## Vai trò tài khoản
 
-1. **Gói AI KHÔNG khóa tính năng cơ bản của website:**
-   - Việc bạn ở gói Free, Plus hay Pro **hoàn toàn không làm hạn chế** các tính năng cốt lõi như: Tìm kiếm món, xem công thức, bình luận, bình chọn Like/Dislike, lập thực đơn tuần thủ công hay tạo danh sách đi chợ. Mọi tính năng nghiệp vụ này đều mở miễn phí trọn đời cho mọi thành viên.
-2. **Gói AI KHÔNG thay đổi vai trò Chuyên gia:**
-   - Việc mua gói Pro không tự biến tài khoản người dùng thành Chuyên gia (Expert). Quyền đăng bài công thức vẫn tuân theo quy trình xét duyệt đơn Chuyên gia độc lập.
-3. **Không tự động gia hạn (Không lo trừ tiền âm thầm):**
-   - Mâm Xanh tôn trọng người dùng và **hoàn toàn không áp dụng cơ chế tự động trừ tiền trong tài khoản ngân hàng** khi hết chu kỳ 30 ngày. Khi gói hết hạn, tài khoản của bạn sẽ tự động quay trở về gói Free bình thường; bạn chỉ thanh toán khi chủ động muốn gia hạn tiếp.
-4. **Token trong gói không cộng dồn:**
-   - Hạn mức token của gói theo tháng không được cộng dồn sang chu kỳ tiếp theo nếu chưa dùng hết. Tuy nhiên, nếu bạn nạp thêm **AI Credit**, số dư Credit sẽ được bảo lưu vĩnh viễn không bao giờ hết hạn.
+- Free, Plus và Pro là cấp gói dịch vụ AI, không phải vai trò người dùng.
+- Customer và Expert có quyền nghiệp vụ khác nhau; quyền đăng và quản lý công thức vẫn theo vai trò Expert.
+- Giá và nội dung các gói có thể được cập nhật; nội dung trang gói đang hiển thị là thông tin cần dùng khi tư vấn người dùng.

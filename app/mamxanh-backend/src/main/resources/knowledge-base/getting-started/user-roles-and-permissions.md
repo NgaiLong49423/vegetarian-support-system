@@ -14,6 +14,8 @@ source_requirements:
   - FR-06
   - BR-05
   - BR-07
+  - BR-31
+  - FR-36
 source_use_cases:
   - UC-01.1
   - UC-03.4
@@ -23,8 +25,10 @@ source_files:
   - docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md
   - docs/requirements/srs/BUSINESS-RULES.md
   - app/mamxanh-backend/src/main/java/tech/mamxanh/auth/entity/User.java
+  - app/mamxanh-backend/src/main/java/tech/mamxanh/mealplan/controller/AiMenuController.java
+  - app/mamxanh-backend/src/main/java/tech/mamxanh/mealplan/service/AiMenuService.java
 implementation_status: verified
-last_verified: 2026-11-01
+last_verified: 2026-11-21
 ---
 
 # Các vai trò người dùng và phân quyền trên Mâm Xanh
@@ -45,11 +49,12 @@ Hệ thống có 4 vai trò chính:
 |---|:---:|:---:|:---:|
 | Xem công thức công khai, tỷ lệ % Like, lượt xem | Có | Có | Có |
 | Tìm kiếm, lọc và so sánh 2 công thức | Có | Có | Có |
-| Sử dụng AI Chatbot trải nghiệm | Có (50.000 token/tháng) | Có (theo gói dịch vụ) | Có (theo gói dịch vụ) |
+| Sử dụng AI Chatbot | Theo quota và giới hạn Guest hiện hành | Theo quota, model và điều kiện từng tính năng | Theo quota, model và điều kiện từng tính năng |
 | Bình chọn Like / Dislike bài viết | Không | Có | Có (trừ bài của mình) |
 | Viết bình luận, phản hồi thảo luận | Không | Có | Có |
 | Lưu công thức yêu thích (`Saved Recipe`) | Không | Có | Có |
-| Lập thực đơn tuần (`Meal Plan`) | Không | Có | Có |
+| Lập thực đơn tuần thủ công (`Meal Plan`) | Không | Có | Có |
+| Tạo preview thực đơn dinh dưỡng bằng AI | Không | Có khi đủ hồ sơ/eligibility và quota/model | Có khi đủ hồ sơ/eligibility và quota/model |
 | Tạo và quản lý Danh sách đi chợ | Không | Có | Có |
 | Theo dõi dinh dưỡng cá nhân | Không | Có | Có |
 | Theo dõi (`Follow`) thành viên khác | Không | Có | Có |
@@ -62,7 +67,7 @@ Hệ thống có 4 vai trò chính:
 
 ### 1. Khách vãng lai (Guest)
 - **Đặc điểm:** Người truy cập chưa đăng nhập tài khoản.
-- **Quyền hạn:** Khám phá toàn bộ bài công thức đã công khai, xem danh bạ chuyên gia, xem danh mục nguyên liệu, tra cứu thông tin dinh dưỡng công thức, sử dụng tính năng so sánh 2 món ăn và trải nghiệm AI Chatbot với hạn mức 50.000 token mỗi tháng theo định danh Guest hiện tại.
+- **Quyền hạn:** Khám phá bài công thức công khai, xem danh bạ chuyên gia, xem danh mục nguyên liệu, tra cứu thông tin dinh dưỡng công thức và dùng các tính năng công khai được phép. Guest không có Lịch ăn cá nhân và không tạo được preview thực đơn dinh dưỡng FR-36. Quota và giới hạn AI của Guest theo cấu hình hiện hành.
 - **Giới hạn:** Không có dữ liệu cá nhân lưu trữ; không thể lưu món, lên lịch ăn, đi chợ, bình luận hay bình chọn Like/Dislike.
 
 ### 2. Thành viên thông thường (Customer)
@@ -82,5 +87,6 @@ Hệ thống có 4 vai trò chính:
 
 ## Những điều cần lưu ý
 
-1. **Gói dịch vụ AI (Free, Plus, Pro) không thay đổi vai trò tài khoản:** Các gói dùng chung danh mục model AI; nâng cấp thay đổi hạn mức token, không biến Customer thành Expert và không cấp thêm quyền đăng bài.
-2. **Quyền tác giả độc lập:** Mỗi Chuyên gia chỉ có quyền chỉnh sửa hoặc xóa bài viết do chính tài khoản của mình tạo ra.
+1. **Gói dịch vụ AI (Free, Plus, Pro) không thay đổi vai trò tài khoản:** Gói có thể ảnh hưởng quota, model được phép hoặc điều kiện của một tính năng AI; nâng cấp không biến Customer thành Expert và không cấp quyền đăng bài.
+2. **Điều kiện AI lập thực đơn dinh dưỡng:** FR-36 dành cho Member có hồ sơ dinh dưỡng hợp lệ và eligibility. Gói không phải điều kiện nghiệp vụ của FR-36; quota và model vẫn được kiểm tra theo cấu hình hiện hành.
+3. **Quyền tác giả độc lập:** Mỗi Chuyên gia chỉ có quyền chỉnh sửa hoặc xóa bài viết do chính tài khoản của mình tạo ra.

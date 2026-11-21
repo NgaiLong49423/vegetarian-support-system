@@ -6,6 +6,8 @@
 > **Kiểm định viên:** Senior Business Analyst, Knowledge Engineer & AI Architect  
 > **Đối tượng đánh giá:** Toàn bộ kho tri thức `app/mamxanh-backend/src/main/resources/knowledge-base/` (38 tài liệu chuyên đề, 1 README, 1 Catalog JSON, 1 Báo cáo kiểm định) và bộ chính sách hành vi `app/mamxanh-backend/src/main/resources/ai/policies/` (4 chính sách hành vi)  
 
+> **Lưu ý:** Đây là snapshot audit ngày 2026-11-01, không phản ánh lần đồng bộ nội dung ngày 2026-11-21 và không được `catalog.json` nạp làm tri thức cho Trợ lý. Không dùng số lượng tài liệu, trạng thái hoặc khuyến nghị tương lai trong báo cáo này làm trạng thái hiện hành.
+
 ---
 
 ## 1. Phương pháp và Tiêu chí Kiểm định

@@ -9,6 +9,11 @@ source_requirements:
   - BR-77
   - NFR-18
   - NFR-22
+source_files:
+  - app/mamxanh-backend/src/main/java/tech/mamxanh/recipe/service/AiAssistantSessionStore.java
+  - app/mamxanh-backend/src/main/java/tech/mamxanh/recipe/service/AdkAssistantEngine.java
+  - app/mamxanh-backend/src/main/java/tech/mamxanh/integration/ai/AiTurnDeadline.java
+  - app/mamxanh-backend/src/main/java/tech/mamxanh/integration/ai/knowledge/GeminiEmbeddingClient.java
 implementation_status: verified
 status: APPROVED
 ---
@@ -36,7 +41,9 @@ Backend kiểm tra trạng thái hoạt động của tài khoản, danh sách m
 ## Vận hành hệ thống và giới hạn thời gian (Timeouts)
 
 - **Chi phí vận hành hệ thống:** Thao tác tạo chỉ mục tri thức (indexing) và tra cứu tri thức tĩnh phục vụ hỗ trợ người dùng là chi phí vận hành của nền tảng, không tính vào hạn mức hay credit cá nhân của người dùng.
-- **Thời gian chờ và thử lại (Timeouts & Retries):** Mỗi lần gọi mô hình AI có thời hạn tối đa 10 giây, hỗ trợ tối đa 1 lần thử lại (retry) khi gặp lỗi kết nối tạm thời (502/503/504). Lượt tạo vector truy xuất (query embedding) có thời hạn 10 giây; khi embedding gặp sự cố, hệ thống tự động suy thoái an toàn sang tìm kiếm theo từ khóa (Keyword Fallback) kèm đánh dấu trạng thái suy thoái (`degraded`), đảm bảo dịch vụ không bị gián đoạn hoàn toàn.
+- **Thời gian xử lý chat:** Mỗi lượt Agent dùng một deadline chung tối đa 45 giây theo cấu hình hiện tại (hard cap 60 giây). Ngân sách gọi classifier là tối đa 10 giây, ngân sách operational cho mỗi lần gọi model tối đa 20 giây; tầng HTTP có timeout 30 giây. Request không được tự khởi động lại deadline ở từng bước.
+- **Embedding truy vấn:** Mỗi lần query embedding có timeout 10 giây và không tự retry. Nếu embedding lỗi hoặc semantic index không hợp lệ, retriever suy giảm sang tìm kiếm từ khóa; kết quả cần được xem là chế độ degraded, không phải bằng chứng rằng semantic search đã hoạt động.
+- **Provider retries:** Gemini client hiện cấu hình `attempts(1)`, nghĩa là một lần thử tổng cộng, không phải một lần retry bổ sung. Không hứa tự thử lại khi provider lỗi.
 
 ## Giải thích consent và hạn mức cho người dùng
 

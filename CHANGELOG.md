@@ -27,6 +27,24 @@ None.
 
 - Prevent duplicate demo recipe rows from stopping Backend startup during the seasoning seed migration.
 
+## 2026-11-21 — Preserve AI Meal-Plan Previews
+
+**Status:** Working tree — not committed.
+
+**Scope:** Keep a member's nutrition-aware AI meal-plan preview available when navigating away and returning in the same browser tab.
+
+### Added
+
+- Restore the generated preview and selected meals from account- and week-scoped session storage.
+
+### Changed
+
+- Keep the temporary preview until the member applies it to the meal plan or clears it.
+
+### Fixed
+
+- Prevent the AI meal-plan preview from disappearing when its page component is unmounted.
+
 ## 2026-11-21 — Enforce Dietary Safety Across Recipe Actions
 
 **Status:** Committed — 600046c2.

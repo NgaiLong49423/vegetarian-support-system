@@ -8,6 +8,7 @@ audience:
 source_requirements:
   - FR-09
   - FR-33
+  - FR-36
   - BR-32
   - BR-35
   - BR-36
@@ -19,12 +20,15 @@ source_use_cases:
   - UC-33.1
   - UC-33.2
   - UC-33.3
+  - UC-36.1
+  - UC-36.2
+  - UC-36.3
 source_files:
-  - app/mamxanh-frontend/src/pages/MealPlanner.tsx
-  - app/mamxanh-frontend/src/components/WeekCalendar.tsx
+  - app/mamxanh-frontend/src/pages/MealPlanWeekEditor.tsx
   - app/mamxanh-backend/src/main/java/tech/mamxanh/mealplan/controller/MealPlanController.java
+  - app/mamxanh-backend/src/main/java/tech/mamxanh/mealplan/controller/MealPlanReadController.java
 implementation_status: verified
-last_verified: 2026-11-01
+last_verified: 2026-11-21
 ---
 
 # Lập kế hoạch thực đơn tuần 3 bữa
@@ -67,7 +71,16 @@ Mâm Xanh áp dụng cấu trúc lịch ăn chuẩn hóa:
   2. Tìm kiếm món ăn trong kho công thức hoặc chọn từ danh sách **Công thức đã lưu** của bạn.
   3. Bấm chọn món để đưa vào bữa ăn.
 
-### 2. Điều chỉnh món trong lịch
+### Tạo thực đơn AI cho tuần hiện tại
+
+- Trong phần **Dành cho bạn**, chọn **Dựa trên hồ sơ** hoặc **Theo mong muốn tuần này** rồi nhấn **Tạo thực đơn tuần**.
+- AI chỉ đề xuất cho các ngày từ hôm nay đến hết Chủ Nhật của tuần hiện tại. Ngày đã qua được đánh dấu và không có món đề xuất.
+- Kết quả là preview. Bạn có thể bỏ chọn hoặc chọn lại các món trước khi áp dụng; preview chưa ghi vào Lịch ăn.
+- Khi bạn xác nhận áp dụng, Backend kiểm tra lại công thức và các ràng buộc rồi mới lưu. Các bữa thuộc ngày đã qua trong tuần được giữ nguyên.
+- AI dùng công thức công khai có dữ liệu dinh dưỡng đầy đủ. Nếu đã khai báo dị ứng hoặc nguyên liệu cần tránh, món chứa nguyên liệu đó bị loại khỏi danh sách ứng viên. Hệ thống không thể tự biết các dị ứng chưa khai báo.
+- Phân bổ năng lượng giữa sáng/trưa/tối là mục tiêu tối ưu tham khảo, không phải cam kết mọi bữa sẽ đạt đúng tỷ lệ. Xem [chi tiết AI tạo thực đơn](../ai-features/ai-meal-recommendations.md).
+
+### Điều chỉnh món trong lịch
 - **Đổi số khẩu phần:** Bấm vào biểu tượng số khẩu phần trên món ăn để tăng hoặc giảm.
 - **Chuyển bữa / Chuyển ngày:** Kéo thả hoặc bấm vào menu món ăn, chọn chuyển sang bữa khác hoặc ngày khác.
 - **Xóa món khỏi lịch:** Bấm vào biểu tượng thùng rác hoặc nút gỡ bỏ trên món ăn. Món ăn sẽ được xóa khỏi lịch ngày hôm đó (nhưng công thức gốc và danh sách Đã lưu của bạn vẫn hoàn toàn nguyên vẹn).

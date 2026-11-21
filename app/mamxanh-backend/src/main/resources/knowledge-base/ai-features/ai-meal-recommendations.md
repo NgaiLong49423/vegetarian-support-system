@@ -1,73 +1,88 @@
 ---
 id: ai-meal-recommendations
-title: AI gợi ý món ăn và tạo thực đơn tuần tự động
+title: AI tạo thực đơn dinh dưỡng từ công thức có sẵn
 category: ai-features
 audience:
   - customer
   - expert
 source_requirements:
-  - FR-34
+  - FR-35
   - FR-36
+  - FR-38
+  - FR-63
   - BR-31
   - BR-38
+  - BR-39
   - BR-40
+  - BR-41
 source_use_cases:
-  - UC-34.1
-  - UC-34.2
-  - UC-34.3
   - UC-36.1
   - UC-36.2
   - UC-36.3
 source_files:
-  - app/mamxanh-frontend/src/pages/AiRecipePlanner.tsx
+  - app/mamxanh-frontend/src/pages/MealPlanWeekEditor.tsx
   - app/mamxanh-backend/src/main/java/tech/mamxanh/mealplan/controller/AiMenuController.java
+  - app/mamxanh-backend/src/main/java/tech/mamxanh/mealplan/service/AiMenuService.java
+  - app/mamxanh-backend/src/main/java/tech/mamxanh/mealplan/service/AiMenuOptimizer.java
+  - app/mamxanh-backend/src/main/java/tech/mamxanh/integration/ai/AdkAiClient.java
 implementation_status: verified
-last_verified: 2026-11-01
+last_verified: 2026-11-21
 ---
 
-# AI gợi ý món ăn và tạo thực đơn tuần tự động
+# AI tạo thực đơn dinh dưỡng từ công thức có sẵn
 
-## Chức năng này dùng để làm gì?
+## Chức năng này làm gì?
 
-Việc lên thực đơn cho 21 bữa ăn trong một tuần (7 ngày $\times$ 3 bữa/ngày) vừa ngon miệng, vừa đổi món liên tục, lại vừa đảm bảo cân bằng dinh dưỡng là một thử thách tốn nhiều thời gian.
+Trong trang Lịch ăn, thành viên có thể yêu cầu AI tạo bản xem trước thực đơn cho các ngày từ hôm nay đến hết Chủ Nhật của tuần hiện tại. Mỗi ngày có ba bữa cố định: sáng, trưa và tối. Mỗi bữa có thể gồm nhiều công thức, mỗi công thức được tính một khẩu phần trong preview.
 
-Tính năng **AI Lập thực đơn** (`/ke-hoach?view=for-you`) sử dụng sức mạnh tính toán của mô hình Gemini kết hợp với kho dữ liệu công thức chuẩn mực của Mâm Xanh để tự động tạo ra một bản xem trước (**Preview**) thực đơn 7 ngày hoàn chỉnh dành riêng cho bạn chỉ sau vài giây.
+AI không viết công thức mới. Thực đơn chỉ dùng công thức đã công khai trên Mâm Xanh và đủ dữ liệu để Backend tính dinh dưỡng. Ngày đã qua không được đề xuất; khi áp dụng, các bữa của ngày đã qua được giữ nguyên.
 
-## Ai có thể sử dụng?
+## Ai có thể dùng?
 
-- **Thành viên đã đăng nhập (Customer và Expert):** Cần hoàn thành thông tin sở thích ăn uống tối thiểu (Trường phái ăn chay, nguyên liệu kiêng, món không thích) trước khi sử dụng.
-- **Nếu sử dụng tính năng Thực đơn theo dinh dưỡng (FR-36):** Bắt buộc phải xác nhận đủ điều kiện tham gia (từ 18 tuổi, không mang thai, không điều trị bệnh) và đã khai báo Hồ sơ dinh dưỡng.
+Member đã đăng nhập, có hồ sơ dinh dưỡng hợp lệ và đáp ứng điều kiện eligibility dinh dưỡng. Gói dịch vụ không phải điều kiện nghiệp vụ của FR-36; model được phép dùng và hạn mức AI vẫn có thể ảnh hưởng khả năng hoàn tất yêu cầu.
 
-## Hai chế độ gợi ý thực đơn thông minh
+Hồ sơ sở thích ăn uống không cần hoàn tất toàn bộ chỉ để tạo menu FR-36. Tuy vậy, mọi ràng buộc đã khai báo vẫn được áp dụng. Nếu có dị ứng hoặc nguyên liệu cần tránh, người dùng phải khai báo để Backend loại các món có nguyên liệu đó. Dữ liệu chưa khai báo không được hiểu là xác nhận “không dị ứng”; hệ thống cũng không thể tự biết dị ứng chưa được cung cấp.
 
-### 1. Gợi ý thực đơn theo Sở thích & Nguyên liệu sẵn có
-- Bạn nhập danh sách các nguyên liệu bạn đang có sẵn trong nhà (ví dụ: *nấm hương, đậu hũ, cà rốt, bí đỏ*...).
-- Bạn chọn số ngày muốn lên thực đơn (1 ngày, 3 ngày hoặc cả tuần 7 ngày).
-- AI sẽ ưu tiên tối đa các món sử dụng nguyên liệu bạn đang có để tránh lãng phí thực phẩm, đồng thời tự động loại trừ mọi thành phần bạn đã khai báo dị ứng hoặc không thích.
+## Hai cách cá nhân hóa
 
-### 2. Gợi ý thực đơn tối ưu theo Chỉ tiêu Dinh dưỡng
-- AI đọc mục tiêu calorie và 9 chỉ tiêu dinh dưỡng trong Hồ sơ dinh dưỡng cá nhân của bạn.
-- Thuật toán phân bổ năng lượng chuẩn khoa học cho 3 bữa ăn chính trong ngày:
-  - **Bữa sáng:** Hướng tới 25% tổng năng lượng ngày (khoảng 20% - 30%).
-  - **Bữa trưa:** Hướng tới 37.5% tổng năng lượng ngày (khoảng 32.5% - 42.5%).
-  - **Bữa tối:** Hướng tới 37.5% tổng năng lượng ngày (khoảng 32.5% - 42.5%).
-- AI tự động tuyển chọn những bài công thức công khai có dữ liệu dinh dưỡng tin cậy nhất để phối hợp các món ăn, tối ưu lượng đạm thực vật, chất xơ và các vi chất thiết yếu.
+- **Dựa trên hồ sơ:** Dùng mục tiêu dinh dưỡng chung đã lưu (nếu có), chỉ số hồ sơ và ràng buộc ăn uống đã khai báo. Mục tiêu hoặc sở thích chưa trả lời vẫn được xem là chưa khai báo, không tự suy đoán.
+- **Theo mong muốn tuần này:** Có thể gửi mục tiêu riêng, nguyên liệu muốn ưu tiên và nguyên liệu muốn tránh cho lần tạo hiện tại. Đây là dữ liệu request-only, không cập nhật hồ sơ. Nguyên liệu muốn có chỉ là ưu tiên mềm; nguyên liệu cần tránh là điều kiện loại trừ cứng.
 
-## Quy trình: Xem trước $\rightarrow$ Tinh chỉnh $\rightarrow$ Xác nhận áp dụng
+## Backend và Gemini phối hợp ra sao?
 
-Để bảo đảm quyền tự quyết của người dùng, AI không bao giờ tự ý ghi đè vào lịch ăn cá nhân của bạn:
+1. Backend kiểm tra Member, hồ sơ dinh dưỡng/eligibility, hạn mức AI, tuần được yêu cầu và các ràng buộc ăn uống.
+2. Backend lấy công thức công khai, loại món vi phạm loại ăn chay hoặc nguyên liệu dị ứng/cần tránh, rồi loại món không đủ dữ liệu định lượng và dinh dưỡng tin cậy. Nếu không còn ứng viên phù hợp, hệ thống báo chưa đủ công thức thay vì tự tạo món.
+3. Backend gửi Gemini thông tin của các ứng viên hợp lệ, gồm ID, tên, nguyên liệu và dữ liệu dinh dưỡng theo khẩu phần. Gemini trả về thứ tự ưu tiên các ID trong danh sách được cung cấp; Gemini không được tự thêm công thức hoặc số liệu dinh dưỡng.
+4. Backend xác thực lại ID và ràng buộc sau khi Gemini phản hồi. Bộ tối ưu nội bộ dùng thứ hạng của Gemini cùng dữ liệu dinh dưỡng tin cậy để ghép món vào các ngày và bữa.
+5. Backend trả preview để người dùng xem. Preview không ghi vào Lịch ăn.
 
-1. **Bước 1: Tạo bản xem trước (Preview):**
-   - AI tạo ra bảng thực đơn dự kiến kèm lời giải thích lý do phối hợp món ăn (ví dụ: *"Bữa trưa Thứ Ba kết hợp Canh rong biển đậu hũ giúp bổ sung đạm và sắt, đi kèm Mướp xào giá đỗ thanh nhiệt..."*).
-2. **Bước 2: Tự do điều chỉnh và đổi món:**
-   - Bạn xem từng bữa ăn. Nếu có món nào không ưng ý, bạn có thể bấm nút **Đổi món khác** để AI đề xuất ngay một món chay tương đương thay thế.
-3. **Bước 3: Xác nhận áp dụng vào Lịch ăn:**
-   - Khi đã hoàn toàn hài lòng với thực đơn xem trước, bạn bấm nút **"Xác nhận áp dụng vào Lịch ăn tuần"**.
-   - Lúc này, toàn bộ 21 món ăn mới chính thức được lưu vào Lịch ăn tuần (`Meal Plan`) của bạn, sẵn sàng để xuất ra Danh sách đi chợ.
+Trong Chatbox, AI có thể điều phối các công cụ lấy ứng viên và tạo preview. Các công cụ vẫn dùng ứng viên được Backend kiểm tra và không cho phép AI bịa ID món. Đây là luồng hội thoại riêng; dữ liệu động và quyền truy cập vẫn phải do Backend xác minh.
 
-## Những điều cần lưu ý
+## Mục tiêu phân bổ năng lượng
 
-1. **Chỉ sử dụng công thức có thật:**
-   - AI chỉ chọn lựa từ các bài viết đang công khai do Chuyên gia Mâm Xanh đăng tải. Mọi món ăn trong thực đơn đều có liên kết dẫn tới bài viết chi tiết để bạn xem cách nấu.
-2. **Khi không đủ công thức đáp ứng hoàn hảo:**
-   - Nếu số lượng công thức trong kho chưa đủ để đáp ứng trọn vẹn 100% tỷ lệ calo lý tưởng của bạn, AI sẽ trung thực nêu rõ độ chênh lệch thay vì khẳng định sai sự thật rằng thực đơn đã cân bằng hoàn hảo.
+Hệ thống hướng tới phân bổ năng lượng ngày như sau:
+
+| Bữa | Tỷ lệ mục tiêu | Khoảng tham khảo theo FR-36 |
+|---|---:|---:|
+| Sáng | 25% | 20%–30% |
+| Trưa | 37,5% | 32,5%–42,5% |
+| Tối | 37,5% | 32,5%–42,5% |
+
+Đây là mục tiêu tối ưu, không phải cam kết mọi bữa sẽ đạt đúng tỷ lệ. Kết quả phụ thuộc các công thức phù hợp có trong kho và dữ liệu dinh dưỡng hiện có. Mục tiêu tuần chỉ giúp ưu tiên món; không làm thay đổi mục tiêu dinh dưỡng đã lưu, không phải phác đồ điều trị và không cam kết thay đổi cân nặng.
+
+## Xem, chỉnh và áp dụng preview
+
+1. Chọn chế độ cá nhân hóa và nhập các tùy chọn nếu muốn.
+2. Nhấn **Tạo thực đơn tuần**. Các món trong preview được chọn sẵn; người dùng có thể bỏ chọn hoặc chọn lại trước khi lưu. Có thể tạo một preview khác.
+3. Xem tên món, bữa/ngày và dinh dưỡng dự kiến. Nếu hài lòng, xác nhận áp dụng.
+4. Backend kiểm tra lại quyền, ngày/bữa, trạng thái công khai, dữ liệu dinh dưỡng và ràng buộc món. Nếu dữ liệu không còn hợp lệ, thao tác bị từ chối; nếu hợp lệ, các món được lưu vào Lịch ăn của Member.
+
+Thông tin preview có thể được giữ trong session của trình duyệt để tiếp tục xem sau khi tải lại cùng phiên. Vì vậy, preview đang hiển thị không nhất thiết là một lần gọi Gemini vừa xảy ra.
+
+## Giới hạn và an toàn
+
+- Chỉ công thức đang công khai, phù hợp ràng buộc và có dữ liệu dinh dưỡng đầy đủ mới được dùng.
+- Nguyên liệu dị ứng/cần tránh đã khai báo là ràng buộc cứng; sở thích không thích là ưu tiên mềm.
+- Con số dinh dưỡng là giá trị dự kiến tính từ công thức và khẩu phần trong hệ thống, không phải đo lường bữa ăn thực tế.
+- BMI và mục tiêu cân nặng không được dùng để tự suy ra thâm hụt/thặng dư calorie.
+- Thực đơn có tính chất tham khảo, không chẩn đoán hoặc điều trị bệnh. Khi không có đủ dữ liệu, hệ thống không được tự gán số liệu dinh dưỡng.

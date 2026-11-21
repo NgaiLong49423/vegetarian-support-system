@@ -1,6 +1,6 @@
 {
-    "revision":  "kb-v1.1.0-20261103",
-    "version":  "1.1.0",
+    "revision":  "kb-v1.2.0-20261121",
+    "version":  "1.2.0",
     "basePath":  "knowledge-base",
     "totalDocuments":  43,
     "documents":  [
@@ -136,12 +136,15 @@
                           "title":  "Tổng quan về Trợ lý AI Mâm Xanh",
                           "category":  "ai-features",
                           "resourcePath":  "knowledge-base/ai-features/ai-assistant-overview.md",
-                          "version":  "1.0.0",
+                          "version":  "1.1.0",
                           "status":  "APPROVED",
                           "implementationStatus":  "verified",
                           "enabledForPilot":  true,
                           "sources":  [
-                                          "knowledge-base/ai-features/ai-assistant-overview.md"
+                                          "knowledge-base/ai-features/ai-assistant-overview.md",
+                                          "docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-51",
+                                          "docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-66",
+                                          "app/mamxanh-backend/src/main/java/tech/mamxanh/recipe/service/AiAssistantExecutionService.java"
                                       ],
                           "tools":  [
 
@@ -157,15 +160,19 @@
                                                "CUSTOMER",
                                                "EXPERT"
                                            ],
-                          "title":  "Hỏi đáp ẩm thực chay và tư vấn nấu nướng cùng AI",
+                          "title":  "Hỏi đáp ẩm thực chay và công thức cùng AI",
                           "category":  "ai-features",
                           "resourcePath":  "knowledge-base/ai-features/ai-chat-cooking-guidance.md",
-                          "version":  "1.0.0",
+                          "version":  "1.1.0",
                           "status":  "APPROVED",
                           "implementationStatus":  "verified",
                           "enabledForPilot":  true,
                           "sources":  [
-                                          "knowledge-base/ai-features/ai-chat-cooking-guidance.md"
+                                          "knowledge-base/ai-features/ai-chat-cooking-guidance.md",
+                                          "docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-34",
+                                          "docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-51",
+                                          "docs/requirements/srs/BUSINESS-RULES.md#br-38",
+                                          "app/mamxanh-backend/src/main/java/tech/mamxanh/recipe/service/AiChatService.java"
                                       ],
                           "tools":  [
 
@@ -201,19 +208,24 @@
                           "type":  "DOMAIN_KNOWLEDGE",
                           "retrievalPolicy":  "BOTH",
                           "accessScopes":  [
-                                               "GUEST",
                                                "CUSTOMER",
                                                "EXPERT"
                                            ],
-                          "title":  "AI gợi ý món ăn và tạo thực đơn tuần tự động",
+                          "title":  "AI tạo thực đơn dinh dưỡng từ công thức có sẵn",
                           "category":  "ai-features",
                           "resourcePath":  "knowledge-base/ai-features/ai-meal-recommendations.md",
-                          "version":  "1.0.0",
+                          "version":  "1.1.0",
                           "status":  "APPROVED",
                           "implementationStatus":  "verified",
                           "enabledForPilot":  true,
                           "sources":  [
-                                          "knowledge-base/ai-features/ai-meal-recommendations.md"
+                                          "knowledge-base/ai-features/ai-meal-recommendations.md",
+                                          "docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-36",
+                                          "docs/requirements/srs/BUSINESS-RULES.md#br-31",
+                                          "docs/requirements/srs/BUSINESS-RULES.md#br-38",
+                                          "docs/requirements/srs/BUSINESS-RULES.md#br-40",
+                                          "app/mamxanh-backend/src/main/java/tech/mamxanh/mealplan/service/AiMenuService.java",
+                                          "app/mamxanh-backend/src/main/java/tech/mamxanh/mealplan/service/AiMenuOptimizer.java"
                                       ],
                           "tools":  [
 
@@ -277,15 +289,18 @@
                                                "CUSTOMER",
                                                "EXPERT"
                                            ],
-                          "title":  "Khởi tạo sở thích ăn uống ban đầu (Onboarding)",
+                          "title":  "Khởi tạo và cập nhật sở thích ăn uống",
                           "category":  "getting-started",
                           "resourcePath":  "knowledge-base/getting-started/onboarding-guide.md",
-                          "version":  "1.0.0",
+                          "version":  "1.1.0",
                           "status":  "APPROVED",
                           "implementationStatus":  "verified",
                           "enabledForPilot":  true,
                           "sources":  [
-                                          "knowledge-base/getting-started/onboarding-guide.md"
+                                          "knowledge-base/getting-started/onboarding-guide.md",
+                                          "docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-31",
+                                          "docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-36",
+                                          "docs/requirements/srs/BUSINESS-RULES.md#br-31"
                                       ],
                           "tools":  [
 
@@ -304,12 +319,14 @@
                           "title":  "Các vai trò người dùng và phân quyền trên Mâm Xanh",
                           "category":  "getting-started",
                           "resourcePath":  "knowledge-base/getting-started/user-roles-and-permissions.md",
-                          "version":  "1.0.0",
+                          "version":  "1.1.0",
                           "status":  "APPROVED",
                           "implementationStatus":  "verified",
                           "enabledForPilot":  true,
                           "sources":  [
-                                          "knowledge-base/getting-started/user-roles-and-permissions.md"
+                                          "knowledge-base/getting-started/user-roles-and-permissions.md",
+                                          "docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-36",
+                                          "docs/requirements/srs/BUSINESS-RULES.md#br-31"
                                       ],
                           "tools":  [
 
@@ -369,19 +386,21 @@
                           "type":  "DOMAIN_KNOWLEDGE",
                           "retrievalPolicy":  "BOTH",
                           "accessScopes":  [
-                                               "GUEST",
                                                "CUSTOMER",
                                                "EXPERT"
                                            ],
                           "title":  "Lập kế hoạch thực đơn tuần 3 bữa",
                           "category":  "meal-planning",
                           "resourcePath":  "knowledge-base/meal-planning/weekly-meal-planner.md",
-                          "version":  "1.0.0",
+                          "version":  "1.1.0",
                           "status":  "APPROVED",
                           "implementationStatus":  "verified",
                           "enabledForPilot":  true,
                           "sources":  [
-                                          "knowledge-base/meal-planning/weekly-meal-planner.md"
+                                          "knowledge-base/meal-planning/weekly-meal-planner.md",
+                                          "docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-36",
+                                          "app/mamxanh-frontend/src/pages/MealPlanWeekEditor.tsx",
+                                          "app/mamxanh-backend/src/main/java/tech/mamxanh/mealplan/controller/AiMenuController.java"
                                       ],
                           "tools":  [
 
@@ -760,12 +779,13 @@
                           "title":  "AI Credit và hướng dẫn nạp thêm ngân sách",
                           "category":  "subscriptions",
                           "resourcePath":  "knowledge-base/subscriptions/ai-credit-and-top-up.md",
-                          "version":  "1.0.0",
+                          "version":  "1.1.0",
                           "status":  "APPROVED",
                           "implementationStatus":  "verified",
                           "enabledForPilot":  true,
                           "sources":  [
-                                          "knowledge-base/subscriptions/ai-credit-and-top-up.md"
+                                          "knowledge-base/subscriptions/ai-credit-and-top-up.md",
+                                          "app/mamxanh-backend/src/main/java/tech/mamxanh/admin/service/AdminAiConfigurationService.java"
                                       ],
                           "tools":  [
 
@@ -784,12 +804,13 @@
                           "title":  "Quản lý gói đăng ký và lịch sử giao dịch",
                           "category":  "subscriptions",
                           "resourcePath":  "knowledge-base/subscriptions/managing-subscription.md",
-                          "version":  "1.0.0",
+                          "version":  "1.1.0",
                           "status":  "APPROVED",
                           "implementationStatus":  "verified",
                           "enabledForPilot":  true,
                           "sources":  [
-                                          "knowledge-base/subscriptions/managing-subscription.md"
+                                          "knowledge-base/subscriptions/managing-subscription.md",
+                                          "app/mamxanh-backend/src/main/java/tech/mamxanh/admin/service/AdminAiConfigurationService.java"
                                       ],
                           "tools":  [
 
@@ -805,15 +826,17 @@
                                                "CUSTOMER",
                                                "EXPERT"
                                            ],
-                          "title":  "So sánh các gói dịch vụ AI: Free, Plus và Pro",
+                          "title":  "Gói dịch vụ và hạn mức AI",
                           "category":  "subscriptions",
                           "resourcePath":  "knowledge-base/subscriptions/plans-overview.md",
-                          "version":  "1.0.0",
+                          "version":  "1.1.0",
                           "status":  "APPROVED",
                           "implementationStatus":  "verified",
                           "enabledForPilot":  true,
                           "sources":  [
-                                          "knowledge-base/subscriptions/plans-overview.md"
+                                          "knowledge-base/subscriptions/plans-overview.md",
+                                          "app/mamxanh-backend/src/main/java/tech/mamxanh/admin/service/AdminAiConfigurationService.java",
+                                          "app/mamxanh-backend/src/main/java/tech/mamxanh/subscription/service/AiTokenQuotaService.java"
                                       ],
                           "tools":  [
 
@@ -856,12 +879,14 @@
                           "title":  "Xử lý sự cố và các trường hợp AI từ chối trả lời",
                           "category":  "troubleshooting",
                           "resourcePath":  "knowledge-base/troubleshooting/ai-limits-and-errors.md",
-                          "version":  "1.0.0",
+                          "version":  "1.1.0",
                           "status":  "APPROVED",
                           "implementationStatus":  "verified",
                           "enabledForPilot":  true,
                           "sources":  [
-                                          "knowledge-base/troubleshooting/ai-limits-and-errors.md"
+                                          "knowledge-base/troubleshooting/ai-limits-and-errors.md",
+                                          "app/mamxanh-backend/src/main/java/tech/mamxanh/subscription/service/AiTokenQuotaService.java",
+                                          "app/mamxanh-backend/src/main/java/tech/mamxanh/mealplan/service/AiMenuService.java"
                                       ],
                           "tools":  [
 
@@ -976,7 +1001,7 @@
                           "title":  "Quản lý phiên hội thoại, consent dữ liệu và hạn mức AI",
                           "category":  "playbooks",
                           "resourcePath":  "knowledge-base/playbooks/session-consent-budget.md",
-                          "version":  "2.1.0",
+                          "version":  "2.2.0",
                           "status":  "APPROVED",
                           "implementationStatus":  "verified",
                           "enabledForPilot":  true,
@@ -986,7 +1011,10 @@
                                           "docs/requirements/srs/BUSINESS-RULES.md#br-04",
                                           "docs/requirements/srs/BUSINESS-RULES.md#br-77",
                                           "docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-18",
-                                          "docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-22"
+                                          "docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-22",
+                                          "app/mamxanh-backend/src/main/java/tech/mamxanh/recipe/service/AiAssistantSessionStore.java",
+                                          "app/mamxanh-backend/src/main/java/tech/mamxanh/integration/ai/AiTurnDeadline.java",
+                                          "app/mamxanh-backend/src/main/java/tech/mamxanh/integration/ai/knowledge/GeminiEmbeddingClient.java"
                                       ],
                           "tools":  [
 

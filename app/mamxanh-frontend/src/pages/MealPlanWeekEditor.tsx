@@ -46,6 +46,7 @@ import { MealPlanNutrition } from "./MealPlanNutrition"
 import { AiRecipePlanner } from "./AiRecipePlanner"
 import { CreateShoppingListButton } from "../components/CreateShoppingListButton"
 import { assessRecipeDietarySafety, type DietarySafetyAssessment } from "../services/dietaryPreferencesApi"
+import { useAuth } from "../components/AuthContext"
 
 type Entry = MealPlanWeek["entries"][number]
 
@@ -107,6 +108,7 @@ const mealTheme: Record<
 }
 
 export function MealPlanWeekEditor() {
+  const { account } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [week, setWeek] = useState(() => {
@@ -287,7 +289,7 @@ export function MealPlanWeekEditor() {
               <div id="ai-mode-panel" role="tabpanel" aria-labelledby={`ai-mode-${aiMode}`}>
                 {aiMode === "ingredients" && <AiRecipePlanner key={`${week}-ingredients`} weekStartDate={week} embedded plannerMode="ingredients" />}
                 {aiMode === "recipe-week" && <AiRecipePlanner key={`${week}-recipe-week`} weekStartDate={week} embedded plannerMode="weekly" />}
-                {aiMode === "nutrition-week" && <AiWeeklyMenu key={`${week}-nutrition-week`} week={week} />}
+                {aiMode === "nutrition-week" && <AiWeeklyMenu key={`${account?.id ?? "guest"}-${week}-nutrition-week`} week={week} accountId={account?.id ?? null} />}
               </div>
             </div>
           )}
@@ -1499,7 +1501,35 @@ function datesInWeek(weekStart: string) {
   })
 }
 
-function AiWeeklyMenu({ week }: { week: string }) {
+type AiMenuPreviewDraft = {
+  preview: AiMenuPreview
+  previewCriteria: { mode: AiMenuMode; goal: AiMenuGoal | ""; preferred: number[]; avoided: number[] } | null
+  selected: number[]
+}
+
+function aiMenuDraftKey(accountId: number | null, week: string) {
+  return `mamxanh:ai-menu-preview:v1:${accountId ?? "guest"}:${week}`
+}
+
+function loadAiMenuDraft(key: string, week: string): AiMenuPreviewDraft | null {
+  try {
+    const raw = window.sessionStorage.getItem(key)
+    if (!raw) return null
+    const value = JSON.parse(raw) as Partial<AiMenuPreviewDraft>
+    if (value.preview?.weekStartDate !== week || !Array.isArray(value.preview?.meals) || !Array.isArray(value.selected)) return null
+    return {
+      preview: value.preview,
+      previewCriteria: value.previewCriteria ?? null,
+      selected: value.selected.filter((index): index is number => Number.isInteger(index) && index >= 0 && index < value.preview!.meals.length),
+    }
+  } catch {
+    return null
+  }
+}
+
+function AiWeeklyMenu({ week, accountId }: { week: string; accountId: number | null }) {
+  const draftKey = aiMenuDraftKey(accountId, week)
+  const [initialDraft] = useState(() => loadAiMenuDraft(draftKey, week))
   const [mode, setMode] = useState<AiMenuMode>("PROFILE")
   const [goal, setGoal] = useState<AiMenuGoal | "">("")
   const [preferredQuery, setPreferredQuery] = useState("")
@@ -1509,14 +1539,26 @@ function AiWeeklyMenu({ week }: { week: string }) {
   const [ingredientNames, setIngredientNames] = useState<Record<number, string>>({})
   const [preferred, setPreferred] = useState<number[]>([])
   const [avoided, setAvoided] = useState<number[]>([])
-  const [preview, setPreview] = useState<AiMenuPreview | null>(null)
-  const [previewCriteria, setPreviewCriteria] = useState<{ mode: AiMenuMode; goal: AiMenuGoal | ""; preferred: number[]; avoided: number[] } | null>(null)
-  const [selected, setSelected] = useState<number[]>([])
+  const [preview, setPreview] = useState<AiMenuPreview | null>(initialDraft?.preview ?? null)
+  const [previewCriteria, setPreviewCriteria] = useState<{ mode: AiMenuMode; goal: AiMenuGoal | ""; preferred: number[]; avoided: number[] } | null>(initialDraft?.previewCriteria ?? null)
+  const [selected, setSelected] = useState<number[]>(initialDraft?.selected ?? [])
   const [loading, setLoading] = useState(false)
   const [applying, setApplying] = useState(false)
   const [confirmArmed, setConfirmArmed] = useState(false)
   const [error, setError] = useState<{ message: string; code?: string; requiredTier?: AiPaidTier } | null>(null)
   const [successMessage, setSuccessMessage] = useState("")
+
+  useEffect(() => {
+    try {
+      if (!preview) {
+        window.sessionStorage.removeItem(draftKey)
+        return
+      }
+      window.sessionStorage.setItem(draftKey, JSON.stringify({ preview, previewCriteria, selected } satisfies AiMenuPreviewDraft))
+    } catch {
+      // Keep the current in-memory preview usable when browser storage is unavailable.
+    }
+  }, [draftKey, preview, previewCriteria, selected])
 
   useEffect(() => {
     let active = true
@@ -1556,7 +1598,7 @@ function AiWeeklyMenu({ week }: { week: string }) {
     return () => { active = false; window.clearTimeout(timer) }
   }, [avoidedQuery])
 
-  function clearPreview() { setPreview(null); setPreviewCriteria(null); setSelected([]); setConfirmArmed(false) }
+  function clearPreview() { setPreview(null); setPreviewCriteria(null); setSelected([]); setConfirmArmed(false); try { window.sessionStorage.removeItem(draftKey) } catch { /* Storage may be disabled. */ } }
   function addIngredient(item: { ingredientId: number; name: string }, setList: (update: (ids: number[]) => number[]) => void, clearSearch: () => void, clearOptions: () => void) {
     setList((ids) => ids.includes(item.ingredientId) ? ids : [...ids, item.ingredientId])
     setIngredientNames((current) => ({ ...current, [item.ingredientId]: item.name }))
@@ -1598,6 +1640,7 @@ function AiWeeklyMenu({ week }: { week: string }) {
       })
       setSuccessMessage("Đã cập nhật lịch từ hôm nay đến hết tuần. Các ngày đã qua được giữ nguyên.")
       setPreview(null); setPreviewCriteria(null); setSelected([]); setConfirmArmed(false)
+      try { window.sessionStorage.removeItem(draftKey) } catch { /* Storage may be disabled. */ }
     } catch (cause) {
       const apiError = asApiError(cause)
       setError({ message: apiError.code === "AI_SUBSCRIPTION_REQUIRED" ? aiUpgradeMessage(apiError, "PLUS", "AI lập thực đơn theo dinh dưỡng") : apiError.message, code: apiError.code, requiredTier: aiRequiredTier(apiError, "PLUS") })

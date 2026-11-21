@@ -1,74 +1,56 @@
 ---
 id: onboarding-guide
-title: Khởi tạo sở thích ăn uống ban đầu (Onboarding)
+title: Khởi tạo và cập nhật sở thích ăn uống
 category: getting-started
 audience:
   - customer
   - expert
 source_requirements:
   - FR-31
+  - FR-36
   - BR-30
   - BR-31
+  - BR-38
 source_use_cases:
   - UC-31.1
   - UC-31.2
   - UC-31.3
+  - UC-36.1
 source_files:
   - app/mamxanh-frontend/src/pages/OnboardingPage.tsx
   - app/mamxanh-frontend/src/pages/DietaryPreferencesPage.tsx
   - app/mamxanh-backend/src/main/java/tech/mamxanh/nutrition/controller/DietaryPreferenceController.java
+  - app/mamxanh-backend/src/main/java/tech/mamxanh/mealplan/service/AiMenuService.java
 implementation_status: verified
-last_verified: 2026-11-01
+last_verified: 2026-11-21
 ---
 
-# Khởi tạo sở thích ăn uống ban đầu (Onboarding)
+# Khởi tạo và cập nhật sở thích ăn uống
 
-## Chức năng này dùng để làm gì?
+## Onboarding dùng để làm gì?
 
-Sau khi đăng ký tài khoản thành công, Mâm Xanh mời bạn hoàn thành bảng khảo sát ban đầu (**Onboarding Questionnaire**). Mục đích là thu thập thông tin về trường phái ăn chay, các nguyên liệu bạn cần kiêng/dị ứng và những món bạn không thích.
+Sau khi đăng ký, Mâm Xanh có thể mời bạn khai báo trường phái ăn chay, nguyên liệu dị ứng/cần tránh và món hoặc nguyên liệu không thích. Bạn cũng có thể cập nhật các lựa chọn này trong trang **Sở thích ăn uống**.
 
-Những dữ liệu này giúp hệ thống và Trợ lý AI:
-- Gợi ý món ăn chuẩn xác theo đúng chế độ ăn chay của bạn.
-- Tự động loại trừ các nguyên liệu có nguy cơ dị ứng khi đề xuất thực đơn.
-- Ưu tiên món ăn phù hợp với khẩu vị cá nhân.
+Các lựa chọn đã khai báo giúp hệ thống lọc công thức và cá nhân hóa gợi ý. Nếu không hoàn thành hoặc bỏ qua onboarding, lời mời không tự xuất hiện lại ở lần đăng nhập sau; bạn vẫn có thể vào phần hồ sơ để bổ sung thông tin.
 
-## Ai có thể sử dụng?
+## Bỏ trống không đồng nghĩa với “không có”
 
-- Thành viên mới vừa hoàn tất đăng ký tài khoản hoặc đăng nhập Google lần đầu.
-- Mọi thành viên đã đăng ký đều có thể xem lại hoặc cập nhật thông tin này bất kỳ lúc nào trong trang **Hồ sơ > Sở thích ăn uống** (`/ho-so/so-thich-an-uong`).
+Giá trị chưa khai báo được giữ là chưa biết. Trợ lý không được kết luận rằng bạn không dị ứng, không kiêng hoặc ăn được mọi loại thực phẩm chỉ vì hồ sơ để trống.
 
-## Các bước thực hiện
+Nếu bạn có dị ứng hoặc nguyên liệu cần tránh, hãy khai báo chính xác trong sở thích ăn uống. Backend dùng các ràng buộc đã khai báo để loại công thức không phù hợp trước khi tạo gợi ý hoặc thực đơn. Hệ thống không thể tự phát hiện một dị ứng mà bạn chưa cung cấp; hãy kiểm tra danh sách nguyên liệu của công thức trước khi nấu.
 
-### 1. Khi vừa đăng ký tài khoản
-1. Sau khi xác minh email hoặc đăng nhập lần đầu, màn hình **Khởi tạo sở thích** (`/khoi-tao-so-thich`) sẽ xuất hiện.
-2. **Bước 1: Chọn trường phái ăn chay (bắt buộc):**
-   - *Thuần chay (Vegan):* Không sử dụng bất kỳ sản phẩm nào từ động vật (bao gồm sữa, trứng, mật ong).
-   - *Chay có sữa (Lacto Vegetarian):* Sử dụng sản phẩm từ sữa, không ăn trứng.
-   - *Chay có trứng (Ovo Vegetarian):* Sử dụng trứng, không dùng sản phẩm từ sữa.
-   - *Chay có trứng và sữa (Lacto-Ovo Vegetarian):* Sử dụng cả trứng và sữa.
-3. **Bước 2: Khai báo nguyên liệu kiêng / dị ứng (bắt buộc):**
-   - Chọn các nguyên liệu bạn bắt buộc phải tránh (ví dụ: đậu phộng, mè, đậu nành, gluten...).
-   - Nếu bạn không kiêng nguyên liệu nào, hãy chủ động tích chọn **"Tôi không có dị ứng / kiêng ăn"**.
-4. **Bước 3: Khai báo món hoặc nguyên liệu không thích (bắt buộc):**
-   - Chọn những món/nguyên liệu không hợp khẩu vị của bạn (ví dụ: khổ qua, ngò rí, ớt cay...).
-   - Nếu bạn ăn được tất cả các món chay, hãy chủ động chọn **"Tôi không có món nào ghét"**.
-5. Nhấn **Hoàn tất** để lưu hồ sơ.
+## Onboarding có bắt buộc để tạo thực đơn AI không?
 
-### 2. Có thể bỏ qua Onboarding không?
-- Bạn hoàn toàn có thể nhấn nút **"Bỏ qua" (Skip)** ở góc trên để vào ngay trang chủ.
-- Khi bạn đã chọn bỏ qua, hệ thống sẽ ghi nhận và **không tự động hiển thị lại lời mời Onboarding** ở các lần đăng nhập tiếp theo.
+Không cần hoàn tất toàn bộ bảng hỏi sở thích chỉ để dùng chức năng FR-36 tạo thực đơn theo dinh dưỡng. Chức năng đó vẫn yêu cầu Member đăng nhập, hồ sơ dinh dưỡng hợp lệ và đủ điều kiện dinh dưỡng. Các sở thích và nguyên liệu tránh đã khai báo sẽ được áp dụng; các mục chưa khai báo không được suy đoán.
 
-## Những điều cần lưu ý
-
-1. **Điều kiện để sử dụng AI gợi ý cá nhân hóa:**
-   - Nếu bạn bỏ qua Onboarding, bạn vẫn có thể xem công thức, tìm kiếm, tự thêm món vào lịch ăn và trò chuyện hỏi đáp thông thường với AI.
-   - Tuy nhiên, trước khi dùng các chức năng **AI gợi ý món theo sở thích** hoặc **AI lập thực đơn tuần cá nhân hóa**, hệ thống bắt buộc bạn phải hoàn thành đầy đủ 3 nhóm thông tin tối thiểu kể trên. Nếu thiếu thông tin, AI sẽ nhắc bạn vào bổ sung sở thích trước khi tiếp tục.
-2. **Không mặc định để trống là "Không có":**
-   - Để tránh rủi ro dị ứng, hệ thống không tự hiểu việc bỏ trống là bạn không kiêng gì. Bạn phải chủ động xác nhận "Không có" nếu không có mục kiêng.
-3. **Cập nhật sở thích bất cứ lúc nào:**
-   - Bạn có thể vào **Tài khoản > Cài đặt > Sở thích ăn uống** (`/ho-so/so-thich-an-uong`) để thay đổi lại các lựa chọn này bất cứ khi nào khẩu vị hoặc chế độ ăn của bạn thay đổi.
+Một số tính năng gợi ý cá nhân hóa khác có thể có điều kiện riêng. Nếu một yêu cầu cần dữ liệu hồ sơ mà hệ thống chưa có, Trợ lý cần nói rõ dữ liệu nào còn thiếu thay vì tự giả định.
 
 ## Câu hỏi thường gặp
 
-### Khai báo dị ứng ở đây có bảo đảm an toàn 100% khi nấu không?
-Hệ thống sử dụng thông tin dị ứng để loại bỏ các công thức có chứa nguyên liệu đó khỏi danh sách AI gợi ý. Tuy nhiên, việc công khai bài viết không phải là bảo đảm y tế tuyệt đối. Bạn luôn cần đọc kỹ danh sách nguyên liệu của từng bài viết trước khi thực hiện để đảm bảo an toàn cho sức khỏe của mình.
+### Nếu tôi khai báo dị ứng, hệ thống có loại món chứa nguyên liệu đó không?
+
+Backend loại các công thức có nguyên liệu dị ứng/cần tránh đã khai báo khỏi tập ứng viên của thực đơn AI. Đây là kiểm tra theo dữ liệu nguyên liệu của công thức trong Mâm Xanh, không phải bảo đảm y tế tuyệt đối về nhiễm chéo hoặc thành phần không được ghi trong bài. Hãy luôn kiểm tra bài công thức và nhãn thực phẩm thực tế.
+
+### Nếu tôi không bị dị ứng thì sao?
+
+Bạn có thể khai báo rõ không có nguyên liệu cần tránh nếu biểu mẫu cung cấp lựa chọn đó. Đừng để Trợ lý tự suy ra câu trả lời này từ một ô trống.

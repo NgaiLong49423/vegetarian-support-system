@@ -18,8 +18,10 @@ source_requirements:
 source_files:
   - app/mamxanh-backend/src/main/java/tech/mamxanh/recipe/service/AiChatService.java
   - app/mamxanh-frontend/src/pages/AiChatPage.tsx
+  - app/mamxanh-backend/src/main/java/tech/mamxanh/subscription/service/AiTokenQuotaService.java
+  - app/mamxanh-backend/src/main/java/tech/mamxanh/mealplan/service/AiMenuService.java
 implementation_status: verified
-last_verified: 2026-11-01
+last_verified: 2026-11-21
 ---
 
 # Xử lý sự cố và các trường hợp AI từ chối trả lời
@@ -46,8 +48,8 @@ Trợ lý AI của Mâm Xanh được thiết kế với các quy tắc kiểm s
 
 | Hiện tượng | Nguyên nhân | Cách khắc phục |
 |---|---|---|
-| **Báo lỗi "Bạn đã dùng hết hạn mức token trong tháng" (Mã lỗi 429)** | Tài khoản gói Free (50.000 token) hoặc Plus/Pro đã tiêu thụ hết toàn bộ hạn mức token của chu kỳ hiện tại | Bạn có thể nạp thêm **AI Credit** tại `/nap-ai-credit` (chỉ từ 10.000đ) để tiếp tục chat ngay, hoặc nâng cấp lên gói cao hơn tại `/goi-ai`. |
-| **Khách vãng lai bị giới hạn** | Quá 10 câu hỏi/phút hoặc đã hết 50.000 token trong tháng theo định danh Guest hiện tại | Với giới hạn tốc độ, đợi trước khi gửi lại; với quota tháng, chờ kỳ mới hoặc đăng ký tài khoản. |
-| **AI thông báo: "Vui lòng hoàn thành sở thích ăn uống trước khi dùng tính năng này"** | Bạn đang yêu cầu AI gợi ý món cá nhân hóa nhưng tài khoản chưa khai báo thông tin trường phái ăn chay hoặc dị ứng | Truy cập trang **Hồ sơ > Sở thích ăn uống** (`/ho-so/so-thich-an-uong`) để điền 3 mục bắt buộc, sau đó quay lại yêu cầu AI. |
-| **Báo lỗi "Dịch vụ AI tạm thời không khả dụng, vui lòng thử lại sau" (Mã lỗi 502/503)** | Kết nối giữa hệ thống Mâm Xanh và nhà cung cấp Google Gemini bị gián đoạn hoặc timeout | Chờ 1-2 phút và bấm gửi lại câu hỏi. Lượt gọi bị lỗi đường truyền này **hoàn toàn không bị trừ token hay Credit** trong tài khoản của bạn. |
+| **Thông báo đã hết hạn mức AI** | Hạn mức token khả dụng của kỳ hiện tại đã hết và tài khoản không còn Credit khả dụng | Xem thông tin gói, hạn mức và Credit đang hiển thị trong trang Gói AI/tài khoản. Nếu có Credit hoặc quota mới, thử lại sau khi trạng thái được cập nhật. Các con số phụ thuộc cấu hình hiện hành, không nên suy ra từ bảng hạn mức cố định trong tài liệu cũ. |
+| **Yêu cầu AI chưa thể tạo thực đơn dinh dưỡng** | Có thể thiếu hồ sơ dinh dưỡng hợp lệ, chưa đủ điều kiện eligibility, không còn công thức phù hợp đủ dữ liệu dinh dưỡng, hết quota hoặc Gemini không khả dụng | Đọc thông báo cụ thể trên trang. Bổ sung hồ sơ/eligibility nếu được yêu cầu; nếu kho không đủ món thì thử tiêu chí khác hoặc tạo thực đơn thủ công; nếu provider lỗi thì thử lại sau. |
+| **Trợ lý hỏi về sở thích hoặc dị ứng chưa khai báo** | Trợ lý không thể tự suy ra loại ăn chay, dị ứng hay nguyên liệu cần tránh từ ô trống | Cập nhật thông tin trong **Hồ sơ > Sở thích ăn uống** hoặc nêu ràng buộc trong yêu cầu nếu tính năng cho phép. Với thực đơn dinh dưỡng, các ràng buộc đã khai báo được áp dụng; onboarding đầy đủ không phải điều kiện riêng của FR-36. |
+| **Báo lỗi dịch vụ AI không khả dụng** | Gemini hoặc kết nối Backend tới provider có thể gặp lỗi hoặc timeout | Thử lại sau. Không khẳng định request đã được Gemini xử lý thành công nếu ứng dụng trả lỗi. Trạng thái tính quota/credit phụ thuộc điểm lỗi và dữ liệu usage được hệ thống ghi nhận; không thể cam kết mọi lỗi đều miễn phí nếu chưa xem giao dịch usage. |
 | **Không thể bấm nút "Đồng ý" trên bản xem trước hành động của AI** | Kế hoạch hành động đã hết hạn hiệu lực (quá thời hạn an toàn 5 phút) | Nhập lại yêu cầu vào khung chat để AI tạo một bản xem trước kế hoạch mới. |

@@ -1,20 +1,20 @@
 # Kho Tri Thức Nghiệp Vụ Mâm Xanh — Knowledge Base cho AI Assistant
 
-> **Phiên bản:** v1.0.0  
+> **Phiên bản:** v1.2.0
 > **Ngày thiết lập:** 2026-11-01  
-> **Trạng thái:** Sẵn sàng cho AI Assistant và RAG  
+> **Trạng thái:** Đang được nạp vào KnowledgeCatalog; semantic index cần khớp revision hiện tại
 > **Ngôn ngữ:** Tiếng Việt  
 
 ---
 
 ## 1. Giới thiệu và Mục đích
 
-**Mâm Xanh Knowledge Base** là kho tri thức nghiệp vụ có cấu trúc, chính xác và thân thiện với người dùng, được chuyển đổi từ toàn bộ hệ thống tài liệu đặc tả kỹ thuật (SRS, FR, BR, Use Cases, NFR) và mã nguồn thực tế của dự án Mâm Xanh (Vegetarian Support System).
+**Mâm Xanh Knowledge Base** là kho tri thức nghiệp vụ có cấu trúc, thân thiện với người dùng và được đối chiếu với các yêu cầu liên quan cùng mã nguồn thực tế của dự án Mâm Xanh (Vegetarian Support System).
 
 Kho tri thức này được thiết kế chuyên biệt để:
 - Phục vụ **Trợ lý ảo AI Assistant** của Mâm Xanh tra cứu, giải thích và hướng dẫn người dùng sử dụng hệ thống như một nhân viên hỗ trợ am hiểu sản phẩm.
 - Giải thích các tính năng, quyền hạn, chính sách và cách xử lý sự cố bằng **ngôn ngữ tự nhiên, dễ hiểu**, loại bỏ hoàn toàn các thuật ngữ kỹ thuật nội bộ (như FR, BR, UC, AC, Validation, Entitlement).
-- Cung cấp nguồn dữ liệu chuẩn hóa, sẵn sàng tích hợp với Google ADK hoặc các hệ thống RAG (Retrieval-Augmented Generation) và Vector Search trong tương lai.
+- Cung cấp nội dung nghiệp vụ tĩnh cho Backend KnowledgeCatalog và trợ lý dùng Google ADK; truy xuất kết hợp từ khóa và semantic index khi index hợp lệ.
 
 ---
 
@@ -67,7 +67,7 @@ knowledge-base/
 │   └── ai-execution-modes.md                  # 3 chế độ thực thi (QA, CONFIRM, AUTO) và bảo vệ dữ liệu
 │
 ├── subscriptions/                             # Gói dịch vụ & Ngân sách AI
-│   ├── plans-overview.md                      # So sánh chi tiết các gói: Free (0đ), Plus (99k), Pro (199k)
+│   ├── plans-overview.md                      # Gói AI, quota, Credit và model hiện hành
 │   ├── ai-credit-and-top-up.md                # AI Credit, tỷ lệ nạp và thanh toán vượt mức (Overage)
 │   └── managing-subscription.md               # Quản lý gói, kiểm tra hạn mức token và lịch sử giao dịch
 │
@@ -101,16 +101,17 @@ audience:                                    # Đối tượng hướng tới
 source_requirements:                         # FR và BR liên quan trong SRS
   - FR-09
   - FR-33
+  - FR-36
   - BR-32
   - BR-36
 source_use_cases:                            # Use Cases tương ứng
   - UC-09.1
   - UC-33.1
 source_files:                                # Tệp nguồn xác minh (Frontend / Backend)
-  - app/mamxanh-frontend/src/pages/MealPlanner.tsx
+  - app/mamxanh-frontend/src/pages/MealPlanWeekEditor.tsx
   - app/mamxanh-backend/src/main/java/tech/mamxanh/mealplan/controller/MealPlanController.java
 implementation_status: verified              # Trạng thái: verified | partially-verified | planned
-last_verified: 2026-11-01                    # Ngày xác minh gần nhất
+last_verified: 2026-11-21                    # Ngày xác minh gần nhất
 ---
 ```
 
@@ -142,8 +143,15 @@ Kho tri thức được định vị tại:
 ### Thiết kế tương thích môi trường JAR và Docker:
 - **Không phụ thuộc thư mục vật lý:** Khi ứng dụng Spring Boot được đóng gói thành file `.jar` và triển khai trong container Docker, toàn bộ các tệp tin trong `src/main/resources` nằm bên trong tệp nén JAR, không tồn tại dưới dạng thư mục tệp thông thường trên hệ điều hành.
 - **Cơ chế đọc chuẩn Spring Classpath:**
-  - Danh mục `catalog.json` tại gốc thư mục chứa bảng chỉ mục đường dẫn tương đối của toàn bộ 38 tài liệu chuyên đề.
-  - Các service Backend có thể đọc tài liệu thông qua `ResourceLoader`, `ClassPathResource("knowledge-base/...")` hoặc `ClassLoader.getResourceAsStream("knowledge-base/catalog.json")`.
+  - Danh mục `catalog.json` tại gốc thư mục chứa metadata và đường dẫn tới 43 tài liệu đang được nạp vào KnowledgeCatalog.
+  - Bộ `index.json` chứa embedding cho từng chunk của đúng phiên bản nội dung trong `catalog.json`.
+  - `KnowledgeCatalog` nạp danh mục và tài liệu từ classpath bằng resource stream; không phụ thuộc thư mục làm việc hiện tại.
   - Không sử dụng `java.io.File` hay đường dẫn tuyệt đối dạng `C:\...` hoặc `/app/...`.
-  - Hỗ trợ nạp động bằng `PathMatchingResourcePatternResolver.getResources("classpath*:knowledge-base/**/*.md")`.
+
+### Đồng bộ nội dung và chỉ mục
+
+- Nội dung nghiệp vụ cần sửa trong đúng Markdown đang được liệt kê trong `catalog.json`; danh mục này điều khiển tài liệu được nạp cho truy xuất.
+- `index.json` được xác thực theo revision và fingerprint của catalog. Khi nội dung hoặc metadata nguồn thay đổi, chỉ mục cũ không còn hợp lệ và retriever chuyển sang chế độ tìm kiếm từ khóa suy giảm.
+- Không sửa hoặc tự tạo vector giả để làm cho chỉ mục cũ có vẻ hợp lệ. Sau khi thay đổi corpus, chạy quy trình build index đã được cho phép để tạo embedding mới bằng cấu hình provider phù hợp, rồi kiểm tra lại fingerprint trước khi phát hành.
+- `KNOWLEDGE-BASE-AUDIT.md` là báo cáo snapshot riêng, không có trong `catalog.json` nên không được xem là tri thức người dùng mà Trợ lý có thể truy xuất.
 
