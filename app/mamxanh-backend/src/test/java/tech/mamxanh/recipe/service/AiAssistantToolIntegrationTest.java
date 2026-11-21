@@ -401,7 +401,7 @@ class AiAssistantToolIntegrationTest {
     @DisplayName("Tool 26..28: Expert authoring tools verify role and execution")
     void tool26_to_28_expertTools() {
         CurrentUser expertUser = new CurrentUser(88L, Role.EXPERT);
-        when(users.requireActiveMember()).thenReturn(expertUser);
+        when(users.requireActiveExpert()).thenReturn(expertUser);
 
         CreateRecipeResponse createResp = new CreateRecipeResponse(500L, "Món mới", "DRAFT", LocalDateTime.now());
         when(recipeService.publish(any(CreateRecipeRequest.class))).thenReturn(createResp);
