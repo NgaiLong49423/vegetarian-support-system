@@ -192,7 +192,7 @@ public class AdkShoppingPilotService implements AutoCloseable {
     public AiChatResponse execute(AiChatRequest request) {
         if (!pilotEnabled) {
             throw new AppException(ErrorCode.VALIDATION_FAILED,
-                    "Pilot G3 Danh sách mua sắm hiện đang tắt. Phiên pilot cũ không tự chuyển sang bộ điều phối khác; vui lòng bắt đầu phiên trò chuyện mới.");
+                    "Pilot G3 Danh sách mua sắm hiện đang tắt. Phiên pilot cũ không tự chuyển sang bộ điều phối khác. Vui lòng bắt đầu phiên trò chuyện mới.");
         }
         if (request.contextType() != AiChatRequest.ContextType.GENERAL || request.recipeId() != null) {
             throw new AppException(ErrorCode.VALIDATION_FAILED, "Pilot G3 chỉ áp dụng cho ngữ cảnh GENERAL.");
@@ -228,7 +228,7 @@ public class AdkShoppingPilotService implements AutoCloseable {
             state.consentRevoked=true;
             state.pendingConfirmation=null;
             return buildResponse(request,sessionId,request.executionMode(),"CONSENT_REVOKED",state.expiresAt,List.of(),List.of(),null,null,
-                    "Đã thu hồi consent; những lần gửi tiếp theo và bước ghi chưa bắt đầu sẽ bị chặn.");
+                    "Đã thu hồi consent. Những lần gửi tiếp theo và bước ghi chưa bắt đầu sẽ bị chặn.");
         }
 
         String payloadHash = payloadHash(request);
@@ -304,8 +304,8 @@ public class AdkShoppingPilotService implements AutoCloseable {
         return buildResponse(request, state == null ? request.sessionId() : state.sessionId, request.executionMode(),
                 committed ? "COMPLETED" : "STOP_REQUESTED", state == null ? clock.instant() : state.expiresAt,
                 committed ? List.of(new AssistantStep(1, "create_shopping_list", "SUCCEEDED", "Danh sách đã được tạo trước khi dừng.", Map.of("id", result.shoppingListId()))) : List.of(),
-                List.of(), null, null, committed ? "Danh sách đã được tạo; yêu cầu dừng không hoàn tác thay đổi đã hoàn tất."
-                        : "Đã yêu cầu dừng. Bước ghi đã bắt đầu có thể hoàn tất; hãy kiểm tra kết quả thao tác.");
+                List.of(), null, null, committed ? "Danh sách đã được tạo. Yêu cầu dừng không hoàn tác thay đổi đã hoàn tất."
+                        : "Đã yêu cầu dừng. Bước ghi đã bắt đầu có thể hoàn tất. Hãy kiểm tra kết quả thao tác.");
     }
 
     public void deleteSession(UUID sessionId, String anonymousViewerId) {
@@ -492,7 +492,7 @@ public class AdkShoppingPilotService implements AutoCloseable {
                             1,
                             "create_shopping_list",
                             "BLOCKED_BUDGET",
-                            "Đã hết hạn mức miễn phí và AI Credit trước bước ghi; yêu cầu xác nhận cũ đã hết hiệu lực.",
+                             "Đã hết hạn mức miễn phí và AI Credit trước bước ghi. Yêu cầu xác nhận cũ đã hết hiệu lực.",
                             Map.of("proposedListName", pending.proposedListName()))),
                     List.of(),
                     null,
@@ -533,7 +533,7 @@ public class AdkShoppingPilotService implements AutoCloseable {
             state.invalidatePendingAndCloseRunner();
             return buildResponse(request, handle.id(), mode, "FAILED", handle.expiresAt(),
                     List.of(), List.of(), null, null,
-                    "Không thể khởi tạo AI với model hoặc cấu hình hiện tại. Chưa thực hiện thao tác nghiệp vụ; vui lòng kiểm tra cấu hình. Không tự đổi model.");
+                    "Không thể khởi tạo AI với model hoặc cấu hình hiện tại. Chưa thực hiện thao tác nghiệp vụ. Vui lòng kiểm tra cấu hình. Không tự đổi model.");
         }
         AdkShoppingPilotTools tools = state.tools;
         if (journal != null) tools.bindWriteExecutor(name -> journal.create(userId, handle.id(), request.clientRequestId(), name,
@@ -653,11 +653,11 @@ public class AdkShoppingPilotService implements AutoCloseable {
             var outcome = journal.find(state.userId, request.clientRequestId());
             if ("SUCCEEDED".equals(outcome.state())) return buildResponse(request, handle.id(), mode,
                     "PARTIAL_FAILURE", handle.expiresAt(), List.of(new AssistantStep(1, "create_shopping_list", "SUCCEEDED",
-                    "Danh sách đã commit; không chạy lại thao tác tạo.", Map.of("id", outcome.shoppingListId()))),
-                    tools.sources(), null, null, "Danh sách #" + outcome.shoppingListId() + " đã được tạo. Bước tiếp theo gặp sự cố; không gửi lại thao tác ghi.");
+                    "Danh sách đã commit. Không chạy lại thao tác tạo.", Map.of("id", outcome.shoppingListId()))),
+                    tools.sources(), null, null, "Danh sách #" + outcome.shoppingListId() + " đã được tạo. Bước tiếp theo gặp sự cố. Không gửi lại thao tác ghi.");
         }
         if (created == null && state.cancelled) return buildResponse(request, handle.id(), mode, "CANCELLED",
-                handle.expiresAt(), List.of(), tools.sources(), null, null, "Đã dừng trước bước ghi; chưa tạo danh sách.");
+                handle.expiresAt(), List.of(), tools.sources(), null, null, "Đã dừng trước bước ghi. Chưa tạo danh sách.");
         if (created != null) {
             // Create already committed in SQL: preserve the real created list ID and report PARTIAL_FAILURE without replaying create.
             state.invalidatePendingAndCloseRunner();
@@ -730,7 +730,7 @@ public class AdkShoppingPilotService implements AutoCloseable {
                     1,
                     "adk_model_call",
                     "FAILED",
-                    "Lượt gọi mô hình hoặc công cụ gặp sự cố; chưa có dữ liệu nào bị thay đổi.",
+                     "Lượt gọi mô hình hoặc công cụ gặp sự cố. Chưa có dữ liệu nào bị thay đổi.",
                     Map.of("reason", root.getClass().getSimpleName())));
         }
         return buildResponse(
@@ -743,7 +743,7 @@ public class AdkShoppingPilotService implements AutoCloseable {
                 tools.sources(),
                 null,
                 null,
-                "Mình chưa thể hoàn tất yêu cầu do dịch vụ AI hoặc bước xử lý gặp sự cố. Chưa có danh sách mua sắm nào được tạo ở lượt này; bạn vui lòng kiểm tra trạng thái từng bước bên dưới.");
+                "Mình chưa thể hoàn tất yêu cầu do dịch vụ AI hoặc bước xử lý gặp sự cố. Chưa có danh sách mua sắm nào được tạo ở lượt này. Bạn vui lòng kiểm tra trạng thái từng bước bên dưới.");
     }
 
     private String verifyTruthfulAnswer(String modelAnswer, ExecutionMode mode,

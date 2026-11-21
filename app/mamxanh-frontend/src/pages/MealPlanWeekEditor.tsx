@@ -1,4 +1,3 @@
-import { aiRequiredTier, aiUpgradeMessage, type AiPaidTier } from "../lib/aiUpgrade"
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react"
 
 import { Link, useSearchParams } from "react-router-dom"
@@ -1515,7 +1514,7 @@ function AiWeeklyMenu({ week }: { week: string }) {
   const [loading, setLoading] = useState(false)
   const [applying, setApplying] = useState(false)
   const [confirmArmed, setConfirmArmed] = useState(false)
-  const [error, setError] = useState<{ message: string; code?: string; requiredTier?: AiPaidTier } | null>(null)
+  const [error, setError] = useState<{ message: string; code?: string } | null>(null)
   const [successMessage, setSuccessMessage] = useState("")
 
   useEffect(() => {
@@ -1530,7 +1529,7 @@ function AiWeeklyMenu({ week }: { week: string }) {
       }).catch((cause) => {
         if (active) {
           const apiError = asApiError(cause)
-          setError({ message: apiError.code === "AI_SUBSCRIPTION_REQUIRED" ? aiUpgradeMessage(apiError, "PLUS", "AI lập thực đơn theo dinh dưỡng") : apiError.message, code: apiError.code, requiredTier: aiRequiredTier(apiError, "PLUS") })
+          setError({ message: apiError.message, code: apiError.code })
         }
       })
     }, 250)
@@ -1549,7 +1548,7 @@ function AiWeeklyMenu({ week }: { week: string }) {
       }).catch((cause) => {
         if (active) {
           const apiError = asApiError(cause)
-          setError({ message: apiError.code === "AI_SUBSCRIPTION_REQUIRED" ? aiUpgradeMessage(apiError, "PLUS", "AI lập thực đơn theo dinh dưỡng") : apiError.message, code: apiError.code, requiredTier: aiRequiredTier(apiError, "PLUS") })
+          setError({ message: apiError.message, code: apiError.code })
         }
       })
     }, 250)
@@ -1581,7 +1580,7 @@ function AiWeeklyMenu({ week }: { week: string }) {
       if (criteria.mode === "THIS_WEEK") { setGoal(""); setPreferred([]); setAvoided([]) }
     } catch (cause) {
       const apiError = asApiError(cause)
-      setError({ message: apiError.code === "AI_SUBSCRIPTION_REQUIRED" ? aiUpgradeMessage(apiError, "PLUS", "AI lập thực đơn theo dinh dưỡng") : apiError.message, code: apiError.code, requiredTier: aiRequiredTier(apiError, "PLUS") })
+      setError({ message: apiError.message, code: apiError.code })
     }
     finally { setLoading(false) }
   }
@@ -1600,7 +1599,7 @@ function AiWeeklyMenu({ week }: { week: string }) {
       setPreview(null); setPreviewCriteria(null); setSelected([]); setConfirmArmed(false)
     } catch (cause) {
       const apiError = asApiError(cause)
-      setError({ message: apiError.code === "AI_SUBSCRIPTION_REQUIRED" ? aiUpgradeMessage(apiError, "PLUS", "AI lập thực đơn theo dinh dưỡng") : apiError.message, code: apiError.code, requiredTier: aiRequiredTier(apiError, "PLUS") })
+      setError({ message: apiError.message, code: apiError.code })
       setConfirmArmed(false)
     }
     finally { setApplying(false) }
@@ -1679,7 +1678,7 @@ function AiWeeklyMenu({ week }: { week: string }) {
       <div className="mt-4 flex flex-wrap gap-2">
         <Button disabled={loading || applying || !hasActionableDates} onClick={() => void generate()}>{loading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{preview ? "Tạo thực đơn khác" : "Tạo thực đơn tuần"}</Button>
       </div>
-      {error && <div role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800"><p>{error.message}</p>{error.code === "AI_SUBSCRIPTION_REQUIRED" && <Link to="/goi-ai" className="mt-1 inline-block font-semibold underline">Nâng cấp gói AI {error.requiredTier ?? "PLUS"}</Link>}{error.code === "NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED" && <p className="mt-1">Để tiếp tục, hãy <Link to="/ho-so/dinh-duong" className="font-semibold underline underline-offset-2">xác nhận phạm vi hỗ trợ trong Hồ sơ dinh dưỡng</Link>.</p>}</div>}
+      {error && <div role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800"><p>{error.message}</p>{error.code === "NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED" && <p className="mt-1">Để tiếp tục, hãy <Link to="/ho-so/dinh-duong" className="font-semibold underline underline-offset-2">xác nhận phạm vi hỗ trợ trong Hồ sơ dinh dưỡng</Link>.</p>}</div>}
       {successMessage && <p role="status" className="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-800">{successMessage}</p>}
       {preview && <div className="mt-5 space-y-4 border-t border-brand-100 pt-4">
         <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-semibold text-ink">Bản xem trước · {selected.length} món được chọn</p><Button variant="ghost" size="sm" onClick={() => { setSelected(selected.length === preview.meals.length ? [] : preview.meals.map((_, i) => i)); setConfirmArmed(false) }}>{selected.length === preview.meals.length ? "Bỏ chọn tất cả" : "Chọn tất cả"}</Button></div>

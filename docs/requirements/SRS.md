@@ -1,8 +1,8 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v2.21.0
+> **Version:** v2.21.1
 > **Created:** 2026-09-11
-> **Last Updated:** 2026-11-05
+> **Last Updated:** 2026-11-21
 > **Status:** Active
 > **Related Docs:** `docs/requirements/PRD.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`, `docs/architecture/ARCHITECTURE.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -441,7 +441,7 @@ Tài liệu này là **Authoritative Registry** cho sự tồn tại của requi
 | FR-06 | Administrator quản lý tài khoản, xử lý báo cáo và quản lý hậu kiểm | M09 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-06) |
 | FR-08 | Tìm kiếm và lọc bài công thức đa tiêu chí | M04 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-08) |
 | FR-09 | Authorized User tạo và chỉnh lịch ăn tuần | M05 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) |
-| FR-10 | Quyền sử dụng và lựa chọn Gemini Model theo gói | M06 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) |
+| FR-10 | Quyền sử dụng AI và lựa chọn model Gemini chung cho Member | M06 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) |
 | FR-11 | Ghi nhận dữ liệu đo lường kỹ thuật (Telemetry) sử dụng AI | M06 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-11) |
 | FR-13 | Đăng ký gói AI qua thanh toán thật | M08 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-13) |
 | FR-14 | Lưu trữ ảnh bài công thức trên Azure Blob Storage | M03 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-14) |
@@ -499,7 +499,7 @@ Tài liệu này là **Authoritative Registry** cho sự tồn tại và mã ID 
 | ID | Short Name | Module | Detail |
 | --- | --- | --- | --- |
 | BR-01 | Quyền sử dụng AI Chat cho Guest và Member Free | M06 | [Chi tiết](srs/BUSINESS-RULES.md#br-01) |
-| BR-02 | Hạn mức token và quyền chọn Gemini Model theo gói | M06 | [Chi tiết](srs/BUSINESS-RULES.md#br-02) |
+| BR-02 | Hạn mức token theo gói và danh mục Gemini dùng chung | M06 | [Chi tiết](srs/BUSINESS-RULES.md#br-02) |
 | BR-03 | Xác thực quyền tính năng trước khi gọi dịch vụ AI | M06 | [Chi tiết](srs/BUSINESS-RULES.md#br-03) |
 | BR-04 | Xử lý lỗi provider, timeout AI và lưu trữ telemetry | M06 | [Chi tiết](srs/BUSINESS-RULES.md#br-04) |
 | BR-05 | Giới hạn tính năng đối với Guest | M01, M06 | [Chi tiết](srs/BUSINESS-RULES.md#br-05) |

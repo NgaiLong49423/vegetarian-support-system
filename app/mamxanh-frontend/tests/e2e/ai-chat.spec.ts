@@ -101,7 +101,7 @@ test('ingredient lookup cannot apply a patch after the form changes', async ({ p
   await page.getByLabel('Tên món *').fill('Tên tôi vừa sửa');
   await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
   release?.();
-  await expect(page.getByText('Biểu mẫu đã thay đổi trong lúc chờ; đề xuất chưa được áp dụng.')).toBeVisible();
+  await expect(page.getByText('Biểu mẫu đã thay đổi trong lúc chờ. Đề xuất chưa được áp dụng.')).toBeVisible();
   await expect(page.getByLabel('Tên món *')).toHaveValue('Tên tôi vừa sửa');
   await expect(page.getByLabel('Chọn nguyên liệu 1')).toHaveValue('');
   expect(acknowledgements[0].status).toBe('CONFLICT');
@@ -169,7 +169,7 @@ test('expert form patch rejects a stale revision and acknowledges conflict', asy
   await page.getByLabel('Tên món *').fill('Tên đã sửa');
   await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
   release?.();
-  await expect(page.getByText('Biểu mẫu đã thay đổi trong lúc chờ; đề xuất chưa được áp dụng.')).toBeVisible();
+  await expect(page.getByText('Biểu mẫu đã thay đổi trong lúc chờ. Đề xuất chưa được áp dụng.')).toBeVisible();
   await expect(page.getByLabel('Tên món *')).toHaveValue('Tên đã sửa');
   expect(acknowledgements[0].status).toBe('CONFLICT');
 });
@@ -219,7 +219,7 @@ test('AI menu tool result shows a preview without applying it', async ({ page })
   await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
   const preview = page.getByRole('region', { name: 'Xem trước thực đơn AI' });
   await expect(preview).toContainText('2026-11-03 · Trưa: Đậu hũ sốt cà');
-  await expect(preview).toContainText('chưa lưu vào lịch ăn');
+  await expect(preview).toContainText('Chưa lưu vào lịch ăn.');
   expect(applyCalls).toBe(0);
 });
 
@@ -359,22 +359,24 @@ test('follow-up chat includes only IDs of recipe cards shown in assistant histor
   expect(requests[1].history[1]).toMatchObject({ speaker: 'ASSISTANT', recommendedRecipeIds: [3] });
 });
 
-for (const tier of ['PLUS', 'PRO'] as const) {
-  test(`advanced chat denial names the server-required ${tier} plan without a futile retry`, async ({ page }) => {
-    await signInAsMember(page);
-    await page.route('**/api/v1/recipes/ai/chat', route => route.fulfill({ status: 403, json: {
-      status: 403, code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: tier, upgradeUrl: '/goi-ai',
-      detail: 'Gói hiện tại chưa hỗ trợ tính năng này.',
-    } }));
+for (const tier of ['FREE', 'PLUS', 'PRO'] as const) {
+  test(`${tier} can route weekly-menu and expert-authoring chat workflows`, async ({ page }) => {
+    await signInAsMember(page, 'EXPERT');
+    await page.route('**/api/v1/recipes/ai/chat', route => {
+      const question = route.request().postDataJSON().question as string;
+      return route.fulfill({ json: { contextType: 'GENERAL', recipeId: null,
+        answer: question.includes('thực đơn') ? 'Mở Lịch ăn.' : 'Mở biểu mẫu soạn công thức.', recommendations: [],
+        workflowUrl: question.includes('thực đơn') ? '/ke-hoach?view=for-you' : '/dang-cong-thuc' } });
+    });
     await page.goto('/trang-chu');
     await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
-    await page.getByLabel('Câu hỏi của bạn').fill(tier === 'PLUS' ? 'Lập thực đơn tuần' : 'Soạn bài đăng công thức');
+    await page.getByLabel('Câu hỏi của bạn').fill('Lập thực đơn tuần 7 ngày');
     await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
-    const alert = page.getByRole('dialog').getByRole('alert');
-    await expect(alert).toContainText(`yêu cầu gói AI ${tier}`);
-    await expect(alert.getByRole('link', { name: `Nâng cấp gói AI ${tier}` })).toHaveAttribute('href', '/goi-ai');
-    await expect(alert).not.toContainText(tier === 'PLUS' ? 'PRO' : 'PLUS');
-    await expect(alert.getByRole('button', { name: 'Thử lại' })).toHaveCount(0);
+    await expect(page).toHaveURL(/\/ke-hoach\?.*view=for-you/);
+    await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+    await page.getByLabel('Câu hỏi của bạn').fill('Viết bài đăng công thức');
+    await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+    await expect(page).toHaveURL(/\/dang-cong-thuc/);
   });
 }
 
@@ -525,6 +527,20 @@ test('an informational question without a navigation workflow does not change ro
   await expect(page.getByText('Trang Khám phá giúp tìm công thức công khai.')).toBeVisible();
 });
 
+test('Guest usage details explain the monthly limit for the anonymous identity', async ({ page }) => {
+  await page.route('**/api/v1/ai/chat-settings**', route => route.fulfill({ json: {
+    tier: 'GUEST', consumedTokens: 0, quotaTokens: 5000, remainingTokens: 5000,
+    resetsAt: null, selectedModelId: 'gemini-3.5-flash-lite', selectionRequired: false,
+    models: [{ modelId: 'gemini-3.5-flash-lite', displayName: 'Gemini Flash-Lite', isDefault: true }],
+  } }));
+
+  await page.goto('/trang-chu');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByRole('button', { name: 'Xem hạn mức sử dụng' }).click();
+
+  await expect(page.getByText('Tính theo tháng cho định danh Guest')).toBeVisible();
+});
+
 test('Guest navigation to the protected recipe form lands on login without a false success or rollback', async ({ page }) => {
   await page.route('**/api/v1/recipes/ai/chat', route => route.fulfill({ json: {
     contextType: 'GENERAL', recipeId: null, answer: 'Đã mở trang đăng công thức.', recommendations: [], workflowUrl: '/dang-cong-thuc',
@@ -564,7 +580,7 @@ test('a user route change while Agent is responding is never overwritten by the 
   });
   await expect(page).toHaveURL('/kham-pha');
   finishResponse();
-  await expect(page.getByText('Bạn đã chuyển sang trang khác trong lúc trợ lý xử lý; hệ thống giữ nguyên trang bạn chọn.')).toBeVisible();
+  await expect(page.getByText('Bạn đã chuyển sang trang khác trong lúc trợ lý xử lý. Hệ thống giữ nguyên trang bạn chọn.')).toBeVisible();
   await expect(page).toHaveURL('/kham-pha');
   await expect(page.getByRole('heading', { name: 'Khám phá công thức chay' })).toBeVisible();
 });
@@ -609,6 +625,29 @@ test('provider throttling shows the server guidance without suggesting Guest reg
   await expect(alert).toContainText(detail);
   await expect(alert.getByRole('button', { name: 'Thử lại' })).toBeVisible();
   await expect(alert.getByRole('link', { name: 'Đăng ký', exact: true })).toHaveCount(0);
+});
+
+test('unavailable model keeps the model picker open with shared Member model guidance', async ({ page }) => {
+  await signInAsMember(page);
+  await page.route('**/api/v1/ai/chat-settings', route => route.fulfill({ json: {
+    tier: 'FREE', consumedTokens: 0, quotaTokens: 50000, remainingTokens: 50000, resetsAt: null,
+    selectedModelId: 'retired-model', selectionRequired: true,
+    models: [{ modelId: 'gemini-2.5-flash', displayName: 'Gemini Flash', isDefault: true }],
+  } }));
+  await page.route('**/api/v1/recipes/ai/chat', route => route.fulfill({ status: 400, json: {
+    status: 400, code: 'AI_MODEL_SELECTION_REQUIRED', detail: 'Model không còn khả dụng.',
+  } }));
+
+  await page.goto('/trang-chu');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Cách nấu canh nấm?');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+
+  await expect(page.getByRole('dialog').getByRole('alert')).toContainText('Model đang chọn không còn khả dụng.');
+  const modelPicker = page.getByRole('listbox', { name: 'Danh sách model có thể chọn' });
+  await expect(modelPicker).toBeVisible();
+  await expect(modelPicker.getByRole('option', { name: /Gemini Flash/ })).toBeVisible();
+  await expect(page.getByText('Danh mục model dùng chung cho Free, Plus và Pro')).toBeVisible();
 });
 
 test('general chat keeps session history in the page and labels the answer as AI', async ({ page }) => {
@@ -706,7 +745,7 @@ test('expired Backend session keeps transcript and retry continues without the s
   await page.getByLabel('Câu hỏi của bạn').fill('Tiếp tục nhé');
   await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
   await expect(page.getByRole('alert').filter({ hasText: 'Phiên AI đã hết hạn' }))
-    .toContainText('lịch sử trò chuyện vẫn được giữ');
+    .toContainText(/lịch sử trò chuyện vẫn được giữ/i);
   await expect(page.getByText('Lần trước tôi hỏi về món đậu hũ')).toBeVisible();
   await page.getByRole('alert').filter({ hasText: 'Phiên AI đã hết hạn' })
     .getByRole('button', { name: 'Thử lại' }).click();
@@ -1056,4 +1095,40 @@ test('G3 chat disconnect or failure does not auto-retry create request', async (
 
   await expect(page.getByRole('dialog').getByRole('alert')).toContainText('Dịch vụ trả lời đang gặp sự cố');
   expect(postAttempts).toBe(1);
+});
+
+test('stopping an authenticated response requests cancellation and explains pending writes', async ({ page }) => {
+  await signInAsMember(page);
+  let releaseResponse = () => {};
+  const pendingResponse = new Promise<void>(resolve => { releaseResponse = resolve; });
+  let chatRequests = 0;
+  let cancelRequests = 0;
+  await page.route('**/api/v1/recipes/ai/chat', async route => {
+    chatRequests++;
+    await pendingResponse;
+    try {
+      await route.fulfill({ json: { contextType: 'GENERAL', recipeId: null, answer: 'Mình đã dừng câu trả lời.' } });
+    } catch {
+      // The browser may already have aborted this response after cancellation.
+    }
+  });
+  await page.route('**/api/v1/recipes/ai/chat/cancel', async route => {
+    cancelRequests++;
+    await route.fulfill({ json: {} });
+  });
+
+  try {
+    await page.goto('/trang-chu');
+    await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+    await page.getByLabel('Câu hỏi của bạn').fill('Tạo danh sách mua sắm giúp tôi');
+    await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+    await expect.poll(() => chatRequests).toBe(1);
+    await page.getByRole('button', { name: 'Dừng câu trả lời' }).click();
+
+    await expect(page.getByRole('dialog').getByRole('alert')).toContainText('Đã yêu cầu dừng.');
+    await expect(page.getByRole('dialog').getByRole('alert')).toContainText('Thao tác ghi đã bắt đầu có thể hoàn tất.');
+    await expect.poll(() => cancelRequests).toBe(1);
+  } finally {
+    releaseResponse();
+  }
 });

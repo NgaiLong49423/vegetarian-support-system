@@ -96,7 +96,7 @@ public class SubscriptionService {
         String name = switch (tier) { case "FREE" -> "FREE"; case "PLUS" -> "PLUS"; default -> "PRO"; };
         return new PlanResponse(tier, "FREE".equals(tier) ? 0 : configured.priceVnd(), name,
                 description, features, "FREE".equals(tier)
-                        ? "Tháng dương lịch" : "Mỗi tháng trong chu kỳ gói; không tự động gia hạn");
+                        ? "Tháng dương lịch" : "Mỗi tháng trong chu kỳ gói, không tự động gia hạn");
     }
 
     private static List<String> features(tech.mamxanh.subscription.entity.AiConfigurationSnapshot configuration,

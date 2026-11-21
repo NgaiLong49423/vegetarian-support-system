@@ -1349,7 +1349,7 @@ paths:
       tags:
       - ai-menu-controller
       summary: Replace a member's entire week with selected AI preview meals
-      description: "Revalidates Plus or Pro, eligibility and every selected published\
+      description: "Revalidates Member access, eligibility and every selected published\
         \ nutrition-complete recipe. The operation is atomic; any invalid entry preserves\
         \ the old week."
       operationId: apply
@@ -3075,7 +3075,7 @@ paths:
       tags:
       - related-recipe-controller
       summary: Ask Gemini to select existing pairing or variation recipes
-      description: Active Customer/Expert with Pro required before calling Gemini.
+      description: Requires an active Customer or Expert account before calling Gemini.
         No recipe or meal plan is written.
       operationId: recommend
       parameters:
@@ -3115,7 +3115,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "403":
-          description: Member role and active Pro required.
+          description: An active Customer or Expert account is required.
           content:
             application/problem+json:
               schema:
@@ -3309,10 +3309,10 @@ paths:
       tags:
       - ai-recipe-controller
       summary: Generate a 7-day AI meal-plan preview
-      description: "Requires an active Plus or Pro Member and complete FR-31 profile.\
-        \ Ingredient filters are optional. Returns 21 slots from the public safety-filtered\
-        \ catalog without writing the member's Meal Plan. Recipe IDs may repeat, but\
-        \ adjacent slots cannot."
+      description: "Requires an active Member and complete FR-31 profile. Ingredient\
+        \ filters are optional. Returns 21 slots from the public safety-filtered catalog\
+        \ without writing the member's Meal Plan. Recipe IDs may repeat, but adjacent\
+        \ slots cannot."
       operationId: weeklyMenu
       requestBody:
         content:
@@ -3328,7 +3328,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/AiWeeklyMenuPreviewResponse"
         "403":
-          description: An active Plus or Pro subscription is required.
+          description: An active Member account is required.
           content:
             application/problem+json:
               schema:
@@ -3500,9 +3500,10 @@ paths:
         \ is request-scoped. Orchestration clients may use a bounded Backend session\
         \ with consent and confirmation; prompts are not persisted. Guest has no account\
         \ dietary context. Explicit weekly-menu and recipe-authoring requests are\
-        \ checked for entitlement and routed to their dedicated workflow without calling\
-        \ Gemini. Follow-up recipe searches use current public data; assistant recipe\
-        \ IDs are untrusted exclusion hints only."
+        \ routed to their dedicated workflow without calling Gemini; the destination\
+        \ enforces its own role, profile and consent requirements. Follow-up recipe\
+        \ searches use current public data; assistant recipe IDs are untrusted exclusion\
+        \ hints only."
       operationId: answer
       requestBody:
         content:
@@ -3708,6 +3709,7 @@ paths:
       - recipe-post-controller
       summary: Generate editable AI-assisted recipe text
       description: Requires an active Expert account and available AI token budget.
+        The entered recipe details are sent to Google Gemini for the requested suggestion.
         Does not create or publish a recipe draft.
       operationId: generateAiAssistance
       requestBody:
@@ -3730,7 +3732,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
-          description: The selected AI model is not available for the account tier.
+          description: The saved Member model is unavailable in the enabled Member
+            catalog (AI_MODEL_SELECTION_REQUIRED).
           content:
             application/problem+json:
               schema:
@@ -3900,7 +3903,7 @@ paths:
     post:
       tags:
       - meal-plan-controller
-      summary: Request Pro nutrition analysis recommendations from existing recipes
+      summary: Request AI nutrition analysis recommendations from existing recipes
       description: The server supplies catalog-computed nutrition and validates all
         selected IDs. Applying a suggestion requires a separate member confirmation.
       operationId: nutritionRecommendations
@@ -4011,7 +4014,7 @@ paths:
       tags:
       - meal-plan-controller
       summary: Apply a confirmed AI weekly menu to the member's plan
-      description: "Requires an active Pro Member. Atomically adds exactly one recipe\
+      description: "Requires an active Member. Atomically adds exactly one recipe\
         \ to each of 21 day/meal positions and preserves existing entries. If any\
         \ recipe is no longer public or collides with the same recipe in an existing\
         \ day/meal, the request fails without writing any entries."
@@ -4048,12 +4051,6 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: An active Member and ownership of the entry are required.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
         "400":
           description: "Invalid date, meal type or request fields."
           content:
@@ -4066,6 +4063,12 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: An active Member and ownership of the entry are required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/meal-plans/ai-menu/previews:
@@ -4073,9 +4076,9 @@ paths:
       tags:
       - ai-menu-controller
       summary: Generate a nutrition-aware weekly meal-plan preview
-      description: "Requires an active Member, Plus or Pro entitlement, FR-38 eligibility\
-        \ and a valid FR-35 profile. PROFILE uses the saved goal; THIS_WEEK uses optional\
-        \ request-only preferences. Does not write Meal Plan entries."
+      description: "Requires an active Member, FR-38 eligibility and a valid FR-35\
+        \ profile. PROFILE uses the saved goal; THIS_WEEK uses optional request-only\
+        \ preferences. Does not write Meal Plan entries."
       operationId: preview
       requestBody:
         content:
@@ -4105,7 +4108,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
-          description: A valid anthropometric profile is required.
+          description: A valid anthropometric profile is required (NUTRITION_PROFILE_REQUIRED).
           content:
             application/problem+json:
               schema:
@@ -6577,6 +6580,47 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/nutrition/dietary-preferences/recipes/{recipeId}/safety-assessment:
+    get:
+      tags:
+      - dietary-preference-controller
+      operationId: assessRecipe
+      parameters:
+      - name: recipeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assessment"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/nutrition/dietary-preferences/ingredient-suggestions:
     get:
       tags:
@@ -8645,14 +8689,14 @@ components:
                 type: string
         requiredTier:
           type: string
-          description: Minimum paid tier for AI_SUBSCRIPTION_REQUIRED; role and other
-            feature prerequisites still apply.
+          description: Legacy compatibility field; current AI feature access is not
+            restricted by subscription tier.
           enum:
           - PLUS
           - PRO
         upgradeUrl:
           type: string
-          description: Relative plan-information link for entitlement failures.
+          description: Legacy compatibility field for older entitlement errors.
     ShoppingListItemResponse:
       type: object
       properties:
@@ -9378,6 +9422,10 @@ components:
           type: integer
           format: int64
           minimum: 1
+        dietaryRiskAcknowledged:
+          type: boolean
+        dietaryRiskAssessmentToken:
+          type: string
       required:
       - recipeId
     ApplyAiMenuRequest:
@@ -11020,6 +11068,10 @@ components:
           type: integer
           format: int64
           minimum: 1
+        dietaryRiskAcknowledged:
+          type: boolean
+        dietaryRiskAssessmentToken:
+          type: string
       required:
       - mealDate
       - mealType
@@ -12116,6 +12168,53 @@ components:
         summary:
           type: string
         result: {}
+    Assessment:
+      type: object
+      properties:
+        recipeId:
+          type: integer
+          format: int64
+        recipeTitle:
+          type: string
+        recipeTypeCompatible:
+          type: boolean
+        hasAllergenOrAvoidConflict:
+          type: boolean
+        hasVegetarianConflict:
+          type: boolean
+        hasDislikedIngredients:
+          type: boolean
+        unverifiedIngredients:
+          type: array
+          items:
+            type: string
+        ingredients:
+          type: array
+          items:
+            $ref: "#/components/schemas/IngredientStatus"
+        requiresRiskAcknowledgement:
+          type: boolean
+        assessmentToken:
+          type: string
+    IngredientStatus:
+      type: object
+      properties:
+        ingredientId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        ingredientGroup:
+          type: string
+        conflicts:
+          type: array
+          items:
+            type: string
+            enum:
+            - ALLERGEN_OR_AVOID
+            - VEGETARIAN_TYPE
+            - DISLIKE
+            - UNVERIFIED
     IngredientSuggestionResponse:
       type: object
       properties:

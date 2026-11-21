@@ -27,7 +27,7 @@ Dữ liệu riêng tư của người dùng thuộc các phân hệ nghiệp v�
 
 ## Kiểm soát hạn mức, quota và AI Credit
 
-Backend kiểm tra trạng thái hoạt động của tài khoản, danh sách mô hình được phép theo gói thành viên và số dư khả dụng trước từng lượt gọi mô hình AI.
+Backend kiểm tra trạng thái hoạt động của tài khoản, danh mục model Member đang bật dùng chung cho Free, Plus và Pro, giới hạn model riêng của Guest và số dư khả dụng trước từng lượt gọi AI. Gói thành viên quyết định quota token, không quyết định model hay quyền chức năng AI.
 
 - **Snapshot hạn mức:** Trạng thái hạn mức được ghi nhận snapshot ngay tại thời điểm bắt đầu lượt gọi (chu kỳ, model, tỷ lệ khấu trừ) để đảm bảo tính nhất quán của chu kỳ tính phí, không phụ thuộc vào thời điểm lượt gọi hoàn tất.
 - **Thứ tự khấu trừ:** Hệ thống ưu tiên trừ quota được cấp định kỳ trong tháng trước; khi quota cạn kiệt, hệ thống tiếp tục khấu trừ AI Credit theo cấu hình chính sách của hệ thống. Mọi giao dịch khấu trừ credit được thực hiện trong giao dịch cơ sở dữ liệu an toàn kèm cơ chế khử trùng lặp (deduplication) theo mã định danh lượt gọi (call ID). Số dư credit không bao giờ âm; các lượt gọi thất bại do lỗi hệ thống hoặc phản hồi sai định dạng sẽ không bị trừ quota hay credit.

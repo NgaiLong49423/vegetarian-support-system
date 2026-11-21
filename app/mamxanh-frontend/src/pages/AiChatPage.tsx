@@ -1,4 +1,3 @@
-import { aiRequiredTier, aiUpgradeMessage, type AiPaidTier } from "../lib/aiUpgrade"
 import {
   FormEvent,
   useEffect,
@@ -167,8 +166,7 @@ export function AiChatPage() {
   const [question, setQuestion] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [upgradeTier, setUpgradeTier] = useState<AiPaidTier>("PLUS")
-  const [errorAction, setErrorAction] = useState<"plans" | "login" | null>(null)
+  const [errorAction, setErrorAction] = useState<"login" | null>(null)
   const [retryQuestion, setRetryQuestion] = useState("")
   const [retryAt, setRetryAt] = useState(0)
   const [retrySeconds, setRetrySeconds] = useState(0)
@@ -223,7 +221,7 @@ export function AiChatPage() {
       window.clearTimeout(attempt.timer)
       navigationAttempt.current = null
       setMessages((items) => items.map((message) => message.id === attempt.assistantId
-        ? { ...message, content: "Ứng dụng đã chuyển sang một trang khác; chưa thể xác nhận trang yêu cầu đã mở.", workflowUrl: undefined }
+        ? { ...message, content: "Ứng dụng đã chuyển sang một trang khác. Chưa thể xác nhận trang yêu cầu đã mở.", workflowUrl: undefined }
         : message))
     }
   }, [location.pathname, location.search, closeChat])
@@ -380,7 +378,7 @@ export function AiChatPage() {
 
   async function startFreshConversation() {
     if (messages.length > 0 && !window.confirm(
-      "Xóa nội dung cuộc trò chuyện hiện tại và bắt đầu phiên mới? Thao tác ghi đã bắt đầu vẫn có thể hoàn tất; cuộc trò chuyện mới không hoàn tác thay đổi trong hệ thống.",
+      "Xóa nội dung cuộc trò chuyện hiện tại và bắt đầu phiên mới? Thao tác ghi đã bắt đầu vẫn có thể hoàn tất. Cuộc trò chuyện mới không hoàn tác thay đổi trong hệ thống.",
     )) return
     try {
       if (loading) await stopRun()
@@ -488,7 +486,7 @@ export function AiChatPage() {
     if (clientRequestId && isAuthenticated) {
       setRecoveryRequest(activeRecoveryRequest.current ?? clientRequestId)
     }
-    setError("Đã yêu cầu dừng. Thao tác ghi đã bắt đầu có thể hoàn tất; hãy kiểm tra kết quả.")
+    setError("Đã yêu cầu dừng. Thao tác ghi đã bắt đầu có thể hoàn tất. Hãy kiểm tra kết quả.")
   }
 
   async function recoverExecution() {
@@ -503,7 +501,7 @@ export function AiChatPage() {
         if (succeeded.length > 0) {
           setMessages(current => [...current.map(message => ({ ...message, pendingConfirmation: null, consentRequest: null, displayOnly: true })),
             { id: Date.now(), speaker: "ASSISTANT", sensitive: true, displayOnly: true,
-              content: `Backend xác nhận: ${succeeded.map(action => action.summary ?? action.tool).join("; ")}${unresolved.length ? ". Một số bước chưa được xác nhận." : ""}`,
+              content: `Backend xác nhận: ${succeeded.map(action => action.summary ?? action.tool).join(", ")}${unresolved.length ? ". Một số bước chưa được xác nhận." : ""}`,
               steps: succeeded.map((action, index) => ({ sequence: index + 1, tool: action.tool, status: "SUCCEEDED", summary: action.summary ?? "Đã xác nhận từ Backend.", result: { data: action.result } })) }])
         }
         if (unresolved.length) {
@@ -527,7 +525,7 @@ export function AiChatPage() {
         setRecoveryRequest(null)
         setError("")
       } else setError(result.state === "UNKNOWN"
-        ? "Chưa có kết quả ghi được xác nhận. Không tự gửi lại thao tác; hãy kiểm tra danh sách mua sắm."
+        ? "Chưa có kết quả ghi được xác nhận. Không tự gửi lại thao tác. Hãy kiểm tra danh sách mua sắm."
         : `Trạng thái thao tác: ${result.state}. Không tự chạy lại thao tác ghi.`)
     } catch (cause) { if (version === requestVersion.current) setError(asApiError(cause).message) }
   }
@@ -676,7 +674,7 @@ export function AiChatPage() {
               formActionMessage = result.status === "APPLIED"
                 ? "Đã cập nhật các trường được đề xuất trong biểu mẫu."
                 : result.status === "CONFLICT"
-                  ? "Biểu mẫu đã thay đổi trong lúc chờ; đề xuất chưa được áp dụng."
+                  ? "Biểu mẫu đã thay đổi trong lúc chờ. Đề xuất chưa được áp dụng."
                   : "Không thể áp dụng đề xuất vào biểu mẫu hiện tại."
             } catch {
               formActionMessage = result.status === "APPLIED"
@@ -718,7 +716,7 @@ export function AiChatPage() {
         const roleNotice = workflowAccessNotice(workflowUrl, isAuthenticated, account?.role)
         if (current !== sourceLocation) {
           setMessages((items) => items.map((message) => message.id === assistantId
-            ? { ...message, content: "Bạn đã chuyển sang trang khác trong lúc trợ lý xử lý; hệ thống giữ nguyên trang bạn chọn.", workflowUrl: undefined }
+            ? { ...message, content: "Bạn đã chuyển sang trang khác trong lúc trợ lý xử lý. Hệ thống giữ nguyên trang bạn chọn.", workflowUrl: undefined }
             : message))
         } else if (!isAuthenticated && roleNotice) {
           const navTranscript = [
@@ -786,14 +784,7 @@ export function AiChatPage() {
         setRetryAt(Date.now() + wait * 1000)
         setRetrySeconds(wait)
       }
-      setUpgradeTier(aiRequiredTier(apiError, "PLUS"))
-      setErrorAction(
-        apiError.code === "AI_SUBSCRIPTION_REQUIRED"
-          ? "plans"
-          : apiError.status === 401
-            ? "login"
-            : null,
-      )
+      setErrorAction(apiError.status === 401 ? "login" : null)
       if (apiError.code === "AI_TOKEN_QUOTA_EXCEEDED") setRetryQuestion("")
       if (apiError.code === "AI_TOKEN_QUOTA_EXCEEDED") {
         void subscriptionApi.getChatSettings(isAuthenticated ? undefined : anonymousRecipeViewer())
@@ -801,7 +792,7 @@ export function AiChatPage() {
           .catch(() => undefined)
       }
       if (apiError.code === "AI_MODEL_SELECTION_REQUIRED") {
-        setError("Model đang chọn không còn được gói của bạn hỗ trợ. Hãy chọn model khác rồi gửi lại câu hỏi.")
+        setError("Model đang chọn không còn khả dụng. Hãy chọn model khác rồi gửi lại câu hỏi.")
         setModelMenuOpen(true)
         setUsageOpen(false)
         void subscriptionApi.getChatSettings(isAuthenticated ? undefined : anonymousRecipeViewer())
@@ -824,13 +815,11 @@ export function AiChatPage() {
       }
       if (apiError.code !== "AI_MODEL_SELECTION_REQUIRED") setError(
         expiredSession
-          ? "Phiên AI đã hết hạn; lịch sử trò chuyện vẫn được giữ. Hãy thử lại để tiếp tục trong phiên mới."
-          : apiError.code === "AI_SUBSCRIPTION_REQUIRED"
-          ? aiUpgradeMessage(apiError, "PLUS", "Tính năng AI bạn yêu cầu")
+          ? "Phiên AI đã hết hạn. Lịch sử trò chuyện vẫn được giữ. Hãy thử lại để tiếp tục trong phiên mới."
           : apiError.code === "AI_TOKEN_QUOTA_EXCEEDED" && !isAuthenticated
           ? "Bạn đã dùng hết 50.000 token dành cho Guest trong tháng này. Đăng ký tài khoản để tiếp tục sử dụng AI."
           : apiError.status === 429
-          ? "Bạn đã gửi nhiều câu hỏi trong thời gian ngắn. Thử lại sau; bạn cũng có thể đăng ký tài khoản để tiếp tục."
+          ? "Bạn đã gửi nhiều câu hỏi trong thời gian ngắn. Thử lại sau. Bạn cũng có thể đăng ký tài khoản để tiếp tục."
           : apiError.status === 0 ||
               ((apiError.code === "AI_PROVIDER_UNAVAILABLE" || apiError.code === "AI_RESPONSE_INVALID") &&
                 apiError.message === "Yêu cầu không thành công. Vui lòng thử lại.")
@@ -1125,7 +1114,7 @@ export function AiChatPage() {
                           {menuPreview && (
                             <section aria-label="Xem trước thực đơn AI" className="mt-2 border-t border-brand-100 pt-2">
                               <p className="font-bold">Thực đơn tuần bắt đầu {menuPreview.weekStartDate}</p>
-                              <p className="mt-1 text-ink-muted">Đây là bản xem trước; chưa lưu vào lịch ăn.</p>
+                              <p className="mt-1 text-ink-muted">Đây là bản xem trước. Chưa lưu vào lịch ăn.</p>
                               {menuPreview.meals.length === 0 ? <p className="mt-2">Không có bữa ăn khả dụng trong khoảng này.</p> : (
                                 <ul className="mt-2 space-y-1">
                                   {menuPreview.meals.map((meal, index) => (
@@ -1305,15 +1294,6 @@ export function AiChatPage() {
                   Đăng ký
                 </Link>
               )}
-              {errorAction === "plans" && (
-                <Link
-                  to="/goi-ai"
-                  onClick={closeChat}
-                  className="ml-2 font-bold underline"
-                >
-                  Nâng cấp gói AI {upgradeTier}
-                </Link>
-              )}
               {errorAction === "login" && (
                 <Link
                   to="/dang-nhap"
@@ -1385,7 +1365,7 @@ export function AiChatPage() {
                 <div className="border-b border-brand-50 px-4 py-3">
                   <p className="text-sm font-bold">Model Gemini</p>
                   <p className="mt-0.5 text-xs text-ink-muted">
-                    {chatSettings ? `Các model khả dụng trong gói ${chatSettings.tier === "GUEST" ? "dùng thử" : chatSettings.tier}` : "Model được quản lý theo gói AI của bạn"}
+                    {chatSettings ? chatSettings.tier === "GUEST" ? "Các model được phép dùng thử" : "Danh mục model dùng chung cho Free, Plus và Pro" : "Danh mục model do hệ thống quản lý"}
                   </p>
                 </div>
                 {settingsLoading ? (
@@ -1410,7 +1390,7 @@ export function AiChatPage() {
                   </div>
                 ) : chatSettings ? (
                   <>
-                    <div id="chat-model-menu" role="listbox" aria-label="Model được gói hỗ trợ" className="p-2">
+                    <div id="chat-model-menu" role="listbox" aria-label="Danh sách model có thể chọn" className="p-2">
                       {chatSettings.models.map((model) => {
                         const selected = chatSettings.selectedModelId === model.modelId
                         return (
@@ -1479,7 +1459,7 @@ export function AiChatPage() {
                             <div className="h-full rounded-full bg-brand-600 transition-[width]" style={{ width: `${remainingQuotaPercent}%` }} />
                           </div>
                           <div className="mt-2 flex justify-between gap-2 text-[10px] text-ink-muted">
-                            <span>{chatSettings.tier === "GUEST" ? "Tính theo phiên khách" : "Hạn mức theo tháng"}</span>
+                            <span>{chatSettings.tier === "GUEST" ? "Tính theo tháng cho định danh Guest" : "Hạn mức theo tháng"}</span>
                             {chatSettings.resetsAt && <span>Cấp lại {new Date(chatSettings.resetsAt).toLocaleDateString("vi-VN")}</span>}
                           </div>
                           {chatSettings.tier === "GUEST" && <Link to="/dang-ky" onClick={closeChat} className="mt-3 inline-flex text-xs font-semibold text-brand-700 underline">Đăng ký để có hạn mức tháng</Link>}

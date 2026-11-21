@@ -87,7 +87,7 @@ class AiTokenQuotaIntegrationTest extends AbstractIntegrationTest {
         jdbc.update("UPDATE AI_CREDIT_WALLET SET balance = 10.0000, updated_at = SYSUTCDATETIME() WHERE user_id = ?",
                 firstMember);
 
-        // FREE tier cannot use PLUS/PRO-only model without entitlement
+        // An enabled model is available across Member tiers; this case rejects an unknown model ID.
         assertThatThrownBy(() -> quota.beginCall(firstMember, null, "FR-51", "unknown-model", clock.instant()))
                 .isInstanceOf(tech.mamxanh.common.exception.ApiException.class);
 

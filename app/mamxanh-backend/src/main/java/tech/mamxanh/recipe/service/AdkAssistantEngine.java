@@ -97,7 +97,7 @@ public class AdkAssistantEngine implements AutoCloseable {
     public static final int MAX_CONTEXT_BYTES = 64_000;
 
     private static final String CLASSIFICATION_UNAVAILABLE_ANSWER =
-            "Hiện mình chưa thể kiểm tra phạm vi câu hỏi. Câu hỏi chưa được chuyển sang bước trả lời; bạn vui lòng thử lại sau ít phút.";
+            "Hiện mình chưa thể kiểm tra phạm vi câu hỏi. Câu hỏi chưa được chuyển sang bước trả lời. Bạn vui lòng thử lại sau ít phút.";
     private static final Pattern PERSONAL_DATA = Pattern.compile(
             "(?iu)([\\w.+-]+@[\\w.-]+\\.[a-z]{2,}|(?:\\+?84|0)(?:[ .-]?\\d){8,10}|(?:hồ sơ|thông tin) (?:cá nhân|sức khỏe|suc khoe)|hồ sơ.{0,20}(?:tôi|mình)|(?:tôi|mình).{0,20}(?:hồ sơ|sức khỏe|BMI|calo)|sức khỏe (?:của )?(?:tôi|mình)|BMI (?:của )?(?:tôi|mình)|tên (?:hiển thị )?(?:của )?(?:tôi|mình)|bio (?:của )?(?:tôi|mình)|dị ứng|bệnh nền|cân nặng|chiều cao|(?:chế độ ăn|tùy chọn ăn uống) của (?:tôi|mình)|(?:tôi|mình).{0,20}(?:ăn chay|dị ứng|chế độ ăn|tùy chọn ăn uống))");
 
@@ -236,7 +236,7 @@ public class AdkAssistantEngine implements AutoCloseable {
             state.serverPendingAction = null;
                 return buildResponse(request, sessionId, request.executionMode(), "CONSENT_REVOKED",
                         List.of(), List.of(), null, null,
-                        "Đã thu hồi sự đồng ý dữ liệu; những lượt tiếp theo sẽ không gửi dữ liệu này tới Google Gemini.");
+                        "Đã thu hồi sự đồng ý dữ liệu. Những lượt tiếp theo sẽ không gửi dữ liệu này tới Google Gemini.");
             }
             state.consentRevoked = false;
         }
@@ -575,7 +575,7 @@ public class AdkAssistantEngine implements AutoCloseable {
                 sessionStore.discardPending(sessionHandle.id(), owner);
                 state.serverPendingAction = null;
                 state.pendingConfirmation = null;
-                throw new AppException(ErrorCode.VALIDATION_FAILED, "Bản xem trước đã thay đổi hoặc hết hạn; hãy tạo lại thực đơn.");
+                throw new AppException(ErrorCode.VALIDATION_FAILED, "Bản xem trước đã thay đổi hoặc hết hạn. Hãy tạo lại thực đơn.");
             }
             if ("create_recipe_post".equals(toolName)) {
                 var form = request.formContext();
@@ -588,7 +588,7 @@ public class AdkAssistantEngine implements AutoCloseable {
                     state.serverPendingAction = null;
                     state.pendingConfirmation = null;
                     state.pendingPublishForm = null;
-                    throw new AppException(ErrorCode.VALIDATION_FAILED, "Biểu mẫu đã thay đổi; hãy kiểm tra và xác nhận lại.");
+                    throw new AppException(ErrorCode.VALIDATION_FAILED, "Biểu mẫu đã thay đổi. Hãy kiểm tra và xác nhận lại.");
                 }
             }
         }
@@ -765,7 +765,7 @@ public class AdkAssistantEngine implements AutoCloseable {
                 state.serverPendingAction = null;
                 AiChatResponse response = buildResponse(request, sessionId, request.executionMode(), "CONSENT_REVOKED",
                         List.of(), List.of(), null, null,
-                        "Đã thu hồi sự đồng ý dữ liệu; những lượt tiếp theo sẽ không gửi dữ liệu này tới Google Gemini.");
+                        "Đã thu hồi sự đồng ý dữ liệu. Những lượt tiếp theo sẽ không gửi dữ liệu này tới Google Gemini.");
                 consumer.accept(AiChatStreamEvent.complete(response));
                 return;
             }

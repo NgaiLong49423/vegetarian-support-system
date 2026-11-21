@@ -17,7 +17,6 @@ import tech.mamxanh.recipe.dto.request.AiChatRequest;
 import tech.mamxanh.recipe.dto.response.AiChatResponse;
 import tech.mamxanh.subscription.service.AiChatSettingsService;
 import tech.mamxanh.subscription.service.AiTokenQuotaService;
-import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Clock;
@@ -49,8 +48,6 @@ class AiChatServiceDualRunTest {
     @Mock
     private ApplicationEventPublisher events;
     @Mock
-    private SubscriptionEntitlementService entitlements;
-    @Mock
     private AiTokenQuotaService aiQuota;
     @Mock
     private AiChatSettingsService chatSettings;
@@ -71,7 +68,7 @@ class AiChatServiceDualRunTest {
         mapper = new ObjectMapper();
         service = new AiChatService(
                 users, recipes, recipePosts, preferences, ai, mapper, events,
-                Clock.systemUTC(), entitlements, aiQuota, chatSettings,
+                Clock.systemUTC(), aiQuota, chatSettings,
                 assistantExecution, adkShoppingPilot, new AiPromptLoader(),
                 adkEngine, sessionStore, "DUAL_RUN", true
         );
@@ -255,7 +252,7 @@ class AiChatServiceDualRunTest {
     void defaultOrchestratorModeIsAdk() {
         var defaultService = new AiChatService(
                 users, recipes, recipePosts, preferences, ai, mapper, events,
-                Clock.systemUTC(), entitlements, aiQuota, chatSettings,
+                Clock.systemUTC(), aiQuota, chatSettings,
                 assistantExecution, adkShoppingPilot, new AiPromptLoader(),
                 adkEngine, sessionStore, null, true
         );

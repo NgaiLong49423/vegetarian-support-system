@@ -27,14 +27,12 @@ import tech.mamxanh.nutrition.service.IngredientCatalogLookupService;
 import tech.mamxanh.nutrition.service.DietaryConstraintEvaluator;
 import tech.mamxanh.nutrition.service.DietaryPreferenceService;
 import tech.mamxanh.recipe.dto.response.RecipePostResponse;
-import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 import tools.jackson.databind.json.JsonMapper;
 
 class AiRecipeRecommendationServiceTest {
     private RecipePostService recipes;
     private CurrentUserService users;
     private DietaryPreferenceService preferences;
-    private SubscriptionEntitlementService entitlements;
     private AiClient ai;
     private ApplicationEventPublisher events;
     private tech.mamxanh.subscription.service.AiTokenQuotaService aiQuota;
@@ -46,13 +44,13 @@ class AiRecipeRecommendationServiceTest {
         recipes = mock(RecipePostService.class);
         users = mock(CurrentUserService.class);
         preferences = mock(DietaryPreferenceService.class);
-        entitlements = mock(SubscriptionEntitlementService.class);
         ai = mock(AiClient.class);
         events = mock(ApplicationEventPublisher.class);
         aiQuota = mock(tech.mamxanh.subscription.service.AiTokenQuotaService.class);
         ingredientCatalog = mock(IngredientCatalogLookupService.class);
-        service = new AiRecipeRecommendationService(recipes, users, preferences, entitlements, ai,
-                new JsonMapper(), events, Clock.systemUTC(), aiQuota, ingredientCatalog, new DietaryConstraintEvaluator());
+        service = new AiRecipeRecommendationService(recipes, users, preferences, ai,
+                new JsonMapper(), events, Clock.systemUTC(), aiQuota, ingredientCatalog,
+                new DietaryConstraintEvaluator());
         when(recipes.getPublishedCards(anyList())).thenAnswer(invocation -> {
             List<Long> requested = invocation.getArgument(0);
             return requested.stream().distinct().map(id -> id == 1L ? recipe(id, "VEGAN", 1L, 2L)
@@ -111,7 +109,6 @@ class AiRecipeRecommendationServiceTest {
         doThrow(new AppException(ErrorCode.ACCESS_DENIED)).when(preferences).requirePersonalizedAiEligible(7);
         assertThatThrownBy(() -> service.weeklyMenu(List.of(1L))).isInstanceOf(AppException.class);
         verifyNoInteractions(recipes, ai, events);
-        verify(entitlements, never()).requirePlusOrPro(7);
     }
 
     @Test
@@ -201,7 +198,6 @@ class AiRecipeRecommendationServiceTest {
         assertThatThrownBy(() -> service.requireWeeklyApplyEligible(7L, List.of(1L)))
                 .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
         verifyNoInteractions(recipes, ai, events);
-        verify(entitlements, never()).requirePlusOrPro(7);
     }
 
     @Test

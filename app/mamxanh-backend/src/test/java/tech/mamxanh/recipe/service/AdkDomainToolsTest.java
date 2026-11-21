@@ -22,7 +22,6 @@ import tech.mamxanh.nutrition.service.IngredientCatalogService;
 import tech.mamxanh.nutrition.service.NutritionProfileService;
 import tech.mamxanh.recipe.dto.request.AiChatRequest;
 import tech.mamxanh.shopping.service.ShoppingListService;
-import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 import tools.jackson.databind.ObjectMapper;
 
 import jakarta.validation.Validator;
@@ -73,8 +72,6 @@ class AdkDomainToolsTest {
     private Validator validator;
     @Mock
     private CurrentUserService users;
-    @Mock
-    private SubscriptionEntitlementService entitlements;
 
     private ObjectMapper mapper;
     private AiAssistantToolRegistry registry;
@@ -86,7 +83,7 @@ class AdkDomainToolsTest {
         registry = new AiAssistantToolRegistry(
                 recipePosts, recipeService, ingredientCatalog, reactions, comments,
                 follows, profiles, dietaryPreferences, nutritionProfiles, mealPlanReads,
-                mealPlans, mock(tech.mamxanh.mealplan.service.AiMenuService.class), shoppingLists, knowledge, validator, mapper, users, entitlements
+                mealPlans, mock(tech.mamxanh.mealplan.service.AiMenuService.class), shoppingLists, knowledge, validator, mapper, users
         );
         domainTools = new AdkDomainTools(registry);
         domainTools.initDeclarations();
@@ -235,16 +232,11 @@ class AdkDomainToolsTest {
     }
 
     @Test
-    @DisplayName("FR-21 compliance: Expert role does not require PRO entitlement for recipe tools")
-    void expertRoleDoesNotRequireProEntitlement() {
-        CurrentUser expertMember = new CurrentUser(7L, Role.EXPERT);
-        when(users.requireActiveMember()).thenReturn(expertMember);
-
+    @DisplayName("FR-21 compliance: Expert role authorizes recipe tools")
+    void expertRoleAuthorizesRecipeTools() {
         // Delete recipe post checks expert role only
         registry.execute("delete_own_recipe_post", Map.of("recipeId", 99L));
 
         verify(recipePosts).delete(99L);
-        // Entitlements.requirePro must NEVER be called
-        verify(entitlements, never()).requirePro(any(Long.class));
     }
 }

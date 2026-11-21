@@ -59,7 +59,7 @@ public class AiChatSettingsService {
             }
             return normalized;
         }
-        return allowed.stream().filter(Model::enabled).filter(model -> isDefault(model, usage.tier()))
+        return allowed.stream().filter(Model::enabled).filter(AiChatSettingsService::isDefault)
                 .map(Model::modelId).findFirst().orElseThrow(AiChatSettingsService::invalidSelection);
     }
 
@@ -67,7 +67,7 @@ public class AiChatSettingsService {
         List<Model> allowed = allowedModels(usage.tier()).stream().filter(Model::enabled).toList();
         String preferred = userId == null ? null : jdbc.query("SELECT preferred_ai_model_id FROM \"USER\" WHERE user_id = ?",
                 rs -> rs.next() ? rs.getString(1) : null, userId);
-        String defaultId = allowed.stream().filter(model -> isDefault(model, usage.tier())).map(Model::modelId)
+        String defaultId = allowed.stream().filter(AiChatSettingsService::isDefault).map(Model::modelId)
                 .findFirst().orElse(null);
         boolean invalidPreference = preferred != null && allowed.stream().noneMatch(model -> model.modelId().equalsIgnoreCase(preferred));
         String selected = invalidPreference ? null : preferred == null ? defaultId : preferred;
@@ -82,12 +82,12 @@ public class AiChatSettingsService {
                 .filter(model -> !"GUEST".equals(tier) || model.freeAllowed()).toList();
     }
 
-    private static boolean isDefault(Model model, String tier) {
+    private static boolean isDefault(Model model) {
         return model.freeDefault();
     }
 
     private static ApiException invalidSelection() {
         return new ApiException(HttpStatus.CONFLICT, "AI_MODEL_SELECTION_REQUIRED",
-                "Model đang chọn không còn được gói của bạn hỗ trợ. Hãy chọn một model khả dụng trong Chatbox.");
+                "Model đang chọn không còn được hệ thống cho phép. Hãy chọn một model đang khả dụng trong Chatbox.");
     }
 }

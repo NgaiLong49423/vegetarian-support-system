@@ -18,7 +18,7 @@ source_files:
   - app/mamxanh-backend/src/main/java/tech/mamxanh/recipe/service/AiCookingGuideService.java
   - app/mamxanh-backend/src/main/java/tech/mamxanh/recipe/controller/AiChatController.java
 implementation_status: verified
-last_verified: 2026-11-01
+last_verified: 2026-11-21
 ---
 
 # Hỏi đáp ẩm thực chay và tư vấn nấu nướng cùng AI
@@ -34,7 +34,7 @@ Hệ thống hỗ trợ 2 ngữ cảnh hỏi đáp chính:
 ## Ai có thể sử dụng?
 
 - **Khách vãng lai (Guest):** Trải nghiệm hỏi đáp trong hạn mức 50.000 token mỗi tháng dương lịch theo định danh Guest hiện tại.
-- **Thành viên đã đăng ký (Customer và Expert):** Trò chuyện không giới hạn số câu hỏi, áp dụng hạn mức token theo gói dịch vụ tháng và được ghi nhận sở thích ăn uống cá nhân vào câu trả lời.
+- **Thành viên đã đăng ký (Customer và Expert):** Không áp dụng giới hạn số câu hỏi mỗi ngày, nhưng mỗi lượt dùng token trong hạn mức theo gói và có thể dùng AI Credit khi vượt hạn mức. Dữ liệu sở thích cá nhân chỉ được dùng trong luồng phù hợp sau khi có consent cần thiết.
 
 ## Các tình huống ứng dụng thực tế
 

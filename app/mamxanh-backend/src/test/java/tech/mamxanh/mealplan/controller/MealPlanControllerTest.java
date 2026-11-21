@@ -314,15 +314,20 @@ class MealPlanControllerTest {
         var week = LocalDate.of(2026, 10, 12);
         var entry = new MealPlanWeekResponse.Entry(31, week, "LUNCH", java.math.BigDecimal.ONE,
                 1, "Món thử", null, "SOUP", 25, false, null);
-        when(service.addEntry(week, new AddMealPlanEntryRequest(week, "LUNCH", 1L))).thenReturn(entry);
-        when(service.replaceEntry(week, 31, 1)).thenReturn(entry);
+        when(service.addEntry(week, new AddMealPlanEntryRequest(week, "LUNCH", 1L, false, null))).thenReturn(entry);
+        when(service.replaceEntry(week, 31, 1, false, null)).thenReturn(entry);
+        String addRequest = "{\"mealDate\":\"2026-10-12\",\"mealType\":\"LUNCH\",\"recipeId\":1,"
+                + "\"dietaryRiskAcknowledged\":false,\"dietaryRiskAssessmentToken\":null}";
+        String replaceRequest = "{\"recipeId\":1,\"dietaryRiskAcknowledged\":false,"
+                + "\"dietaryRiskAssessmentToken\":null}";
         mvc.perform(post("/api/v1/meal-plans/2026-10-12/entries").with(user("17"))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"mealDate\":\"2026-10-12\",\"mealType\":\"LUNCH\",\"recipeId\":1}"))
+                        .content(addRequest))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.entryId").value(31))
                 .andExpect(jsonPath("$.plannedServings").value(1));
         mvc.perform(put("/api/v1/meal-plans/2026-10-12/entries/31").with(user("17"))
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"recipeId\":1}"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(replaceRequest))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.entryId").value(31));
     }
 
@@ -336,9 +341,13 @@ class MealPlanControllerTest {
     @Test
     void returnsTheDuplicateCodeAndOwnershipError() throws Exception {
         var week = LocalDate.of(2026, 10, 12);
-        when(service.replaceEntry(week, 31, 1)).thenThrow(new AppException(ErrorCode.MEAL_PLAN_RECIPE_DUPLICATE));
+        String replaceRequest = "{\"recipeId\":1,\"dietaryRiskAcknowledged\":false,"
+                + "\"dietaryRiskAssessmentToken\":null}";
+        when(service.replaceEntry(week, 31, 1, false, null))
+                .thenThrow(new AppException(ErrorCode.MEAL_PLAN_RECIPE_DUPLICATE));
         mvc.perform(put("/api/v1/meal-plans/2026-10-12/entries/31").with(user("17"))
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"recipeId\":1}"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(replaceRequest))
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("MEAL_PLAN_RECIPE_DUPLICATE"));
         doThrow(new AppException(ErrorCode.ACCESS_DENIED)).when(service).removeEntry(week, 31);
         mvc.perform(delete("/api/v1/meal-plans/2026-10-12/entries/31").with(user("17")))

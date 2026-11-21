@@ -51,7 +51,6 @@ class AiChatFailureContractTest {
     @MockitoBean DietaryPreferenceService preferences;
     @MockitoBean AiClient ai;
     @MockitoBean AdkAssistantEngine adkEngine;
-    @MockitoBean tech.mamxanh.subscription.service.SubscriptionEntitlementService entitlements;
     @MockitoBean tech.mamxanh.subscription.service.AiTokenQuotaService aiQuota;
     @MockitoBean tech.mamxanh.subscription.service.AiChatSettingsService chatSettings;
 
@@ -119,23 +118,29 @@ class AiChatFailureContractTest {
     }
 
     @Test
-    void advancedChatRequestUsesHttpUpgradeContractAndNeverInvokesProvider() throws Exception {
+    void weeklyMenuWorkflowIsAvailableWithoutSubscriptionAndDoesNotInvokeProvider() throws Exception {
         when(users.findAuthenticatedUserId()).thenReturn(Optional.of(7L));
         when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(7, tech.mamxanh.auth.entity.Role.CUSTOMER));
-        doThrow(new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED,
-                "Hãy nâng cấp lên Plus để lập thực đơn tuần.").withProperty("requiredTier", "PLUS").withProperty("upgradeUrl", "/goi-ai"))
-                .when(entitlements).requirePlusOrPro(7L);
-        when(adkEngine.execute(any())).thenThrow(
-                new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED,
-                        "Hãy nâng cấp lên Plus để lập thực đơn tuần.").withProperty("requiredTier", "PLUS").withProperty("upgradeUrl", "/goi-ai"));
 
         mvc.perform(post("/api/v1/recipes/ai/chat")
                         .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("7").roles("CUSTOMER"))
                         .contentType(MediaType.APPLICATION_JSON).content(new JsonMapper().writeValueAsString(Map.of(
                                 "contextType", "GENERAL", "question", "Lập thực đơn tuần 7 ngày", "history", List.of()))))
-                .andExpect(status().isForbidden()).andExpect(jsonPath("$.requiredTier").value("PLUS"))
-                .andExpect(jsonPath("$.upgradeUrl").value("/goi-ai"));
-        verifyNoInteractions(preferences, posts, recipes);
+                .andExpect(status().isOk()).andExpect(jsonPath("$.workflowUrl").value("/ke-hoach?view=for-you"));
+        verifyNoInteractions(adkEngine, preferences, posts, recipes);
+    }
+
+    @Test
+    void recipeAuthoringWorkflowStillRequiresExpertRole() throws Exception {
+        when(users.findAuthenticatedUserId()).thenReturn(Optional.of(7L));
+        when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(7, tech.mamxanh.auth.entity.Role.CUSTOMER));
+        doThrow(new AppException(ErrorCode.RECIPE_EDIT_NOT_ALLOWED)).when(users).requireActiveExpert();
+
+        mvc.perform(post("/api/v1/recipes/ai/chat")
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("7").roles("CUSTOMER"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"contextType\":\"GENERAL\",\"question\":\"Viết mô tả cho bài đăng công thức\"}"))
+                .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("RECIPE_EDIT_NOT_ALLOWED"));
+        verifyNoInteractions(adkEngine, preferences, posts, recipes);
     }
 
     @Test

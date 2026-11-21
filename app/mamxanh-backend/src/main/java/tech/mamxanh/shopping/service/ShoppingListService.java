@@ -74,7 +74,7 @@ public class ShoppingListService {
     @Transactional(readOnly = true)
     public PageResponse<ShoppingListResponse.Summary> list(int page, int size) {
         long owner = users.requireActiveMember().id();
-        if (page < 0 || size < 1 || size > 50) throw invalid("page phải >= 0; size từ 1 đến 50.");
+        if (page < 0 || size < 1 || size > 50) throw invalid("page phải >= 0, size từ 1 đến 50.");
         var result = lists.findByUserId(owner, PageRequest.of(page, size,
                 Sort.by(Sort.Order.desc("updatedAt"), Sort.Order.desc("id"))));
         return PageResponse.of(result.map(l -> new ShoppingListResponse.Summary(l.getId(), l.getName(),

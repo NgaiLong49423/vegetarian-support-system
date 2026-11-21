@@ -24,7 +24,7 @@ source_files:
   - docs/requirements/srs/BUSINESS-RULES.md
   - app/mamxanh-backend/src/main/java/tech/mamxanh/auth/entity/User.java
 implementation_status: verified
-last_verified: 2026-11-01
+last_verified: 2026-11-21
 ---
 
 # Các vai trò người dùng và phân quyền trên Mâm Xanh
@@ -45,7 +45,7 @@ Hệ thống có 4 vai trò chính:
 |---|:---:|:---:|:---:|
 | Xem công thức công khai, tỷ lệ % Like, lượt xem | Có | Có | Có |
 | Tìm kiếm, lọc và so sánh 2 công thức | Có | Có | Có |
-| Sử dụng AI Chatbot trải nghiệm | Có (50.000 token/tháng) | Có (theo gói dịch vụ) | Có (theo gói dịch vụ) |
+| Sử dụng AI Chatbot trải nghiệm | Có (50.000 token/tháng) | Có (hạn mức token theo gói) | Có (hạn mức token theo gói) |
 | Bình chọn Like / Dislike bài viết | Không | Có | Có (trừ bài của mình) |
 | Viết bình luận, phản hồi thảo luận | Không | Có | Có |
 | Lưu công thức yêu thích (`Saved Recipe`) | Không | Có | Có |
@@ -57,6 +57,8 @@ Hệ thống có 4 vai trò chính:
 | Nộp đơn xin làm Chuyên gia | Không | Có | Đã là Chuyên gia |
 | **Đăng và quản lý bài công thức công khai** | **Không** | **Không** | **Có** |
 | Sử dụng AI hỗ trợ soạn bài công thức | Không | Không | Có |
+
+Các gói Free, Plus và Pro có cùng danh mục model và chức năng AI. Gói chỉ thay đổi hạn mức token, còn Customer và Expert vẫn có các quyền khác nhau theo vai trò.
 
 ## Chi tiết từng vai trò
 

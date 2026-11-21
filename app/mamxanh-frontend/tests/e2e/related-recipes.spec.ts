@@ -24,7 +24,7 @@ const options = {
 };
 
 async function api(page: Page, settings: { ordinaryEmpty?: boolean; failOrdinary?: boolean; failOptions?: boolean;
-  aiStatus?: number; aiCode?: string; aiEmpty?: boolean; delayAi?: boolean;
+  aiStatus?: number; aiCode?: string; aiDetail?: string; aiEmpty?: boolean; delayAi?: boolean;
   ordinaryItems?: ReturnType<typeof card>[]; aiItems?: ReturnType<typeof card>[] } = {}) {
   const requests = { ai: 0, ordinary: 0 };
   await page.route('**/api/v1/**', async (route) => {
@@ -33,7 +33,7 @@ async function api(page: Page, settings: { ordinaryEmpty?: boolean; failOrdinary
       requests.ai++;
       if (settings.delayAi) await new Promise((resolve) => setTimeout(resolve, 700));
       await route.fulfill({ status: settings.aiStatus || 200, json: settings.aiStatus
-        ? { status: settings.aiStatus, code: settings.aiCode ?? 'AI_PROVIDER_UNAVAILABLE', detail: 'Cannot recommend' }
+        ? { status: settings.aiStatus, code: settings.aiCode ?? 'AI_PROVIDER_UNAVAILABLE', detail: settings.aiDetail ?? 'Cannot recommend' }
         : { items: settings.aiEmpty ? [] : settings.aiItems ?? [card(502, 'Canh nấm AI chọn')] } });
     } else if (url.pathname.endsWith('/related')) {
       requests.ordinary++;
@@ -120,14 +120,25 @@ test('complete overlap keeps the AI cards without a misleading empty regular mes
   await expect(section.getByText('Chưa có công thức liên quan.', { exact: true })).toHaveCount(0);
 });
 
-test('Free plan sees upgrade guidance while ordinary results stay available', async ({ page }) => {
+test('AI errors show no plan upsell while ordinary results stay available', async ({ page }) => {
   await seedDemoSession(page);
-  await api(page, { aiStatus: 403, aiCode: 'AI_SUBSCRIPTION_REQUIRED' });
+  await api(page, { aiStatus: 503, aiCode: 'AI_PROVIDER_UNAVAILABLE' });
   await page.goto('/cong-thuc/id/500');
   const section = page.getByRole('region', { name: 'Công thức liên quan' });
   await section.getByRole('button', { name: 'AI gợi ý món ăn kèm hoặc biến tấu' }).click();
-  await expect(section.getByText(/AI gợi ý món ăn kèm hoặc biến tấu yêu cầu gói AI PRO/)).toBeVisible();
-  await expect(section.getByRole('link', { name: 'Nâng cấp gói AI PRO' })).toHaveAttribute('href', '/goi-ai');
+  await expect(section.getByText('Chưa thể lấy gợi ý từ AI. Bạn có thể thử lại hoặc xem các công thức liên quan bên dưới.')).toBeVisible();
+  await expect(section.getByRole('link', { name: /Nâng cấp gói AI/ })).toHaveCount(0);
+  await expect(section.getByText('Canh rau liên quan')).toBeVisible();
+});
+
+test('AI quota errors preserve server quota and credit guidance without a plan upsell', async ({ page }) => {
+  await seedDemoSession(page);
+  await api(page, { aiStatus: 429, aiCode: 'AI_TOKEN_QUOTA_EXCEEDED', aiDetail: 'Bạn đã hết quota. Hãy kiểm tra AI Credit.' });
+  await page.goto('/cong-thuc/id/500');
+  const section = page.getByRole('region', { name: 'Công thức liên quan' });
+  await section.getByRole('button', { name: 'AI gợi ý món ăn kèm hoặc biến tấu' }).click();
+  await expect(section.getByRole('alert')).toContainText('Bạn đã hết quota. Hãy kiểm tra AI Credit.');
+  await expect(section.getByRole('link', { name: /Nâng cấp gói AI/ })).toHaveCount(0);
   await expect(section.getByText('Canh rau liên quan')).toBeVisible();
 });
 

@@ -352,7 +352,7 @@ public class AiAssistantExecutionJournal {
                 throw new AppException(ErrorCode.VALIDATION_FAILED, "Thao tác đang được xử lý trong một yêu cầu khác.");
             }
             if (entry.state() == ActionState.INDETERMINATE) {
-                throw new AppException(ErrorCode.AI_RESPONSE_INVALID, "Kết quả thao tác chưa xác định; hãy kiểm tra dữ liệu trước khi thử lại.");
+                throw new AppException(ErrorCode.AI_RESPONSE_INVALID, "Kết quả thao tác chưa xác định. Hãy kiểm tra dữ liệu trước khi thử lại.");
             }
         }
 

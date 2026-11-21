@@ -267,7 +267,7 @@ public final class AdkShoppingPilotTools {
                         steps.size() + 1,
                         "create_shopping_list",
                         "BLOCKED_BUDGET",
-                        "Đã hết hạn mức miễn phí và AI Credit trước bước ghi; thao tác tạo danh sách đã dừng.",
+                        "Đã hết hạn mức miễn phí và AI Credit trước bước ghi. Thao tác tạo danh sách đã dừng.",
                         Map.of("preview", Map.of("name", normalized))));
                 throw new BudgetExhaustedBeforeWriteException("Hết ngân sách trước bước tạo danh sách");
             }
@@ -294,7 +294,7 @@ public final class AdkShoppingPilotTools {
                     steps.size() + 1,
                     "create_shopping_list",
                     "BLOCKED_BUDGET",
-                    "Đã hết hạn mức miễn phí và AI Credit trước bước ghi; thao tác tạo danh sách đã dừng.",
+                    "Đã hết hạn mức miễn phí và AI Credit trước bước ghi. Thao tác tạo danh sách đã dừng.",
                     Map.of("preview", Map.of("name", normalized))));
             throw new BudgetExhaustedBeforeWriteException("Hết ngân sách trước bước tạo danh sách");
         }

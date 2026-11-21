@@ -1,8 +1,8 @@
 > **Document:** Use Case Specification Index
 > **File:** `docs/requirements/use-cases/README.md`
-> **Version:** v2.6.0
+> **Version:** v2.6.1
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-18
+> **Last Updated:** 2026-11-21
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -84,7 +84,7 @@ Keep existing FR-level anchors such as `<a id="fr-13"></a>` unchanged so current
 | [FR-54](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-54) | [Tự động tổng hợp nguyên liệu trùng an toàn trong Shopping List](meal-planning-and-shopping.md#fr-54) |
 | [FR-55](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-55) | [Sao chép clipboard và xuất file text Shopping List](meal-planning-and-shopping.md#fr-55) |
 | [FR-02](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-02) | [Quyền Guest trải nghiệm AI Chatbot chung có giới hạn tần suất kỹ thuật](ai-and-personalization.md#fr-02) |
-| [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) | [Quyền sử dụng và lựa chọn Gemini Model theo gói](ai-and-personalization.md#fr-10) |
+| [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) | [Quyền sử dụng AI và lựa chọn model Gemini chung cho Member](ai-and-personalization.md#fr-10) |
 | [FR-11](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-11) | [Ghi nhận dữ liệu đo lường kỹ thuật (Telemetry) sử dụng AI](ai-and-personalization.md#fr-11) |
 | [FR-51](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51) | [AI Chatbot hỗ trợ hỏi đáp ẩm thực chay theo ngữ cảnh](ai-and-personalization.md#fr-51) |
 | [FR-13](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13) | [Đăng ký gói AI qua thanh toán thật](subscription-and-payment.md#fr-13) |

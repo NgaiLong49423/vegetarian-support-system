@@ -65,7 +65,7 @@ public class AiShoppingExecutionJournal {
             if (!hash.equals(previous)) throw new AppException(ErrorCode.VALIDATION_FAILED, "Mã thao tác đã gắn với tham số khác.");
             Result result = find(owner, requestId);
             if ("SUCCEEDED".equals(result.state())) return shopping.get(result.shoppingListId());
-            throw new AppException(ErrorCode.VALIDATION_FAILED, "Thao tác đã được ghi nhận; hãy kiểm tra kết quả, không gửi lại thao tác ghi.");
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "Thao tác đã được ghi nhận. Hãy kiểm tra kết quả, không gửi lại thao tác ghi.");
         }
         try {
             return transaction.execute(status -> {

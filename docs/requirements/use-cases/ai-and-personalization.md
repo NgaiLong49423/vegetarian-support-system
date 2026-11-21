@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M06
 > **File:** `docs/requirements/use-cases/ai-and-personalization.md`
-> **Version:** v2.8.0
+> **Version:** v2.8.1
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-30
+> **Last Updated:** 2026-11-21
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -60,7 +60,7 @@ Guest được chuyển tiếp tới hội thoại FR-51 khi yêu cầu hợp l�
 ---
 
 <a id="fr-10"></a>
-## FR-10 — Quyền sử dụng và lựa chọn Gemini Model theo gói
+## FR-10 — Quyền sử dụng AI và lựa chọn model Gemini chung cho Member
 
 Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10).
 
@@ -68,53 +68,53 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10).
 ### UC-10.1 — Xác thực quyền chức năng và model trước khi gọi Gemini
 
 #### Goal
-Cho phép gọi chức năng AI khi actor có quyền theo role, ownership, eligibility và validation của chức năng gốc; đồng thời xác thực model theo gói và catalog Admin trước khi gọi provider.
+Cho phép gọi chức năng AI khi actor có quyền theo role, ownership, eligibility và validation của chức năng gốc; đồng thời xác thực model theo catalog Admin trước khi gọi provider.
 
 #### Primary Actor
 `Guest` hoặc `Member` thuộc gói Free, Plus hoặc Pro.
 
 #### Supporting Actors
-Backend authorization, model access guard và Gemini catalog do Admin cấu hình.
+Backend authorization, cấu hình model Guest và Gemini catalog dùng chung cho Member do Admin quản lý.
 
 #### Trigger
 Backend nhận yêu cầu sử dụng một tính năng AI.
 
 #### Preconditions
-Yêu cầu xác định được actor và chức năng cần gọi; Backend có thể xác định gói Subscription hiện hành, model preference của Member hoặc model mặc định của Guest.
+Yêu cầu xác định được actor và chức năng cần gọi; Backend có thể xác định model preference của Member hoặc model mặc định trong catalog.
 
 #### Main Flow
 1. Backend xác thực actor và quyền chức năng gốc; package không cấp thêm quyền role/ownership.
-2. Backend xác định tier/subscription hiện hành và lấy model access/default từ catalog Admin. Pilot mặc định Guest dùng cấu hình Free; Free dùng Flash-Lite; Plus/Pro dùng Flash-Lite hoặc Flash, mặc định Flash. Admin có thể gán model Gemini đã xác minh cho bất kỳ tier nào; Guest không lưu preference.
-3. Với Member, Backend đọc preference của tài khoản hiện tại. Backend xác thực preference với model access của tier và catalog đang bật; mọi luồng AI dùng model đã được Backend kiểm tra.
+2. Backend lấy catalog Member đang bật, quyền model riêng của Guest và model mặc định chung do Admin cấu hình. Free, Plus và Pro dùng cùng một catalog; Guest chỉ dùng model được cấp và không lưu preference.
+3. Với Member, Backend đọc preference của tài khoản hiện tại và xác thực preference với catalog Member đang bật; mọi luồng AI dùng model đã được Backend kiểm tra.
 4. Backend kiểm tra consent và ngân sách, sau đó chuyển yêu cầu tới đúng capability nếu tất cả điều kiện hợp lệ.
 
 #### Alternative Flows
-- **AF-10.1 — Preference không còn hợp lệ:** Nếu tier thay đổi hoặc Admin tắt model đã lưu, Backend chặn trước provider call và giao diện yêu cầu chọn một model hiện được phép; hệ thống không tự thay thế.
+- **AF-10.1 — Preference không còn hợp lệ:** Nếu Admin tắt model đã lưu, Backend chặn trước provider call và giao diện yêu cầu chọn một model hiện được phép; thay đổi tier Member không làm thay đổi catalog model.
 - **AF-10.2 — Model lỗi hoặc không hỗ trợ tác vụ:** Giao diện giải thích lý do và đề xuất một model được phép khác. Chỉ khi Member xác nhận, hệ thống mới retry đúng một lần; preference tài khoản giữ nguyên.
 
 #### Exception Flows
 - **EF-10.1 — Provider lỗi sau khi quyền đã được xác thực:** Lỗi/timeout được xử lý bởi FR sở hữu tính năng theo BR-04 và NFR-18; quyền hợp lệ không đồng nghĩa yêu cầu AI thành công.
 
 #### Security Flows
-- **SF-10.1 — Kiểm tra authorization và model access:** Backend xác thực role/ownership/capability, tier và model catalog trên mọi request; không nhận account ID tùy ý từ client. Model không hợp lệ bị chặn trước mọi HTTP request tới Gemini. API key chỉ nằm ở Backend.
+- **SF-10.1 — Kiểm tra authorization và model access:** Backend xác thực role/ownership/capability và model catalog trên mọi request; Member chỉ dùng catalog chung đang bật, Guest chỉ dùng model được cấp; không nhận account ID tùy ý từ client. Model không hợp lệ bị chặn trước mọi HTTP request tới Gemini. API key chỉ nằm ở Backend.
 
 #### Postconditions
 Yêu cầu được chuyển tới đúng luồng tính năng với model được phép khi các kiểm tra hợp lệ; nếu quyền chức năng, model, consent hoặc ngân sách không hợp lệ, provider call không phát sinh.
 
 #### Traceability
 - **Parent FR:** [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10).
-- **Relevant BR:** [BR-01](../srs/BUSINESS-RULES.md#br-01) (quyền Chatbot); [BR-02](../srs/BUSINESS-RULES.md#br-02) (quota và model theo gói); [BR-03](../srs/BUSINESS-RULES.md#br-03) (kiểm tra quyền/model/consent/ngân sách trước khi gọi AI).
+- **Relevant BR:** [BR-01](../srs/BUSINESS-RULES.md#br-01) (quyền Chatbot); [BR-02](../srs/BUSINESS-RULES.md#br-02) (quota theo gói, catalog model Member dùng chung); [BR-03](../srs/BUSINESS-RULES.md#br-03) (kiểm tra quyền/model/consent/ngân sách trước khi gọi AI).
 - **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (phân quyền); [NFR-10](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10) (chống vượt quyền và bảo mật request).
 
 #### Acceptance Coverage
 - [AC-10.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Quyền capability đến từ role và nghiệp vụ gốc.
-- [AC-10.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Danh sách model theo tier và model mặc định.
+- [AC-10.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Danh sách model Member dùng chung và model mặc định.
 - [AC-10.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Chặn model không được phép hoặc đã tắt, không tự thay thế.
 - [AC-10.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Quyền/consent và bảo vệ API key.
 - [AC-10.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Retry một lần sau khi người dùng đồng ý.
 - [AC-10.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Picker trong chatbox và lưu preference Member.
-- [AC-10.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Preference theo tài khoản, Guest dùng mặc định.
-- [AC-10.8](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Preference Member áp dụng theo tier hiện tại.
+- [AC-10.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Preference theo tài khoản, Guest dùng model mặc định chung nếu được cấp.
+- [AC-10.8](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Preference Member áp dụng cho mọi tính năng AI được phép.
 
 ---
 
@@ -125,34 +125,34 @@ Yêu cầu được chuyển tới đúng luồng tính năng với model đư�
 Cho phép Member chọn model Gemini được quyền sử dụng từ chatbox dùng chung và áp dụng preference cho mọi chức năng AI được phép.
 
 #### Primary Actor
-`Member` thuộc gói Free, Plus hoặc Pro; Guest chỉ xem model mặc định.
+`Member` thuộc gói Free, Plus hoặc Pro; Guest chỉ dùng model được cấp và không lưu preference.
 
 #### Trigger
 Member mở danh sách model hoặc thay đổi lựa chọn trong phần đầu chatbox.
 
 #### Preconditions
-Backend cung cấp catalog model đang bật và danh sách model được phép theo subscription hiện hành.
+Backend cung cấp catalog model chung đang bật cho Member và danh sách model Guest được cấp.
 
 #### Main Flow
-1. Giao diện hiển thị các model được phép theo tier.
+1. Giao diện hiển thị các model đang bật trong catalog Member dùng chung.
 2. Member chọn model; Backend gắn lựa chọn với tài khoản đã xác thực, không nhận account ID do client cung cấp.
 3. Khi đăng nhập lại, giao diện đọc và khôi phục lựa chọn của chính tài khoản.
-4. Khi tier hạ hoặc model bị Admin tắt, lần gọi tiếp theo bị chặn; giao diện yêu cầu chọn model còn hợp lệ.
+4. Khi model bị Admin tắt, lần gọi tiếp theo bị chặn; giao diện yêu cầu chọn model còn hợp lệ. Thay đổi tier Member không làm đổi quyền chọn model.
 
 #### Postconditions
-Preference được lưu cho tài khoản hiện tại và chỉ được áp dụng khi model còn hợp lệ theo tier/catalog; Guest không có preference lưu trữ.
+Preference được lưu cho tài khoản hiện tại và chỉ được áp dụng khi model còn trong catalog chung đang bật; Guest không có preference lưu trữ.
 
 #### Traceability
 - **Parent FR:** [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10).
-- **Relevant BR:** [BR-02](../srs/BUSINESS-RULES.md#br-02) (quyền model theo gói); [BR-03](../srs/BUSINESS-RULES.md#br-03) (xác thực model trước khi gọi AI).
+- **Relevant BR:** [BR-02](../srs/BUSINESS-RULES.md#br-02) (quota theo gói và catalog model Member dùng chung); [BR-03](../srs/BUSINESS-RULES.md#br-03) (xác thực model trước khi gọi AI).
 - **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (phân quyền Backend); [NFR-13](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13) (giao diện tiếng Việt, responsive).
 
 #### Acceptance Coverage
-- [AC-10.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Model options/default theo tier.
+- [AC-10.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Model options/default dùng chung cho Member.
 - [AC-10.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Backend chặn model không hợp lệ và yêu cầu chọn lại.
 - [AC-10.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Model picker và lưu preference Member.
 - [AC-10.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Cô lập preference theo tài khoản.
-- [AC-10.8](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Áp dụng preference theo tier.
+- [AC-10.8](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Áp dụng preference cho mọi tính năng AI được phép.
 
 ---
 
@@ -241,7 +241,7 @@ Hai Use Case bên dưới dùng chung quy trình xử lý hội thoại; các qu
 
 #### Traceability — shared chatbot behavior
 - **Parent FR:** [FR-51](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51).
-- **Related FR:** [FR-02](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-02) (Guest access); [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) (model/quota theo gói); [FR-11](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-11) (telemetry).
+- **Related FR:** [FR-02](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-02) (Guest access); [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) (quota theo gói, catalog model Member dùng chung); [FR-11](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-11) (telemetry).
 - **Relevant BR:** [BR-04](../srs/BUSINESS-RULES.md#br-04), [BR-06](../srs/BUSINESS-RULES.md#br-06), [BR-09](../srs/BUSINESS-RULES.md#br-09), [BR-41](../srs/BUSINESS-RULES.md#br-41), [BR-51](../srs/BUSINESS-RULES.md#br-51).
 - **Relevant NFR:** [NFR-03](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03), [NFR-10](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10), [NFR-18](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-18), [NFR-20](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-20), [NFR-22](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-22), [NFR-25](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-25).
 

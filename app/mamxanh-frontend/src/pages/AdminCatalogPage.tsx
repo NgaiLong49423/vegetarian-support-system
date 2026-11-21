@@ -1481,7 +1481,7 @@ export function AdminCatalogPage() {
               onClose={() => setUnitManagerTarget(null)}
               onSaved={() => {
                 setNotice(
-                  "Đã cập nhật quy đổi đơn vị. Công thức cũ giữ nguyên định lượng; đơn vị bị ngừng sẽ không dùng được cho bài mới.",
+                  "Đã cập nhật quy đổi đơn vị. Công thức cũ giữ nguyên định lượng. Đơn vị bị ngừng sẽ không dùng được cho bài mới.",
                 )
                 void loadUnitSupport()
               }}

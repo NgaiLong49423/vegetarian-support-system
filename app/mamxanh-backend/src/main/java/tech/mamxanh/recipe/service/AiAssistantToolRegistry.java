@@ -30,7 +30,6 @@ import tech.mamxanh.shopping.dto.request.CreateEmptyShoppingListRequest;
 import tech.mamxanh.shopping.dto.request.CreateShoppingItemRequest;
 import tech.mamxanh.shopping.dto.request.RenameShoppingListRequest;
 import tech.mamxanh.shopping.service.ShoppingListService;
-import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
@@ -62,7 +61,6 @@ public class AiAssistantToolRegistry {
     private final Validator validator;
     private final ObjectMapper mapper;
     private final CurrentUserService users;
-    private final SubscriptionEntitlementService entitlements;
 
     public AiAssistantToolRegistry(RecipePostService recipePosts,
             RecipeService recipeService, IngredientCatalogService ingredientCatalog,
@@ -70,7 +68,7 @@ public class AiAssistantToolRegistry {
             MemberFollowService follows, MemberProfileService profiles, DietaryPreferenceService dietaryPreferences,
             NutritionProfileService nutritionProfiles, MealPlanReadService mealPlanReads, MealPlanService mealPlans, AiMenuService aiMenus,
             ShoppingListService shoppingLists, ApprovedAiKnowledgeRetriever knowledge, Validator validator,
-            ObjectMapper mapper, CurrentUserService users, SubscriptionEntitlementService entitlements) {
+            ObjectMapper mapper, CurrentUserService users) {
         this.recipePosts = recipePosts;
         this.recipeService = recipeService;
         this.ingredientCatalog = ingredientCatalog;
@@ -88,7 +86,6 @@ public class AiAssistantToolRegistry {
         this.validator = validator;
         this.mapper = mapper;
         this.users = users;
-        this.entitlements = entitlements;
     }
 
     public List<ToolDefinition> definitionsFor(String role) {
@@ -161,7 +158,7 @@ public class AiAssistantToolRegistry {
                 Object request = args.get("request");
                 if (!(request instanceof Map<?, ?> map)) throw new AppException(ErrorCode.VALIDATION_FAILED);
                 @SuppressWarnings("unchecked") Map<String, Object> values = (Map<String, Object>) map;
-                yield data("Đã tải danh sách công thức phù hợp để ADK chọn; chưa tạo hoặc lưu thực đơn.",
+                yield data("Đã tải danh sách công thức phù hợp để ADK chọn, chưa tạo hoặc lưu thực đơn.",
                         aiMenus.getAdkPreviewCandidates(validated(values, CreateAiMenuPreviewRequest.class)));
             }
             case "create_ai_menu_preview" -> {
@@ -176,7 +173,7 @@ public class AiAssistantToolRegistry {
                     if (number.doubleValue() != id) throw new AppException(ErrorCode.VALIDATION_FAILED);
                     return id;
                 }).toList();
-                yield data("Đã tạo bản xem trước thực đơn; chưa lưu vào lịch ăn.",
+                yield data("Đã tạo bản xem trước thực đơn, chưa lưu vào lịch ăn.",
                         aiMenus.createPreviewFromAdkSelection(validated(values, CreateAiMenuPreviewRequest.class), rankedIds));
             }
             case "apply_ai_menu_preview" -> {
@@ -195,9 +192,9 @@ public class AiAssistantToolRegistry {
             case "set_shopping_item_bought" -> setShoppingItemBought(args);
             case "delete_shopping_item" -> deleteShoppingItem(args);
             case "delete_shopping_list" -> deleteShoppingList(args);
-            case "create_recipe_post" -> { requireExpertPro(); yield data("Đã công khai bài công thức.", recipeService.publish(validated(args, CreateRecipeRequest.class))); }
-            case "update_own_recipe_post" -> { requireExpertPro(); yield updateRecipePost(args); }
-            case "delete_own_recipe_post" -> { requireExpertPro(); yield deleteRecipePost(args); }
+            case "create_recipe_post" -> { requireExpert(); yield data("Đã công khai bài công thức.", recipeService.publish(validated(args, CreateRecipeRequest.class))); }
+            case "update_own_recipe_post" -> { requireExpert(); yield updateRecipePost(args); }
+            case "delete_own_recipe_post" -> { requireExpert(); yield deleteRecipePost(args); }
             default -> throw new AppException(ErrorCode.AI_RESPONSE_INVALID, "AI Assistant đã yêu cầu công cụ không được đăng ký.");
         };
     }
@@ -332,15 +329,12 @@ public class AiAssistantToolRegistry {
     }
 
     public void validateRecipePublish(Map<String, Object> arguments) {
-        requireExpertPro();
+        requireExpert();
         validated(arguments, CreateRecipeRequest.class);
     }
 
-    private void requireExpertPro() {
-        var expert = users.requireActiveMember();
-        if (!"EXPERT".equals(expert.role().name())) {
-            throw new AppException(ErrorCode.ACCESS_DENIED, "Chỉ chuyên gia mới được quản lý bài công thức.");
-        }
+    private void requireExpert() {
+        users.requireActiveExpert();
     }
 
     private ToolResult data(String summary, Object value) {

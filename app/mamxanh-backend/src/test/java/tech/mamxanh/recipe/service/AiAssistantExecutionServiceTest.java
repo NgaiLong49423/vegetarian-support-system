@@ -164,4 +164,39 @@ class AiAssistantExecutionServiceTest {
         assertThat(approved.steps()).singleElement().extracting("status").isEqualTo("SUCCEEDED");
         verify(registry, times(1)).execute(eq("create_shopping_list"), anyMap());
     }
+
+    @Test
+    void confirmedActionFailureStopsTheRemainingStepsAndReportsFailure() {
+        var users = mock(CurrentUserService.class);
+        var ai = mock(AiClient.class);
+        var settings = mock(AiChatSettingsService.class);
+        var quota = mock(AiTokenQuotaService.class);
+        var registry = mock(AiAssistantToolRegistry.class);
+        when(users.findAuthenticatedUserId()).thenReturn(Optional.of(7L));
+        when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(7, Role.CUSTOMER));
+        when(settings.resolve(7L, null)).thenReturn(null);
+        when(ai.classifyChatScope(anyString(), anyString())).thenReturn(new AiClient.ChatResult(null,
+                "{\"decisionId\":\"MX_CHAT_OK\",\"reasonId\":\"NONE\"}", 1, 1, 2));
+        when(ai.planAssistantTools(anyString(), anyString())).thenReturn(new AiClient.ChatResult(null,
+                "{\"answer\":\"Tôi sẽ tạo danh sách.\",\"toolCalls\":[{\"name\":\"create_shopping_list\",\"arguments\":{\"name\":\"Rau tuần này\"}}]}", 1, 1, 2));
+        when(registry.definitionsFor("CUSTOMER")).thenReturn(List.of(new AiAssistantToolRegistry.ToolDefinition(
+                "create_shopping_list", "Create a list", "{name:string}", true, false, java.util.Set.of())));
+        when(registry.execute(eq("create_shopping_list"), anyMap()))
+                .thenThrow(new AppException(ErrorCode.INTERNAL_ERROR));
+        var service = new AiAssistantExecutionService(users, ai, settings, quota,
+                new AiAssistantSessionStore(Clock.systemUTC(), java.time.Duration.ofMinutes(30)), registry,
+                new ApprovedAiKnowledgeRetriever(), new JsonMapper(), mock(ApplicationEventPublisher.class), Clock.systemUTC());
+
+        var staged = service.execute(new AiChatRequest(AiChatRequest.ContextType.GENERAL, null,
+                "Tạo danh sách mua sắm", List.of(), null, null, ExecutionMode.CONFIRM, null, null, null));
+        var approved = service.execute(new AiChatRequest(AiChatRequest.ContextType.GENERAL, null,
+                "Xác nhận", List.of(), null, staged.sessionId(), ExecutionMode.CONFIRM, null,
+                staged.pendingConfirmation().confirmationId(), AiChatRequest.ConfirmationDecision.APPROVE));
+
+        assertThat(approved.steps()).singleElement().satisfies(step -> {
+            assertThat(step.status()).isEqualTo("FAILED");
+            assertThat(step.summary()).contains("không thực hiện được");
+        });
+        verify(registry).execute(eq("create_shopping_list"), anyMap());
+    }
 }

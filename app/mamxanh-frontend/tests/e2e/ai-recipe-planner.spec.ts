@@ -106,17 +106,42 @@ test('AI menu stays a preview until explicit apply and applies all 21 slots', as
 });
 
 
-test('weekly menu denial names PLUS as the minimum plan without suggesting PRO', async ({ page }) => {
+test('weekly menu provider errors do not suggest buying a plan', async ({ page }) => {
   await seedDemoSession(page);
   await page.route('**/api/v1/nutrition/dietary-preferences', route => route.fulfill({ json: profile }));
-  await page.route('**/api/v1/recipes/ai/weekly-menu', route => route.fulfill({ status: 403, json: {
-    status: 403, code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PLUS', detail: 'Gói chưa phù hợp.',
+  await page.route('**/api/v1/recipes/ai/weekly-menu', route => route.fulfill({ status: 503, json: {
+    status: 503, code: 'AI_PROVIDER_UNAVAILABLE', detail: 'Dịch vụ AI đang tạm thời không khả dụng.',
   } }));
   await page.goto('/ke-hoach?view=for-you');
   await page.getByRole('tab', { name: 'Thực đơn tuần', exact: true }).click();
   await page.getByRole('button', { name: 'Tạo thực đơn tuần', exact: true }).click();
   const alert = page.getByRole('alert');
-  await expect(alert).toContainText('AI lập thực đơn tuần yêu cầu gói AI PLUS');
-  await expect(alert.getByRole('link', { name: 'Nâng cấp gói AI PLUS' })).toHaveAttribute('href', '/goi-ai');
-  await expect(alert).not.toContainText('PRO');
+  await expect(alert).toContainText('Chưa thể tạo đề xuất lúc này. Bạn có thể thử lại sau.');
+  await expect(alert.getByRole('link', { name: /Nâng cấp gói AI/ })).toHaveCount(0);
+});
+
+test('failed weekly menu application keeps its preview available for retry', async ({ page }) => {
+  await seedDemoSession(page);
+  let applyCalls = 0;
+  await page.route('**/api/v1/nutrition/dietary-preferences', route => route.fulfill({ json: profile }));
+  await page.route('**/api/v1/recipes/ai/weekly-menu', route => route.fulfill({ json: { slots } }));
+  await page.route('**/api/v1/meal-plans/**', async route => {
+    const requestUrl = new URL(route.request().url());
+    if (!requestUrl.pathname.endsWith('/ai-menu')) return route.continue();
+    applyCalls++;
+    return route.fulfill({ status: 503, contentType: 'application/problem+json', json: {
+      status: 503, code: 'AI_PROVIDER_UNAVAILABLE', detail: 'Dịch vụ AI đang tạm thời không khả dụng.',
+    } });
+  });
+
+  await page.goto('/ke-hoach?view=for-you');
+  await page.getByRole('tab', { name: 'Thực đơn tuần', exact: true }).click();
+  await page.getByRole('button', { name: 'Tạo thực đơn tuần', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Thực đơn tuần dành cho bạn' })).toBeVisible();
+  await page.getByRole('button', { name: 'Xác nhận thêm vào Lịch ăn' }).click();
+
+  await expect.poll(() => applyCalls).toBe(1);
+  await expect(page.getByRole('alert')).toContainText('Không kết nối được máy chủ. Vui lòng thử lại.');
+  await expect(page.getByRole('heading', { name: 'Thực đơn tuần dành cho bạn' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Xác nhận thêm vào Lịch ăn' })).toBeEnabled();
 });

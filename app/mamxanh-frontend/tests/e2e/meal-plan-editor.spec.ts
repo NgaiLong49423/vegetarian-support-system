@@ -352,20 +352,20 @@ test("only one day expands, and adding meals queries saved recipes with paginati
   expect(publicSearches).toBe(0)
 })
 
-test("FR-10: nutrition AI explains the Plus requirement and links to plans without changing meals", async ({ page }) => {
+test("FR-10: AI menu provider error leaves the current meals unchanged", async ({ page }) => {
   const original = entry(7, 11)
   const state = await setup(page, [original])
   await page.route("**/api/v1/meal-plans/ai-menu/previews", route => route.fulfill({
-    status: 403, contentType: "application/problem+json", json: {
-      status: 403, code: "AI_SUBSCRIPTION_REQUIRED", requiredTier: "PLUS", upgradeUrl: "/goi-ai",
-      detail: "Gói hiện tại chưa hỗ trợ tính năng này.",
+    status: 503, contentType: "application/problem+json", json: {
+      status: 503, code: "AI_PROVIDER_UNAVAILABLE", detail: "Dịch vụ AI đang tạm thời không khả dụng.",
     },
   }))
   await page.goto("/ke-hoach?view=for-you")
   await page.getByRole("tab", { name: "Theo nhu cầu dinh dưỡng" }).click()
   await page.getByRole("button", { name: "Tạo thực đơn tuần" }).click()
-  await expect(page.getByRole("alert")).toContainText("yêu cầu gói AI PLUS")
-  await expect(page.getByRole("alert").getByRole("link", { name: "Nâng cấp gói AI PLUS" })).toHaveAttribute("href", "/goi-ai")
+  expect(state.previews).toBe(0)
+  await expect(page.getByRole("alert")).toContainText("Dịch vụ AI đang tạm thời không khả dụng.")
+  await expect(page.getByRole("alert").getByRole("link", { name: /Nâng cấp gói AI/ })).toHaveCount(0)
   expect(state.entries).toEqual([original])
   expect(state.writes).toBe(0)
 })
@@ -1033,11 +1033,11 @@ for (const width of [360, 768, 1440]) {
 }
 
 
-test("FR-10: nutrition adjustment requires PRO while preserving the current meal", async ({ page }) => {
+test("FR-10: nutrition adjustment provider error preserves the current meal", async ({ page }) => {
   const original = entry(7, 11)
   const state = await setup(page, [original])
   await page.route("**/api/v1/meal-plans/*/nutrition/recommendations/*", route => route.fulfill({
-    status: 403, json: { status: 403, code: "AI_SUBSCRIPTION_REQUIRED", requiredTier: "PRO", detail: "Gói chưa phù hợp." },
+    status: 503, json: { status: 503, code: "AI_PROVIDER_UNAVAILABLE", detail: "Dịch vụ AI đang tạm thời không khả dụng." },
   }))
   await page.goto("/ke-hoach")
   await openMonday(page)
@@ -1045,9 +1045,67 @@ test("FR-10: nutrition adjustment requires PRO while preserving the current meal
   const dialog = page.getByRole("dialog")
   await dialog.getByRole("button", { name: "Phân tích và gợi ý món" }).first().click()
   const alert = dialog.getByRole("alert")
-  await expect(alert).toContainText("AI đề xuất điều chỉnh dinh dưỡng yêu cầu gói AI PRO")
-  await expect(alert.getByRole("link", { name: "Nâng cấp gói AI PRO" })).toHaveAttribute("href", "/goi-ai")
-  await expect(alert).not.toContainText("PLUS")
+  await expect(alert).toContainText("Dịch vụ AI đang tạm thời không khả dụng.")
+  await expect(alert.getByRole("link", { name: /Nâng cấp gói AI/ })).toHaveCount(0)
   expect(state.entries).toEqual([original])
   expect(state.writes).toBe(0)
+})
+
+test("nutrition suggestion replacement failure keeps the planned recipe", async ({ page }) => {
+  const original = entry(7, 11)
+  const state = await setup(page, [original])
+  await page.route("**/api/v1/meal-plans/*/entries/*", route => route.fulfill({
+    status: 409,
+    contentType: "application/problem+json",
+    json: { status: 409, code: "MEAL_PLAN_CONFLICT", detail: "Lịch ăn vừa thay đổi. Hãy tải lại rồi thử lại." },
+  }))
+
+  await page.goto("/ke-hoach")
+  await openMonday(page)
+  await page.getByRole("button", { name: "Xem dinh dưỡng ngày" }).click()
+  const dialog = page.getByRole("dialog")
+  await dialog.getByRole("button", { name: "Phân tích và gợi ý món" }).first().click()
+  await expect(dialog.getByRole("heading", { name: "Phân tích của AI" })).toBeVisible()
+  await dialog.getByRole("button", { name: "Thay món này" }).click()
+
+  await expect(dialog.getByRole("alert")).toContainText("Lịch ăn vừa thay đổi.")
+  await expect(dialog.getByRole("button", { name: "Thay món này" })).toBeEnabled()
+  expect(state.entries).toEqual([original])
+  expect(state.writes).toBe(0)
+})
+
+test("weekly menu reports preference lookup and apply errors without changing the plan", async ({ page }) => {
+  const state = await setup(page)
+  let applyCalls = 0
+  await page.route("**/api/v1/recipes/ingredient-options**", route => {
+    const query = new URL(route.request().url()).searchParams.get("query")
+    const detail = query === "Nấm" ? "Không tìm được nguyên liệu muốn dùng." : "Không tìm được nguyên liệu cần tránh."
+    return route.fulfill({ status: 503, contentType: "application/problem+json", json: {
+      status: 503, code: "SERVICE_UNAVAILABLE", detail,
+    } })
+  })
+  await page.route("**/api/v1/meal-plans/ai-menu", route => {
+    applyCalls++
+    return route.fulfill({ status: 503, contentType: "application/problem+json", json: {
+      status: 503, code: "AI_PROVIDER_UNAVAILABLE", detail: "Chưa thể lưu thực đơn tuần lúc này.",
+    } })
+  })
+
+  await page.goto("/ke-hoach?view=for-you")
+  await page.getByRole("tab", { name: "Theo nhu cầu dinh dưỡng" }).click()
+  await page.getByRole("button", { name: "Theo mong muốn tuần này" }).click()
+  await page.getByLabel("Bạn muốn lịch ăn có những nguyên liệu nào", { exact: true }).fill("Nấm")
+  await expect(page.getByRole("alert")).toContainText("Không tìm được nguyên liệu muốn dùng.")
+  await page.getByLabel("Bạn muốn lịch ăn không có nguyên liệu nào", { exact: true }).fill("Đậu")
+  await expect(page.getByRole("alert")).toContainText("Không tìm được nguyên liệu cần tránh.")
+
+  await page.getByRole("button", { name: "Tạo thực đơn tuần" }).click()
+  await expect(page.getByText(`Bản xem trước · ${suggestedMealCount} món được chọn`)).toBeVisible()
+  await page.getByRole("button", { name: "Áp dụng vào Lịch ăn" }).click()
+  await page.getByRole("button", { name: "Xác nhận áp dụng lịch" }).click()
+
+  await expect(page.getByRole("alert")).toContainText("Chưa thể lưu thực đơn tuần lúc này.")
+  await expect(page.getByText(`Bản xem trước · ${suggestedMealCount} món được chọn`)).toBeVisible()
+  expect(applyCalls).toBe(1)
+  expect(state.entries).toEqual([])
 })

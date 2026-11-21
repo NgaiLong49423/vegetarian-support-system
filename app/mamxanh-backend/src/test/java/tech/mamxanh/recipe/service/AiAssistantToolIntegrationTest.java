@@ -44,7 +44,6 @@ import tech.mamxanh.shopping.dto.request.CreateShoppingItemRequest;
 import tech.mamxanh.shopping.dto.request.RenameShoppingListRequest;
 import tech.mamxanh.shopping.dto.response.ShoppingListResponse;
 import tech.mamxanh.shopping.service.ShoppingListService;
-import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
@@ -85,7 +84,6 @@ class AiAssistantToolIntegrationTest {
     @Mock private ShoppingListService shoppingLists;
     @Mock private ApprovedAiKnowledgeRetriever knowledge;
     @Mock private CurrentUserService users;
-    @Mock private SubscriptionEntitlementService entitlements;
 
     private Validator validator;
     private ObjectMapper mapper;
@@ -98,7 +96,7 @@ class AiAssistantToolIntegrationTest {
         registry = new AiAssistantToolRegistry(
                 recipePosts, recipeService, ingredientCatalog, reactions, comments,
                 follows, profiles, dietaryPreferences, nutritionProfiles, mealPlanReads,
-                mealPlans, aiMenus, shoppingLists, knowledge, validator, mapper, users, entitlements
+                mealPlans, aiMenus, shoppingLists, knowledge, validator, mapper, users
         );
     }
 
@@ -403,11 +401,17 @@ class AiAssistantToolIntegrationTest {
     @DisplayName("Tool 26..28: Expert authoring tools verify role and execution")
     void tool26_to_28_expertTools() {
         CurrentUser expertUser = new CurrentUser(88L, Role.EXPERT);
-        when(users.requireActiveMember()).thenReturn(expertUser);
+        when(users.requireActiveExpert()).thenReturn(expertUser);
 
         CreateRecipeResponse createResp = new CreateRecipeResponse(500L, "Món mới", "DRAFT", LocalDateTime.now());
         when(recipeService.publish(any(CreateRecipeRequest.class))).thenReturn(createResp);
         when(recipePosts.update(eq(500L), any(UpdateRecipePostRequest.class))).thenReturn(null);
+
+        registry.validateRecipePublish(Map.of(
+                "title", "Món mới thơm ngon", "description", "Mô tả công thức mới", "dishCategory", "SOUP",
+                "vegetarianType", "VEGAN", "difficulty", "EASY", "prepTimeMinutes", 10,
+                "cookTimeMinutes", 20, "servings", 2, "instructions", "Nấu sôi kỹ trong vòng mười phút cho chín đều.",
+                "ingredients", List.of(Map.of("ingredientId", 1L, "unitId", 1L, "quantity", 100))));
 
         var createRes = registry.execute("create_recipe_post", Map.of(
                 "title", "Món mới thơm ngon", "description", "Mô tả công thức mới", "dishCategory", "SOUP",

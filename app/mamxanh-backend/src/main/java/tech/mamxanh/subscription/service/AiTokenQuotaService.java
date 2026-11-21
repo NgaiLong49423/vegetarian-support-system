@@ -94,7 +94,7 @@ public class AiTokenQuotaService {
         }
         Period period = currentPeriod(userId, guestSessionId, callStart);
         if (userId != null) {
-            requireModelAllowed(period.tier(), modelId);
+            requireModelAllowed(modelId);
         }
         long consumed = consumed(userId, guestSessionId, period);
         if (consumed >= period.limit() && (userId == null || creditBalance(userId).signum() <= 0)) {
@@ -223,7 +223,7 @@ public class AiTokenQuotaService {
         return snapshot.credit().creditsPer1000OverageTokens();
     }
 
-    private void requireModelAllowed(String tier, String modelId) {
+    private void requireModelAllowed(String modelId) {
         if (modelId == null || modelId.isBlank()) throw new ApiException(HttpStatus.CONFLICT,"AI_MODEL_SELECTION_REQUIRED","Hãy chọn model hợp lệ trước khi tiếp tục.");
         AiConfigurationSnapshot snapshot = configuration.findConfiguration();
         if (snapshot == null || snapshot.models() == null || snapshot.models().isEmpty()) throw new ApiException(HttpStatus.CONFLICT,"AI_MODEL_SELECTION_REQUIRED","Catalog model chưa sẵn sàng.");
@@ -233,7 +233,7 @@ public class AiTokenQuotaService {
                 .anyMatch(model -> model.modelId().equalsIgnoreCase(normalized));
         if (!allowed) {
             throw new ApiException(HttpStatus.CONFLICT, "AI_MODEL_SELECTION_REQUIRED",
-                    "Model đang chọn không còn được gói của bạn hỗ trợ. Hãy chọn một model khả dụng trong Chatbox.");
+                    "Model đang chọn không còn được hệ thống cho phép. Hãy chọn một model đang khả dụng trong Chatbox.");
         }
     }
 

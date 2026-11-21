@@ -63,7 +63,6 @@ class GuestAiChatControllerTest {
     @MockitoBean AdkAssistantEngine adkEngine;
     @MockitoBean JwtDecoder jwtDecoder;
     @MockitoBean AccountStatusJwtAuthenticationConverter jwtAuthenticationConverter;
-    @MockitoBean tech.mamxanh.subscription.service.SubscriptionEntitlementService entitlements;
     @MockitoBean tech.mamxanh.subscription.service.AiTokenQuotaService aiQuota;
     @MockitoBean tech.mamxanh.subscription.service.AiChatSettingsService chatSettings;
 
@@ -197,6 +196,17 @@ class GuestAiChatControllerTest {
         when(users.requireActiveMember()).thenThrow(new AppException(ErrorCode.ACCESS_DENIED));
         mvc.perform(post(URL).with(user("7").roles("ADMIN")).contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isForbidden());
+        verifyNoInteractions(adkEngine);
+    }
+
+    @Test
+    void guestCannotEnterPersonalizedMenuOrExpertAuthoringWorkflows() throws Exception {
+        for (String question : List.of("Lập thực đơn tuần 7 ngày theo dinh dưỡng cá nhân", "Viết mô tả cho bài đăng công thức")) {
+            mvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON)
+                            .content(new tools.jackson.databind.json.JsonMapper().writeValueAsString(java.util.Map.of(
+                                    "contextType", "GENERAL", "question", question, "anonymousViewerId", GUEST_ID))))
+                    .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
+        }
         verifyNoInteractions(adkEngine);
     }
 

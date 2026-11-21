@@ -389,7 +389,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
         <AlertTriangle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
         <div><h2 className="font-bold">Cảnh báo dị ứng / nguyên liệu cần tránh</h2>
           <p className="mt-1">Công thức có nguyên liệu bạn đã chọn cần tránh: {dietaryAssessment.ingredients.filter((line) => line.conflicts.includes('ALLERGEN_OR_AVOID')).map((line) => line.name).join(', ')}.</p>
-          <p className="mt-1 text-xs">Thông tin này dựa trên thành phần được ghi trong công thức; không xác nhận tình trạng nhiễm chéo.</p>
+          <p className="mt-1 text-xs">Thông tin này dựa trên thành phần được ghi trong công thức, không xác nhận tình trạng nhiễm chéo.</p>
         </div>
       </div>
     )}

@@ -24,14 +24,12 @@ import tech.mamxanh.integration.ai.AiUsageEvent;
 import tech.mamxanh.integration.ai.AiProviderException;
 import tech.mamxanh.recipe.dto.response.RecipePostResponse;
 import tech.mamxanh.recipe.repository.RelatedRecipeRepository;
-import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 import tools.jackson.databind.json.JsonMapper;
 
 class RelatedRecipeServiceTest {
     private RelatedRecipeRepository repository;
     private RecipePostService recipes;
     private CurrentUserService users;
-    private SubscriptionEntitlementService entitlement;
     private AiClient ai;
     private ApplicationEventPublisher events;
     private tech.mamxanh.subscription.service.AiTokenQuotaService aiQuota;
@@ -42,11 +40,10 @@ class RelatedRecipeServiceTest {
         repository = mock(RelatedRecipeRepository.class);
         recipes = mock(RecipePostService.class);
         users = mock(CurrentUserService.class);
-        entitlement = mock(SubscriptionEntitlementService.class);
         ai = mock(AiClient.class);
         events = mock(ApplicationEventPublisher.class);
         aiQuota = mock(tech.mamxanh.subscription.service.AiTokenQuotaService.class);
-        service = new RelatedRecipeService(repository, recipes, users, entitlement, ai,
+        service = new RelatedRecipeService(repository, recipes, users, ai,
                 new JsonMapper(), events, Clock.systemUTC(), aiQuota);
     }
 
@@ -63,7 +60,7 @@ class RelatedRecipeServiceTest {
         when(repository.findCandidates(1, 6, false)).thenReturn(List.of(2L));
         when(recipes.getPublishedCards(List.of(2L))).thenReturn(List.of(recipe(2, "VEGAN")));
         assertThat(service.related(1, 6).items()).extracting(RecipePostResponse::id).containsExactly(2L);
-        verifyNoInteractions(users, entitlement, ai, events);
+        verifyNoInteractions(users, ai, events);
     }
 
     @ParameterizedTest

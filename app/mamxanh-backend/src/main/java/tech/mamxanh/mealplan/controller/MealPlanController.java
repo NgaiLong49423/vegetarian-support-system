@@ -56,7 +56,7 @@ public class MealPlanController {
     }
 
     @Operation(summary = "Apply a confirmed AI weekly menu to the member's plan",
-            description = "Requires an active Pro Member. Atomically adds exactly one recipe to each of 21 day/meal positions and preserves existing "
+            description = "Requires an active Member. Atomically adds exactly one recipe to each of 21 day/meal positions and preserves existing "
                     + "entries. If any recipe is no longer public or collides with the same recipe in an existing "
                     + "day/meal, the request fails without writing any entries.")
     @ApiResponse(responseCode = "200", description = "The updated weekly plan.",
@@ -64,8 +64,6 @@ public class MealPlanController {
     @ApiResponse(responseCode = "404", description = "A selected recipe is no longer published.",
             content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
     @ApiResponse(responseCode = "409", description = "The selected recipe already exists in a target day/meal.",
-            content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
-    @ApiResponse(responseCode = "403", description = "An active Plus or Pro subscription is required.",
             content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
     @PostMapping("/{weekStartDate}/ai-menu")
     public MealPlanWeekResponse applyAiMenu(
@@ -184,7 +182,7 @@ public class MealPlanController {
                 .body(bytes);
     }
 
-    @Operation(summary = "Request Pro nutrition analysis recommendations from existing recipes",
+    @Operation(summary = "Request AI nutrition analysis recommendations from existing recipes",
             description = "The server supplies catalog-computed nutrition and validates all selected IDs. Applying a suggestion requires a separate member confirmation.")
     @ApiResponse(responseCode = "200", description = "AI recipe suggestions.",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = MealPlanNutritionRecommendationsResponse.class)))

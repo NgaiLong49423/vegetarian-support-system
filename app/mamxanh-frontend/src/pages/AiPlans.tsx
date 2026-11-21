@@ -20,28 +20,24 @@ const DEFAULT_PLANS: PlanResponse[] = [
     name: 'FREE',
     priceVnd: 0,
     billingPeriod: 'Hàng tháng',
-    description: 'Trải nghiệm các tính năng AI cơ bản',
-    features: ['AI Chatbot cơ bản', 'Gợi ý món chay cơ bản'],
+    description: 'Dùng các chức năng AI phù hợp với vai trò và điều kiện tài khoản',
+    features: ['Các chức năng AI theo vai trò và điều kiện nghiệp vụ', '50.000 token mỗi tháng'],
   },
   {
     tier: 'PLUS',
     name: 'PLUS',
-    priceVnd: 49000,
+    priceVnd: 99000,
     billingPeriod: 'Hàng tháng',
-    description: 'Dành cho người ăn chay chuyên sâu & tối ưu dinh dưỡng',
-    features: ['Toàn bộ quyền của FREE', 'AI lập thực đơn tuần 7 ngày', 'AI lập thực đơn theo dinh dưỡng cá nhân'],
+    description: 'Tăng hạn mức token AI theo tháng',
+    features: ['Các chức năng AI theo vai trò và điều kiện nghiệp vụ', '200.000 token mỗi tháng'],
   },
   {
     tier: 'PRO',
     name: 'PRO',
-    priceVnd: 99000,
+    priceVnd: 199000,
     billingPeriod: 'Hàng tháng',
-    description: 'Dành cho người ăn chay muốn sáng tạo thực đơn',
-    features: [
-      'Toàn bộ quyền của PLUS',
-      'AI hỗ trợ soạn bài viết và công thức',
-      'AI gợi ý biến tấu món chay sáng tạo',
-    ],
+    description: 'Tăng hạn mức token AI theo tháng',
+    features: ['Các chức năng AI theo vai trò và điều kiện nghiệp vụ', '500.000 token mỗi tháng'],
   },
 ];
 
@@ -202,7 +198,7 @@ export function AiPlans() {
         )}
 
         <p className="mt-2 text-xs text-ink-muted">
-          Gói quyết định hạn mức token; các gói dùng chung danh mục model AI, còn quyền dùng chức năng phụ thuộc vai trò và điều kiện nghiệp vụ. Guest và Free có 50.000 token theo tháng dương lịch; Plus/Pro tính theo chu kỳ gói. Plus/Pro thanh toán từng tháng qua payOS, không tự động gia hạn.
+          Gói quyết định hạn mức token. Các gói dùng chung danh mục model AI, còn quyền dùng chức năng phụ thuộc vai trò và điều kiện nghiệp vụ. Guest và Free có 50.000 token theo tháng dương lịch. Plus/Pro tính theo chu kỳ gói. Plus/Pro thanh toán từng tháng qua payOS, không tự động gia hạn.
         </p>
       </div>
 
@@ -283,7 +279,7 @@ export function AiPlans() {
           {plansError ?? 'Chưa có cấu hình gói AI để hiển thị.'}
         </div>
       ) : (
-        /* Current prices, token quotas, and model entitlements come from the Backend Admin configuration. */
+        /* Current prices, token quotas, and model catalog come from the Backend Admin configuration. */
         <div className="grid gap-6 lg:grid-cols-3">
           {plans.map((plan) => {
             const isCurrent = plan.tier === currentTier;

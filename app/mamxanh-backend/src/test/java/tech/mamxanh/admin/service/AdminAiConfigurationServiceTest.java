@@ -3,6 +3,7 @@ package tech.mamxanh.admin.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -95,6 +96,35 @@ class AdminAiConfigurationServiceTest {
         verify(configurations).replaceModels(org.mockito.ArgumentMatchers.argThat(models -> models.stream()
                 .allMatch(model -> model.plusAllowed() == model.enabled() && model.proAllowed() == model.enabled()
                         && model.plusDefault() == model.freeDefault() && model.proDefault() == model.freeDefault())));
+    }
+
+    @Test
+    void reportsEachChangedPlanAndCreditSetting() {
+        when(transactions.getTransaction(any(TransactionDefinition.class)))
+                .thenAnswer(ignored -> new org.springframework.transaction.support.SimpleTransactionStatus());
+        when(configurations.findConfiguration()).thenReturn(currentConfiguration());
+        AdminAiConfigurationService service = createService();
+
+        AdminAiConfigurationUpdateRequest request = new AdminAiConfigurationUpdateRequest(
+                List.of(new PlanUpdate("FREE", 0, 60_000), new PlanUpdate("PLUS", 109_000, 350_000),
+                        new PlanUpdate("PRO", 209_000, 700_000)),
+                List.of(new ModelUpdate("gemini-3.5-flash-lite", "Flash-Lite", true,
+                                true, true, true, false, true, false),
+                        new ModelUpdate("gemini-3.8-flash", "Flash", true,
+                                false, false, true, true, true, true)),
+                new CreditUpdate(BigDecimal.valueOf(1100), 450, 15_000, 600_000), false);
+
+        service.update(request);
+
+        verify(notifications).aiConfigurationChanged(argThat(changes ->
+                changes.stream().anyMatch(change -> change.startsWith("Quota Free:"))
+                        && changes.stream().anyMatch(change -> change.startsWith("Giá gói Plus:"))
+                        && changes.stream().anyMatch(change -> change.startsWith("Quota gói Plus:"))
+                        && changes.stream().anyMatch(change -> change.startsWith("Giá gói Pro:"))
+                        && changes.stream().anyMatch(change -> change.startsWith("Quota gói Pro:"))
+                        && changes.stream().anyMatch(change -> change.startsWith("Tỷ lệ nạp:"))
+                        && changes.stream().anyMatch(change -> change.startsWith("Tỷ lệ overage:"))
+                        && changes.stream().anyMatch(change -> change.startsWith("Giới hạn nạp:"))));
     }
 
     @Test
