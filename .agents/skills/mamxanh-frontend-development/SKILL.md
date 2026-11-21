@@ -134,8 +134,7 @@ Adapted from `Unibean9/harness-skills`:
   upstream Frontend skill.
 - Upstream shared references consulted: `domain-routing`, `evidence-policy`, and `hard-gate`.
 
-The upstream Frontend flow itself credits `ThinhTP204/fk-skills`; this project intentionally
-does not copy that repository's files. This skill is a project-specific adaptation and
+This skill is a project-specific adaptation and
 intentionally omits upstream installer, hooks, subagents, workflow skills, `PRODUCT.md`/
 `DESIGN.md` setup, live-mode tooling, and deterministic detector. Preserve applicable upstream
 attribution when materially copying or adapting content.
