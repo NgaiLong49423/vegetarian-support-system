@@ -16,7 +16,7 @@ BEGIN
     UPDATE [RECIPE_POST]
     SET status = 'DELETED', updated_at = SYSUTCDATETIME()
     WHERE author_id = @demo_expert_id
-      AND title IN (N'Salad cải bó xôi bơ lựu', N'Chè kê vàng chà là dừa')
+      AND title IN (N'Salad cải bó xôi bơ lựu', N'Chè kê vàng chà là dừa', N'Bánh yến mạch trứng chuối')
       AND status <> 'DELETED';
 END;
 

@@ -31,8 +31,10 @@ import tech.mamxanh.mealplan.dto.response.AiMenuPreviewResponse;
 import tech.mamxanh.mealplan.repository.MealPlanEntryRepository;
 import tech.mamxanh.mealplan.repository.MealPlanRepository;
 import tech.mamxanh.nutrition.dto.response.UnitResponse;
+import tech.mamxanh.nutrition.dto.response.IngredientResponse;
 import tech.mamxanh.nutrition.entity.MeasurementDimension;
 import tech.mamxanh.nutrition.service.DietaryPreferenceService;
+import tech.mamxanh.nutrition.service.DietaryConstraintEvaluator;
 import tech.mamxanh.nutrition.service.IngredientCatalogLookupService;
 import tech.mamxanh.nutrition.service.IngredientConversionLookupService;
 import tech.mamxanh.nutrition.service.NutritionProfileService;
@@ -192,7 +194,8 @@ class AiMenuServiceTest {
         assertThat(prompt.getValue()).contains("Goal preference=LOSE_WEIGHT")
                 .contains("BMI=21.48")
                 .contains("preferred ingredient IDs=[2]")
-                .contains("forbidden ingredient IDs=[3]");
+                .contains("forbidden ingredient IDs=[99, 3]")
+                .contains("soft preference: minimize recipes containing disliked ingredient IDs=[2]");
         verify(events).publishEvent(any(tech.mamxanh.integration.ai.AiUsageEvent.class));
     }
 
@@ -325,6 +328,23 @@ class AiMenuServiceTest {
     }
 
     @Test
+    void postGenerationRevalidationRemovesARecipeThatBecameAllergenic() {
+        prepareCandidates();
+        var newlyUnsafe = recipe(11, "Canh nấm", 99);
+        var safe = recipe(12, "Đậu phụ kho", 2);
+        when(recipes.searchPublished("", 0, 50)).thenReturn(
+                new RecipePostService.RecipePageResponse(List.of(recipe(11, "Canh nấm", 1), recipe(12, "Đậu phụ kho", 2), recipe(13, "Món cấm", 99)), 0, 50, 3, 1),
+                new RecipePostService.RecipePageResponse(List.of(newlyUnsafe, safe, recipe(13, "Món cấm", 99)), 0, 50, 3, 1));
+        when(ai.recommendRecipes(any(), anyList(), eq(2))).thenReturn(
+                new AiClient.RecommendationResult("{\"recipeIds\":[11,12]}", 1, 1, 2));
+
+        var preview = service.createPreview(new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null));
+
+        assertThat(preview.meals()).hasSize(21).allSatisfy(meal -> assertThat(meal.recipeId()).isEqualTo(12L));
+        verify(ai).recommendRecipes(any(), eq(List.of(11L, 12L)), eq(2));
+    }
+
+    @Test
     void filtersRecipesWithUnresolvableUnitsAndIncompleteNutrition() {
         prepareCandidates();
         var unresolvedUnit = new RecipePostResponse.Ingredient(21L, "unknown unit", null, 99, "x", "unknown",
@@ -362,10 +382,15 @@ class AiMenuServiceTest {
         when(profiles.requireMenuNutritionContext(17L)).thenReturn(
                 new NutritionProfileService.MenuNutritionContext(null, "FEMALE", BigDecimal.valueOf(160), BigDecimal.valueOf(55),
                         "LIGHTLY_ACTIVE", 25, new BigDecimal("21.48"), "Bình thường", new BigDecimal("2374"), List.of()));
-        when(dietary.menuConstraints(17L)).thenReturn(new DietaryPreferenceService.MenuDietaryConstraints(null, List.of(), List.of()));
+        when(dietary.menuConstraints(17L)).thenReturn(new DietaryPreferenceService.MenuDietaryConstraints(
+                "VEGAN", List.of(99L), List.of("Ingredient 99"), List.of(2L), List.of("Ingredient 2")));
         when(ingredients.findActiveUnits()).thenReturn(List.of(new UnitResponse(1, "g", "gram", MeasurementDimension.MASS, BigDecimal.ONE, true)));
         when(recipes.searchPublished("", 0, 50)).thenReturn(new RecipePostService.RecipePageResponse(
-                List.of(recipe(11, "Canh nấm", 1), recipe(12, "Đậu phụ kho", 2)), 0, 50, 2, 1));
+                List.of(recipe(11, "Canh nấm", 1), recipe(12, "Đậu phụ kho", 2), recipe(13, "Món cấm", 99)), 0, 50, 3, 1));
+        when(ingredients.findIngredientReferences(any())).thenReturn(List.of(
+                new IngredientResponse(1L, "nấm", "Khác", null, null, null, false, true),
+                new IngredientResponse(2L, "đậu phụ", "Khác", null, null, null, false, true),
+                new IngredientResponse(99L, "Ingredient 99", "Khác", null, null, null, false, true)));
         when(nutrition.calculate(anyList(), eq(2))).thenReturn(new RecipeNutritionService.NutritionSummary(true, List.of(),
                 Map.of(), Map.of("ENERGY_KCAL", BigDecimal.valueOf(100), "PROTEIN_G", BigDecimal.valueOf(5))));
     }
@@ -373,7 +398,7 @@ class AiMenuServiceTest {
     private AiMenuService serviceAt(Clock clock) {
         return new AiMenuService(users, entitlements, profiles, dietary, recipes, nutrition, ingredients,
                 conversions, ai, events, clock, new JsonMapper(), plans, entries, reads,
-                mock(tech.mamxanh.subscription.service.AiTokenQuotaService.class));
+                mock(tech.mamxanh.subscription.service.AiTokenQuotaService.class), new DietaryConstraintEvaluator());
     }
 
     private static RecipePostResponse recipe(long id, String title, long ingredientId) {

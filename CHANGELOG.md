@@ -1,13 +1,106 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.151.0
+> **Version:** v2.154.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-11-20<br>
+> **Last Updated:** 2026-11-21<br>
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-11-21 — Keep Demo Seasoning Seed Compatible With Duplicate Titles
+
+**Status:** Committed — 304aff43.
+
+**Scope:** Allow the local seasoning fixture to complete when existing demo data contains multiple posts with the same curated title.
+
+### Added
+
+None.
+
+### Changed
+
+- Apply the curated seasoning data to every post matching a fixture title and validate title coverage instead of requiring exactly one post per title.
+
+### Fixed
+
+- Prevent duplicate demo recipe rows from stopping Backend startup during the seasoning seed migration.
+
+## 2026-11-21 — Enforce Dietary Safety Across Recipe Actions
+
+**Status:** Committed — 600046c2.
+
+**Scope:** Apply declared vegetarian, avoid, and dislike preferences to recipe recommendations and meal-plan actions, with explicit review for recipes that may conflict with current dietary constraints.
+
+### Added
+
+- Add Backend dietary safety assessments and a Frontend review flow for adding or replacing a recipe in a meal plan.
+- Add automated unit and end-to-end coverage for dietary safety decisions and preference-aware recommendations.
+
+### Changed
+
+- Apply hard dietary constraints and soft dislikes when selecting AI menu and recipe recommendations.
+- Require an acknowledgement tied to the current dietary assessment when a meal-plan action has a dietary risk.
+
+### Fixed
+
+- Prevent recipe actions from silently bypassing current dietary constraints.
+
+## 2026-11-21 — Match Avoided Ingredients Exactly
+
+**Status:** Committed — 6c2f6913.
+
+**Scope:** Stop expanding a member's declared allergen or avoided ingredient into other ingredients through shared aliases.
+
+### Added
+
+None.
+
+### Changed
+
+- Match hard avoid preferences by selected catalog ID or normalized ingredient name; keep alias matching for soft dislikes.
+- Clarify recipe warning text to identify the ingredient selected by the member.
+
+### Fixed
+
+- Prevent a declared soy allergy from automatically flagging soy sauce as a separately selected avoided ingredient.
+
+## 2026-11-21 — Remove the Low-Quality Oat Pancake Demo Recipe
+
+**Status:** Committed — 6c2f6913.
+
+**Scope:** Remove the blurry-image banana oat pancake recipe from local demo seeds and hide any existing seeded copy.
+
+### Added
+
+None.
+
+### Changed
+
+- Reduce the curated recipe fixture count from 52 to 51 and align its validation script and database guide.
+
+### Fixed
+
+- Retire existing `Bánh yến mạch trứng chuối` demo posts so they no longer appear in the local recipe feed.
+
+## 2026-11-21 — Recognize Dairy Cheese Variants in Dietary Checks
+
+**Status:** Committed — 55155ad6.
+
+**Scope:** Prevent catalog cheese variants from bypassing vegetarian compatibility checks.
+
+### Added
+
+None.
+
+### Changed
+
+- Classify the six dairy cheese variants in the active ingredient catalog as dairy while preserving plant-based cheese behavior.
+
+### Fixed
+
+- Flag those dairy variants as incompatible with VEGAN and OVO profiles while allowing LACTO and LACTO_OVO profiles.
 
 ## 2026-11-20 — Remove Three Local Demo Posts
 

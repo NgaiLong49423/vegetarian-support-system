@@ -26,7 +26,8 @@ class MealPlanServiceTest {
     private final MealPlanService service = new MealPlanService(repository, users, reads,
             mock(tech.mamxanh.mealplan.repository.MealPlanEntryRepository.class),
             recipes,
-            mock(tech.mamxanh.recipe.service.AiRecipeRecommendationService.class));
+            mock(tech.mamxanh.recipe.service.AiRecipeRecommendationService.class),
+            mock(tech.mamxanh.nutrition.service.DietarySafetyAssessmentService.class));
 
     @BeforeEach
     void member() {
@@ -74,7 +75,8 @@ class MealPlanServiceTest {
                 new tech.mamxanh.recipe.service.RecipePostService.MealPlanRecipeReference(9L, "Soup", "PUBLISHED", null, "SOUP", 20)));
         when(entryRepository.saveAndFlush(entry)).thenReturn(entry);
         var service = new MealPlanService(repository, users, reads, entryRepository, recipes,
-                mock(tech.mamxanh.recipe.service.AiRecipeRecommendationService.class));
+                mock(tech.mamxanh.recipe.service.AiRecipeRecommendationService.class),
+                mock(tech.mamxanh.nutrition.service.DietarySafetyAssessmentService.class));
         var result = service.updateServings(week, 5L, new java.math.BigDecimal("1.5"));
         assertThat(result.plannedServings()).isEqualByComparingTo("1.5");
         verify(repository).touchWeek(3L);
@@ -93,7 +95,8 @@ class MealPlanServiceTest {
         var entryRepository = org.mockito.Mockito.mock(tech.mamxanh.mealplan.repository.MealPlanEntryRepository.class);
         when(entryRepository.findByIdAndMealPlanId(5L, 3L)).thenReturn(java.util.Optional.of(entry));
         var subject = new MealPlanService(repository, users, reads, entryRepository, recipes,
-                mock(tech.mamxanh.recipe.service.AiRecipeRecommendationService.class));
+                mock(tech.mamxanh.recipe.service.AiRecipeRecommendationService.class),
+                mock(tech.mamxanh.nutrition.service.DietarySafetyAssessmentService.class));
         assertThatThrownBy(() -> subject.updateServings(week, 5L, new java.math.BigDecimal(value)))
                 .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.VALIDATION_FAILED);
     }

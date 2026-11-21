@@ -12,7 +12,7 @@ try {
     if (-not $recipeJsonMatch.Success) { throw 'Could not find the JSON recipe fixture in the recipe seed.' }
     $recipes = @($recipeJsonMatch.Groups[1].Value.Replace("''", "'") | ConvertFrom-Json)
     $titles = @($recipes | ForEach-Object { $_.title })
-    if ($titles.Count -ne 54) { throw 'Expected exactly 54 named fixture recipes.' }
+    if ($titles.Count -ne 51) { throw 'Expected exactly 51 named fixture recipes.' }
     $titleValues = ($titles | ForEach-Object { "(N'$($_.Replace("'", "''"))')" }) -join ",`n"
     $imageRows = [regex]::Matches($imageSeed, "\(N'((?:''|[^'])+)', N'(/ingredients/[^']+\.webp)'\)")
     if ($imageRows.Count -ne 209) { throw 'Expected exactly 209 ingredient image mappings.' }

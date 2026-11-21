@@ -33,9 +33,10 @@ final class AiMenuOptimizer {
                                 || priorDinner.stream().noneMatch(id -> id == item.id()))
                                 && (currentSlot == 0 || meals.get(currentSlot - 1).stream()
                                         .noneMatch(previous -> previous.id() == item.id())))
-                        .min(java.util.Comparator.comparingDouble(item -> Math.abs(value(item.nutrition(), "ENERGY_KCAL")
-                                - energyTarget * MEAL_SHARES[currentSlot]) / Math.max(energyTarget, 1)
-                                + ranked.indexOf(item) * 0.0001))
+                        .min(java.util.Comparator.comparingDouble((Candidate item) -> Math.abs(value(item.nutrition(), "ENERGY_KCAL")
+                                - energyTarget * MEAL_SHARES[currentSlot]) / Math.max(energyTarget, 1))
+                                .thenComparingInt(Candidate::dislikeCount)
+                                .thenComparingInt(ranked::indexOf))
                         .orElse(ranked.get(0));
                 meals.get(slot).add(initial);
             }
@@ -117,12 +118,13 @@ final class AiMenuOptimizer {
         }
         int rankPenalty = meals.stream().flatMap(List::stream)
                 .mapToInt(candidate -> ranked.indexOf(candidate)).sum();
+        int dislikePenalty = meals.stream().flatMap(List::stream).mapToInt(Candidate::dislikeCount).sum();
         int inRangeMeals = 0;
         for (int slot = 0; slot < mealKcal.length; slot++) {
             double share = mealKcal[slot] / Math.max(target, 1);
             if (share >= MEAL_SHARES[slot] - 0.05 && share <= MEAL_SHARES[slot] + 0.05) inRangeMeals++;
         }
-        return new Score(energyBand, inRangeMeals, energyError, met, deviation, rankPenalty);
+        return new Score(energyBand, inRangeMeals, energyError, met, deviation, dislikePenalty, rankPenalty);
     }
 
     private static String nutritionKey(String key) {
@@ -144,16 +146,17 @@ final class AiMenuOptimizer {
         return amount == null ? 0 : amount.doubleValue();
     }
 
-    record Candidate(long id, Map<String, BigDecimal> nutrition) { }
+    record Candidate(long id, Map<String, BigDecimal> nutrition, int dislikeCount) { }
     record Selection(LocalDate date, String mealType, long recipeId) { }
     private record Score(int energyBand, int inRangeMeals, double energyError, int nutrientsMet, double nutrientDeviation,
-            int rankPenalty) {
+            int dislikePenalty, int rankPenalty) {
         boolean betterThan(Score other) {
             if (energyBand != other.energyBand) return energyBand < other.energyBand;
             if (inRangeMeals != other.inRangeMeals) return inRangeMeals > other.inRangeMeals;
             if (nutrientsMet != other.nutrientsMet) return nutrientsMet > other.nutrientsMet;
             if (Math.abs(nutrientDeviation - other.nutrientDeviation) > 1e-9) return nutrientDeviation < other.nutrientDeviation;
             if (Math.abs(energyError - other.energyError) > 1e-9) return energyError < other.energyError;
+            if (dislikePenalty != other.dislikePenalty) return dislikePenalty < other.dislikePenalty;
             return rankPenalty < other.rankPenalty;
         }
     }

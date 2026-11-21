@@ -9,6 +9,7 @@ import {
 } from "react"
 import { ArrowLeft, ArrowRight, LoaderCircle, Plus, X } from "lucide-react"
 import { Button } from "./ui"
+import { Modal } from "./Modal"
 import { fieldMessages, toProblem } from "../lib/problem"
 import {
   suggestIngredients,
@@ -63,6 +64,13 @@ const QUESTIONS = [
   "Bạn muốn dành bao nhiêu phút để nấu?",
   "Bạn muốn nấu món có độ khó thế nào?",
 ]
+
+const AUTO_EXCLUSIONS: Record<VegetarianType, string[]> = {
+  VEGAN: ["Thịt và sản phẩm từ thịt", "Cá và hải sản", "Trứng và chế phẩm", "Sữa động vật và chế phẩm", "Mật ong"],
+  LACTO: ["Thịt và sản phẩm từ thịt", "Cá và hải sản", "Trứng và chế phẩm"],
+  OVO: ["Thịt và sản phẩm từ thịt", "Cá và hải sản", "Sữa động vật và chế phẩm"],
+  LACTO_OVO: ["Thịt và sản phẩm từ thịt", "Cá và hải sản"],
+}
 
 const STEP_FIELDS: Array<Array<keyof Errors>> = [
   ["vegetarianType"],
@@ -396,6 +404,8 @@ export function DietaryPreferencesForm({
   const [form, setForm] = useState<FormState>(() => fromProfile(profile))
   const [errors, setErrors] = useState<Errors>({})
   const [submitting, setSubmitting] = useState(false)
+  const [pendingSave, setPendingSave] = useState(false)
+  const returnFocus = useRef<HTMLElement | null>(null)
   const [step, setStep] = useState(0)
   const questionHeading = useRef<HTMLHeadingElement>(null)
   const formId = useId()
@@ -403,6 +413,12 @@ export function DietaryPreferencesForm({
   useEffect(() => {
     if (stepByStep) questionHeading.current?.focus()
   }, [step, stepByStep])
+  useEffect(() => {
+    if (!pendingSave && returnFocus.current) {
+      returnFocus.current.focus()
+      returnFocus.current = null
+    }
+  }, [pendingSave])
   const show = (question: number) => !stepByStep || step === question
   const focusErrorStep = (found: Errors) => {
     if (!stepByStep) return
@@ -448,7 +464,13 @@ export function DietaryPreferencesForm({
       focusErrorStep(found)
       return
     }
+    returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    setPendingSave(true)
+  }
+  const confirmSave = async () => {
+    if (disabled || submitting) return
     setSubmitting(true)
+    setPendingSave(false)
     try {
       await onSubmit(toPayload(form))
     } catch (error) {
@@ -460,6 +482,7 @@ export function DietaryPreferencesForm({
     }
   }
   return (
+    <>
     <form
       noValidate
       onSubmit={submit}
@@ -536,6 +559,18 @@ export function DietaryPreferencesForm({
               >
                 {errors.vegetarianType}
               </span>
+            )}
+            {form.vegetarianType && (
+              <div className="mt-4 rounded-xl border border-leaf-200 bg-leaf-50/70 p-4" aria-live="polite">
+                <p className="text-sm font-bold text-ink">Tự động loại trừ theo kiểu ăn chay</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {AUTO_EXCLUSIONS[form.vegetarianType].map((item) => (
+                    <span key={item} className="inline-flex items-center rounded-full border border-leaf-200 bg-paper px-3 py-1 text-xs font-semibold text-ink-soft">{item}</span>
+                  ))}
+                </div>
+                {form.vegetarianType === "LACTO_OVO" && <p className="mt-2 text-xs text-ink-muted">Không có ràng buộc bổ sung đối với trứng và sữa.</p>}
+                <p className="mt-2 text-xs text-ink-muted">Các điều kiện tự động này được cập nhật theo lựa chọn và không thay đổi danh sách cá nhân.</p>
+              </div>
             )}
           </fieldset>
         )}
@@ -741,5 +776,21 @@ export function DietaryPreferencesForm({
         )}
       </fieldset>
     </form>
+    <Modal
+      open={pendingSave}
+      onClose={() => { if (!submitting) setPendingSave(false) }}
+      title="Xác nhận cập nhật sở thích"
+      trapFocus
+    >
+      <p className="text-sm leading-6 text-ink-soft">Những thay đổi này sẽ được áp dụng cho các gợi ý món ăn và thực đơn AI tiếp theo của bạn.</p>
+      <div className="mt-6 flex flex-wrap justify-end gap-3">
+        <Button type="button" variant="ghost" disabled={submitting} onClick={() => setPendingSave(false)}>Hủy</Button>
+        <Button type="button" disabled={submitting} onClick={() => void confirmSave()}>
+          {submitting && <LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin" />}
+          Xác nhận lưu
+        </Button>
+      </div>
+    </Modal>
+    </>
   )
 }

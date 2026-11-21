@@ -5,6 +5,7 @@ import { Link, useSearchParams } from "react-router-dom"
 
 import {
   CalendarDays,
+  AlertTriangle,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -44,6 +45,7 @@ import { asApiError } from "../lib/apiClient"
 import { MealPlanNutrition } from "./MealPlanNutrition"
 import { AiRecipePlanner } from "./AiRecipePlanner"
 import { CreateShoppingListButton } from "../components/CreateShoppingListButton"
+import { assessRecipeDietarySafety, type DietarySafetyAssessment } from "../services/dietaryPreferencesApi"
 
 type Entry = MealPlanWeek["entries"][number]
 
@@ -327,6 +329,9 @@ function WeekContents({
   const [removal, setRemoval] = useState<Entry | null>(null)
 
   const [moving, setMoving] = useState<Entry | null>(null)
+  const [riskAssessment, setRiskAssessment] = useState<DietarySafetyAssessment | null>(null)
+  const [riskPendingChoice, setRiskPendingChoice] = useState<{ target: Target; recipeId: number } | null>(null)
+  const [riskChecked, setRiskChecked] = useState(false)
   const [nutrition, setNutrition] = useState<{
     day: string
 
@@ -412,7 +417,8 @@ function WeekContents({
     setPicker(target)
   }
 
-  async function mutate(action: () => Promise<void>, message: string) {
+  async function mutate(action: () => Promise<void>, message: string,
+      onError?: (cause: unknown) => Promise<void>) {
     if (pending.current) return
 
     pending.current = true
@@ -437,7 +443,8 @@ function WeekContents({
 
       restoreDialogFocus()
     } catch (cause) {
-      if (alive.current) setActionError(asApiError(cause).message)
+      if (onError) await onError(cause)
+      else if (alive.current) setActionError(asApiError(cause).message)
     } finally {
       pending.current = false
 
@@ -445,21 +452,22 @@ function WeekContents({
     }
   }
 
-  function choose(recipeId: number) {
-    if (!picker) return
-
-    const target = picker
-
+  function persistChoice(target: Target, recipeId: number, acknowledged = false, token: string | null = null) {
     void mutate(
       async () => {
         const entry = target.entry
-          ? await mealPlanApi.replaceEntry(week, target.entry.entryId, recipeId)
+          ? await mealPlanApi.replaceEntry(week, target.entry.entryId, recipeId, {
+              dietaryRiskAcknowledged: acknowledged,
+              dietaryRiskAssessmentToken: token,
+            })
           : await mealPlanApi.addEntry(week, {
               mealDate: target.mealDate,
 
               mealType: target.mealType,
 
               recipeId,
+              dietaryRiskAcknowledged: acknowledged,
+              dietaryRiskAssessmentToken: token,
             })
 
         if (alive.current)
@@ -481,7 +489,67 @@ function WeekContents({
       target.entry
         ? "Đã thay công thức trong lịch ăn."
         : "Đã thêm món vào lịch ăn.",
+      async (cause) => {
+        const apiError = asApiError(cause)
+        if (apiError.code === "DIETARY_RISK_ACKNOWLEDGEMENT_REQUIRED") {
+          try {
+            const assessment = await assessRecipeDietarySafety(recipeId)
+            setRiskPendingChoice({ target, recipeId })
+            setRiskAssessment(assessment)
+            setRiskChecked(false)
+            setActionError("")
+            return
+          } catch { /* Keep the original server failure below. */ }
+        }
+        if (alive.current) setActionError(apiError.message)
+      },
     )
+  }
+
+  async function choose(recipeId: number) {
+    if (!picker) return
+    const target = picker
+    setBusy(true)
+    setActionError("")
+    try {
+      const assessment = await assessRecipeDietarySafety(recipeId)
+      if (assessment.requiresRiskAcknowledgement) {
+        setRiskPendingChoice({ target, recipeId })
+        setRiskAssessment(assessment)
+        setRiskChecked(false)
+        setBusy(false)
+        return
+      }
+      setBusy(false)
+      persistChoice(target, recipeId)
+    } catch (cause) {
+      setActionError(asApiError(cause).message || "Chưa thể kiểm tra cảnh báo sở thích ăn uống.")
+      setBusy(false)
+    }
+  }
+
+  async function confirmRiskChoice() {
+    if (!riskPendingChoice || !riskAssessment || !riskChecked || busy) return
+    setBusy(true)
+    try {
+      const fresh = await assessRecipeDietarySafety(riskPendingChoice.recipeId)
+      if (fresh.requiresRiskAcknowledgement && fresh.assessmentToken !== riskAssessment.assessmentToken) {
+        setRiskAssessment(fresh)
+        setRiskChecked(false)
+        setBusy(false)
+        return
+      }
+      const pendingChoice = riskPendingChoice
+      const token = fresh.requiresRiskAcknowledgement ? fresh.assessmentToken : null
+      setRiskAssessment(null)
+      setRiskPendingChoice(null)
+      setRiskChecked(false)
+      setBusy(false)
+      persistChoice(pendingChoice.target, pendingChoice.recipeId, fresh.requiresRiskAcknowledgement, token)
+    } catch (cause) {
+      setActionError(asApiError(cause).message || "Chưa thể kiểm tra lại cảnh báo sở thích ăn uống.")
+      setBusy(false)
+    }
   }
 
   function move(mealDate: string, mealType: MealType) {
@@ -955,6 +1023,40 @@ function WeekContents({
             onChoose={choose}
           />
         )}
+      </Modal>
+      <Modal
+        open={Boolean(riskAssessment)}
+        onClose={() => {
+          if (busy) return
+          setRiskAssessment(null)
+          setRiskPendingChoice(null)
+          setRiskChecked(false)
+        }}
+        title="Xác nhận cảnh báo trước khi thêm lịch"
+        size="lg"
+        tone="dark"
+        trapFocus
+      >
+        {riskAssessment && <>
+          <div className="flex gap-3 rounded-xl border border-red-400/60 bg-red-950/35 p-4 text-sm leading-6 text-red-100">
+            <AlertTriangle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
+            <div><strong>{riskAssessment.recipeTitle}</strong><p>Thêm công thức vào lịch không có nghĩa món ăn an toàn.</p></div>
+          </div>
+          {riskAssessment.hasAllergenOrAvoidConflict && <p className="mt-3 rounded-xl border border-red-400/60 bg-red-950/30 p-3 text-sm text-red-100"><strong>Dị ứng / cần tránh:</strong> {riskAssessment.ingredients.filter((line) => line.conflicts.includes("ALLERGEN_OR_AVOID")).map((line) => line.name).join(", ")}</p>}
+          {riskAssessment.hasVegetarianConflict && <p className="mt-3 rounded-xl border border-orange-300/60 bg-orange-950/30 p-3 text-sm text-orange-100"><strong>Không phù hợp kiểu ăn chay:</strong> {riskAssessment.ingredients.filter((line) => line.conflicts.includes("VEGETARIAN_TYPE")).map((line) => line.name).join(", ")}</p>}
+          {riskAssessment.unverifiedIngredients.length > 0 && <p className="mt-3 rounded-xl border border-amber-300/60 bg-amber-950/30 p-3 text-sm text-amber-100"><strong>Chưa xác minh:</strong> {riskAssessment.unverifiedIngredients.join(", ")}</p>}
+          <label className="mt-4 flex cursor-pointer items-start gap-3 text-sm leading-6 text-white/85">
+            <input type="checkbox" checked={riskChecked} onChange={(event) => setRiskChecked(event.target.checked)} className="mt-1 accent-red-500" />
+            <span>Tôi đã đọc cảnh báo, hiểu rủi ro và vẫn muốn thêm công thức này vào lịch ăn.</span>
+          </label>
+          <div className="mt-5 flex justify-end gap-3">
+            <Button type="button" variant="ghost" disabled={busy} onClick={() => { setRiskAssessment(null); setRiskPendingChoice(null); setRiskChecked(false) }}>Quay lại</Button>
+            <Button type="button" disabled={!riskChecked || busy} onClick={() => void confirmRiskChoice()}>
+              {busy && <LoaderCircle className="h-4 w-4 animate-spin" />}
+              Vẫn thêm vào lịch
+            </Button>
+          </div>
+        </>}
       </Modal>
       <Modal
         open={Boolean(removal)}
