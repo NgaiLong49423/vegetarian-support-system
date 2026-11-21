@@ -9,6 +9,24 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-11-21 — Keep Demo Seasoning Seed Compatible With Duplicate Titles
+
+**Status:** Committed — 304aff43.
+
+**Scope:** Allow the local seasoning fixture to complete when existing demo data contains multiple posts with the same curated title.
+
+### Added
+
+None.
+
+### Changed
+
+- Apply the curated seasoning data to every post matching a fixture title and validate title coverage instead of requiring exactly one post per title.
+
+### Fixed
+
+- Prevent duplicate demo recipe rows from stopping Backend startup during the seasoning seed migration.
+
 ## 2026-11-21 — Enforce Dietary Safety Across Recipe Actions
 
 **Status:** Committed — 600046c2.
