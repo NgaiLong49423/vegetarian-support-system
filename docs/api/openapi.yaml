@@ -6580,6 +6580,47 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/nutrition/dietary-preferences/recipes/{recipeId}/safety-assessment:
+    get:
+      tags:
+      - dietary-preference-controller
+      operationId: assessRecipe
+      parameters:
+      - name: recipeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assessment"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/nutrition/dietary-preferences/ingredient-suggestions:
     get:
       tags:
@@ -9381,6 +9422,10 @@ components:
           type: integer
           format: int64
           minimum: 1
+        dietaryRiskAcknowledged:
+          type: boolean
+        dietaryRiskAssessmentToken:
+          type: string
       required:
       - recipeId
     ApplyAiMenuRequest:
@@ -11023,6 +11068,10 @@ components:
           type: integer
           format: int64
           minimum: 1
+        dietaryRiskAcknowledged:
+          type: boolean
+        dietaryRiskAssessmentToken:
+          type: string
       required:
       - mealDate
       - mealType
@@ -12119,6 +12168,53 @@ components:
         summary:
           type: string
         result: {}
+    Assessment:
+      type: object
+      properties:
+        recipeId:
+          type: integer
+          format: int64
+        recipeTitle:
+          type: string
+        recipeTypeCompatible:
+          type: boolean
+        hasAllergenOrAvoidConflict:
+          type: boolean
+        hasVegetarianConflict:
+          type: boolean
+        hasDislikedIngredients:
+          type: boolean
+        unverifiedIngredients:
+          type: array
+          items:
+            type: string
+        ingredients:
+          type: array
+          items:
+            $ref: "#/components/schemas/IngredientStatus"
+        requiresRiskAcknowledgement:
+          type: boolean
+        assessmentToken:
+          type: string
+    IngredientStatus:
+      type: object
+      properties:
+        ingredientId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        ingredientGroup:
+          type: string
+        conflicts:
+          type: array
+          items:
+            type: string
+            enum:
+            - ALLERGEN_OR_AVOID
+            - VEGETARIAN_TYPE
+            - DISLIKE
+            - UNVERIFIED
     IngredientSuggestionResponse:
       type: object
       properties:
