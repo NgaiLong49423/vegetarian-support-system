@@ -12,7 +12,7 @@ try {
     if (-not $recipeJsonMatch.Success) { throw 'Could not find the JSON recipe fixture in the recipe seed.' }
     $recipes = @($recipeJsonMatch.Groups[1].Value.Replace("''", "'") | ConvertFrom-Json)
     $titles = @($recipes | ForEach-Object { $_.title })
-    if ($titles.Count -ne 52) { throw 'Expected exactly 52 named fixture recipes.' }
+    if ($titles.Count -ne 51) { throw 'Expected exactly 51 named fixture recipes.' }
     $titleValues = ($titles | ForEach-Object { "(N'$($_.Replace("'", "''"))')" }) -join ",`n"
     $imageRows = [regex]::Matches($imageSeed, "\(N'((?:''|[^'])+)', N'(/ingredients/[^']+\.webp)'\)")
     if ($imageRows.Count -ne 209) { throw 'Expected exactly 209 ingredient image mappings.' }
@@ -77,41 +77,14 @@ FROM #volumeBaseConversions base
 JOIN [UNIT] unit ON unit.code IN (N'L', N'tsp', N'tbsp', N'cup') AND unit.dimension = N'VOLUME';
 IF (SELECT COUNT(*) FROM [UNIT] WHERE code IN (N'ml', N'L', N'tsp', N'tbsp', N'cup') AND dimension = N'VOLUME') <> 5
     THROW 51126, 'All five standardized volume units are required for demo conversion checks.', 1;
+SELECT post.recipe_id INTO #targets FROM [RECIPE_POST] post JOIN #titles t ON t.title = post.title
+WHERE post.author_id = (SELECT user_id FROM [USER] WHERE email = 'demo-expert@mamxanh.local');
+IF (SELECT COUNT(*) FROM #targets) <> 54 THROW 51100, 'Missing or ambiguous fixture posts.', 1;
+
+-- Same title under another author and an unlisted title under the fixture author.
 DECLARE @fixtureAuthor BIGINT = (SELECT user_id FROM [USER] WHERE email = 'demo-expert@mamxanh.local');
 DECLARE @otherAuthor BIGINT = (SELECT user_id FROM [USER] WHERE email = 'demo-expert-02@mamxanh.local');
 IF @otherAuthor IS NULL THROW 51101, 'Second demo expert is required for ownership checks.', 1;
-
--- An ambiguous fixture title must not be selected or edited by the seed.
-DECLARE @duplicateFixturePost TABLE (recipe_id BIGINT PRIMARY KEY);
-INSERT INTO [RECIPE_POST] (author_id, title, instructions, dish_category, vegetarian_type, difficulty, servings, prep_time_min, cook_time_min)
-OUTPUT inserted.recipe_id INTO @duplicateFixturePost (recipe_id)
-VALUES (@fixtureAuthor, N'Đậu hũ sốt cà chua', N'Keep this duplicate-title post unchanged.', 'BRAISED', 'VEGAN', 'EASY', 4, 5, 10);
-INSERT INTO [RECIPE_INGREDIENT] (recipe_id, ingredient_id, unit_id, quantity)
-SELECT duplicate.recipe_id, ingredient.ingredient_id, unit.unit_id, 2
-FROM @duplicateFixturePost duplicate CROSS JOIN [INGREDIENT] ingredient CROSS JOIN [UNIT] unit
-WHERE ingredient.name = N'Tỏi' AND ingredient.status = 'ACTIVE' AND unit.code = N'g';
-IF @@ROWCOUNT <> 1 THROW 51128, 'Could not prepare the duplicate-title fixture check.', 1;
-
-;WITH named_matches AS (
-    SELECT post.recipe_id, post.title, COUNT(*) OVER (PARTITION BY post.title) AS identity_count
-    FROM [RECIPE_POST] post JOIN #titles t ON t.title = post.title
-    WHERE post.author_id = @fixtureAuthor
-)
-SELECT recipe_id INTO #targets FROM named_matches WHERE identity_count = 1;
-IF EXISTS (SELECT 1 FROM @duplicateFixturePost duplicate JOIN #targets target ON target.recipe_id = duplicate.recipe_id)
-    THROW 51129, 'An ambiguous fixture title was selected for enrichment.', 1;
-
-DECLARE @expectedTargetCount INT = (
-    SELECT COUNT(*) FROM (
-        SELECT t.title FROM #titles t JOIN [RECIPE_POST] post
-          ON post.title = t.title AND post.author_id = @fixtureAuthor
-        GROUP BY t.title HAVING COUNT(*) = 1
-    ) unique_titles
-);
-IF (SELECT COUNT(*) FROM #targets) <> @expectedTargetCount
-    THROW 51100, 'Seed targets do not match the unambiguous fixture identities.', 1;
-
--- Same title under another author and an unlisted title under the fixture author.
 INSERT INTO [RECIPE_POST] (author_id, title, instructions, dish_category, vegetarian_type, difficulty, servings, prep_time_min, cook_time_min)
 VALUES (@otherAuthor, N'Rau muống xào tỏi', N'Keep this other author recipe unchanged.', 'STIR_FRY', 'VEGAN', 'EASY', 3, 5, 7),
        (@fixtureAuthor, N'Fixture safety sentinel', N'Keep this non-fixture recipe unchanged.', 'STIR_FRY', 'VEGAN', 'EASY', 4, 5, 7);

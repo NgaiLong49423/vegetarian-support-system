@@ -9,4 +9,10 @@ import java.time.LocalDate;
 public record AddMealPlanEntryRequest(
         @NotNull LocalDate mealDate,
         @NotNull @Pattern(regexp = "BREAKFAST|LUNCH|DINNER") String mealType,
-        @NotNull @Min(1) Long recipeId) { }
+        @NotNull @Min(1) Long recipeId,
+        Boolean dietaryRiskAcknowledged,
+        String dietaryRiskAssessmentToken) {
+    public AddMealPlanEntryRequest(LocalDate mealDate, String mealType, Long recipeId) {
+        this(mealDate, mealType, recipeId, false, null);
+    }
+}

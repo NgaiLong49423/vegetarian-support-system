@@ -1,6 +1,8 @@
 import { expect, test } from "./baseFixtures"
 import { seedDemoSession } from "./demo-session"
 import { localDateKey, mondayOf } from "../../src/utils/date"
+import { mkdirSync } from "node:fs"
+import { resolve } from "node:path"
 
 const formOptions = {
   vegetarianTypes: [
@@ -317,6 +319,22 @@ test.describe("Issue #23 [FR-17] — Hiển thị thẻ món và liên kết l�
     )
 
     let failOnce = true
+    let riskMode = false
+    let mealPlanRequestCount = 0
+    const acknowledgementPayloads: Array<{ dietaryRiskAcknowledged?: boolean; dietaryRiskAssessmentToken?: string | null }> = []
+    await page.route("**/api/v1/nutrition/dietary-preferences/recipes/1701/safety-assessment", (route) =>
+      route.fulfill({ json: riskMode ? {
+        recipeId: 1701, recipeTitle: item.title, recipeTypeCompatible: true,
+        hasAllergenOrAvoidConflict: true, hasVegetarianConflict: false, hasDislikedIngredients: false,
+        unverifiedIngredients: [], requiresRiskAcknowledgement: true, assessmentToken: "assessment-current",
+        ingredients: [{ ingredientId: 1, name: "Nấm đùi gà", conflicts: ["ALLERGEN_OR_AVOID"] }],
+      } : {
+        recipeId: 1701, recipeTitle: item.title, recipeTypeCompatible: true,
+        hasAllergenOrAvoidConflict: false, hasVegetarianConflict: false, hasDislikedIngredients: false,
+        unverifiedIngredients: [], requiresRiskAcknowledgement: false, assessmentToken: "assessment-current", ingredients: [],
+      } }),
+    )
+
     const capturedEntries: Array<{
       weekStartDate: string
       mealDate: string
@@ -326,13 +344,17 @@ test.describe("Issue #23 [FR-17] — Hiển thị thẻ món và liên kết l�
 
     await page.unroute("**/api/v1/meal-plans/**")
     await page.route("**/api/v1/meal-plans/*/entries", async (route) => {
+      mealPlanRequestCount += 1
       const url = new URL(route.request().url())
       const weekStartDate = url.pathname.split("/").at(-2) ?? ""
       const body = route.request().postDataJSON() as {
         mealDate: string
         mealType: string
         recipeId: number
+        dietaryRiskAcknowledged?: boolean
+        dietaryRiskAssessmentToken?: string | null
       }
+      acknowledgementPayloads.push(body)
       if (failOnce) {
         failOnce = false
         return route.fulfill({
@@ -345,7 +367,7 @@ test.describe("Issue #23 [FR-17] — Hiển thị thẻ món và liên kết l�
           }),
         })
       }
-      capturedEntries.push({ weekStartDate, ...body })
+      capturedEntries.push({ weekStartDate, mealDate: body.mealDate, mealType: body.mealType, recipeId: body.recipeId })
       return route.fulfill({
         status: 201,
         json: {
@@ -449,6 +471,29 @@ test.describe("Issue #23 [FR-17] — Hiển thị thẻ món và liên kết l�
         recipeId: 1701,
       },
     ])
+
+    // Risky manual add requires an explicit acknowledgement and sends the fresh assessment token.
+    riskMode = true
+    await page.getByRole("button", { name: `Tùy chọn cho công thức ${item.title}` }).click()
+    await page.getByRole("menuitem", { name: "Thêm vào lịch ăn" }).click()
+    await expect(planDialog).toBeVisible()
+    await clickMealSlot(/Bữa tối, Thứ Sáu/)
+    await planDialog.getByRole("button", { name: "Hoàn tất" }).click()
+    const riskDialog = page.getByRole("dialog", { name: "Xác nhận cảnh báo trước khi thêm lịch" })
+    await expect(riskDialog).toBeVisible()
+    expect(mealPlanRequestCount).toBe(4)
+    await expect(riskDialog.getByRole("button", { name: "Vẫn thêm vào lịch" })).toBeDisabled()
+    const evidenceDir = resolve(process.cwd(), "../../.agents/outputs/dietary-preference-safety/evidence")
+    mkdirSync(evidenceDir, { recursive: true })
+    await page.screenshot({ path: resolve(evidenceDir, "manual-meal-plan-risk-confirmation.png") })
+    await riskDialog.getByRole("checkbox").check()
+    await riskDialog.getByRole("button", { name: "Vẫn thêm vào lịch" }).click()
+    await expect(riskDialog).toHaveCount(0)
+    expect(mealPlanRequestCount).toBe(5)
+    expect(acknowledgementPayloads.at(-1)).toMatchObject({
+      dietaryRiskAcknowledged: true,
+      dietaryRiskAssessmentToken: "assessment-current",
+    })
 
     // 3. Admin không hiển thị nút thao tác cá nhân trên thẻ món
     await seedDemoSession(page, "ADMIN")

@@ -34,7 +34,8 @@ class MealPlanEntryServiceTest {
     private final MealPlanReadService reads = mock(MealPlanReadService.class);
     private final tech.mamxanh.recipe.service.AiRecipeRecommendationService aiRecommendations =
             mock(tech.mamxanh.recipe.service.AiRecipeRecommendationService.class);
-    private final MealPlanService service = new MealPlanService(plans, users, reads, entries, recipes, aiRecommendations);
+    private final MealPlanService service = new MealPlanService(plans, users, reads, entries, recipes, aiRecommendations,
+            mock(tech.mamxanh.nutrition.service.DietarySafetyAssessmentService.class));
 
     @BeforeEach
     void setup() {
@@ -117,7 +118,8 @@ class MealPlanEntryServiceTest {
         assertThatThrownBy(() -> service.addEntry(WEEK, new AddMealPlanEntryRequest(WEEK, "LUNCH", 1L)))
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.MEAL_PLAN_RECIPE_DUPLICATE);
         verify(entries, never()).saveAndFlush(any());
-        verifyNoInteractions(recipes);
+        verify(recipes).requirePublishedMealPlanRecipe(1L);
+        verify(entries, never()).saveAndFlush(any());
     }
 
     @Test

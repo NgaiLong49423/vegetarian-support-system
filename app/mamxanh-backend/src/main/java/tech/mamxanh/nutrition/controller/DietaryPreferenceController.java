@@ -11,6 +11,8 @@ import tech.mamxanh.nutrition.dto.response.DietaryPreferencesResponse;
 import tech.mamxanh.nutrition.dto.response.IngredientSuggestionResponse;
 import tech.mamxanh.nutrition.dto.response.OnboardingInvitationResponse;
 import tech.mamxanh.nutrition.service.DietaryPreferenceService;
+import tech.mamxanh.nutrition.service.DietaryConstraintEvaluator;
+import tech.mamxanh.nutrition.service.DietarySafetyAssessmentService;
 
 import java.util.List;
 
@@ -21,9 +23,11 @@ import java.util.List;
 public class DietaryPreferenceController {
 
     private final DietaryPreferenceService service;
+    private final DietarySafetyAssessmentService safety;
 
-    public DietaryPreferenceController(DietaryPreferenceService service) {
+    public DietaryPreferenceController(DietaryPreferenceService service, DietarySafetyAssessmentService safety) {
         this.service = service;
+        this.safety = safety;
     }
 
     @GetMapping
@@ -50,5 +54,10 @@ public class DietaryPreferenceController {
     @GetMapping("/ingredient-suggestions")
     public List<IngredientSuggestionResponse> suggestIngredients(@RequestParam(defaultValue = "") String query) {
         return service.suggestIngredients(query);
+    }
+
+    @GetMapping("/recipes/{recipeId}/safety-assessment")
+    public DietaryConstraintEvaluator.Assessment assessRecipe(@PathVariable long recipeId) {
+        return safety.assessCurrentRecipe(recipeId);
     }
 }

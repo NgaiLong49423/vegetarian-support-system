@@ -116,7 +116,8 @@ public class MealPlanController {
     public MealPlanWeekResponse.Entry replaceEntry(
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStartDate,
             @PathVariable @Min(1) long entryId, @Valid @RequestBody ReplaceMealPlanEntryRequest request) {
-        return service.replaceEntry(weekStartDate, entryId, request.recipeId());
+        return service.replaceEntry(weekStartDate, entryId, request.recipeId(), request.dietaryRiskAcknowledged(),
+                request.dietaryRiskAssessmentToken());
     }
 
     @Operation(summary = "Update the number of servings to prepare for an owned meal-plan entry",

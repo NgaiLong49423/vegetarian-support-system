@@ -20,8 +20,11 @@ import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.integration.ai.AiClient;
 import tech.mamxanh.integration.ai.AiUsageEvent;
 import tech.mamxanh.nutrition.dto.response.DietaryPreferencesResponse;
+import tech.mamxanh.nutrition.dto.response.IngredientResponse;
 import tech.mamxanh.nutrition.entity.OnboardingStatus;
 import tech.mamxanh.nutrition.entity.VegetarianType;
+import tech.mamxanh.nutrition.service.IngredientCatalogLookupService;
+import tech.mamxanh.nutrition.service.DietaryConstraintEvaluator;
 import tech.mamxanh.nutrition.service.DietaryPreferenceService;
 import tech.mamxanh.recipe.dto.response.RecipePostResponse;
 import tools.jackson.databind.json.JsonMapper;
@@ -33,6 +36,7 @@ class AiRecipeRecommendationServiceTest {
     private AiClient ai;
     private ApplicationEventPublisher events;
     private tech.mamxanh.subscription.service.AiTokenQuotaService aiQuota;
+    private IngredientCatalogLookupService ingredientCatalog;
     private AiRecipeRecommendationService service;
 
     @BeforeEach
@@ -43,8 +47,19 @@ class AiRecipeRecommendationServiceTest {
         ai = mock(AiClient.class);
         events = mock(ApplicationEventPublisher.class);
         aiQuota = mock(tech.mamxanh.subscription.service.AiTokenQuotaService.class);
+        ingredientCatalog = mock(IngredientCatalogLookupService.class);
         service = new AiRecipeRecommendationService(recipes, users, preferences, ai,
-                new JsonMapper(), events, Clock.systemUTC(), aiQuota);
+                new JsonMapper(), events, Clock.systemUTC(), aiQuota, ingredientCatalog,
+                new DietaryConstraintEvaluator());
+        when(recipes.getPublishedCards(anyList())).thenAnswer(invocation -> {
+            List<Long> requested = invocation.getArgument(0);
+            return requested.stream().distinct().map(id -> id == 1L ? recipe(id, "VEGAN", 1L, 2L)
+                    : recipe(id, "VEGAN", id == 2L ? 2L : 1L)).toList();
+        });
+        when(ingredientCatalog.findIngredientReferences(any())).thenAnswer(invocation -> {
+            java.util.Collection<Long> ids = invocation.getArgument(0);
+            return ids.stream().map(id -> new IngredientResponse(id, "Ingredient " + id, "Khác", null, null, null, false, true)).toList();
+        });
         when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(7, Role.CUSTOMER));
         when(preferences.getOwnPreferences()).thenReturn(profile());
     }
@@ -64,13 +79,29 @@ class AiRecipeRecommendationServiceTest {
         when(ai.recommendRecipes(anyString(), anyList(), eq(5)))
                 .thenReturn(new AiClient.RecommendationResult("{\"recipeIds\":[2,1,5]}", 10, 4, 14));
         var result = service.recommend(List.of(1L, 2L));
-        assertThat(result.items()).extracting(item -> item.recipe().id()).containsExactly(1L, 2L, 5L);
-        assertThat(result.items().getFirst().reason()).contains("2 nguyên liệu");
+        assertThat(result.items()).extracting(item -> item.recipe().id()).containsExactly(2L, 1L, 5L);
+        assertThat(result.items()).filteredOn(item -> item.recipe().id() == 1L).extracting(item -> item.reason())
+                .contains("Dùng 2 nguyên liệu bạn đã chọn.");
         verify(ai).recommendRecipes(contains("selectedIngredientIds"), eq(List.of(1L, 2L, 5L)), eq(5));
         var event = org.mockito.ArgumentCaptor.forClass(AiUsageEvent.class);
         verify(events).publishEvent(event.capture());
         assertThat(event.getValue().feature()).isEqualTo("FR-34");
         assertThat(event.getValue().totalTokens()).isEqualTo(14);
+    }
+
+    @Test
+    void postGenerationRevalidationRemovesARecipeThatBecameAllergenic() {
+        when(recipes.searchPublished("", 0, 50)).thenReturn(new RecipePostService.RecipePageResponse(
+                List.of(recipe(1, "VEGAN", 1L), recipe(2, "VEGAN", 2L), recipe(5, "VEGAN", 1L)), 0, 50, 3, 1));
+        when(recipes.getPublishedCards(List.of(1L, 2L, 5L))).thenReturn(
+                List.of(recipe(1, "VEGAN", 99L), recipe(2, "VEGAN", 2L), recipe(5, "VEGAN", 1L)));
+        when(ai.recommendRecipes(anyString(), anyList(), eq(5)))
+                .thenReturn(new AiClient.RecommendationResult("{\"recipeIds\":[1,2,5]}", 10, 4, 14));
+
+        var result = service.recommend(List.of(1L, 2L));
+
+        assertThat(result.items()).extracting(item -> item.recipe().id()).containsExactly(2L, 5L)
+                .doesNotContain(1L);
     }
 
     @Test
@@ -118,13 +149,15 @@ class AiRecipeRecommendationServiceTest {
     }
 
     @Test
-    void weeklyPreviewRejectsConsecutiveRepeatsButRecordsSuccessfulProviderUsage() {
+    void weeklyPreviewRepairsConsecutiveRepeatsAndRecordsSuccessfulProviderUsage() {
         when(recipes.searchPublished("", 0, 50)).thenReturn(new RecipePostService.RecipePageResponse(
                 List.of(recipe(1, "VEGAN", 1L), recipe(2, "VEGAN", 1L)), 0, 50, 2, 1));
         when(ai.recommendRecipeSequence(anyString(), anyList(), eq(21)))
                 .thenReturn(new AiClient.RecommendationResult("{\"recipeIds\":[" + "1,".repeat(20) + "1]}", null, null, null));
-        assertThatThrownBy(() -> service.weeklyMenu(List.of(1L)))
-                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_RESPONSE_INVALID);
+        var preview = service.weeklyMenu(List.of(1L));
+        for (int index = 1; index < preview.slots().size(); index++) {
+            assertThat(preview.slots().get(index).recipeId()).isNotEqualTo(preview.slots().get(index - 1).recipeId());
+        }
         verify(events).publishEvent(any(AiUsageEvent.class));
     }
 

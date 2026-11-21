@@ -6,7 +6,7 @@ last_updated: 2026-11-21
 # BUG-066 được cấp khi đồng bộ PR #161 ngày 2026-10-25 vì BUG-065 đã được dùng cho lỗi OpenAPI.
 # BUG-078–080 đã được cấp trên nhánh feature/17-ai-usage-telemetry, tránh cấp trùng khi tích hợp.
 # Đồng bộ PR #227: bản ghi quyền FR-21 của nhánh feature đổi BUG-086 → BUG-095; BUG-086 trên develop được giữ nguyên.
-next_id: 117
+next_id: 120
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -16,47 +16,75 @@ status_definitions:
 # Đồng bộ PR #194: mã gốc FR-10 → mã sau tích hợp: BUG-054 → BUG-070, BUG-055 → BUG-071, BUG-056 → BUG-072, BUG-057 → BUG-073, BUG-058 → BUG-074, BUG-059 → BUG-075, BUG-060 → BUG-076, BUG-066 → BUG-077.
 # Bản ghi BUG-060 của FR-11 tại 79394340 trùng lỗi privacy đã hợp nhất dưới BUG-076; giữ BUG-060 của develop.
 bugs:
-  - id: BUG-116
+# Merge origin/develop 2026-11-21: BUG-112–116 của nhánh đổi thành BUG-115–119, giữ BUG-112–114 đã có trên develop.
+  - id: BUG-119
     title: Docker CI báo contract OpenAPI lệch snapshot
     status: TRACKING
     severity: Unknown
     area: Backend/API/OpenAPI CI
+    file: .agents/outputs/bugs/BUG-119.md
+    created: 2026-11-21
+    updated: 2026-11-21
+    related_issue: Unknown
+  - id: BUG-118
+    title: Test quyền Expert thất bại vì Mockito có stub không dùng
+    status: TRACKING
+    severity: Unknown
+    area: Backend/AI/Unit test
+    file: .agents/outputs/bugs/BUG-118.md
+    created: 2026-11-21
+    updated: 2026-11-21
+    related_issue: Unknown
+  - id: BUG-117
+    title: Index tri thức AI đóng gói không khớp catalog hiện hành
+    status: TRACKING
+    severity: Unknown
+    area: Backend/AI/Knowledge Index
+    file: .agents/outputs/bugs/BUG-117.md
+    created: 2026-11-21
+    updated: 2026-11-21
+    related_issue: Unknown
+  - id: BUG-116
+    title: Flyway dừng khi tiêu đề bài demo bị trùng
+    status: TRACKING
+    severity: Medium
+    area: Backend/Database seed
     file: .agents/outputs/bugs/BUG-116.md
     created: 2026-11-21
     updated: 2026-11-21
     related_issue: Unknown
   - id: BUG-115
-    title: Test quyền Expert thất bại vì Mockito có stub không dùng
+    title: Một số luồng AI trực tiếp chưa xin consent trước khi gửi dữ liệu
     status: TRACKING
     severity: Unknown
-    area: Backend/AI/Unit test
+    area: Backend/Frontend/AI/Consent
     file: .agents/outputs/bugs/BUG-115.md
     created: 2026-11-21
     updated: 2026-11-21
     related_issue: Unknown
   - id: BUG-114
-    title: Index tri thức AI đóng gói không khớp catalog hiện hành
-    status: TRACKING
-    severity: Unknown
-    area: Backend/AI/Knowledge Index
+    title: Script kiểm chứng đòi sai số lượng công thức fixture
+    status: RESOLVED
+    severity: Low
+    area: Backend/Database/Demo Fixtures
     file: .agents/outputs/bugs/BUG-114.md
     created: 2026-11-21
     updated: 2026-11-21
     related_issue: Unknown
   - id: BUG-113
-    title: Flyway dừng khi tiêu đề bài demo bị trùng
-    status: TRACKING
+    title: Cảnh báo dị ứng tự mở rộng sang nguyên liệu cùng nhóm
+    status: RESOLVED
     severity: Medium
-    area: Backend/Database seed
+    area: Backend/Nutrition/Dietary Safety
     file: .agents/outputs/bugs/BUG-113.md
     created: 2026-11-21
     updated: 2026-11-21
     related_issue: Unknown
   - id: BUG-112
-    title: Một số luồng AI trực tiếp chưa xin consent trước khi gửi dữ liệu
-    status: TRACKING
-    severity: Unknown
-    area: Backend/Frontend/AI/Consent
+    title: Phô mai trong catalog lọt qua kiểm tra kiểu ăn chay
+    status: RESOLVED
+    severity: High
+    area: Backend/Nutrition/Dietary Safety
     file: .agents/outputs/bugs/BUG-112.md
     created: 2026-11-21
     updated: 2026-11-21

@@ -214,7 +214,7 @@ class GuestAiChatControllerTest {
     void membersBypassGuestWindowWithoutUnconsentedProfileAccess() throws Exception {
         when(users.findAuthenticatedUserId()).thenReturn(java.util.Optional.of(7L));
         when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(7, Role.CUSTOMER));
-        when(preferences.menuConstraints(7)).thenReturn(new DietaryPreferenceService.MenuDietaryConstraints("VEGAN", List.of(), List.of()));
+        when(preferences.menuConstraints(7)).thenReturn(new DietaryPreferenceService.MenuDietaryConstraints("VEGAN", List.of(), List.of(), List.of(), List.of()));
         for (int i = 0; i < 11; i++) mvc.perform(post(URL).with(user("7").roles("CUSTOMER"))
                 .contentType(MediaType.APPLICATION_JSON).content(BODY)).andExpect(status().isOk());
         verifyNoInteractions(preferences);

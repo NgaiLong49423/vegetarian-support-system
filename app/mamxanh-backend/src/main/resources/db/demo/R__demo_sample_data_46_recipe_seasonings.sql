@@ -1,4 +1,4 @@
--- Local demo only: curated quantities and seasonings for 52 fixture recipes.
+-- Local demo only: curated quantities and seasonings for exactly 51 fixture recipes.
 -- Ingredient quantities describe edible ingredient weights for the full recipe.
 -- Dry grains/legumes are weighed before cooking; tofu/seitan/noodles follow their catalog form.
 -- Water in this list is retained recipe water; discard soaking and boiling process water.
@@ -213,10 +213,6 @@ DECLARE @recipe_json NVARCHAR(MAX) = N'[
     "instructions": "Gọt khoai sọ, cắt miếng và hấp sơ. Trộn khoai với dầu, gừng băm, muối và tiêu, nướng đến khi chín mềm và vàng cạnh. Rắc mè đen rang trước khi dùng.\n\nĐịnh lượng cho 2 phần: khoai sọ 220 g, mè đen 8 g, gừng 5 g, dầu ăn 10 g, muối ăn 1 g, tiêu đen 0.3 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
   },
   {
-    "title": "Bánh yến mạch trứng chuối",
-    "instructions": "Nghiền chuối, trộn với trứng đã bỏ vỏ, bột yến mạch, muối và quế. Để hỗn hợp nghỉ vài phút. Quét dầu lên chảo, áp chảo từng bánh nhỏ ở lửa vừa đến khi trứng chín kỹ hai mặt. Dùng cùng dâu tây.\n\nĐịnh lượng cho 2 phần: bột yến mạch 60 g, trứng gà 100 g, chuối 80 g, dâu tây 50 g, dầu ăn 6 g, muối ăn 0.3 g, quế 0.5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
-  },
-  {
     "title": "Khổ qua nhồi đậu phụ non",
     "instructions": "Ngâm nấm mộc nhĩ, bỏ nước ngâm rồi băm nhỏ. Trộn đậu phụ non, nấm, cà rốt, gừng, một nửa muối và tiêu thành nhân. Nhồi vào khổ qua đã bỏ ruột. Đun lượng nước đã cân, nêm nước tương và muối còn lại, thả khổ qua vào nấu chín mềm, rắc hành lá.\n\nĐịnh lượng cho 2 phần: khổ qua 200 g, đậu phụ non 120 g, nấm mộc nhĩ 15 g, cà rốt 40 g, gừng 5 g, nước 800 g, muối ăn 2 g, nước tương 10 g, tiêu đen 0.5 g, hành lá 8 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
   },
@@ -411,10 +407,6 @@ INSERT INTO @ingredients (title, ingredient_name, quantity) VALUES
     (N'Khoai sọ nướng mè đen', N'Khoai sọ', 220),
     (N'Khoai sọ nướng mè đen', N'Mè đen', 8),
     (N'Khoai sọ nướng mè đen', N'Gừng', 5),
-    (N'Bánh yến mạch trứng chuối', N'Bột yến mạch', 60),
-    (N'Bánh yến mạch trứng chuối', N'Trứng gà', 100),
-    (N'Bánh yến mạch trứng chuối', N'Chuối', 80),
-    (N'Bánh yến mạch trứng chuối', N'Dâu tây', 50),
     (N'Khổ qua nhồi đậu phụ non', N'Khổ qua', 200),
     (N'Khổ qua nhồi đậu phụ non', N'Đậu phụ non', 120),
     (N'Khổ qua nhồi đậu phụ non', N'Nấm mộc nhĩ', 15),
@@ -658,9 +650,6 @@ INSERT INTO @ingredients (title, ingredient_name, quantity) VALUES
     (N'Khoai sọ nướng mè đen', N'Dầu ăn', 10),
     (N'Khoai sọ nướng mè đen', N'Muối ăn', 1),
     (N'Khoai sọ nướng mè đen', N'Tiêu đen', 0.3),
-    (N'Bánh yến mạch trứng chuối', N'Dầu ăn', 6),
-    (N'Bánh yến mạch trứng chuối', N'Muối ăn', 0.3),
-    (N'Bánh yến mạch trứng chuối', N'Quế', 0.5),
     (N'Khổ qua nhồi đậu phụ non', N'Nước', 800),
     (N'Khổ qua nhồi đậu phụ non', N'Muối ăn', 2),
     (N'Khổ qua nhồi đậu phụ non', N'Nước tương', 10),
@@ -675,19 +664,14 @@ IF EXISTS (SELECT 1 FROM @ingredients seed WHERE NOT EXISTS (
     SELECT 1 FROM [INGREDIENT] ingredient WHERE ingredient.name = seed.ingredient_name AND ingredient.status = 'ACTIVE'))
     THROW 51002, 'A required active demo ingredient is missing.', 1;
 
+-- Curated titles may match duplicate posts in older local demo databases; enrich every copy.
 DECLARE @targets TABLE (recipe_id BIGINT PRIMARY KEY, title NVARCHAR(120) NOT NULL);
-;WITH named_matches AS (
-    SELECT post.recipe_id, post.title,
-           COUNT(*) OVER (PARTITION BY post.title) AS identity_count
-    FROM [RECIPE_POST] post
-    JOIN @recipes seed ON seed.title = post.title
-    WHERE post.author_id = @author_id
-)
 INSERT INTO @targets (recipe_id, title)
-SELECT recipe_id, title FROM named_matches WHERE identity_count = 1;
+SELECT post.recipe_id, post.title FROM [RECIPE_POST] post
+JOIN @recipes seed ON seed.title = post.title WHERE post.author_id = @author_id;
 
--- If a demo title also belongs to another post by this author, do not guess which
--- post is the fixture. Leave every post with that ambiguous title unchanged.
+IF (SELECT COUNT(DISTINCT title) FROM @targets) <> (SELECT COUNT(*) FROM @recipes)
+    THROW 51004, 'Named demo recipe titles must all resolve.', 1;
 
 -- Preserve additional ingredients on these named fixtures, converting their units only
 -- when there is a real mass factor or a per-ingredient conversion to grams.

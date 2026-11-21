@@ -44,6 +44,14 @@ async function api(page: Page, settings: { ordinaryEmpty?: boolean; failOrdinary
       await route.fulfill({ status: settings.failOptions ? 500 : 200, json: options });
     } else if (/\/recipes\/\d+$/.test(url.pathname)) {
       await route.fulfill({ json: detail(Number(url.pathname.split('/').at(-1))) });
+    } else if (/\/nutrition\/dietary-preferences\/recipes\/\d+\/safety-assessment$/.test(url.pathname)) {
+      const recipeId = Number(url.pathname.split('/').at(-2));
+      await route.fulfill({ json: {
+        recipeId, recipeTitle: `Món nguồn ${recipeId}`, recipeTypeCompatible: true,
+        hasAllergenOrAvoidConflict: false, hasVegetarianConflict: false,
+        hasDislikedIngredients: false, unverifiedIngredients: [],
+        requiresRiskAcknowledgement: false, assessmentToken: null, ingredients: [],
+      } });
     } else await route.fulfill({ json: { content: [], items: [], status: 'AVAILABLE' } });
   });
   return requests;

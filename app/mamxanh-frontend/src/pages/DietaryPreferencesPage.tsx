@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, Info, LoaderCircle, Sparkles } from 'lucide-react';
+import { CheckCircle2, Info, LoaderCircle, Sparkles, X } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Card } from '../components/ui';
 import { useAuth } from '../components/AuthContext';
@@ -30,6 +30,12 @@ export function DietaryPreferencesPage() {
   const isAdmin = account?.role === 'ADMIN';
 
   useEffect(() => {
+    if (!saved) return;
+    const timeout = window.setTimeout(() => setSaved(false), 4500);
+    return () => window.clearTimeout(timeout);
+  }, [saved]);
+
+  useEffect(() => {
     if (!isAuthenticated || isAdmin) {
       setLoading(false);
       return;
@@ -50,6 +56,13 @@ export function DietaryPreferencesPage() {
 
   return (
     <PageContainer className="py-8 md:py-10">
+      {saved && (
+        <div role="status" aria-live="polite" className="fixed right-4 top-4 z-[100] flex max-w-[calc(100vw-2rem)] items-start gap-3 rounded-xl border border-leaf-200 bg-paper p-4 text-sm font-semibold text-leaf-800 shadow-lg sm:right-6 sm:top-6">
+          <CheckCircle2 aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
+          <span>Đã lưu sở thích ăn uống.</span>
+          <button type="button" aria-label="Đóng thông báo" onClick={() => setSaved(false)} className="ml-2 rounded-md p-1 text-ink-muted hover:bg-leaf-50 focus-visible:outline-2 focus-visible:outline-leaf-700"><X aria-hidden="true" className="h-4 w-4" /></button>
+        </div>
+      )}
       <nav aria-label="Điều hướng trang" className="mb-5 text-sm text-ink-muted">
         <Link to="/ho-so" className="hover:text-leaf-700">Hồ sơ</Link><span className="mx-2">/</span><span aria-current="page">Sở thích ăn uống</span>
       </nav>
@@ -92,7 +105,6 @@ export function DietaryPreferencesPage() {
             <div className="flex items-center gap-2 py-12 text-sm text-ink-muted"><LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin" /> Đang tải sở thích…</div>
           ) : (
             <>
-              {saved && <p role="status" className="mb-4 flex items-center gap-2 rounded-xl bg-leaf-50 p-3 text-sm font-semibold text-leaf-800"><CheckCircle2 aria-hidden="true" className="h-4 w-4" /> Đã lưu sở thích ăn uống.</p>}
               <DietaryPreferencesForm profile={profile} submitLabel="Lưu thay đổi" disabled={Boolean(loadError)} onSubmit={save} />
             </>
           )}

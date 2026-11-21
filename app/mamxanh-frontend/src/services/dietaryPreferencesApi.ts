@@ -31,6 +31,20 @@ export type SaveDietaryPreferencesPayload = {
 
 export type IngredientSuggestion = { id: number; name: string; ingredientGroup: string };
 
+export type DietaryRiskConflict = 'ALLERGEN_OR_AVOID' | 'VEGETARIAN_TYPE' | 'DISLIKE' | 'UNVERIFIED';
+export type DietarySafetyAssessment = {
+  recipeId: number;
+  recipeTitle: string;
+  recipeTypeCompatible: boolean;
+  hasAllergenOrAvoidConflict: boolean;
+  hasVegetarianConflict: boolean;
+  hasDislikedIngredients: boolean;
+  unverifiedIngredients: string[];
+  requiresRiskAcknowledgement: boolean;
+  assessmentToken: string | null;
+  ingredients: Array<{ ingredientId: number | null; name: string; ingredientGroup: string | null; conflicts: DietaryRiskConflict[] }>;
+};
+
 const BASE = '/nutrition/dietary-preferences';
 
 export async function getDietaryPreferences(): Promise<DietaryPreferences> {
@@ -55,5 +69,10 @@ export async function claimOnboardingInvitation(): Promise<boolean> {
 
 export async function suggestIngredients(query: string): Promise<IngredientSuggestion[]> {
   const { data } = await apiClient.get<IngredientSuggestion[]>(`${BASE}/ingredient-suggestions`, { params: { query } });
+  return data;
+}
+
+export async function assessRecipeDietarySafety(recipeId: number): Promise<DietarySafetyAssessment> {
+  const { data } = await apiClient.get<DietarySafetyAssessment>(`${BASE}/recipes/${recipeId}/safety-assessment`);
   return data;
 }
