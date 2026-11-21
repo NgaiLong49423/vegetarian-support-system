@@ -110,17 +110,17 @@ export function AiCreditTopUp() {
         </Card>
       ) : credit ? (
         <Card className="mx-auto max-w-5xl border-brand-200 p-5 sm:p-7">
-          <div className="grid gap-7 md:grid-cols-2 md:items-center">
+          <div className="grid gap-7 md:grid-cols-2 md:items-start">
             <section aria-labelledby="ai-credit-balance-heading">
               <h2 id="ai-credit-balance-heading" className="text-lg font-bold text-ink">Số dư AI Credit</h2>
-              <p className="mt-3 rounded-xl bg-raised px-4 py-3 text-sm text-ink-muted">
+              <p className="mt-2 rounded-xl bg-raised px-4 py-3 text-sm text-ink-muted">
                 Số dư hiện tại{' '}
                 <strong className="text-lg text-brand-700">
                   {credit.balance.toLocaleString('vi-VN', { maximumFractionDigits: 9 })} Credit
                 </strong>
               </p>
               <p className="mt-4 text-sm leading-6 text-ink-muted">
-                AI Credit không hết hạn. Hệ thống dùng quota tháng trước; Credit được dùng khi quota đã hết và không thay đổi quyền chọn model.
+                AI Credit không hết hạn. Hệ thống dùng quota tháng trước. Credit được dùng khi quota đã hết và không thay đổi quyền chọn model.
               </p>
               <p className="mt-2 text-sm text-ink-muted">
                 Tỷ lệ hiện tại: <strong className="text-ink">{credit.creditsPer1000Vnd.toLocaleString('vi-VN')} Credit / 1.000đ</strong>
@@ -131,7 +131,7 @@ export function AiCreditTopUp() {
             </section>
 
             <section aria-labelledby="ai-credit-amount-heading">
-              <h2 id="ai-credit-amount-heading" className="text-base font-bold text-ink">Số tiền nạp (VND)</h2>
+              <h2 id="ai-credit-amount-heading" className="text-lg font-bold text-ink">Số tiền nạp (VND)</h2>
               <div className="mt-2 flex rounded-xl border border-brand-200 bg-paper focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100">
                 <input
                   id="ai-credit-top-up-amount"
