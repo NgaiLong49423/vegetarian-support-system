@@ -29,7 +29,7 @@ None.
 
 ## 2026-11-21 — Preserve AI Meal-Plan Previews
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 1975edcf.
 
 **Scope:** Keep a member's nutrition-aware AI meal-plan preview available when navigating away and returning in the same browser tab.
 
