@@ -52,7 +52,7 @@ test('recipe detail separates allergen, vegetarian, dislike, and unverified ingr
 
   await page.goto('/cong-thuc/id/56');
   await expect(page.getByRole('heading', { name: 'Món chay thử cảnh báo' })).toBeVisible();
-  await expect(page.getByText(/Có nguyên liệu trong danh sách cần tránh của bạn: Đậu phộng/)).toBeVisible();
+  await expect(page.getByText(/Công thức có nguyên liệu bạn đã chọn cần tránh: Đậu phộng/)).toBeVisible();
   await expect(page.getByText(/Công thức có thể không phù hợp kiểu ăn chay đã chọn/)).toBeVisible();
   await expect(page.getByText(/Có nguyên liệu bạn không thích: Nấm rơm/)).toBeVisible();
   await expect(page.getByText(/Chưa xác minh được nguyên liệu: Hương liệu chưa xác minh/)).toBeVisible();
