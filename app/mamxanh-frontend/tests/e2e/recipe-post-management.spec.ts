@@ -173,6 +173,7 @@ test('hidden recipe stays visible to its expert but all edit paths stay disabled
 
   await expect(page.getByText('Đã bị Admin ẩn')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Sửa Canh đang bị ẩn' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Xem dạng danh sách' }).click();
   await expect(page.getByText('Admin đã ẩn bài. Bạn có thể xem nội dung nhưng không thể sửa. Hãy liên hệ Admin để được phục hồi.')).toBeVisible();
 
   await mockEditorApi(page, hiddenRecipe);

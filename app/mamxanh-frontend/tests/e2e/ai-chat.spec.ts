@@ -527,6 +527,20 @@ test('an informational question without a navigation workflow does not change ro
   await expect(page.getByText('Trang Khám phá giúp tìm công thức công khai.')).toBeVisible();
 });
 
+test('Guest usage details explain the monthly limit for the anonymous identity', async ({ page }) => {
+  await page.route('**/api/v1/ai/chat-settings**', route => route.fulfill({ json: {
+    tier: 'GUEST', consumedTokens: 0, quotaTokens: 5000, remainingTokens: 5000,
+    resetsAt: null, selectedModelId: 'gemini-3.5-flash-lite', selectionRequired: false,
+    models: [{ modelId: 'gemini-3.5-flash-lite', displayName: 'Gemini Flash-Lite', isDefault: true }],
+  } }));
+
+  await page.goto('/trang-chu');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByRole('button', { name: 'Xem hạn mức sử dụng' }).click();
+
+  await expect(page.getByText('Tính theo tháng cho định danh Guest')).toBeVisible();
+});
+
 test('Guest navigation to the protected recipe form lands on login without a false success or rollback', async ({ page }) => {
   await page.route('**/api/v1/recipes/ai/chat', route => route.fulfill({ json: {
     contextType: 'GENERAL', recipeId: null, answer: 'Đã mở trang đăng công thức.', recommendations: [], workflowUrl: '/dang-cong-thuc',

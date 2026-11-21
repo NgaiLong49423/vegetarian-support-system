@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.test.util.ReflectionTestUtils;
 import tech.mamxanh.auth.entity.Role;
 import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.exception.AppException;
@@ -428,6 +429,57 @@ class AdkAssistantEngineTest {
         verify(toolRegistry).execute(eq("apply_ai_menu_preview"), captured.capture());
         assertThat(captured.getValue()).containsEntry("previewId", previewId.get());
         assertThat(captured.getValue().get("request").toString()).contains("58").doesNotContain("57", "999");
+    }
+
+    @Test
+    void confirmationRejectsAnExpiredMenuPreviewBeforeApplyingIt() {
+        when(toolRegistry.definitionsFor("CUSTOMER")).thenReturn(List.of(
+                new AiAssistantToolRegistry.ToolDefinition("get_ai_menu_candidates", "Candidates", "{}", false, false,
+                        Set.of(ConsentCategory.HEALTH_PROFILE, ConsentCategory.DIETARY_PREFERENCES)),
+                new AiAssistantToolRegistry.ToolDefinition("create_ai_menu_preview", "Preview", "{}", false, false,
+                        Set.of(ConsentCategory.HEALTH_PROFILE, ConsentCategory.DIETARY_PREFERENCES)),
+                new AiAssistantToolRegistry.ToolDefinition("apply_ai_menu_preview", "Apply", "{}", true, true, Set.of(),
+                        AiAssistantToolRegistry.RiskTier.HIGH_RISK_WRITE)));
+        when(toolRegistry.execute(eq("get_ai_menu_candidates"), any())).thenReturn(
+                new AiAssistantToolRegistry.ToolResult("SUCCEEDED", "Candidates",
+                        Map.of("canGenerate", true, "candidates", List.of(Map.of("recipeId", 57, "title", "Bánh canh"))), List.of()));
+        when(toolRegistry.execute(eq("create_ai_menu_preview"), any())).thenReturn(
+                new AiAssistantToolRegistry.ToolResult("SUCCEEDED", "Preview", Map.of(
+                        "weekStartDate", "2026-11-02", "meals", List.of(Map.of("mealDate", "2026-11-03",
+                                "mealType", "LUNCH", "recipeId", 57))), List.of()));
+        var previewId = new AtomicReference<String>();
+        var calls = new java.util.concurrent.atomic.AtomicInteger();
+        ScriptedLlm llm = new ScriptedLlm(request -> switch (calls.incrementAndGet()) {
+            case 1 -> functionCall("get_ai_menu_candidates", "candidate-call",
+                    Map.of("request", Map.of("weekStartDate", "2026-11-02", "mode", "PROFILE")));
+            case 2 -> functionCall("create_ai_menu_preview", "preview-call",
+                    Map.of("request", Map.of("weekStartDate", "2026-11-02", "mode", "PROFILE"), "rankedRecipeIds", List.of(57)));
+            case 3 -> textResponse("Đây là bản xem trước.");
+            case 4 -> functionCall("apply_ai_menu_preview", "apply-call", Map.of("previewId", previewId.get()));
+            default -> textResponse("Vui lòng xác nhận áp dụng.");
+        });
+        var engine = createEngine(llm);
+        var first = engine.execute(new AiChatRequest(ContextType.GENERAL, null, "Tạo thực đơn tuần này", List.of(),
+                null, null, ExecutionMode.AGENT, new AiChatRequest.ConsentDecision(AiChatRequest.ConsentAction.GRANT,
+                        List.of(new ConsentScope(ConsentCategory.HEALTH_PROFILE, ConsentPurpose.HEALTH_PROFILE_READ),
+                                new ConsentScope(ConsentCategory.DIETARY_PREFERENCES, ConsentPurpose.DIETARY_READ))),
+                null, null, UUID.randomUUID()));
+        @SuppressWarnings("unchecked") var data = (Map<String, Object>) first.steps().getLast().result().get("data");
+        previewId.set((String) data.get("previewId"));
+        var staged = engine.execute(new AiChatRequest(ContextType.GENERAL, null, "Áp dụng thực đơn xem trước", List.of(),
+                null, first.sessionId(), ExecutionMode.AGENT, null, null, null, UUID.randomUUID()));
+        assertThat(staged.pendingConfirmation()).isNotNull();
+
+        @SuppressWarnings("unchecked") Map<UUID, Object> sessions =
+                (Map<UUID, Object>) ReflectionTestUtils.getField(engine, "engineSessions");
+        ReflectionTestUtils.setField(sessions.get(first.sessionId()), "menuPreview", null);
+
+        assertThatThrownBy(() -> engine.execute(new AiChatRequest(ContextType.GENERAL, null, "Xác nhận", List.of(),
+                null, first.sessionId(), ExecutionMode.AGENT, null, staged.pendingConfirmation().confirmationId(),
+                ConfirmationDecision.APPROVE, UUID.randomUUID())))
+                .isInstanceOf(AppException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.VALIDATION_FAILED);
+        verify(toolRegistry, never()).execute(eq("apply_ai_menu_preview"), any());
     }
 
     @Test

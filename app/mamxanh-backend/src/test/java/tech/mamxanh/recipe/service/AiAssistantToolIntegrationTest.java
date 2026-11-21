@@ -407,6 +407,12 @@ class AiAssistantToolIntegrationTest {
         when(recipeService.publish(any(CreateRecipeRequest.class))).thenReturn(createResp);
         when(recipePosts.update(eq(500L), any(UpdateRecipePostRequest.class))).thenReturn(null);
 
+        registry.validateRecipePublish(Map.of(
+                "title", "Món mới thơm ngon", "description", "Mô tả công thức mới", "dishCategory", "SOUP",
+                "vegetarianType", "VEGAN", "difficulty", "EASY", "prepTimeMinutes", 10,
+                "cookTimeMinutes", 20, "servings", 2, "instructions", "Nấu sôi kỹ trong vòng mười phút cho chín đều.",
+                "ingredients", List.of(Map.of("ingredientId", 1L, "unitId", 1L, "quantity", 100))));
+
         var createRes = registry.execute("create_recipe_post", Map.of(
                 "title", "Món mới thơm ngon", "description", "Mô tả công thức mới", "dishCategory", "SOUP",
                 "vegetarianType", "VEGAN", "difficulty", "EASY", "prepTimeMinutes", 10,

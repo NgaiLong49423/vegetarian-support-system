@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -40,6 +41,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.test.util.ReflectionTestUtils;
 import tech.mamxanh.auth.entity.Role;
 import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.exception.AppException;
@@ -480,6 +482,33 @@ class AdkShoppingPilotServiceTest {
         assertThat(partial.steps()).extracting(s -> s.tool() + ":" + s.status())
                 .containsExactly("create_shopping_list:SUCCEEDED", "get_shopping_list:FAILED");
         verify(shoppingLists, times(1)).createEmpty(any());
+    }
+
+    @Test
+    void partialFailureUsesJournalResultWhenCreateResponseWasLost() {
+        UUID requestId = UUID.randomUUID();
+        AiShoppingExecutionJournal journal = mock(AiShoppingExecutionJournal.class);
+        when(journal.create(anyLong(), any(), eq(requestId), anyString(), any()))
+                .thenThrow(new AppException(ErrorCode.INTERNAL_ERROR, "Mất phản hồi sau khi ghi"));
+        when(journal.find(7L, requestId)).thenReturn(
+                new AiShoppingExecutionJournal.Result(requestId, UUID.randomUUID(), "SUCCEEDED", 778L));
+        ScriptedLlm llm = new ScriptedLlm(request -> functionResponseNames(request).isEmpty()
+                ? functionCall("create_shopping_list", "create-lost-response", Map.of("name", "Rau củ tuần này"))
+                : textResponse("Bước tiếp theo chưa hoàn tất."));
+        var service = createPilotService(llm);
+        ReflectionTestUtils.setField(service, "journal", journal);
+
+        var response = service.execute(pilotRequest(null, requestId, "Tạo danh sách mua sắm Rau củ tuần này",
+                ExecutionMode.AUTO, grantShoppingConsent(), null, null));
+
+        assertThat(response.runStatus()).isEqualTo("PARTIAL_FAILURE");
+        assertThat(response.answer()).contains("#778", "Không gửi lại");
+        assertThat(response.steps()).singleElement().satisfies(step -> {
+            assertThat(step.tool()).isEqualTo("create_shopping_list");
+            assertThat(step.status()).isEqualTo("SUCCEEDED");
+        });
+        verify(journal).find(7L, requestId);
+        verify(shoppingLists, never()).createEmpty(any());
     }
 
     @Test

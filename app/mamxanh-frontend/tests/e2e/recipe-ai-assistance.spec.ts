@@ -77,6 +77,25 @@ test('edit form keeps AI text editable and sends it only after the author saves'
   await expect.poll(() => updateBody?.instructions).toBe('Tác giả đã tự chỉnh nội dung hướng dẫn này.');
 });
 
+test('edit form explains AI provider failure and keeps the existing description editable', async ({ page }) => {
+  await seedDemoSession(page, 'EXPERT');
+  await page.route('**/api/v1/recipes/527/manage', (route) => route.fulfill({ json: recipe }));
+  await page.route('**/api/v1/recipes/reference-data', (route) => route.fulfill({ json: {
+    ingredients: [{ ingredientId: 11, name: 'Đậu hũ', unitId: 1, unitCode: 'g', unitName: 'gram' }],
+  } }));
+  await page.route('**/api/v1/recipes/ai-assistance', (route) => route.fulfill({
+    status: 503, contentType: 'application/problem+json',
+    json: { status: 503, code: 'AI_PROVIDER_UNAVAILABLE', detail: 'Dịch vụ AI đang tạm thời không khả dụng.' },
+  }));
+
+  await page.goto('/cong-thuc/527/chinh-sua');
+  await page.getByRole('button', { name: 'AI gợi ý viết mô tả' }).click();
+
+  await expect(page.getByRole('alert')).toContainText('AI hiện không tạo được nội dung hợp lệ.');
+  await expect(page.getByRole('textbox', { name: 'Mô tả' })).toHaveValue('Mô tả cũ');
+  await expect(page.getByRole('textbox', { name: 'Mô tả' })).toBeEnabled();
+});
+
 test('an AI service error leaves the recipe fields available for manual entry', async ({ page }) => {
   await seedDemoSession(page, 'EXPERT');
   await page.route('**/api/v1/recipes/form-options', (route) => route.fulfill({ json: options }));
