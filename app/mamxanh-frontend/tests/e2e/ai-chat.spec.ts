@@ -613,6 +613,29 @@ test('provider throttling shows the server guidance without suggesting Guest reg
   await expect(alert.getByRole('link', { name: 'Đăng ký', exact: true })).toHaveCount(0);
 });
 
+test('unavailable model keeps the model picker open with shared Member model guidance', async ({ page }) => {
+  await signInAsMember(page);
+  await page.route('**/api/v1/ai/chat-settings', route => route.fulfill({ json: {
+    tier: 'FREE', consumedTokens: 0, quotaTokens: 50000, remainingTokens: 50000, resetsAt: null,
+    selectedModelId: 'retired-model', selectionRequired: true,
+    models: [{ modelId: 'gemini-2.5-flash', displayName: 'Gemini Flash', isDefault: true }],
+  } }));
+  await page.route('**/api/v1/recipes/ai/chat', route => route.fulfill({ status: 400, json: {
+    status: 400, code: 'AI_MODEL_SELECTION_REQUIRED', detail: 'Model không còn khả dụng.',
+  } }));
+
+  await page.goto('/trang-chu');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Cách nấu canh nấm?');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+
+  await expect(page.getByRole('dialog').getByRole('alert')).toContainText('Model đang chọn không còn khả dụng.');
+  const modelPicker = page.getByRole('listbox', { name: 'Danh sách model có thể chọn' });
+  await expect(modelPicker).toBeVisible();
+  await expect(modelPicker.getByRole('option', { name: /Gemini Flash/ })).toBeVisible();
+  await expect(page.getByText('Danh mục model dùng chung cho Free, Plus và Pro')).toBeVisible();
+});
+
 test('general chat keeps session history in the page and labels the answer as AI', async ({ page }) => {
   await signInAsMember(page);
   const requests: Array<Record<string, unknown>> = [];
@@ -1058,4 +1081,40 @@ test('G3 chat disconnect or failure does not auto-retry create request', async (
 
   await expect(page.getByRole('dialog').getByRole('alert')).toContainText('Dịch vụ trả lời đang gặp sự cố');
   expect(postAttempts).toBe(1);
+});
+
+test('stopping an authenticated response requests cancellation and explains pending writes', async ({ page }) => {
+  await signInAsMember(page);
+  let releaseResponse = () => {};
+  const pendingResponse = new Promise<void>(resolve => { releaseResponse = resolve; });
+  let chatRequests = 0;
+  let cancelRequests = 0;
+  await page.route('**/api/v1/recipes/ai/chat', async route => {
+    chatRequests++;
+    await pendingResponse;
+    try {
+      await route.fulfill({ json: { contextType: 'GENERAL', recipeId: null, answer: 'Mình đã dừng câu trả lời.' } });
+    } catch {
+      // The browser may already have aborted this response after cancellation.
+    }
+  });
+  await page.route('**/api/v1/recipes/ai/chat/cancel', async route => {
+    cancelRequests++;
+    await route.fulfill({ json: {} });
+  });
+
+  try {
+    await page.goto('/trang-chu');
+    await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+    await page.getByLabel('Câu hỏi của bạn').fill('Tạo danh sách mua sắm giúp tôi');
+    await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+    await expect.poll(() => chatRequests).toBe(1);
+    await page.getByRole('button', { name: 'Dừng câu trả lời' }).click();
+
+    await expect(page.getByRole('dialog').getByRole('alert')).toContainText('Đã yêu cầu dừng.');
+    await expect(page.getByRole('dialog').getByRole('alert')).toContainText('Thao tác ghi đã bắt đầu có thể hoàn tất.');
+    await expect.poll(() => cancelRequests).toBe(1);
+  } finally {
+    releaseResponse();
+  }
 });
