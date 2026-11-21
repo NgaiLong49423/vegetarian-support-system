@@ -664,13 +664,14 @@ IF EXISTS (SELECT 1 FROM @ingredients seed WHERE NOT EXISTS (
     SELECT 1 FROM [INGREDIENT] ingredient WHERE ingredient.name = seed.ingredient_name AND ingredient.status = 'ACTIVE'))
     THROW 51002, 'A required active demo ingredient is missing.', 1;
 
+-- Curated titles may match duplicate posts in older local demo databases; enrich every copy.
 DECLARE @targets TABLE (recipe_id BIGINT PRIMARY KEY, title NVARCHAR(120) NOT NULL);
 INSERT INTO @targets (recipe_id, title)
 SELECT post.recipe_id, post.title FROM [RECIPE_POST] post
 JOIN @recipes seed ON seed.title = post.title WHERE post.author_id = @author_id;
 
-IF (SELECT COUNT(*) FROM @targets) <> 51
-    THROW 51004, 'Named demo recipe identities must be unambiguous.', 1;
+IF (SELECT COUNT(DISTINCT title) FROM @targets) <> (SELECT COUNT(*) FROM @recipes)
+    THROW 51004, 'Named demo recipe titles must all resolve.', 1;
 
 -- Preserve additional ingredients on these named fixtures, converting their units only
 -- when there is a real mass factor or a per-ingredient conversion to grams.
