@@ -109,7 +109,7 @@ class AdminUserServiceTest {
         AdminUserResponse response = user(Role.CUSTOMER, AccountStatus.ACTIVE);
         when(queries.page("lan", "CUSTOMER", "ACTIVE", 1, 10)).thenReturn(java.util.List.of(response));
         when(queries.count("lan", "CUSTOMER", "ACTIVE")).thenReturn(11L);
-        when(queries.summary()).thenReturn(new AdminUserSummaryResponse(11, 8, 2, 3));
+        when(queries.summary()).thenReturn(new AdminUserSummaryResponse(11, 8, 2, 3, 0, 0, 0));
         when(queries.findById(42L)).thenReturn(Optional.of(response));
 
         PageResponse<AdminUserResponse> result = service.list("  lan  ", "CUSTOMER", "ACTIVE", 1, 10);
@@ -185,6 +185,6 @@ class AdminUserServiceTest {
     }
 
     private static AdminUserResponse user(Role role, AccountStatus status) {
-        return new AdminUserResponse(42L, "Người dùng", "user@example.test", role.name(), status.name(), NOW, 0);
+        return new AdminUserResponse(42L, "Người dùng", "user@example.test", role.name(), status.name(), NOW, null, 0);
     }
 }
