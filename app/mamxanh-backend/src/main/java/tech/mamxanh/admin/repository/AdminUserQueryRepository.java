@@ -2,6 +2,7 @@ package tech.mamxanh.admin.repository;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import tech.mamxanh.admin.dto.AdminExpertDetailResponse;
 import tech.mamxanh.admin.dto.AdminUserAuditResponse;
 import tech.mamxanh.admin.dto.AdminUserResponse;
 import tech.mamxanh.admin.dto.AdminUserSummaryResponse;
@@ -18,18 +19,44 @@ import java.util.Optional;
 public class AdminUserQueryRepository {
     private static final String USER_SELECT = """
             SELECT u.user_id, u.display_name, u.email, u.role, u.account_status, u.created_at,
+                   CAST(NULL AS DATETIME2(7)) AS expert_since,
                    (SELECT COUNT_BIG(*) FROM [RECIPE_POST] p WHERE p.author_id=u.user_id AND p.status='PUBLISHED') AS recipe_count
             FROM [USER] u
             """;
+    private static final String EXPERT_PROMOTION_APPLY = """
+            OUTER APPLY (
+                SELECT MAX(promotion_events.promoted_at) AS expert_since
+                FROM (
+                    SELECT a.reviewed_at AS promoted_at
+                    FROM [EXPERT_APPLICATION] a
+                    WHERE a.user_id=u.user_id AND a.status='APPROVED'
+                    UNION ALL
+                    SELECT audit.created_at AS promoted_at
+                    FROM [USER_ACCOUNT_AUDIT] audit
+                    WHERE audit.target_user_id=u.user_id
+                      AND audit.action='ROLE_CHANGED' AND audit.new_role='EXPERT'
+                ) promotion_events
+            ) promotion
+            """;
+    private static final String EXPERT_USER_SELECT = """
+            SELECT u.user_id, u.display_name, u.email, u.role, u.account_status, u.created_at,
+                   promotion.expert_since,
+                   (SELECT COUNT_BIG(*) FROM [RECIPE_POST] p WHERE p.author_id=u.user_id AND p.status='PUBLISHED') AS recipe_count
+            FROM [USER] u
+            """ + EXPERT_PROMOTION_APPLY;
     private final JdbcTemplate jdbc;
 
     public AdminUserQueryRepository(JdbcTemplate jdbc) { this.jdbc = jdbc; }
 
     public List<AdminUserResponse> page(String query, String role, String status, int page, int size) {
-        StringBuilder sql = new StringBuilder(USER_SELECT).append("WHERE 1=1 ");
+        boolean expertDirectory = "EXPERT".equals(role);
+        StringBuilder sql = new StringBuilder(expertDirectory ? EXPERT_USER_SELECT : USER_SELECT)
+                .append("WHERE 1=1 ");
         List<Object> args = new ArrayList<>();
         appendFilters(sql, args, query, role, status);
-        sql.append("ORDER BY u.created_at DESC,u.user_id DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
+        sql.append(expertDirectory
+                ? "ORDER BY promotion.expert_since DESC,u.created_at DESC,u.user_id DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY"
+                : "ORDER BY u.created_at DESC,u.user_id DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
         args.add((long) page * size);
         args.add(size);
         return jdbc.query(sql.toString(), AdminUserQueryRepository::mapUser, args.toArray());
@@ -47,14 +74,40 @@ public class AdminUserQueryRepository {
                 SELECT COUNT_BIG(*) AS total_users,
                        SUM(CASE WHEN account_status='ACTIVE' THEN CONVERT(BIGINT,1) ELSE CONVERT(BIGINT,0) END) AS active_users,
                        SUM(CASE WHEN role='EXPERT' THEN CONVERT(BIGINT,1) ELSE CONVERT(BIGINT,0) END) AS expert_users,
-                       SUM(CASE WHEN account_status='LOCKED' THEN CONVERT(BIGINT,1) ELSE CONVERT(BIGINT,0) END) AS locked_users
+                       SUM(CASE WHEN account_status='LOCKED' THEN CONVERT(BIGINT,1) ELSE CONVERT(BIGINT,0) END) AS locked_users,
+                       SUM(CASE WHEN role='EXPERT' AND account_status='ACTIVE' THEN CONVERT(BIGINT,1) ELSE CONVERT(BIGINT,0) END) AS active_experts,
+                       SUM(CASE WHEN role='EXPERT' AND account_status='LOCKED' THEN CONVERT(BIGINT,1) ELSE CONVERT(BIGINT,0) END) AS locked_experts,
+                       (SELECT COUNT_BIG(*) FROM [RECIPE_POST] p JOIN [USER] author ON author.user_id=p.author_id
+                        WHERE author.role='EXPERT' AND p.status='PUBLISHED') AS expert_published_recipe_count
                 FROM [USER]
                 """, (rs, row) -> new AdminUserSummaryResponse(rs.getLong("total_users"), rs.getLong("active_users"),
-                rs.getLong("expert_users"), rs.getLong("locked_users")));
+                rs.getLong("expert_users"), rs.getLong("locked_users"), rs.getLong("active_experts"),
+                rs.getLong("locked_experts"), rs.getLong("expert_published_recipe_count")));
     }
 
     public Optional<AdminUserResponse> findById(long userId) {
         return jdbc.query(USER_SELECT + "WHERE u.user_id=?", rs -> rs.next() ? Optional.of(mapUser(rs, 0)) : Optional.empty(), userId);
+    }
+
+    public Optional<AdminExpertDetailResponse> findExpertById(long userId) {
+        String sql = """
+                SELECT u.user_id,u.display_name,u.email,u.role,u.account_status,u.created_at,
+                       promotion.expert_since,u.avatar_url,u.bio,
+                       (SELECT COUNT_BIG(*) FROM [RECIPE_POST] p WHERE p.author_id=u.user_id AND p.status='PUBLISHED') AS recipe_count
+                FROM [USER] u
+                """ + EXPERT_PROMOTION_APPLY + """
+                WHERE u.user_id=? AND u.role='EXPERT'
+                """;
+        return jdbc.query(sql, rs -> {
+            if (!rs.next()) return Optional.empty();
+            var expertSince = rs.getTimestamp("expert_since");
+            var account = new AdminUserResponse(rs.getLong("user_id"), rs.getString("display_name"),
+                    rs.getString("email"), rs.getString("role"), rs.getString("account_status"),
+                    rs.getTimestamp("created_at").toLocalDateTime(),
+                    expertSince == null ? null : expertSince.toLocalDateTime(), rs.getLong("recipe_count"));
+            return Optional.of(new AdminExpertDetailResponse(account, rs.getString("avatar_url"),
+                    rs.getString("bio"), null));
+        }, userId);
     }
 
     public List<AdminUserAuditResponse> history(long userId, int page, int size) {
@@ -131,8 +184,9 @@ public class AdminUserQueryRepository {
     }
 
     private static AdminUserResponse mapUser(ResultSet rs, int row) throws SQLException {
+        var expertSince = rs.getTimestamp("expert_since");
         return new AdminUserResponse(rs.getLong("user_id"), rs.getString("display_name"), rs.getString("email"),
                 rs.getString("role"), rs.getString("account_status"), rs.getTimestamp("created_at").toLocalDateTime(),
-                rs.getLong("recipe_count"));
+                expertSince == null ? null : expertSince.toLocalDateTime(), rs.getLong("recipe_count"));
     }
 }
