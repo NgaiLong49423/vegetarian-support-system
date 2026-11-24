@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.61.3
+> **Version:** v2.66.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-11-21
+> **Last Updated:** 2026-11-24
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -478,7 +478,7 @@ Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặ
 
 - **Mã yêu cầu:** FR-06
 - **Module:** M09 (Administration & Moderation)
-- **Tóm tắt yêu cầu:** Hệ thống cho phép Administrator quản lý tài khoản người dùng thật và tiếp nhận, quản lý, xử lý báo cáo vi phạm đối với thành viên, Recipe Post, bình luận và danh mục. Quản lý tài khoản gồm tìm kiếm/lọc/phân trang, thống kê, xem chi tiết/lịch sử, khóa/mở khóa và đổi role giữa `CUSTOMER` với `EXPERT`; mọi thay đổi cần lý do 10–500 ký tự và được audit. Tài khoản `ADMIN` chỉ xem, không phải đối tượng khóa hoặc đổi role. Administrator không duyệt từng Recipe Post trước khi công khai; kiểm soát nội dung vẫn theo cơ chế hậu kiểm (post-moderation).
+- **Tóm tắt yêu cầu:** Hệ thống cho phép Administrator quản lý tài khoản người dùng thật và tiếp nhận, quản lý, xử lý báo cáo vi phạm đối với thành viên, Recipe Post, bình luận và danh mục. Trang Quản lý người dùng liệt kê mọi tài khoản `CUSTOMER`, `EXPERT` và `ADMIN`, có thể lọc theo vai trò; tài khoản `ADMIN` chỉ được tra cứu. Trang Danh sách Chuyên gia riêng tiếp tục hiển thị các tài khoản có role hiện tại `EXPERT`, kể cả tài khoản `LOCKED`, hỗ trợ tìm kiếm/lọc/phân trang, xếp ngày lên vai trò gần nhất trước và có thống kê tổng Expert, trạng thái hoạt động/khóa cùng tổng Recipe Post `PUBLISHED` của Expert. Chi tiết hiển thị thông tin tài khoản cần thiết, hồ sơ công khai, bảng phân trang Recipe Post `PUBLISHED` có tiêu đề liên kết đến bài viết, số bài công khai và đơn `APPROVED` gần nhất nếu có. Expert được cấp role trực tiếp có thể không có đơn `APPROVED`. Quản trị tài khoản vẫn hỗ trợ xem lịch sử, khóa/mở khóa, đổi role giữa `CUSTOMER` với `EXPERT`; mọi thay đổi cần lý do 10–500 ký tự và được audit. Administrator không duyệt từng Recipe Post trước khi công khai; kiểm soát nội dung vẫn theo cơ chế hậu kiểm (post-moderation).
 
 - **Use Case detail:** [Open interaction flows](../use-cases/administration.md#fr-06).
 
@@ -493,11 +493,11 @@ Cung cấp trung tâm điều hành hậu kiểm nội dung toàn diện cho Qu�
 - **User Stories:**
   - `US-06.1`: Là một Administrator, tôi muốn có bảng tổng hợp trực quan các bài viết và bình luận bị báo cáo nhiều nhất để ưu tiên xử lý nhanh các trường hợp vi phạm nghiêm trọng.
   - `US-06.2`: Là một Administrator, tôi muốn áp dụng chế tài ẩn bài hoặc khóa tài khoản kèm lý do rõ ràng để bảo đảm tính minh bạch và công bằng.
-  - `US-06.3`: Là một Administrator, tôi muốn quản lý tài khoản bằng dữ liệu thật, xem lịch sử và ghi lý do cho mọi lần khóa/mở khóa hoặc đổi vai trò.
+  - `US-06.3`: Là một Administrator, tôi muốn tra cứu và quản lý tài khoản mọi vai trò trong danh sách người dùng, đồng thời mở danh sách Expert và hồ sơ riêng để xem thông tin/đơn đã duyệt, lịch sử và ghi lý do cho mọi lần khóa/mở khóa hoặc đổi vai trò.
 
 #### Quy tắc phân quyền và bảo mật (Permissions & Security)
 - Chỉ tài khoản có vai trò Administrator mới có quyền truy cập trung tâm hậu kiểm và áp dụng chế tài (NFR-09).
-- API quản lý tài khoản chỉ dành cho role `ADMIN` ở Backend; response không được trả dữ liệu sức khỏe hoặc hồ sơ riêng tư. Tài khoản `ADMIN` có thể được tra cứu nhưng không thể là mục tiêu thao tác khóa/mở khóa/đổi role.
+- API quản lý tài khoản và hồ sơ Expert chỉ dành cho role `ADMIN` ở Backend; response không được trả dữ liệu sức khỏe, hồ sơ dinh dưỡng riêng tư hoặc nội dung tệp đính kèm. Tệp của đơn chỉ được xem/tải trong luồng thẩm định đơn FR-05. Tài khoản `ADMIN` có thể được tra cứu nhưng không thể là mục tiêu thao tác khóa/mở khóa/đổi role.
 - Role được đổi trực tiếp chỉ giữa `CUSTOMER` và `EXPERT`; mọi thay đổi role hoặc trạng thái yêu cầu lý do đã trim dài 10–500 ký tự và ghi audit actor, thời gian, hành động, giá trị trước/sau, lý do. Không ghi audit khi trạng thái/role không đổi.
 - Tuyệt đối không áp dụng cơ chế phê duyệt trước (pre-moderation) từng bài viết trước khi đăng (BR-07).
 
@@ -532,10 +532,10 @@ Cung cấp trung tâm điều hành hậu kiểm nội dung toàn diện cho Qu�
   - **When:** Các thành viên khác tạo và công khai bài công thức hợp lệ mới.
   - **Then:** Các bài viết mới vẫn được công khai ngay lập tức mà không bị nghẽn hay chờ duyệt trước (BR-07).
 
-- **AC-06.5 — Danh sách người dùng từ Backend:**
+- **AC-06.5 — Danh sách tài khoản mọi vai trò từ Backend:**
   - **Given:** Administrator mở trang Quản lý người dùng.
-  - **When:** Tìm kiếm theo tên/email/mã, lọc theo role/trạng thái hoặc chuyển trang.
-  - **Then:** Bảng trả dữ liệu SQL Server có phân trang giới hạn; số liệu tổng quan tính trên toàn hệ thống, độc lập với bộ lọc; số công thức chỉ đếm bài `PUBLISHED`.
+  - **When:** Tìm kiếm theo tên/email/mã, chọn tất cả vai trò hoặc lọc `CUSTOMER`, `EXPERT`, `ADMIN`, lọc trạng thái hoặc chuyển trang.
+  - **Then:** Mặc định danh sách gồm mọi vai trò; bộ lọc cho phép xem riêng từng vai trò. Tài khoản `ADMIN` chỉ tra cứu và không có thao tác thay đổi. Thống kê gồm tổng tài khoản, đang hoạt động, tổng Chuyên gia và đang bị khóa; số liệu tính trên toàn hệ thống, độc lập với bộ lọc. Bảng lấy dữ liệu SQL Server có phân trang giới hạn; số công thức của từng tài khoản chỉ đếm bài `PUBLISHED`.
 
 - **AC-06.6 — Bảo vệ API và dữ liệu tối thiểu:**
   - **Given:** Request không phải Administrator hoặc yêu cầu quá giới hạn.
@@ -551,6 +551,16 @@ Cung cấp trung tâm điều hành hậu kiểm nội dung toàn diện cho Qu�
   - **Given:** Admin chuyển CUSTOMER sang EXPERT, có thể có hoặc không có đơn `PENDING`.
   - **When:** Thay đổi được xác nhận.
   - **Then:** Không cần đơn `APPROVED`; nếu đơn `PENDING` tồn tại, đơn chuyển `CANCELLED`, lưu người xử lý/lý do và gửi notification cùng transaction. Luồng duyệt FR-05 vẫn chỉ chuyển đơn còn `PENDING` của CUSTOMER đang `ACTIVE`.
+
+- **AC-06.9 — Danh sách Expert riêng, có thể tra cứu cả tài khoản bị khóa:**
+  - **Given:** Administrator mở mục Danh sách Chuyên gia.
+  - **When:** Tìm theo tên/email/mã, lọc trạng thái hoặc chuyển trang.
+  - **Then:** Bảng chỉ chứa tài khoản hiện có role `EXPERT`, gồm cả `ACTIVE` và `LOCKED`; không chứa `CUSTOMER` hoặc `ADMIN`. Kết quả được xếp theo ngày lên role `EXPERT` gần nhất giảm dần; tài khoản cũ không truy được ngày được ghi nhận hiển thị cuối danh sách với nhãn “Chưa ghi nhận”. Thống kê toàn hệ thống hiển thị tổng Expert, Expert đang hoạt động, Expert bị khóa và tổng Recipe Post `PUBLISHED` của tài khoản đang có role `EXPERT`. Kết quả và tổng số dòng đến từ Backend, phân trang có giới hạn và có trạng thái tải/lỗi/rỗng để thử lại hoặc thông báo rõ.
+
+- **AC-06.10 — Xem hồ sơ, công thức công khai của Expert và duy trì thao tác quản trị tài khoản:**
+  - **Given:** Administrator mở chi tiết một tài khoản có role hiện tại `EXPERT`.
+  - **When:** Hồ sơ được tải thành công.
+  - **Then:** Trang hiển thị thông tin tài khoản cần thiết, ngày tham gia, ngày lên Expert nếu có, avatar/bio hồ sơ công khai, số Recipe Post `PUBLISHED`, và bảng phân trang các công thức đang công khai gồm tiêu đề, thể loại món, loại ăn chay và lượt xem. Nhấn tiêu đề mở bài công thức tương ứng trong tab mới. Khi không có bài công khai, trang hiển thị trạng thái rỗng; lỗi tải có thể thử lại. Trang cũng hiển thị đơn `APPROVED` gần nhất gồm kinh nghiệm, trường phái chay, tóm tắt công thức mẫu, portfolio, ghi chú/thời điểm xử lý nếu có. Expert được cấp role trực tiếp không có đơn `APPROVED` phải được ghi rõ là không có hồ sơ đơn đã duyệt. Administrator vẫn truy cập được lịch sử, khóa/mở khóa, đổi role và quyền lợi AI theo các luồng hiện có; khi đổi role thành `CUSTOMER`, tài khoản rời danh sách Expert. Chi tiết không hiển thị dữ liệu sức khỏe hoặc nội dung tệp đính kèm; tệp tiếp tục được mở trong luồng thẩm định FR-05. Request không phải Admin hoặc tài khoản không còn role `EXPERT` bị Backend từ chối.
 
 ---
 
