@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-11-24 — Let Experts Appeal Hidden Recipe Posts
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 4aa23eef.
 
 **Scope:** Give the author of a hidden Recipe Post one appeal per hide decision, and let an Administrator restore the post, keep it hidden, or allow an edit while the post stays hidden and then review the resubmitted post (FR-28, BR-27).
 
