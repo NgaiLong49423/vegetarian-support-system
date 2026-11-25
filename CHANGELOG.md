@@ -1,13 +1,33 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.155.0
+> **Version:** v2.156.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-11-21<br>
+> **Last Updated:** 2026-11-25<br>
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-11-25 — Enable Recipe Image Management on Edit Recipe Page
+
+**Status:** Committed.
+
+**Scope:** Allow experts to view, upload, rearrange, set cover, and remove recipe images when editing an existing recipe post.
+
+### Added
+
+- Integrate `RecipeImageUploader` into `EditRecipe` page, supporting image upload, cover selection, ordering, and deletion.
+- Always display the recipe images section in the editor even when the recipe initially has no images.
+
+### Changed
+
+- Synchronize recipe media via `recipeMediaApi.updateRecipeMedia` or delete media via `deleteRecipeMedia` when images are edited upon saving.
+
+### Fixed
+
+- Fix recipe images section being hidden when an existing recipe has no images.
+- Fix static read-only recipe image view that prevented experts from modifying or adding recipe images.
 
 ## 2026-11-21 — Keep Demo Seasoning Seed Compatible With Duplicate Titles
 
