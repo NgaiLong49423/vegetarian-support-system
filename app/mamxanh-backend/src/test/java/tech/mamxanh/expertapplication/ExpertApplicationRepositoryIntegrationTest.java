@@ -73,6 +73,24 @@ class ExpertApplicationRepositoryIntegrationTest extends AbstractIntegrationTest
     }
 
     @Test
+    void latestApprovedApplicationIsChosenByReviewTimeAndMissingApprovedApplicationReturnsNull() {
+        long earlier = repository.insert(applicant, request(null), LocalDateTime.of(2026, 10, 4, 10, 0));
+        var firstReview = LocalDateTime.of(2026, 10, 4, 12, 0);
+        assertThat(repository.transitionPending(earlier, "APPROVED", null, reviewer, firstReview)).isEqualTo(1);
+
+        long latest = repository.insert(applicant, request("https://example.test/portfolio"),
+                LocalDateTime.of(2026, 10, 4, 11, 0));
+        var latestReview = LocalDateTime.of(2026, 10, 5, 12, 0);
+        assertThat(repository.transitionPending(latest, "APPROVED", null, reviewer, latestReview)).isEqualTo(1);
+
+        long pending = repository.insert(otherApplicant, request(null), LocalDateTime.of(2026, 10, 4, 9, 0));
+
+        assertThat(repository.findLatestApprovedByUserId(applicant).id()).isEqualTo(latest);
+        assertThat(repository.findLatestApprovedByUserId(otherApplicant)).isNull();
+        assertThat(repository.findById(pending).status()).isEqualTo("PENDING");
+    }
+
+    @Test
     void storesAndReadsPrivateAttachmentKeysWithoutExposingThemInApplicationResponse() {
         var now = LocalDateTime.of(2026, 10, 4, 12, 0);
         long id = repository.insert(applicant, request(null), "expert-applications/certificate.pdf",

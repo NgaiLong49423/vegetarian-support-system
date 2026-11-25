@@ -109,5 +109,6 @@ class AdminUserQueryRepositoryTest {
         when(rs.getString("role")).thenReturn("CUSTOMER");
         when(rs.getString("account_status")).thenReturn("ACTIVE");
         when(rs.getTimestamp("created_at")).thenReturn(Timestamp.valueOf(CREATED));
+        when(rs.getTimestamp("expert_since")).thenReturn(null);
     }
 }
