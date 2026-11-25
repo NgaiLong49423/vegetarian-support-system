@@ -37,6 +37,7 @@ import { AdminUserManagement } from "../pages/AdminUserManagement"
 import { AdminTransactionsPage } from "../pages/AdminTransactionsPage"
 import { AdminAiConfigurationPage } from "../pages/AdminAiConfigurationPage"
 import { AdminReportsPage } from "../pages/AdminReportsPage"
+import { AdminAppealsPage } from "../pages/AdminAppealsPage"
 import { ExpertDirectoryPage } from "../pages/ExpertDirectoryPage"
 import { IngredientDirectoryPage } from "../pages/IngredientDirectoryPage"
 import { IngredientDetailPage } from "../pages/IngredientDetailPage"
@@ -143,6 +144,7 @@ export default function ApplicationRoutes() {
                 path="/admin/bao-cao"
                 element={<AdminReportsPage />}
               />
+              <Route path="/admin/khieu-nai" element={<AdminAppealsPage />} />
               <Route
                 path="/admin/nguoi-dung"
                 element={<AdminUserManagement />}

@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.61.3
+> **Version:** v2.62.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-11-21
+> **Last Updated:** 2026-11-24
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -1862,7 +1862,7 @@ Chuẩn hóa dữ liệu đầu vào của các báo cáo vi phạm nội dung; 
 
 - **Mã yêu cầu:** FR-28
 - **Module:** M02 (Identity & Access), M03 (Community Recipes & Social), M09 (Administration & Moderation)
-- **Tóm tắt yêu cầu:** Administrator quyết định thủ công khi xử lý báo cáo qua các trạng thái: Chờ xử lý (`OPEN`), Đang xem xét (`IN_REVIEW`), Đã giải quyết (`RESOLVED`); bắt buộc ghi kết luận và lý do xử lý; duy trì lịch sử kiểm toán (audit history); có thể cảnh báo tác giả, ẩn/xóa Recipe Post hoặc khóa/mở khóa tài khoản (BR-26); MVP không có ma trận chế tài số tự động.
+- **Tóm tắt yêu cầu:** Administrator quyết định thủ công khi xử lý báo cáo qua các trạng thái: Chờ xử lý (`OPEN`), Đang xem xét (`IN_REVIEW`), Đã giải quyết (`RESOLVED`); bắt buộc ghi kết luận và lý do xử lý; duy trì lịch sử kiểm toán (audit history); có thể cảnh báo tác giả, ẩn/xóa Recipe Post hoặc khóa/mở khóa tài khoản (BR-26); MVP không có ma trận chế tài số tự động. Khi bài bị ẩn, Chuyên gia tác giả được gửi một khiếu nại cho quyết định ẩn đó; Administrator mở lại bài, giữ ẩn, hoặc cho phép sửa trong lúc bài vẫn ẩn rồi duyệt lại bản đã sửa (BR-27).
 
 - **Use Case detail:** [Open interaction flows](../use-cases/identity-and-access.md#fr-28).
 
@@ -1878,13 +1878,28 @@ Hệ thống quản lý trạng thái báo cáo theo luồng tuần tự:
 - `IN_REVIEW` (Đang xem xét): Một Admin đã tiếp nhận và đang thẩm tra bài viết; giúp các Admin khác không xử lý trùng.
 - `RESOLVED` (Đã giải quyết): Admin đã ra quyết định kết luận (bác bỏ hoặc áp dụng chế tài cụ thể).
 
+#### Vòng đời khiếu nại bài bị ẩn
+Khiếu nại gắn với báo cáo `HIDE_RECIPE` mới nhất của bài và chỉ có một vòng cho mỗi quyết định ẩn:
+```
+(chưa khiếu nại) ──> [PENDING] ──> [RESTORED] (bài công khai lại)
+                         │──────> [KEPT_HIDDEN] (giữ ẩn, kết thúc)
+                         └──────> [EDIT_ALLOWED] ──> [RESUBMITTED] ──> [RESTORED] hoặc [KEPT_HIDDEN]
+```
+- `PENDING`: Tác giả đã gửi lời khiếu nại (10–1000 ký tự).
+- `EDIT_ALLOWED`: Admin cho phép sửa; bài vẫn `HIDDEN`, tác giả sửa được nội dung và ảnh.
+- `RESUBMITTED`: Tác giả đã sửa xong và gửi duyệt lại; Admin chỉ còn chọn mở lại hoặc giữ ẩn.
+- `RESTORED` / `KEPT_HIDDEN`: Kết luận cuối. Mỗi kết luận của Admin cần lý do 10–500 ký tự và được gửi tới tác giả qua thông báo và email.
+
 #### Danh mục Use Cases & User Stories
 - **Các Use Case con:**
   - `UC-28.1`: Xem danh sách và tiếp nhận xử lý báo cáo (Review report queue).
   - `UC-28.2`: Ra quyết định xử lý báo cáo và áp dụng chế tài (Resolve report and apply sanctions).
+  - `UC-28.3`: Chuyên gia khiếu nại quyết định ẩn bài và gửi duyệt lại sau khi sửa (Appeal a hidden recipe).
+  - `UC-28.4`: Administrator xử lý khiếu nại: mở lại, giữ ẩn hoặc cho phép sửa (Resolve a recipe appeal).
 - **User Stories:**
   - `US-28.1`: Là một Administrator, tôi muốn chuyển báo cáo sang trạng thái "Đang xem xét" khi bắt đầu thẩm tra để đồng nghiệp biết và không thao tác trùng.
   - `US-28.2`: Là một Administrator, khi quyết định ẩn bài viết vi phạm, tôi muốn hệ thống yêu cầu tôi nhập lý do kết luận rõ ràng để làm căn cứ thông báo cho tác giả và phục vụ kiểm tra lại sau này.
+  - `US-28.3`: Là một Chuyên gia có bài bị ẩn, tôi muốn gửi khiếu nại và được sửa bài khi Admin cho phép, để bài bị ẩn nhầm hoặc đã sửa đúng được công khai lại.
 
 #### Quy tắc phân quyền và bảo mật (Permissions & Security)
 - Chỉ tài khoản có vai trò Administrator mới có quyền truy cập và thay đổi trạng thái xử lý báo cáo (NFR-09).
@@ -1925,6 +1940,26 @@ Hệ thống quản lý trạng thái báo cáo theo luồng tuần tự:
   - **Given:** Administrator chọn chế tài xử lý vi phạm.
   - **When:** Administrator để trống ô lý do kết luận và nhấn "Hoàn tất xử lý".
   - **Then:** Hệ thống từ chối lưu và hiển thị thông báo yêu cầu nhập lý do kết luận.
+
+- **AC-28.6 — Chuyên gia gửi khiếu nại cho bài bị ẩn:**
+  - **Given:** Bài của Chuyên gia đang `HIDDEN` do quyết định `HIDE_RECIPE` và chưa được khiếu nại.
+  - **When:** Chuyên gia nhập lời khiếu nại 10–1000 ký tự và gửi.
+  - **Then:** Khiếu nại chuyển sang `PENDING`, bài vẫn ẩn; tác giả thấy lý do ẩn nhưng không thấy người báo cáo (BR-28); gửi lần hai bị từ chối `APPEAL_NOT_ALLOWED`.
+
+- **AC-28.7 — Administrator mở lại bài hoặc giữ ẩn:**
+  - **Given:** Khiếu nại ở `PENDING` hoặc `RESUBMITTED`.
+  - **When:** Administrator xem nội dung bài đang ẩn, chọn "Mở lại bài" hoặc "Giữ ẩn" và nhập lý do 10–500 ký tự.
+  - **Then:** Mở lại: bài chuyển `PUBLISHED`; giữ ẩn: bài vẫn `HIDDEN` và khiếu nại kết thúc. Tác giả nhận thông báo và email kèm lý do.
+
+- **AC-28.8 — Administrator cho phép sửa bài đang ẩn:**
+  - **Given:** Khiếu nại ở `PENDING`.
+  - **When:** Administrator chọn "Cho phép sửa" và nhập lý do.
+  - **Then:** Khiếu nại chuyển `EDIT_ALLOWED`; tác giả sửa được nội dung và ảnh nhưng bài vẫn `HIDDEN` (BR-27); tác giả gửi duyệt lại thì khiếu nại chuyển `RESUBMITTED` và không thể "Cho phép sửa" lần nữa.
+
+- **AC-28.9 — Chặn thao tác sai bước hoặc trùng:**
+  - **Given:** Khiếu nại đã có kết luận cuối, đang ở bước khác, hoặc bài không còn ẩn (ví dụ tác giả đã xóa).
+  - **When:** Administrator hoặc tác giả gửi thao tác không hợp lệ cho bước hiện tại, hoặc hai Administrator kết luận cùng lúc.
+  - **Then:** Hệ thống từ chối với `APPEAL_STATE_INVALID`, không thay đổi bài hay khiếu nại; chỉ một kết luận đồng thời được ghi nhận.
 
 ---
 

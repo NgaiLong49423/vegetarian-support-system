@@ -45,6 +45,7 @@
 --                   + V37__admin_ai_entitlement_audit.sql — AI package gift history
 --                   + V38__ai_credit_top_up_orders.sql
 --                   + V39__ai_credit_ledger_absorbed_credits.sql
+--                   + V45__recipe_hide_appeal.sql — author appeal on a hidden Recipe Post
 --                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
@@ -655,6 +656,13 @@ CREATE TABLE [REPORT] (
         CONSTRAINT DF_REPORT_updated_at DEFAULT SYSUTCDATETIME(),
     handled_at       DATETIME2(7)    NULL,
     handled_by       BIGINT          NULL,
+    appeal_status          VARCHAR(20)     NULL,
+    appeal_message         NVARCHAR(1000)  NULL,
+    appealed_at            DATETIME2(7)    NULL,
+    appeal_resubmitted_at  DATETIME2(7)    NULL,
+    appeal_decision_reason NVARCHAR(1000)  NULL,
+    appeal_handled_at      DATETIME2(7)    NULL,
+    appeal_handled_by      BIGINT          NULL,
 
     CONSTRAINT PK_REPORT PRIMARY KEY (report_id),
     CONSTRAINT FK_REPORT_USER FOREIGN KEY (reporter_id)
@@ -664,6 +672,8 @@ CREATE TABLE [REPORT] (
     CONSTRAINT FK_REPORT_COMMENT FOREIGN KEY (comment_id)
         REFERENCES [COMMENT](comment_id) ON DELETE NO ACTION,
     CONSTRAINT FK_REPORT_HANDLED_BY FOREIGN KEY (handled_by)
+        REFERENCES [USER](user_id) ON DELETE NO ACTION,
+    CONSTRAINT FK_REPORT_APPEAL_HANDLED_BY FOREIGN KEY (appeal_handled_by)
         REFERENCES [USER](user_id) ON DELETE NO ACTION,
     CONSTRAINT CK_REPORT_target_xor CHECK (
         (recipe_id IS NOT NULL AND comment_id IS NULL)
@@ -680,6 +690,13 @@ CREATE TABLE [REPORT] (
     CONSTRAINT CK_REPORT_decision CHECK (
         decision IS NULL
         OR decision IN ('NO_VIOLATION', 'WARN_AUTHOR', 'HIDE_RECIPE', 'LOCK_AUTHOR')
+    ),
+    CONSTRAINT CK_REPORT_appeal_status CHECK (
+        appeal_status IS NULL
+        OR appeal_status IN ('PENDING', 'EDIT_ALLOWED', 'RESUBMITTED', 'RESTORED', 'KEPT_HIDDEN')
+    ),
+    CONSTRAINT CK_REPORT_appeal_hide_only CHECK (
+        appeal_status IS NULL OR decision = 'HIDE_RECIPE'
     )
 );
 GO
@@ -1097,6 +1114,12 @@ GO
 -- Report moderation queue
 CREATE NONCLUSTERED INDEX IX_REPORT_status
     ON [REPORT](status, created_at);
+GO
+
+-- Appeal queue for hidden Recipe Posts (FR-28, BR-27)
+CREATE NONCLUSTERED INDEX IX_REPORT_appeal_status
+    ON [REPORT](appeal_status, recipe_id)
+    WHERE appeal_status IS NOT NULL;
 GO
 
 -- Follow: "who follows me?" query

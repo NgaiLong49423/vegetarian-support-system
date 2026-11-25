@@ -73,6 +73,16 @@ public class RecipePostService {
         return response(recipe);
     }
 
+    /** An Administrator reviewing an appeal reads the post even while it is hidden (FR-28, BR-27). */
+    @Transactional(readOnly = true)
+    public RecipePostResponse getForAdministrator(long recipeId) {
+        RecipePostEntity recipe = findById(recipeId);
+        if ("DELETED".equals(recipe.getStatus())) {
+            throw new AppException(ErrorCode.RECIPE_NOT_FOUND);
+        }
+        return response(recipe);
+    }
+
     /** Locks the recipe row so concurrent report submissions for the same post serialize. */
     @Transactional
     public void requirePublishedForReport(long recipeId) {
@@ -389,7 +399,8 @@ public class RecipePostService {
     /**
      * Locks a published Recipe Post that the current active Expert may change (BR-64, AC-04.4, AC-04.7):
      * another author or an Administrator gets {@code RECIPE_EDIT_NOT_ALLOWED}, a hidden post
-     * {@code RECIPE_HIDDEN} and a missing or deleted post {@code RECIPE_NOT_FOUND}.
+     * {@code RECIPE_HIDDEN} unless an appeal decision allowed the edit (BR-27; the post stays hidden),
+     * and a missing or deleted post {@code RECIPE_NOT_FOUND}.
      */
     @Transactional
     public RecipePostEntity lockOwnEditableRecipe(long recipeId) {
@@ -398,6 +409,9 @@ public class RecipePostService {
                 .orElseThrow(() -> new AppException(ErrorCode.RECIPE_NOT_FOUND));
         requireOwner(recipe, author);
         if ("HIDDEN".equals(recipe.getStatus())) {
+            if (repository.editAllowedByAppeal(recipeId) == 1) {
+                return recipe;
+            }
             throw new AppException(ErrorCode.RECIPE_HIDDEN);
         }
         if (!"PUBLISHED".equals(recipe.getStatus())) {

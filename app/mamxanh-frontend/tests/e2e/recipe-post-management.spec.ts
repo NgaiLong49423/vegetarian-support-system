@@ -169,12 +169,18 @@ test('expert edits recipe, saves, and sees success on the expert profile', async
 
 test('hidden recipe stays visible to its expert but all edit paths stay disabled', async ({ page }) => {
   await mockProfileApi(page, [hiddenRecipe]);
+  await page.route('**/api/v1/recipes/48/appeal', (route) => route.fulfill({ json: {
+    reportId: 9, recipeId: 48, recipeTitle: hiddenRecipe.title, hideReason: 'Bài ghi sai nhãn thuần chay.',
+    hiddenAt: '2026-11-20T08:00:00', appealStatus: null, appealMessage: null, appealedAt: null, resubmittedAt: null,
+    adminReason: null, decidedAt: null,
+  } }));
   await page.goto('/ho-so/chuyen-gia');
 
   await expect(page.getByText('Đã bị Admin ẩn')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Sửa Canh đang bị ẩn' })).toBeDisabled();
   await page.getByRole('button', { name: 'Xem dạng danh sách' }).click();
-  await expect(page.getByText('Admin đã ẩn bài. Bạn có thể xem nội dung nhưng không thể sửa. Hãy liên hệ Admin để được phục hồi.')).toBeVisible();
+  await expect(page.getByText('Bài ghi sai nhãn thuần chay.')).toBeVisible();
+  await expect(page.getByText(/Bạn có thể xem nội dung nhưng chưa sửa được/)).toBeVisible();
 
   await mockEditorApi(page, hiddenRecipe);
   await page.goto('/cong-thuc/48/chinh-sua');

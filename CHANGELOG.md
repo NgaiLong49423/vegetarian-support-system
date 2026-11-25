@@ -1,13 +1,36 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.155.0
+> **Version:** v2.156.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-11-21<br>
+> **Last Updated:** 2026-11-24<br>
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-11-24 — Let Experts Appeal Hidden Recipe Posts
+
+**Status:** Working tree — not committed.
+
+**Scope:** Give the author of a hidden Recipe Post one appeal per hide decision, and let an Administrator restore the post, keep it hidden, or allow an edit while the post stays hidden and then review the resubmitted post (FR-28, BR-27).
+
+### Added
+
+- Add appeal columns to `REPORT` (migration V45) with a checked appeal state on hide decisions only.
+- Add author endpoints to view, submit and resubmit an appeal, and Administrator endpoints to list, inspect and decide appeals.
+- Add an appeal panel to the Expert profile, an edit path for posts the Administrator allowed to edit, and an Administrator appeal queue page.
+- Add integration and end-to-end coverage for appeal steps, permissions, concurrent decisions and the edit unlock.
+
+### Changed
+
+- Allow an author to edit a hidden post only after an Administrator answers the appeal with an edit allowance; the post stays hidden until it is restored.
+- Notify the author in the application and by email of each appeal decision with the Administrator's reason.
+- Update FR-28, BR-27 and the M02 use cases with the appeal flow, UC-28.3, UC-28.4 and AC-28.6 to AC-28.9.
+
+### Fixed
+
+None.
 
 ## 2026-11-21 — Keep Demo Seasoning Seed Compatible With Duplicate Titles
 
