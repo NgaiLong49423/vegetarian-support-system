@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 
-import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation, useSearchParams } from "react-router-dom"
 
 import {
   AlertCircle,
@@ -63,6 +63,8 @@ export function ExpertApplicationPage() {
   const { account, updateAccountRole } = useAuth()
 
   const location = useLocation()
+
+  const [searchParams] = useSearchParams()
 
   const adminView = location.pathname.startsWith("/admin/")
 
@@ -154,6 +156,26 @@ export function ExpertApplicationPage() {
   useEffect(() => {
     if (selected && !dialogRef.current?.open) dialogRef.current?.showModal()
   }, [selected])
+
+  useEffect(() => {
+    const applicationId = Number(searchParams.get("applicationId"))
+    if (!adminView || !Number.isSafeInteger(applicationId) || applicationId < 1)
+      return
+
+    let cancelled = false
+    void expertApplicationsApi
+      .detail(applicationId)
+      .then((application) => {
+        if (!cancelled) setSelected(application)
+      })
+      .catch((cause) => {
+        if (!cancelled) setError(errorText(cause))
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [adminView, searchParams])
 
   useEffect(() => {
     let cancelled = false

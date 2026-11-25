@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M09
 > **File:** `docs/requirements/use-cases/administration.md`
-> **Version:** v2.2.0
+> **Version:** v2.7.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-30
+> **Last Updated:** 2026-11-24
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -107,25 +107,27 @@ Cho phép Administrator tra cứu tài khoản thật và quản lý trạng th�
 `Administrator`.
 
 #### Trigger
-Administrator mở mục “Quản lý người dùng”.
+Administrator mở mục “Quản lý người dùng” hoặc “Danh sách Chuyên gia”.
 
 #### Preconditions
 Administrator đã đăng nhập bằng tài khoản role `ADMIN`; Backend xác định actor từ phiên đăng nhập.
 
 #### Main Flow
-1. Frontend tải danh sách phân trang và bộ đếm toàn hệ thống từ API Admin.
-2. Administrator tìm theo tên/email/mã, lọc theo role/trạng thái, chuyển trang hoặc mở chi tiết và lịch sử.
-3. Administrator chọn khóa/mở khóa hoặc chuyển role giữa `CUSTOMER` và `EXPERT`; tài khoản `ADMIN` chỉ xem.
-4. Administrator nhập lý do 10–500 ký tự và xác nhận.
-5. Backend khóa hàng tài khoản, kiểm tra quyền và trạng thái hiện tại, thực hiện cập nhật cùng audit trong transaction; không thêm audit nếu không có thay đổi.
-6. Khi cấp `EXPERT` trực tiếp, nếu có đơn `PENDING`, Backend chuyển đơn thành `CANCELLED`, lưu người xử lý/lý do, ghi audit và gửi notification cùng transaction.
-7. Frontend chỉ tải lại danh sách sau khi nhận response thành công; lỗi được hiển thị để Administrator thử lại.
+1. Frontend tải danh sách phân trang cùng thống kê tổng tài khoản/đang hoạt động/Expert/đang bị khóa cho trang Quản lý người dùng. Mặc định trang hiển thị mọi vai trò; Administrator có thể lọc riêng `CUSTOMER`, `EXPERT` hoặc `ADMIN`. Tài khoản `ADMIN` chỉ được tra cứu và không có thao tác thay đổi.
+2. Administrator mở Danh sách Chuyên gia để tìm theo tên/email/mã, lọc theo trạng thái hoặc chuyển trang; trang này chỉ hiển thị role `EXPERT`, kể cả tài khoản `LOCKED`, xếp theo ngày lên role gần nhất từ mới đến cũ và kèm thống kê Expert đang hoạt động/bị khóa cùng tổng Recipe Post `PUBLISHED` của Expert.
+3. Administrator mở hồ sơ Expert để xem thông tin tài khoản cần thiết, ngày tham gia/ngày lên Expert nếu có, avatar/bio hồ sơ công khai, số Recipe Post đang `PUBLISHED`, bảng công thức công khai phân trang và nội dung đơn `APPROVED` gần nhất. Bảng hiển thị tiêu đề, thể loại món, loại ăn chay và lượt xem; nhấn tiêu đề mở bài trong tab mới. Tài khoản được cấp role trực tiếp nhưng chưa có đơn `APPROVED` hiển thị rõ trạng thái không có đơn đã duyệt.
+4. Nếu cần xem/tải tệp đính kèm, Administrator mở đơn tương ứng trong luồng thẩm định FR-05; trang hồ sơ Expert không trả nội dung tệp.
+5. Từ hồ sơ Expert, Administrator có thể xem lịch sử, khóa/mở khóa, đổi role về `CUSTOMER`, hoặc dùng các thao tác quyền lợi AI đã có. Các thay đổi role/trạng thái yêu cầu lý do 10–500 ký tự.
+6. Backend kiểm tra quyền và trạng thái hiện tại, thực hiện cập nhật cùng audit trong transaction; không thêm audit nếu không có thay đổi. Khi cấp `EXPERT` trực tiếp, nếu có đơn `PENDING`, Backend chuyển đơn thành `CANCELLED`, lưu người xử lý/lý do, ghi audit và gửi notification cùng transaction.
+7. Sau khi role đổi sang `CUSTOMER`, tài khoản rời danh sách Expert và được tra cứu trong Quản lý người dùng. Frontend chỉ cập nhật sau response thành công; lỗi được hiển thị để Administrator thử lại.
 
 #### Alternative / Exception Flows
 - Tài khoản mục tiêu là `ADMIN`: Backend từ chối thao tác, không ghi audit.
 - Lý do ngoài 10–500 ký tự, bộ lọc/phân trang không hợp lệ hoặc actor không phải `ADMIN`: Backend từ chối request.
 - Dữ liệu không đổi: thao tác không tạo audit.
 - Cập nhật trực tiếp cạnh tranh với phê duyệt FR-05: khóa tài khoản theo thứ tự thống nhất; chỉ một quyết định trên đơn `PENDING` được ghi nhận.
+- Tài khoản không còn role `EXPERT` khi mở đường dẫn hồ sơ cũ: Backend từ chối và Frontend đưa Administrator về danh sách Expert.
+- Tài khoản Expert không có đơn `APPROVED`: vẫn hiển thị hồ sơ hiện tại và nêu rõ không có đơn đã duyệt.
 
 #### Postconditions
 Trạng thái/role và lịch sử tài khoản phản ánh dữ liệu Backend. Không trả dữ liệu sức khỏe hoặc hồ sơ riêng tư.
@@ -140,5 +142,7 @@ Trạng thái/role và lịch sử tài khoản phản ánh dữ liệu Backend.
 - [AC-06.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-06) — Phân quyền API và dữ liệu tối thiểu.
 - [AC-06.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-06) — Lý do, audit và tài khoản Admin chỉ đọc.
 - [AC-06.8](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-06) — Cấp Expert và kết thúc đơn đang chờ.
+- [AC-06.9](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-06) — Danh sách Expert riêng.
+- [AC-06.10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-06) — Hồ sơ, công thức công khai của Expert và thao tác quản trị tài khoản.
 
 ---

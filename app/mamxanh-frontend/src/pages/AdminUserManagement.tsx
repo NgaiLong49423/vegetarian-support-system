@@ -1,12 +1,15 @@
 import { AdminPageHeader } from "../components/AdminPageHeader"
 import { useCallback, useEffect, useState } from "react"
+import { Link, useNavigate, useParams } from "react-router-dom"
 
 import {
+  BookOpen,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Coins,
   Eye,
+  ExternalLink,
   Gift,
   Lock,
   Search,
@@ -29,12 +32,14 @@ import {
 import {
   AdminAiTier,
   AdminAiPackageState,
+  AdminExpertDetail,
   AdminUser,
   AdminUserAudit,
   AdminUserRole,
   AdminUserStatus,
   AdminUserSummary,
   getAdminAiTier,
+  getAdminExpertDetail,
   getAdminUser,
   getAdminUserHistory,
   getAdminUserSummary,
@@ -44,8 +49,35 @@ import {
   updateAdminUserRole,
   updateAdminUserStatus,
 } from "../api/adminUsers"
+import { membersApi } from "../api/members"
+import { recipesApi, type RecipeFormOptions, type RecipeSearchResult } from "../api/recipes"
 
 const PAGE_SIZE = 20
+const EXPERT_RECIPE_PAGE_SIZE = 12
+const recipeCategoryFallbacks: Record<string, string> = {
+  NOODLE_SOUP: "Món nước",
+  STIR_FRY: "Món xào",
+  HOT_POT: "Món lẩu",
+  BRAISED: "Món kho",
+  SOUP: "Món canh",
+  FRIED: "Món chiên",
+  STEAMED: "Món hấp",
+  SALAD: "Món gỏi / salad",
+  ROLL: "Món cuốn",
+  GRILLED: "Món nướng",
+  DESSERT: "Món tráng miệng / chè",
+}
+const vegetarianTypeFallbacks: Record<string, string> = {
+  VEGAN: "Thuần chay",
+  LACTO: "Có sữa",
+  OVO: "Có trứng",
+  LACTO_OVO: "Có trứng và sữa",
+}
+
+type ExpertSummaryFallback = Pick<
+  AdminUserSummary,
+  "activeExperts" | "lockedExperts" | "expertPublishedRecipeCount"
+>
 
 const roleLabels: Record<AdminUserRole, string> = {
   CUSTOMER: "Thành viên",
@@ -72,10 +104,39 @@ function apiMessage(error: unknown) {
     : "Không thể tải dữ liệu. Vui lòng thử lại."
 }
 
+function recipeCodeLabel(
+  code: string,
+  choices: RecipeFormOptions["dishCategories"] | undefined,
+  fallbacks: Record<string, string>,
+) {
+  return choices?.find((choice) => choice.code === code)?.label ?? fallbacks[code] ?? code
+}
+
 export function AdminUserManagement() {
+  return <AdminAccountManagementPage scope="users" />
+}
+
+export function AdminExpertManagement() {
+  const { userId } = useParams()
+  return (
+    <AdminAccountManagementPage scope="experts" expertUserId={userId ?? null} />
+  )
+}
+
+function AdminAccountManagementPage({
+  scope,
+  expertUserId = null,
+}: {
+  scope: "users" | "experts"
+  expertUserId?: string | null
+}) {
+  const navigate = useNavigate()
   const [rows, setRows] = useState<AdminUser[]>([])
 
   const [summary, setSummary] = useState<AdminUserSummary | null>(null)
+
+  const [expertSummaryFallback, setExpertSummaryFallback] =
+    useState<ExpertSummaryFallback | null>(null)
 
   const [search, setSearch] = useState("")
 
@@ -137,16 +198,27 @@ export function AdminUserManagement() {
 
   const [aiNotice, setAiNotice] = useState<string | null>(null)
 
+  const [expertDetail, setExpertDetail] = useState<AdminExpertDetail | null>(null)
+
+  const [expertDetailLoading, setExpertDetailLoading] = useState(false)
+
+  const [expertDetailError, setExpertDetailError] = useState<string | null>(null)
+
   const load = useCallback(
     async (signal?: AbortSignal) => {
       setLoading(true)
 
       setError(null)
 
+      if (scope === "experts" && expertUserId) {
+        setLoading(false)
+        return
+      }
+
       try {
         const params = {
           query: search.trim() || undefined,
-          role: role || undefined,
+          role: scope === "experts" ? "EXPERT" : role || undefined,
           status: status || undefined,
           page,
           size: PAGE_SIZE,
@@ -166,13 +238,60 @@ export function AdminUserManagement() {
         setTotalElements(result.totalElements)
 
         setSummary(counts)
+
+        if (
+          scope === "experts" &&
+          (counts.activeExperts == null ||
+            counts.lockedExperts == null ||
+            counts.expertPublishedRecipeCount == null)
+        ) {
+          try {
+            const firstPage = await listAdminUsers({
+              role: "EXPERT",
+              page: 0,
+              size: 100,
+            })
+            const remainingPages = await Promise.all(
+              Array.from(
+                { length: Math.max(0, firstPage.totalPages - 1) },
+                (_, index) =>
+                  listAdminUsers({
+                    role: "EXPERT",
+                    page: index + 1,
+                    size: 100,
+                  }),
+              ),
+            )
+            if (signal?.aborted) return
+
+            const allExperts = [firstPage, ...remainingPages].flatMap(
+              (expertPage) => expertPage.content,
+            )
+            setExpertSummaryFallback({
+              activeExperts: allExperts.filter(
+                (user) => user.accountStatus === "ACTIVE",
+              ).length,
+              lockedExperts: allExperts.filter(
+                (user) => user.accountStatus === "LOCKED",
+              ).length,
+              expertPublishedRecipeCount: allExperts.reduce(
+                (total, user) => total + user.publishedRecipeCount,
+                0,
+              ),
+            })
+          } catch {
+            if (!signal?.aborted) setExpertSummaryFallback(null)
+          }
+        } else if (scope === "experts") {
+          setExpertSummaryFallback(null)
+        }
       } catch (cause) {
         if (!signal?.aborted) setError(apiMessage(cause))
       } finally {
         if (!signal?.aborted) setLoading(false)
       }
     },
-    [search, role, status, page, revision],
+    [scope, expertUserId, search, role, status, page, revision],
   )
 
   useEffect(() => {
@@ -185,6 +304,44 @@ export function AdminUserManagement() {
       controller.abort()
     }
   }, [load])
+
+  useEffect(() => {
+    if (scope !== "experts" || !expertUserId) {
+      setExpertDetail(null)
+      setExpertDetailError(null)
+      setExpertDetailLoading(false)
+      return
+    }
+
+    const id = Number(expertUserId)
+    setExpertDetail(null)
+    setExpertDetailError(null)
+    setExpertDetailLoading(true)
+    setMode(null)
+    setSelected(null)
+
+    if (!Number.isSafeInteger(id) || id < 1) {
+      setExpertDetailError("Mã tài khoản Chuyên gia không hợp lệ.")
+      setExpertDetailLoading(false)
+      return
+    }
+
+    let cancelled = false
+    void getAdminExpertDetail(id)
+      .then((result) => {
+        if (!cancelled) setExpertDetail(result)
+      })
+      .catch((cause) => {
+        if (!cancelled) setExpertDetailError(apiMessage(cause))
+      })
+      .finally(() => {
+        if (!cancelled) setExpertDetailLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [scope, expertUserId, revision])
 
   const reload = () => setRevision((value) => value + 1)
 
@@ -367,6 +524,17 @@ export function AdminUserManagement() {
 
       setReason("")
 
+      if (scope === "experts" && updated.role !== "EXPERT") {
+        navigate("/admin/nguoi-dung")
+        return
+      }
+
+      if (scope === "experts") {
+        setExpertDetail((current) =>
+          current ? { ...current, account: updated } : current,
+        )
+      }
+
       setNotice(`Đã cập nhật tài khoản ${updated.displayName}.`)
 
       reload()
@@ -381,34 +549,73 @@ export function AdminUserManagement() {
 
   return (
     <div className="space-y-6 py-2">
+      {expertUserId ? (
+        <AdminExpertDetailPanel
+          detail={expertDetail}
+          loading={expertDetailLoading}
+          error={expertDetailError}
+          onRetry={reload}
+          onBack={() => navigate("/admin/chuyen-gia")}
+          onHistory={() => {
+            if (expertDetail) void openDetail(expertDetail.account)
+          }}
+          onAiManagement={() => {
+            if (expertDetail) void openAiManagement(expertDetail.account)
+          }}
+          onRoleChange={() => {
+            if (!expertDetail) return
+            setSelected(expertDetail.account)
+            setNextRole("CUSTOMER")
+            setReason("")
+            setMode("ROLE")
+          }}
+          onStatusChange={() => {
+            if (!expertDetail) return
+            setSelected(expertDetail.account)
+            setReason("")
+            setMode("STATUS")
+          }}
+        />
+      ) : (
+        <>
       <AdminPageHeader
-        title="Quản lý tài khoản & phân quyền"
-        description="Tra cứu tài khoản và quản lý vai trò, trạng thái từ dữ liệu hệ thống."
+        title={scope === "experts" ? "Danh sách Chuyên gia" : "Quản lý tài khoản & phân quyền"}
+        description={scope === "experts"
+          ? "Tra cứu hồ sơ Expert, xếp theo ngày lên vai trò mới nhất. Tài khoản bị khóa vẫn được liệt kê."
+          : "Quản lý tài khoản Customer, Expert và tra cứu tài khoản Admin ở chế độ chỉ xem."}
       >
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          
-        <SummaryCard
-          label="Tổng tài khoản"
-          value={summary?.totalUsers}
-          icon={<Users className="h-4 w-4" />}
-        />
-        <SummaryCard
-          label="Đang hoạt động"
-          value={summary?.activeUsers}
-          icon={<CheckCircle2 className="h-4 w-4" />}
-        />
-        <SummaryCard
-          label="Chuyên gia"
-          value={summary?.expertUsers}
-          icon={<UserCheck className="h-4 w-4" />}
-        />
-        <SummaryCard
-          label="Đang bị khóa"
-          value={summary?.lockedUsers}
-          icon={<Lock className="h-4 w-4" />}
-        />
-      
-        </div>
+        {scope === "experts" ? (
+          <div className="grid w-full grid-cols-2 gap-4 lg:grid-cols-4">
+            <SummaryCard
+              label="Tổng Chuyên gia"
+              value={summary?.expertUsers}
+              icon={<UserCheck className="h-4 w-4" />}
+            />
+            <SummaryCard
+              label="Đang hoạt động"
+              value={summary?.activeExperts ?? expertSummaryFallback?.activeExperts}
+              icon={<CheckCircle2 className="h-4 w-4" />}
+            />
+            <SummaryCard
+              label="Đang bị khóa"
+              value={summary?.lockedExperts ?? expertSummaryFallback?.lockedExperts}
+              icon={<Lock className="h-4 w-4" />}
+            />
+            <SummaryCard
+              label="Tổng công thức"
+              value={summary?.expertPublishedRecipeCount ?? expertSummaryFallback?.expertPublishedRecipeCount}
+              icon={<BookOpen className="h-4 w-4" />}
+              caption="Đang công khai của Expert"
+            />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <SummaryCard label="Tổng tài khoản" value={summary?.totalUsers} icon={<Users className="h-4 w-4" />} />
+            <SummaryCard label="Đang hoạt động" value={summary?.activeUsers} icon={<CheckCircle2 className="h-4 w-4" />} />
+            <SummaryCard label="Chuyên gia" value={summary?.expertUsers} icon={<UserCheck className="h-4 w-4" />} />
+            <SummaryCard label="Đang bị khóa" value={summary?.lockedUsers} icon={<Lock className="h-4 w-4" />} />
+          </div>
+        )}
       </AdminPageHeader>
 
       {notice && (
@@ -425,31 +632,35 @@ export function AdminUserManagement() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
             <input
-              aria-label="Tìm người dùng"
+              aria-label={scope === "experts" ? "Tìm chuyên gia" : "Tìm người dùng"}
               value={search}
               onChange={(event) => {
                 setSearch(event.target.value)
                 setPage(0)
               }}
-              placeholder="Tìm theo họ tên, email hoặc mã tài khoản..."
+              placeholder={scope === "experts"
+                ? "Tìm theo tên, email hoặc mã chuyên gia..."
+                : "Tìm theo họ tên, email hoặc mã tài khoản..."}
               className="w-full rounded-xl border border-brand-200 bg-paper py-2 pl-9 pr-3 text-xs text-ink focus:border-brand-500 focus:outline-none"
             />
           </div>
           <div className="flex gap-2">
-            <select
-              aria-label="Lọc vai trò"
-              value={role}
-              onChange={(event) => {
-                setRole(event.target.value)
-                setPage(0)
-              }}
-              className="rounded-xl border border-brand-200 bg-paper px-3 py-2 text-xs text-ink focus:border-brand-500 focus:outline-none"
-            >
-              <option value="">Tất cả vai trò</option>
-              <option value="CUSTOMER">Thành viên</option>
-              <option value="EXPERT">Chuyên gia</option>
-              <option value="ADMIN">Quản trị viên</option>
-            </select>
+            {scope === "users" && (
+              <select
+                aria-label="Lọc vai trò"
+                value={role}
+                onChange={(event) => {
+                  setRole(event.target.value)
+                  setPage(0)
+                }}
+                className="rounded-xl border border-brand-200 bg-paper px-3 py-2 text-xs text-ink focus:border-brand-500 focus:outline-none"
+              >
+                <option value="">Tất cả vai trò</option>
+                <option value="CUSTOMER">Thành viên</option>
+                <option value="EXPERT">Chuyên gia</option>
+                <option value="ADMIN">Quản trị viên</option>
+              </select>
+            )}
             <select
               aria-label="Lọc trạng thái"
               value={status}
@@ -491,9 +702,9 @@ export function AdminUserManagement() {
             <table className="w-full text-left text-xs">
               <thead className="border-b border-brand-100 bg-brand-50/50 text-ink-muted">
                 <tr>
-                  <th className="px-4 py-3">Thành viên</th>
+                  <th className="px-4 py-3">{scope === "experts" ? "Chuyên gia" : "Tài khoản"}</th>
                   <th className="px-4 py-3">Vai trò</th>
-                  <th className="px-4 py-3">Ngày tham gia</th>
+                  <th className="px-4 py-3">{scope === "experts" ? "Ngày lên Expert" : "Ngày tham gia"}</th>
                   <th className="px-4 py-3">Công thức</th>
                   <th className="px-4 py-3">Trạng thái</th>
                   <th className="px-4 py-3 text-right">Thao tác</th>
@@ -506,7 +717,9 @@ export function AdminUserManagement() {
                       colSpan={6}
                       className="px-4 py-8 text-center text-ink-muted"
                     >
-                      Không tìm thấy tài khoản phù hợp.
+                      {scope === "experts"
+                        ? "Không tìm thấy Chuyên gia phù hợp."
+                        : "Không tìm thấy tài khoản phù hợp."}
                     </td>
                   </tr>
                 ) : (
@@ -535,7 +748,11 @@ export function AdminUserManagement() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-ink-muted">
-                        {date(user.joinedAt)}
+                        {scope === "experts"
+                          ? user.expertSince
+                            ? date(user.expertSince)
+                            : null
+                          : date(user.joinedAt)}
                       </td>
                       <td className="px-4 py-3 font-semibold">
                         {user.publishedRecipeCount} món
@@ -553,61 +770,64 @@ export function AdminUserManagement() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex justify-end gap-1">
-                          <IconButton
-                            title="Xem chi tiết và lịch sử"
-                            onClick={() => void openDetail(user)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </IconButton>
-                          <IconButton
-                            title={
-                              user.role === "ADMIN"
-                                ? "Cộng AI Credit"
-                                : "Tặng gói AI / Cộng AI Credit"
-                            }
-                            onClick={() => void openAiManagement(user)}
-                          >
-                            {user.role === "ADMIN" ? (
-                              <Coins className="h-4 w-4" />
-                            ) : (
-                              <Gift className="h-4 w-4" />
-                            )}
-                          </IconButton>
-                          {user.role !== "ADMIN" && (
+                          {scope === "experts" ? (
+                            <IconButton
+                              title="Xem hồ sơ Chuyên gia"
+                              onClick={() => navigate(`/admin/chuyen-gia/${user.id}`)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </IconButton>
+                          ) : (
                             <>
                               <IconButton
-                                title="Đổi vai trò"
-                                onClick={() => {
-                                  setSelected(user)
-                                  setNextRole(
-                                    user.role === "CUSTOMER"
-                                      ? "EXPERT"
-                                      : "CUSTOMER",
-                                  )
-                                  setReason("")
-                                  setMode("ROLE")
-                                }}
+                                title="Xem chi tiết và lịch sử"
+                                onClick={() => void openDetail(user)}
                               >
-                                <UserCheck className="h-4 w-4" />
+                                <Eye className="h-4 w-4" />
                               </IconButton>
-                              <IconButton
-                                title={
-                                  user.accountStatus === "ACTIVE"
-                                    ? "Khóa tài khoản"
-                                    : "Mở khóa tài khoản"
-                                }
-                                onClick={() => {
-                                  setSelected(user)
-                                  setReason("")
-                                  setMode("STATUS")
-                                }}
-                              >
-                                {user.accountStatus === "ACTIVE" ? (
-                                  <Lock className="h-4 w-4" />
-                                ) : (
-                                  <Unlock className="h-4 w-4" />
-                                )}
-                              </IconButton>
+                              {user.role !== "ADMIN" && (
+                                <>
+                                  <IconButton
+                                    title="Tặng gói AI / Cộng AI Credit"
+                                    onClick={() => void openAiManagement(user)}
+                                  >
+                                    <Gift className="h-4 w-4" />
+                                  </IconButton>
+                                  <IconButton
+                                    title="Đổi vai trò"
+                                    onClick={() => {
+                                      setSelected(user)
+                                      setNextRole(
+                                        user.role === "CUSTOMER"
+                                          ? "EXPERT"
+                                          : "CUSTOMER",
+                                      )
+                                      setReason("")
+                                      setMode("ROLE")
+                                    }}
+                                  >
+                                    <UserCheck className="h-4 w-4" />
+                                  </IconButton>
+                                  <IconButton
+                                    title={
+                                      user.accountStatus === "ACTIVE"
+                                        ? "Khóa tài khoản"
+                                        : "Mở khóa tài khoản"
+                                    }
+                                    onClick={() => {
+                                      setSelected(user)
+                                      setReason("")
+                                      setMode("STATUS")
+                                    }}
+                                  >
+                                    {user.accountStatus === "ACTIVE" ? (
+                                      <Lock className="h-4 w-4" />
+                                    ) : (
+                                      <Unlock className="h-4 w-4" />
+                                    )}
+                                  </IconButton>
+                                </>
+                              )}
                             </>
                           )}
                         </div>
@@ -620,7 +840,7 @@ export function AdminUserManagement() {
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-brand-100 px-4 py-3 text-xs">
             <span className="text-ink-muted">
-              {totalElements} tài khoản · Trang{" "}
+              {totalElements} {scope === "experts" ? "chuyên gia" : "tài khoản"} · Trang{" "}
               {totalPages === 0 ? 0 : page + 1}/{totalPages}
             </span>
             <div className="flex gap-2">
@@ -645,6 +865,8 @@ export function AdminUserManagement() {
             </div>
           </div>
         </Card>
+      )}
+        </>
       )}
 
       {mode && selected && (
@@ -832,7 +1054,7 @@ export function AdminUserManagement() {
             ) : mode === "AI_CHOICE" ? (
               <div className="space-y-4 pt-4 text-xs">
                 <p className="text-ink-soft">
-                  Chọn một thao tác. Mỗi loại có biểu mẫu và lý do riêng; hoàn
+                  Chọn một thao tác. Mỗi loại có biểu mẫu và lý do riêng. Hoàn
                   tất một thao tác không yêu cầu thực hiện thao tác còn lại.
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -858,7 +1080,7 @@ export function AdminUserManagement() {
                     <Coins className="h-5 w-5 text-brand-700" />
                     <strong>Tặng AI Credit</strong>
                     <span className="text-ink-muted">
-                      Cộng Credit độc lập; giao dịch được lưu vào Credit ledger
+                      Cộng Credit độc lập. Giao dịch được lưu vào Credit ledger
                       và lịch sử tài khoản.
                     </span>
                   </button>
@@ -925,7 +1147,7 @@ export function AdminUserManagement() {
                       </label>
                       <p className="text-ink-muted">
                         Plus/Pro bắt đầu chu kỳ 30 ngày mới. Không tạo payment
-                        order hoặc hoàn tiền; người nhận được thông báo in-app.
+                        order hoặc hoàn tiền. Người nhận được thông báo in-app.
                       </p>
                       <label className="block font-bold">
                         Lý do tặng gói (10–500 ký tự)
@@ -1117,12 +1339,14 @@ function SummaryCard({
   label,
   value,
   icon,
+  caption = "Toàn hệ thống",
   accent = "from-brand-500 via-brand-400 to-transparent",
   iconClass = "bg-brand-50 text-brand-700 ring-1 ring-brand-200/70",
 }: {
   label: string
   value?: number
   icon: React.ReactNode
+  caption?: string
   accent?: string
   iconClass?: string
 }) {
@@ -1150,9 +1374,421 @@ function SummaryCard({
         </p>
       </div>
       <div className="mt-3 flex items-center justify-between border-t border-brand-100/60 pt-2 text-[11px] text-ink-muted">
-        <span>Toàn hệ thống</span>
+        <span>{caption}</span>
         <span className="h-1.5 w-1.5 rounded-full bg-brand-400/80" />
       </div>
+    </Card>
+  )
+}
+
+function AdminExpertDetailPanel({
+  detail,
+  loading,
+  error,
+  onRetry,
+  onBack,
+  onHistory,
+  onAiManagement,
+  onRoleChange,
+  onStatusChange,
+}: {
+  detail: AdminExpertDetail | null
+  loading: boolean
+  error: string | null
+  onRetry: () => void
+  onBack: () => void
+  onHistory: () => void
+  onAiManagement: () => void
+  onRoleChange: () => void
+  onStatusChange: () => void
+}) {
+  if (loading) {
+    return (
+      <Card className="p-8 text-center text-sm text-ink-muted" role="status">
+        Đang tải hồ sơ Chuyên gia...
+      </Card>
+    )
+  }
+
+  if (error || !detail) {
+    return (
+      <Card className="p-8 text-center">
+        <ShieldAlert className="mx-auto h-8 w-8 text-red-600" />
+        <p role="alert" className="mt-3 text-sm text-ink">
+          {error ?? "Không tìm thấy tài khoản Chuyên gia."}
+        </p>
+        <div className="mt-4 flex justify-center gap-2">
+          <Button size="sm" variant="outline" onClick={onBack}>
+            Quay lại danh sách
+          </Button>
+          <Button size="sm" onClick={onRetry}>
+            Thử lại
+          </Button>
+        </div>
+      </Card>
+    )
+  }
+
+  const { account, approvedApplication } = detail
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Button size="sm" variant="outline" onClick={onBack}>
+          <ChevronLeft className="h-4 w-4" />
+          Danh sách Chuyên gia
+        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="outline" onClick={onHistory}>
+            <Eye className="h-4 w-4" />
+            Lịch sử tài khoản
+          </Button>
+          <Button size="sm" variant="outline" onClick={onAiManagement}>
+            <Coins className="h-4 w-4" />
+            Quản lý AI
+          </Button>
+          <Button size="sm" variant="outline" onClick={onRoleChange}>
+            <UserCheck className="h-4 w-4" />
+            Chuyển về Customer
+          </Button>
+          <Button size="sm" onClick={onStatusChange}>
+            {account.accountStatus === "ACTIVE" ? (
+              <Lock className="h-4 w-4" />
+            ) : (
+              <Unlock className="h-4 w-4" />
+            )}
+            {account.accountStatus === "ACTIVE" ? "Khóa tài khoản" : "Mở khóa"}
+          </Button>
+        </div>
+      </div>
+
+      <AdminPageHeader
+        title="Hồ sơ Chuyên gia"
+        description="Thông tin tài khoản, hồ sơ công khai hiện tại và dữ liệu từ đơn đăng ký đã được duyệt gần nhất."
+      />
+
+      <Card className="p-5 sm:p-6">
+        <div className="flex flex-wrap items-start gap-4">
+          {detail.avatarUrl ? (
+            <img
+              src={detail.avatarUrl}
+              alt={`Ảnh đại diện ${account.displayName}`}
+              className="h-16 w-16 rounded-full object-cover ring-2 ring-brand-100"
+            />
+          ) : (
+            <div
+              aria-hidden="true"
+              className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-100 text-xl font-bold text-brand-700"
+            >
+              {account.displayName.charAt(0)}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-xl font-bold text-ink">{account.displayName}</h2>
+              <Badge tone={account.accountStatus === "ACTIVE" ? "leaf" : "neutral"}>
+                {account.accountStatus === "ACTIVE" ? "Đang hoạt động" : "Đã khóa"}
+              </Badge>
+              <Badge tone="brand">Chuyên gia</Badge>
+            </div>
+            <p className="mt-1 break-all text-sm text-ink-muted">
+              {account.email} · Mã tài khoản #{account.id}
+            </p>
+            {detail.bio ? (
+              <p className="mt-3 whitespace-pre-wrap text-sm text-ink-soft">{detail.bio}</p>
+            ) : (
+              <p className="mt-3 text-sm italic text-ink-muted">
+                Chuyên gia chưa thêm giới thiệu vào hồ sơ công khai.
+              </p>
+            )}
+          </div>
+        </div>
+        <dl
+          className={`mt-5 grid gap-3 border-t border-brand-100 pt-4 sm:grid-cols-2 ${
+            account.expertSince ? "lg:grid-cols-4" : "lg:grid-cols-3"
+          }`}
+        >
+          <div>
+            <dt className="text-xs text-ink-muted">Ngày tham gia</dt>
+            <dd className="mt-1 text-sm font-semibold text-ink">{date(account.joinedAt)}</dd>
+          </div>
+          {account.expertSince && (
+            <div>
+              <dt className="text-xs text-ink-muted">Ngày lên Expert</dt>
+              <dd className="mt-1 text-sm font-semibold text-ink">{date(account.expertSince)}</dd>
+            </div>
+          )}
+          <div>
+            <dt className="text-xs text-ink-muted">Công thức đã công khai</dt>
+            <dd className="mt-1 text-sm font-semibold text-ink">{account.publishedRecipeCount} món</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-ink-muted">Trạng thái tài khoản</dt>
+            <dd className="mt-1 text-sm font-semibold text-ink">
+              {account.accountStatus === "ACTIVE" ? "Đang hoạt động" : "Đã khóa"}
+            </dd>
+          </div>
+        </dl>
+      </Card>
+
+      <Card className="p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-ink">Đơn đăng ký Chuyên gia đã duyệt gần nhất</h2>
+            <p className="mt-1 text-xs text-ink-muted">
+              Nội dung này giúp xem căn cứ đăng ký. Tệp riêng tư vẫn được mở trong màn hình xét duyệt.
+            </p>
+          </div>
+          {approvedApplication && (
+            <Badge tone="leaf">Đã duyệt · #{approvedApplication.id}</Badge>
+          )}
+        </div>
+
+        {!approvedApplication ? (
+          <div className="mt-4 rounded-xl border border-brand-100 bg-brand-50/40 p-4 text-sm text-ink-soft">
+            Không có đơn đã duyệt gắn với tài khoản này. Tài khoản có thể đã được cấp vai trò Chuyên gia trực tiếp.
+          </div>
+        ) : (
+          <>
+            <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div>
+                <dt className="text-xs text-ink-muted">Kinh nghiệm</dt>
+                <dd className="mt-1 whitespace-pre-wrap text-sm text-ink">{approvedApplication.experience}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-ink-muted">Trường phái ăn chay</dt>
+                <dd className="mt-1 whitespace-pre-wrap text-sm text-ink">{approvedApplication.vegetarianType}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-xs text-ink-muted">Món ăn mẫu / nội dung thực hành</dt>
+                <dd className="mt-1 whitespace-pre-wrap text-sm text-ink">{approvedApplication.sampleRecipeSummary}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-ink-muted">Ngày gửi đơn</dt>
+                <dd className="mt-1 text-sm text-ink">{date(approvedApplication.submittedAt)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-ink-muted">Ngày duyệt</dt>
+                <dd className="mt-1 text-sm text-ink">
+                  {approvedApplication.reviewedAt ? date(approvedApplication.reviewedAt) : "—"}
+                </dd>
+              </div>
+              {approvedApplication.adminNote && (
+                <div className="sm:col-span-2">
+                  <dt className="text-xs text-ink-muted">Ghi chú xét duyệt</dt>
+                  <dd className="mt-1 whitespace-pre-wrap text-sm text-ink">
+                    {approvedApplication.adminNote}
+                  </dd>
+                </div>
+              )}
+              {approvedApplication.portfolioUrl && (
+                <div className="sm:col-span-2">
+                  <dt className="text-xs text-ink-muted">Portfolio</dt>
+                  <dd className="mt-1">
+                    <a
+                      href={approvedApplication.portfolioUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 break-all text-sm font-semibold text-brand-700 underline"
+                    >
+                      {approvedApplication.portfolioUrl}
+                      <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                    </a>
+                  </dd>
+                </div>
+              )}
+            </dl>
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-brand-100 pt-4">
+              <p className="text-xs text-ink-muted">
+                {approvedApplication.certificateAvailable || approvedApplication.applicationAvatarAvailable
+                  ? "Đơn có tệp đính kèm riêng tư."
+                  : "Đơn không có tệp đính kèm."} Tệp chỉ xem trong quy trình xét duyệt.
+              </p>
+              <Link
+                to={`/admin/xet-duyet-chuyen-gia?applicationId=${approvedApplication.id}`}
+                className="inline-flex items-center gap-2 rounded-xl border border-brand-200 px-3 py-2 text-xs font-semibold text-brand-800 transition-colors hover:bg-brand-50"
+              >
+                Mở đơn trong xét duyệt
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </>
+        )}
+      </Card>
+
+      <AdminExpertPublishedRecipes userId={account.id} />
+    </div>
+  )
+}
+
+function AdminExpertPublishedRecipes({ userId }: { userId: number }) {
+  const [result, setResult] = useState<RecipeSearchResult | null>(null)
+  const [formOptions, setFormOptions] = useState<RecipeFormOptions | null>(null)
+  const [page, setPage] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [revision, setRevision] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    void recipesApi
+      .getFormOptions()
+      .then((options) => {
+        if (!cancelled) setFormOptions(options)
+      })
+      .catch(() => {
+        if (!cancelled) setFormOptions(null)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+
+    void membersApi
+      .getRecipes(userId, page, EXPERT_RECIPE_PAGE_SIZE)
+      .then((recipes) => {
+        if (cancelled) return
+        if (recipes.totalPages > 0 && page >= recipes.totalPages) {
+          setPage(recipes.totalPages - 1)
+          return
+        }
+        if (recipes.totalPages === 0 && page !== 0) {
+          setPage(0)
+          return
+        }
+        setResult(recipes)
+      })
+      .catch((cause) => {
+        if (!cancelled) setError(apiMessage(cause))
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [userId, page, revision])
+
+  return (
+    <Card className="overflow-hidden">
+      <div className="flex flex-wrap items-start justify-between gap-3 p-5 sm:p-6">
+        <div>
+          <h2 className="text-lg font-bold text-ink">Công thức đang công khai</h2>
+          <p className="mt-1 text-xs text-ink-muted">
+            Sắp xếp theo ngày đăng gần nhất đến xa nhất. Chọn tiêu đề để mở bài viết trong tab mới.
+          </p>
+        </div>
+        {result && (
+          <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-800">
+            {result.totalElements.toLocaleString("vi-VN")} công thức
+          </span>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="border-t border-brand-100 px-5 py-6 text-center text-sm text-ink-muted" role="status">
+          Đang tải công thức...
+        </div>
+      ) : error ? (
+        <div className="border-t border-brand-100 p-5 text-center">
+          <p className="text-sm text-red-700" role="alert">{error}</p>
+          <Button
+            className="mt-3"
+            size="sm"
+            variant="outline"
+            onClick={() => setRevision((value) => value + 1)}
+          >
+            Thử tải lại
+          </Button>
+        </div>
+      ) : !result || result.items.length === 0 ? (
+        <p className="border-t border-brand-100 px-5 py-6 text-center text-sm text-ink-muted">
+          Chuyên gia chưa có công thức công khai.
+        </p>
+      ) : (
+        <>
+          <div className="overflow-x-auto border-t border-brand-100">
+            <table className="w-full min-w-[38rem] table-fixed text-left text-xs">
+              <colgroup>
+                <col className="w-[50%]" />
+                <col className="w-[20%]" />
+                <col className="w-[20%]" />
+                <col className="w-[10%]" />
+              </colgroup>
+              <thead className="bg-brand-50/50 text-ink-muted">
+                <tr>
+                  <th scope="col" className="px-5 py-3 pl-7">Công thức</th>
+                  <th scope="col" className="px-5 py-3">Thể loại</th>
+                  <th scope="col" className="px-5 py-3">Loại ăn chay</th>
+                  <th scope="col" className="px-5 py-3 pl-7">Lượt xem</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-brand-100/60 text-ink">
+                {result.items.map((recipe) => (
+                  <tr key={recipe.id} className="hover:bg-brand-50/30">
+                    <td className="px-5 py-3 pl-7">
+                      <Link
+                        to={`/cong-thuc/id/${recipe.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={`Mở công thức ${recipe.title} trong tab mới`}
+                        className="flex items-center justify-start gap-1.5 font-semibold text-brand-700 hover:underline"
+                      >
+                        <span className="line-clamp-2 min-w-0">{recipe.title}</span>
+                        <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      </Link>
+                    </td>
+                    <td className="px-5 py-3 text-ink-muted">
+                      {recipeCodeLabel(recipe.dishCategory, formOptions?.dishCategories, recipeCategoryFallbacks)}
+                    </td>
+                    <td className="px-5 py-3 text-ink-muted">
+                      {recipeCodeLabel(recipe.vegetarianType, formOptions?.vegetarianTypes, vegetarianTypeFallbacks)}
+                    </td>
+                    <td className="px-5 py-3 pl-7 tabular-nums text-ink-muted">
+                      {recipe.viewCount.toLocaleString("vi-VN")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {result.totalPages > 1 && (
+            <div className="flex items-center justify-between gap-3 border-t border-brand-100 px-5 py-3 text-xs">
+              <span className="text-ink-muted">
+                Trang {page + 1}/{result.totalPages}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={page === 0 || loading}
+                  onClick={() => setPage((value) => Math.max(0, value - 1))}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Trước
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={page + 1 >= result.totalPages || loading}
+                  onClick={() => setPage((value) => value + 1)}
+                >
+                  Sau
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </Card>
   )
 }

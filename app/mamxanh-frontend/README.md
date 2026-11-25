@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.68.0
+> **Version:** v1.73.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-11-01
+> **Last Updated:** 2026-11-24
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -25,7 +25,7 @@ Client lưu request UUID trước khi gửi, có nút Dừng khi đang chạy v�
 - `/admin/giao-dich` đọc giao dịch thật từ Backend cho Admin, thay phần minh họa cũ. Tìm theo mã `TX-<id>`, mã đơn payOS, tên/email; kết hợp gói, trạng thái và ngày tạo; hỗ trợ phân trang, làm mới, trạng thái tải/lỗi/thử lại/rỗng và chi tiết bằng hộp thoại hỗ trợ bàn phím.
 - Các thẻ thống kê tính trên toàn bộ kết quả theo bộ lọc đã áp dụng, không chỉ trang đang xem. Chỉ PAID được tính doanh thu; giữ riêng PENDING, FAILED và CANCELLED. Thời gian hiển thị theo Việt Nam. Không hiển thị trạng thái cổng payOS hoặc tỷ lệ thành công cố định.
 - Xuất CSV lấy cùng bộ lọc đã áp dụng, tối đa 10.000 dòng; bộ lọc đang nhập chưa áp dụng không ảnh hưởng file. Đây là dữ liệu local phục vụ đối soát, không phải hóa đơn hoặc xác nhận từ payOS. Chi tiết hiển thị chu kỳ của lần mua, không suy ra quyền hiện tại; gói lịch sử không xác định được hiện rõ thay vì gán Plus.
-- Test UI có mock trong `admin-transactions.spec.ts`; test stack thật trong `admin-transactions-real-stack.spec.ts`. Trang `/admin/nguoi-dung` đọc và cập nhật tài khoản qua API Backend. Nút quyền lợi AI mở màn hình chọn thao tác, rồi tách riêng form tặng gói và form tặng AI Credit; Credit grant được ghi vào `AI_CREDIT_LEDGER` và hiển thị trong lịch sử theo tài khoản. Trang cấu hình AI hiển thị tổng quan chỉ xem; mỗi phần có chế độ sửa riêng và yêu cầu Admin xác nhận danh sách thay đổi trước khi lưu.
+- Test UI có mock trong `admin-transactions.spec.ts`; test stack thật trong `admin-transactions-real-stack.spec.ts`. Trang `/admin/nguoi-dung` mặc định liệt kê Customer, Expert và Admin, có lọc vai trò cùng thống kê tổng tài khoản/đang hoạt động/Expert/đang bị khóa; tài khoản Admin chỉ xem. `/admin/chuyen-gia` vẫn có danh sách Expert riêng, xếp theo ngày lên role gần nhất từ mới đến cũ, kèm thống kê tổng/đang hoạt động/bị khóa và số công thức công khai; `/admin/chuyen-gia/:userId` hiển thị hồ sơ công khai, ngày lên Expert, bảng công thức đang công khai phân trang với tiêu đề mở bài trong tab mới, đơn đã duyệt gần nhất, lịch sử và đầy đủ thao tác tài khoản/quyền lợi AI. Tệp riêng tư vẫn mở từ luồng xét duyệt đơn. Nút quyền lợi AI mở màn hình chọn thao tác, rồi tách riêng form tặng gói và form tặng AI Credit; Credit grant được ghi vào `AI_CREDIT_LEDGER` và hiển thị trong lịch sử theo tài khoản. Trang cấu hình AI hiển thị tổng quan chỉ xem; mỗi phần có chế độ sửa riêng và yêu cầu Admin xác nhận danh sách thay đổi trước khi lưu.
 - Trang `/goi-ai` là overview gói và mức sử dụng AI, hiển thị số dư AI Credit hiện tại cho Customer/Expert và có nút **Nạp tiền** dẫn tới `/nap-ai-credit`. Trang nạp riêng hiển thị số dư, tỷ lệ quy đổi, giới hạn và bản xem trước Credit; nút **Nạp tiền qua payOS** tạo giao dịch, hết hạn sau 15 phút và chỉ cộng Credit sau webhook xác minh. `/giao-dich` hiển thị riêng giao dịch nạp, bao gồm trạng thái cần đối soát.
 
 ### Mức sử dụng AI — FR-11 / Issue #17

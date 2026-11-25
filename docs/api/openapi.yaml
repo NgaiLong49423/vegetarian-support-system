@@ -8279,6 +8279,57 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/admin/experts/{userId}:
+    get:
+      tags:
+      - admin-expert-controller
+      summary: "Get current Expert account, public profile, and latest approved application"
+      operationId: detail_2
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        "200":
+          description: Current Expert detail; application fields are null when no
+            approved application exists.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminExpertDetailResponse"
+        "404":
+          description: "EXPERT_NOT_FOUND: account is missing or no longer has the\
+            \ EXPERT role."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/admin/expert-applications:
     get:
       tags:
@@ -8341,7 +8392,7 @@ paths:
     get:
       tags:
       - expert-application-controller
-      operationId: detail_2
+      operationId: detail_3
       parameters:
       - name: id
         in: path
@@ -11000,17 +11051,17 @@ components:
           type: string
         paymentLinkId:
           type: string
+        paymentSuccess:
+          type: boolean
+        transactionAtUtc:
+          type: string
+          format: date-time
         orderCode:
           type: integer
           format: int64
         amount:
           type: integer
           format: int32
-        paymentSuccess:
-          type: boolean
-        transactionAtUtc:
-          type: string
-          format: date-time
     ConfirmNutritionEligibilityRequest:
       type: object
       properties:
@@ -11676,6 +11727,9 @@ components:
         accountStatus:
           type: string
         joinedAt:
+          type: string
+          format: date-time
+        expertSince:
           type: string
           format: date-time
         publishedRecipeCount:
@@ -12636,6 +12690,15 @@ components:
         lockedUsers:
           type: integer
           format: int64
+        activeExperts:
+          type: integer
+          format: int64
+        lockedExperts:
+          type: integer
+          format: int64
+        expertPublishedRecipeCount:
+          type: integer
+          format: int64
     ApiResponseListUnitResponse:
       type: object
       properties:
@@ -12999,6 +13062,17 @@ components:
           type: array
           items:
             type: string
+    AdminExpertDetailResponse:
+      type: object
+      properties:
+        account:
+          $ref: "#/components/schemas/AdminUserResponse"
+        avatarUrl:
+          type: string
+        bio:
+          type: string
+        approvedApplication:
+          $ref: "#/components/schemas/ExpertApplicationResponse"
     AiTelemetryReport:
       type: object
       properties:
