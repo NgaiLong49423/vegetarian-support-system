@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.156.0
+> **Version:** v2.160.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-11-24<br>
 > **Status:** Active
@@ -27,6 +27,24 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Allow an author to edit a hidden post only after an Administrator answers the appeal with an edit allowance; the post stays hidden until it is restored.
 - Notify the author in the application and by email of each appeal decision with the Administrator's reason.
 - Update FR-28, BR-27 and the M02 use cases with the appeal flow, UC-28.3, UC-28.4 and AC-28.6 to AC-28.9.
+## 2026-11-24 — Separate Admin Expert Management
+
+**Status:** Committed — `0bc5b4b4`.
+
+**Scope:** Add a dedicated Expert directory and detail view while keeping all account roles visible in general Admin account management.
+
+### Added
+
+- Add a dedicated Expert account list and profile view with the latest approved application details.
+- Add a paginated table of each Expert's public recipes with links to their article pages.
+- Add an Admin-only Expert detail API; keep private attachments in the existing application-review flow.
+- Add Expert status and published-recipe summary cards.
+
+### Changed
+
+- Keep all account roles visible in the general user list while retaining a dedicated Expert directory and profile with account history, status/role controls, and AI entitlement actions.
+- Sort the Expert directory by the most recent promotion date, newest first.
+- Show the Expert statistic and role filter on general user management; calculate Expert directory status and published-recipe metrics from every Expert page when older Backend responses omit aggregate fields.
 
 ### Fixed
 

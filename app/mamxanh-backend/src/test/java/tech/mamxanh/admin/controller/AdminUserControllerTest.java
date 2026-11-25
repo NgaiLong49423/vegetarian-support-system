@@ -31,7 +31,7 @@ class AdminUserControllerTest {
         PageResponse<AdminUserResponse> page = PageResponse.of(List.of(), 0, 20, 0);
         AdminUserResponse account = account();
         when(service.list("an", "CUSTOMER", "ACTIVE", 0, 20)).thenReturn(page);
-        when(service.summary()).thenReturn(new AdminUserSummaryResponse(1, 1, 0, 0));
+        when(service.summary()).thenReturn(new AdminUserSummaryResponse(1, 1, 0, 0, 0, 0, 0));
         when(service.detail(42L)).thenReturn(account);
 
         assertThat(controller.list("an", "CUSTOMER", "ACTIVE", 0, 20)).isSameAs(page);
@@ -57,6 +57,6 @@ class AdminUserControllerTest {
 
     private static AdminUserResponse account() {
         return new AdminUserResponse(42L, "Nguyễn An", "an@example.test", "CUSTOMER", "ACTIVE",
-                LocalDateTime.of(2026, 10, 20, 8, 0), 3L);
+                LocalDateTime.of(2026, 10, 20, 8, 0), null, 3L);
     }
 }

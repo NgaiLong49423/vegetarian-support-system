@@ -124,6 +124,11 @@ public class ExpertApplicationService {
     @Transactional(readOnly = true)
     public ExpertApplicationResponse adminDetail(long id) { return applications.findById(id); }
 
+    @Transactional(readOnly = true)
+    public ExpertApplicationResponse adminLatestApprovedForUser(long userId) {
+        return applications.findLatestApprovedByUserId(userId);
+    }
+
     @Transactional
     public ExpertApplicationResponse approve(long id, String note) {
         long reviewer = userId();

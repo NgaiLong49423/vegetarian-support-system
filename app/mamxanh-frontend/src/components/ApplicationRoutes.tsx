@@ -33,7 +33,10 @@ import { NotificationsPage } from "../pages/NotificationsPage"
 import { useAiChat } from "./AiChatContext"
 import { AdminDashboard } from "../pages/AdminDashboard"
 import { AiTelemetryPage } from "../pages/AiTelemetryPage"
-import { AdminUserManagement } from "../pages/AdminUserManagement"
+import {
+  AdminExpertManagement,
+  AdminUserManagement,
+} from "../pages/AdminUserManagement"
 import { AdminTransactionsPage } from "../pages/AdminTransactionsPage"
 import { AdminAiConfigurationPage } from "../pages/AdminAiConfigurationPage"
 import { AdminReportsPage } from "../pages/AdminReportsPage"
@@ -148,6 +151,14 @@ export default function ApplicationRoutes() {
               <Route
                 path="/admin/nguoi-dung"
                 element={<AdminUserManagement />}
+              />
+              <Route
+                path="/admin/chuyen-gia"
+                element={<AdminExpertManagement />}
+              />
+              <Route
+                path="/admin/chuyen-gia/:userId"
+                element={<AdminExpertManagement />}
               />
               <Route
                 path="/admin/giao-dich"

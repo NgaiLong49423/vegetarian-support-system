@@ -11,6 +11,7 @@ export interface AdminUser {
   role: AdminUserRole;
   accountStatus: AdminUserStatus;
   joinedAt: string;
+  expertSince: string | null;
   publishedRecipeCount: number;
 }
 
@@ -57,6 +58,33 @@ export interface AdminUserSummary {
   activeUsers: number;
   expertUsers: number;
   lockedUsers: number;
+  activeExperts: number;
+  lockedExperts: number;
+  expertPublishedRecipeCount: number;
+}
+
+export interface AdminExpertApplication {
+  id: number;
+  userId: number;
+  displayName: string;
+  email: string;
+  experience: string;
+  vegetarianType: string;
+  sampleRecipeSummary: string;
+  portfolioUrl: string | null;
+  certificateAvailable: boolean;
+  applicationAvatarAvailable: boolean;
+  status: "APPROVED";
+  adminNote: string | null;
+  submittedAt: string;
+  reviewedAt: string | null;
+}
+
+export interface AdminExpertDetail {
+  account: AdminUser;
+  avatarUrl: string | null;
+  bio: string | null;
+  approvedApplication: AdminExpertApplication | null;
 }
 
 export async function listAdminUsers(params: { query?: string; role?: string; status?: string; page: number; size: number }) {
@@ -71,6 +99,11 @@ export async function getAdminUserSummary() {
 
 export async function getAdminUser(userId: number) {
   try { return (await apiClient.get<AdminUser>(`/admin/users/${userId}`)).data; }
+  catch (error) { throw asApiError(error); }
+}
+
+export async function getAdminExpertDetail(userId: number) {
+  try { return (await apiClient.get<AdminExpertDetail>(`/admin/experts/${userId}`)).data; }
   catch (error) { throw asApiError(error); }
 }
 

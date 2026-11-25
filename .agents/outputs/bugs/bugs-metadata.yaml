@@ -1,12 +1,12 @@
 # Đồng bộ develop: BUG-067–069 của FR-10 chuyển thành BUG-082–084, giữ bản ghi develop ở mã gốc.
 schema_version: 1
-last_updated: 2026-11-21
+last_updated: 2026-11-24
 # BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
 # BUG-066 được cấp khi đồng bộ PR #161 ngày 2026-10-25 vì BUG-065 đã được dùng cho lỗi OpenAPI.
 # BUG-078–080 đã được cấp trên nhánh feature/17-ai-usage-telemetry, tránh cấp trùng khi tích hợp.
 # Đồng bộ PR #227: bản ghi quyền FR-21 của nhánh feature đổi BUG-086 → BUG-095; BUG-086 trên develop được giữ nguyên.
-next_id: 120
+next_id: 121
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -16,6 +16,16 @@ status_definitions:
 # Đồng bộ PR #194: mã gốc FR-10 → mã sau tích hợp: BUG-054 → BUG-070, BUG-055 → BUG-071, BUG-056 → BUG-072, BUG-057 → BUG-073, BUG-058 → BUG-074, BUG-059 → BUG-075, BUG-060 → BUG-076, BUG-066 → BUG-077.
 # Bản ghi BUG-060 của FR-11 tại 79394340 trùng lỗi privacy đã hợp nhất dưới BUG-076; giữ BUG-060 của develop.
 bugs:
+# Sổ Issue chưa có mục cho FR-61 trong SRS; kiểm tra thấy FR-62–FR-66 đã có Issue liên quan.
+  - id: BUG-120
+    title: Sổ Issue chưa có mục cho FR-61 hiện có trong SRS
+    status: RECORDED
+    severity: Unknown
+    area: Quy trình tài liệu/Issue Management
+    file: .agents/outputs/bugs/BUG-120.md
+    created: 2026-11-24
+    updated: 2026-11-24
+    related_issue: Unknown
 # Merge origin/develop 2026-11-21: BUG-112–116 của nhánh đổi thành BUG-115–119, giữ BUG-112–114 đã có trên develop.
   - id: BUG-119
     title: Docker CI báo contract OpenAPI lệch snapshot
@@ -24,7 +34,7 @@ bugs:
     area: Backend/API/OpenAPI CI
     file: .agents/outputs/bugs/BUG-119.md
     created: 2026-11-21
-    updated: 2026-11-21
+    updated: 2026-11-24
     related_issue: Unknown
   - id: BUG-118
     title: Test quyền Expert thất bại vì Mockito có stub không dùng
