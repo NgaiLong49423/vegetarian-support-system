@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.64.2
+> **Version:** v0.65.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-11-21
+> **Last Updated:** 2026-11-24
 > **Status:** Active
 
 # API Integration Guide
@@ -301,6 +301,9 @@ Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36, #51).
 | `REPORT_NOT_FOUND` | 404 | `/me/reports/{reportId}` (mục 22) hoặc `/admin/reports/{reportId}` (mục 21) với ID không phải báo cáo Recipe Post. |
 | `REPORT_STATUS_CONFLICT` | 409 | Tiếp nhận báo cáo không còn `OPEN`, hoặc ghi kết luận khi báo cáo chưa được chính Administrator đó tiếp nhận hay đã `RESOLVED`. Xem mục 21. |
 | `REPORT_DECISION_NOT_APPLICABLE` | 409 | Kết luận `HIDE_RECIPE` cho bài tác giả đã xóa, hoặc `LOCK_AUTHOR` khi tác giả là Administrator. Báo cáo giữ `IN_REVIEW`. Xem mục 21. |
+| `APPEAL_NOT_FOUND` | 404 | Bài của tác giả không ở trạng thái `HIDDEN` do `HIDE_RECIPE`, hoặc báo cáo không có khiếu nại (`/admin/appeals/{reportId}`). Xem mục 21a. |
+| `APPEAL_NOT_ALLOWED` | 409 | Tác giả gửi khiếu nại lần hai cho cùng một quyết định ẩn. Xem mục 21a. |
+| `APPEAL_STATE_INVALID` | 409 | Thao tác không đúng bước khiếu nại: gửi duyệt lại khi chưa được cho sửa, `ALLOW_EDIT` sau khi đã gửi duyệt lại, kết luận khiếu nại đã kết thúc, hai Administrator kết luận cùng lúc, hoặc `RESTORE` khi bài không còn ẩn. Xem mục 21a. |
 | `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `UNSUPPORTED_MEDIA_TYPE` | 404, 405, 415 | Lỗi định tuyến/định dạng do framework phát hiện. |
 | `INTERNAL_ERROR` | 500 | Lỗi không mong đợi; `detail` không chứa thông tin nội bộ. |
 
@@ -652,6 +655,23 @@ Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dù
 - Báo cáo `RESOLVED` không đổi được nữa: không có endpoint sửa, `claim` và `resolve` đều trả `409`. Bản ghi báo cáo (`decision`, `decision_reason`, `handled_by`, `handled_at`) là audit của quyết định (SRS 3.12, NFR-08). Báo cáo `IN_REVIEW` cũ chưa có `handledBy` (đổi từ `PROCESSING` ở V9) vẫn tiếp nhận được.
 - Số lượng báo cáo không tự tạo chế tài; mỗi báo cáo cần một quyết định riêng (BR-26, BR-58). Kết luận của một báo cáo không tự đổi các báo cáo khác trên cùng bài.
 - Khi giải quyết, Backend ghi `NOTIFICATION` trong cùng transaction: người báo cáo nhận `REPORT_RESULT` (kết quả chung, không nêu chế tài cụ thể), tác giả nhận `MODERATION_DECISION` với lý do của Administrator khi kết luận là cảnh báo, ẩn bài hoặc khóa tài khoản. Nội dung thông báo không chứa tên, email hay mô tả của người báo cáo (AC-49.4). `REPORT_RESULT` có `targetPath = /cong-thuc/id/{recipeId}` khi bài vẫn công khai; khi kết luận là ẩn bài thì `targetPath` là `null` vì bài không còn mở được. Các thông báo này cũng được gửi email, xem mục 23.
+
+## 21a. Khiếu nại bài bị ẩn — FR-28, BR-27
+
+Khiếu nại nằm trên chính dòng `REPORT` có `decision = HIDE_RECIPE` mới nhất của bài (V45); mỗi quyết định ẩn có một vòng khiếu nại. Trạng thái `appealStatus`: `null` (chưa khiếu nại), `PENDING`, `EDIT_ALLOWED`, `RESUBMITTED`, `RESTORED`, `KEPT_HIDDEN`.
+
+| Endpoint | Cách tích hợp |
+| --- | --- |
+| `GET /api/v1/recipes/{recipeId}/appeal` | Expert tác giả. `RecipeAppealResponse`: `reportId`, `recipeId`, `recipeTitle`, `hideReason`, `hiddenAt`, `appealStatus`, `appealMessage`, `appealedAt`, `resubmittedAt`, `adminReason`, `decidedAt`. Không có người báo cáo hay mô tả báo cáo (BR-28). Bài không ẩn trả `404 APPEAL_NOT_FOUND`; bài của người khác `403 RECIPE_EDIT_NOT_ALLOWED`. |
+| `POST /api/v1/recipes/{recipeId}/appeal` | Body `{ "message" }`, bỏ khoảng trắng đầu cuối, 10–1000 ký tự. Trả `201` với `appealStatus = PENDING`; lần hai `409 APPEAL_NOT_ALLOWED`. |
+| `POST /api/v1/recipes/{recipeId}/appeal/resubmit` | Không có body. Chỉ khi `EDIT_ALLOWED`; chuyển `RESUBMITTED`, bài vẫn `HIDDEN`. |
+| `GET /api/v1/admin/appeals?status=&page=&size=` | Administrator. `PageResponse<AdminAppealResponse>` (`appeal`, `author` gồm `id`, `displayName`, `email`, `accountStatus`, `recipe = null`), hoạt động mới nhất trước (thời điểm gửi duyệt lại, nếu không có thì thời điểm khiếu nại). `status` có thể lặp lại (`status=PENDING&status=RESUBMITTED`); bỏ trống là mọi khiếu nại. |
+| `GET /api/v1/admin/appeals/{reportId}` | Như trên, thêm `recipe` là nội dung đầy đủ của bài đang ẩn. |
+| `POST /api/v1/admin/appeals/{reportId}/resolve` | Body `{ "decision", "reason" }`. `decision`: `RESTORE` (bài về `PUBLISHED`), `KEEP_HIDDEN`, `ALLOW_EDIT` (chỉ khi `PENDING`). `reason` 10–500 ký tự. Backend khóa dòng `REPORT` nên hai Administrator kết luận cùng lúc chỉ một người thành công. |
+
+- Khiếu nại chỉ còn hiệu lực khi bài vẫn `HIDDEN` và báo cáo của nó là quyết định `HIDE_RECIPE` mới nhất của bài. Khi có quyết định ẩn mới hơn hoặc tác giả đã xóa bài, khiếu nại cũ không còn hiện trong hàng chờ ở các trạng thái đang mở, và mọi kết luận trên nó trả `409 APPEAL_STATE_INVALID`; tác giả khiếu nại lại trên quyết định mới.
+- Khi khiếu nại của quyết định ẩn mới nhất là `EDIT_ALLOWED`, `PUT /api/v1/recipes/{recipeId}` và các endpoint ảnh của bài cho phép tác giả sửa bài `HIDDEN`; bài vẫn ẩn. Ở mọi trường hợp khác, bài ẩn vẫn trả `403 RECIPE_HIDDEN`.
+- Mỗi kết luận ghi `NOTIFICATION` `MODERATION_DECISION` cho tác giả kèm lý do (`targetPath = /ho-so/chuyen-gia`) và gửi email như mục 23. `appeal_handled_by`, `appeal_handled_at`, `appeal_decision_reason` giữ kết luận gần nhất; các thông báo giữ lịch sử từng bước.
 
 ## 22. Báo cáo công thức — FR-26/27, FR-30
 

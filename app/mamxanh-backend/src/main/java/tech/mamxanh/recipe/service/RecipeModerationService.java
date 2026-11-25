@@ -35,4 +35,19 @@ public class RecipeModerationService {
         }
         return true;
     }
+
+    /**
+     * BR-27: an Administrator's appeal decision makes a hidden post public again. Returns {@code false} when the
+     * post is no longer hidden (for example the author deleted it), so nothing is published.
+     */
+    @Transactional
+    public boolean restore(long recipeId) {
+        RecipePostEntity recipe = repository.lockById(recipeId).orElse(null);
+        if (recipe == null || !"HIDDEN".equals(recipe.getStatus())) {
+            return false;
+        }
+        recipe.setStatus("PUBLISHED");
+        recipe.setUpdatedAt(LocalDateTime.now(clock));
+        return true;
+    }
 }

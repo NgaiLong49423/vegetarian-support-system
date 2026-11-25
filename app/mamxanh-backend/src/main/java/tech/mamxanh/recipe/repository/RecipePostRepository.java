@@ -18,6 +18,15 @@ public interface RecipePostRepository extends JpaRepository<RecipePostEntity, Lo
     @Query("select r from RecipePostEntity r where r.id = :id")
     java.util.Optional<RecipePostEntity> lockById(@Param("id") long id);
 
+    /**
+     * BR-27: an Administrator answered the appeal on this post's latest hide decision with ALLOW_EDIT. An older
+     * hide decision's appeal never unlocks editing, so a later hide always starts locked.
+     */
+    @Query(value = "SELECT CASE WHEN (SELECT TOP 1 appeal_status FROM [REPORT] WHERE recipe_id = :id "
+            + "AND decision = 'HIDE_RECIPE' ORDER BY handled_at DESC, report_id DESC) = 'EDIT_ALLOWED' "
+            + "THEN 1 ELSE 0 END", nativeQuery = true)
+    int editAllowedByAppeal(@Param("id") long id);
+
     Page<RecipePostEntity> findAllByStatusAndTitleContainingIgnoreCaseOrderByPublishedAtDesc(
             String status, String title, Pageable pageable);
 

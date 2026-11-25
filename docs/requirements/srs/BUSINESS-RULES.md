@@ -1,8 +1,8 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v2.26.1
+> **Version:** v2.27.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-11-21
+> **Last Updated:** 2026-11-24
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -235,7 +235,7 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-27 — Quy tắc phục hồi bài công thức bị ẩn
 
 - **Mã quy tắc:** BR-27
-- **Nội dung:** Bài công thức bị ẩn không tự được công khai lại khi tác giả sửa hoặc khi báo cáo đóng; chỉ Admin được khôi phục bài như một quyết định hậu kiểm.
+- **Nội dung:** Bài công thức bị ẩn không tự được công khai lại khi tác giả sửa hoặc khi báo cáo đóng; chỉ Admin được khôi phục bài như một quyết định hậu kiểm. Tác giả được gửi một khiếu nại cho mỗi quyết định ẩn; Admin mở lại bài, giữ ẩn, hoặc cho phép sửa. Khi được cho phép sửa, bài vẫn ẩn cho tới khi tác giả gửi duyệt lại và Admin mở lại; mọi kết luận khiếu nại cần lý do 10–500 ký tự và được thông báo cho tác giả.
 
 ---
 

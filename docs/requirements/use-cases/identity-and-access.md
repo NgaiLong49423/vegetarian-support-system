@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M02
 > **File:** `docs/requirements/use-cases/identity-and-access.md`
-> **Version:** v2.8.1
+> **Version:** v2.9.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-11-21
+> **Last Updated:** 2026-11-24
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -197,6 +197,24 @@ Detailed interaction flows for current-baseline requirements. Stable UC IDs are 
 - **Alternative / Security:** Thiếu lý do bị chặn; hành động trái quyền không thực hiện.
 - **Postconditions:** Report `RESOLVED`, audit/result được lưu và thông báo theo rule.
 - **Traceability / Acceptance Coverage:** FR-28; BR-26; [AC-28.2–AC-28.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-28).
+
+<a id="uc-28-3"></a>
+### UC-28.3 — Chuyên gia khiếu nại bài bị ẩn
+- **Goal / Primary Actor:** Expert tác giả đề nghị Admin xem lại quyết định ẩn bài của mình.
+- **Trigger / Preconditions:** Bài đang `HIDDEN` do `HIDE_RECIPE`, chưa khiếu nại; Expert đang hoạt động và là tác giả.
+- **Main Flow:** Expert mở hồ sơ Chuyên gia, xem lý do ẩn, nhập lời khiếu nại 10–1000 ký tự và gửi; khi Admin cho phép sửa, Expert sửa bài (bài vẫn ẩn) rồi bấm "Gửi duyệt lại".
+- **Alternative / Security:** Khiếu nại lần hai, gửi duyệt lại khi chưa được cho sửa, tài khoản khác hoặc tài khoản bị khóa đều bị từ chối; tác giả không thấy danh tính người báo cáo.
+- **Postconditions:** Khiếu nại `PENDING` hoặc `RESUBMITTED`; bài vẫn `HIDDEN`.
+- **Traceability / Acceptance Coverage:** FR-28; BR-27, BR-28; [AC-28.6, AC-28.8, AC-28.9](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-28).
+
+<a id="uc-28-4"></a>
+### UC-28.4 — Administrator xử lý khiếu nại
+- **Goal / Primary Actor:** Administrator kết luận khiếu nại của tác giả.
+- **Trigger / Preconditions:** Khiếu nại `PENDING` hoặc `RESUBMITTED`.
+- **Main Flow:** Admin mở trang Khiếu nại, xem nội dung bài đang ẩn, lý do ẩn và lời khiếu nại; chọn mở lại bài, giữ ẩn, hoặc (chỉ khi `PENDING`) cho phép sửa; nhập lý do 10–500 ký tự.
+- **Alternative / Security:** Hai Admin kết luận cùng lúc thì chỉ một được ghi nhận; bài đã bị tác giả xóa không thể mở lại; chỉ Administrator truy cập.
+- **Postconditions:** Khiếu nại `RESTORED`, `KEPT_HIDDEN` hoặc `EDIT_ALLOWED`; bài `PUBLISHED` khi mở lại; tác giả nhận thông báo và email.
+- **Traceability / Acceptance Coverage:** FR-28; BR-26, BR-27; [AC-28.7–AC-28.9](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-28).
 
 <a id="uc-29-1"></a>
 ### UC-29.1 — Người gửi xem lịch sử báo cáo của mình
@@ -733,6 +751,19 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-28).
    - Bước 5: Hệ thống gửi thông báo giải thích kết quả tới tác giả bài viết (FR-29).
 3. **Error Flow:**
    - Administrator nhấn hoàn tất xử lý vi phạm mà không nhập lý do kết luận -> Hệ thống từ chối lưu và yêu cầu bắt buộc nhập lý do.
+
+##### C. Luồng Khiếu nại bài bị ẩn (UC-28.3, UC-28.4)
+1. **Main Flow:**
+   - Bước 1: Chuyên gia mở hồ sơ Chuyên gia, thấy bài "Đã bị Admin ẩn" kèm lý do ẩn và nhấn "Khiếu nại".
+   - Bước 2: Chuyên gia nhập lời khiếu nại (10–1000 ký tự) và gửi; khiếu nại chuyển `PENDING`, bài vẫn ẩn.
+   - Bước 3: Administrator mở trang "Khiếu nại bài bị ẩn", xem nội dung bài, lý do ẩn ban đầu và lời khiếu nại.
+   - Bước 4: Administrator chọn "Mở lại bài", "Giữ ẩn" hoặc "Cho phép sửa" và nhập lý do (10–500 ký tự); hệ thống thông báo kết luận cho tác giả.
+2. **Alternative Flow (Cho phép sửa):**
+   - Bước 1: Khiếu nại chuyển `EDIT_ALLOWED`; Chuyên gia mở trang sửa bài, sửa nội dung hoặc ảnh và lưu; bài vẫn ẩn.
+   - Bước 2: Chuyên gia nhấn "Gửi duyệt lại"; khiếu nại chuyển `RESUBMITTED`.
+   - Bước 3: Administrator xem bản đã sửa và chọn "Mở lại bài" hoặc "Giữ ẩn".
+3. **Error Flow:**
+   - Gửi khiếu nại lần hai, thao tác sai bước, hoặc mở lại bài tác giả đã xóa -> Hệ thống từ chối và yêu cầu tải lại trang.
 
 #### 7. Hậu điều kiện (Postconditions)
 - Trạng thái báo cáo chuyển thành `RESOLVED`.
