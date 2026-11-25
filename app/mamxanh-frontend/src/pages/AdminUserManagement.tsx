@@ -751,7 +751,7 @@ function AdminAccountManagementPage({
                         {scope === "experts"
                           ? user.expertSince
                             ? date(user.expertSince)
-                            : "Chưa ghi nhận"
+                            : null
                           : date(user.joinedAt)}
                       </td>
                       <td className="px-4 py-3 font-semibold">
@@ -1503,17 +1503,21 @@ function AdminExpertDetailPanel({
             )}
           </div>
         </div>
-        <dl className="mt-5 grid gap-3 border-t border-brand-100 pt-4 sm:grid-cols-2 lg:grid-cols-4">
+        <dl
+          className={`mt-5 grid gap-3 border-t border-brand-100 pt-4 sm:grid-cols-2 ${
+            account.expertSince ? "lg:grid-cols-4" : "lg:grid-cols-3"
+          }`}
+        >
           <div>
             <dt className="text-xs text-ink-muted">Ngày tham gia</dt>
             <dd className="mt-1 text-sm font-semibold text-ink">{date(account.joinedAt)}</dd>
           </div>
-          <div>
-            <dt className="text-xs text-ink-muted">Ngày lên Expert</dt>
-            <dd className="mt-1 text-sm font-semibold text-ink">
-              {account.expertSince ? date(account.expertSince) : "Chưa ghi nhận"}
-            </dd>
-          </div>
+          {account.expertSince && (
+            <div>
+              <dt className="text-xs text-ink-muted">Ngày lên Expert</dt>
+              <dd className="mt-1 text-sm font-semibold text-ink">{date(account.expertSince)}</dd>
+            </div>
+          )}
           <div>
             <dt className="text-xs text-ink-muted">Công thức đã công khai</dt>
             <dd className="mt-1 text-sm font-semibold text-ink">{account.publishedRecipeCount} món</dd>

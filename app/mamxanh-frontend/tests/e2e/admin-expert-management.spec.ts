@@ -168,6 +168,8 @@ test('loads the expert directory and changes pages', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Sau' }).click()
   await expect(page.getByText('Trần Bình', { exact: true })).toBeVisible()
+  const secondExpertRow = page.getByRole('row', { name: /Trần Bình/ })
+  await expect(secondExpertRow.getByRole('cell').nth(2)).toBeEmpty()
   await expect.poll(() => listRequests.some((url) => url.searchParams.get('page') === '1')).toBe(true)
   await page.getByRole('button', { name: 'Trước' }).click()
   await expect(page.getByText('Nguyễn An', { exact: true })).toBeVisible()
@@ -205,6 +207,21 @@ test('opens the profile, shows no approved application, and pages through public
   await page.getByRole('button', { name: 'Sau' }).last().click()
   await expect(page.getByRole('link', { name: 'Mở công thức Canh rau củ trong tab mới' })).toBeVisible()
   await expect.poll(() => recipeRequests.some((url) => url.searchParams.get('page') === '1')).toBe(true)
+})
+
+test('hides the Expert date when promotion history has no date', async ({ page }) => {
+  await mockAdminExpertApi(page, {
+    detail: {
+      ...accountDetail,
+      account: { ...firstExpert, expertSince: null },
+    },
+  })
+  await page.goto('/admin/chuyen-gia/42')
+
+  await expect(page.getByRole('heading', { name: 'Hồ sơ Chuyên gia' })).toBeVisible()
+  await expect(page.getByText('Ngày lên Expert', { exact: true })).toHaveCount(0)
+  await expect(page.getByText('Ngày tham gia', { exact: true })).toBeVisible()
+  await expect(page.getByText('Công thức đã công khai', { exact: true })).toBeVisible()
 })
 
 test('shows profile 404 and returns to the expert directory', async ({ page }) => {
