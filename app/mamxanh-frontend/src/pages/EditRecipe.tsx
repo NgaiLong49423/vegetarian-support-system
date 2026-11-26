@@ -8,6 +8,8 @@ import { Button, Card } from '../components/ui';
 import { ApiError, asApiError } from '../lib/apiClient';
 import { recipeApi, recipesApi, type RecipeAiContentType, type RecipePost, type RecipeReferenceData, type UpdateRecipePost } from '../api/recipes';
 import { RecipeAiAssistance } from '../components/RecipeAiAssistance';
+import { RecipeImageUploader, type ImageItem } from '../components/RecipeImageUploader';
+import { recipeMediaApi } from '../services/recipeMediaApi';
 import { assessRecipeDifficulty } from '../utils/difficultyCalculator';
 import { recipeAppealsApi } from '../api/appeals';
 
@@ -40,6 +42,10 @@ export function EditRecipe() {
   const [aiError, setAiError] = useState<{ contentType: RecipeAiContentType; message: string } | null>(null);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [mediaList, setMediaList] = useState<ImageItem[]>([]);
+  const [mediaUploading, setMediaUploading] = useState(false);
+  const [mediaError, setMediaError] = useState('');
+  const [mediaDirty, setMediaDirty] = useState(false);
   // BR-27: a hidden post opens for editing only after an Administrator answered the appeal with ALLOW_EDIT.
   const [editAllowed, setEditAllowed] = useState(false);
 
@@ -53,6 +59,15 @@ export function EditRecipe() {
     recipeApi.getForAuthor(recipeId).then(async (data) => {
       if (!alive) return;
       setRecipe(data);
+      const initialMedia: ImageItem[] = (data.media ?? []).map((m, idx) => ({
+        id: `existing-media-${idx}-${m.displayOrder ?? idx + 1}`,
+        url: m.url,
+        mimeType: m.mimeType || 'image/jpeg',
+        displayOrder: m.displayOrder ?? idx + 1,
+        isCover: m.cover ?? idx === 0,
+      }));
+      setMediaList(initialMedia);
+      setMediaDirty(false);
       if (data.status === 'HIDDEN') {
         const appeal = await recipeAppealsApi.get(recipeId).catch(() => null);
         if (!alive || appeal?.appealStatus !== 'EDIT_ALLOWED') return;
@@ -135,6 +150,14 @@ export function EditRecipe() {
   const save = async (event: FormEvent) => {
     event.preventDefault();
     if (!form) return;
+    if (mediaUploading) {
+      setError('Hình ảnh đang được tải lên, vui lòng đợi hoàn tất trước khi lưu.');
+      return;
+    }
+    if (mediaList.some((img) => img.uploadError)) {
+      setError('Có ảnh bị lỗi tải lên. Vui lòng xóa ảnh lỗi trước khi lưu.');
+      return;
+    }
     const invalidIndex = form.ingredients.findIndex((ingredient) => !references?.ingredients.some((option) =>
       option.ingredientId === ingredient.ingredientId && option.unitId === ingredient.unitId));
     if (invalidIndex >= 0) {
@@ -147,6 +170,20 @@ export function EditRecipe() {
     setFieldErrors({});
     try {
       const updated = await recipeApi.update(recipeId, form);
+      if (mediaDirty) {
+        if (mediaList.length > 0) {
+          await recipeMediaApi.updateRecipeMedia(recipeId, {
+            mediaItems: mediaList.map((item, idx) => ({
+              blobUrl: item.url,
+              mimeType: item.mimeType || 'image/jpeg',
+              displayOrder: idx + 1,
+              isCover: item.isCover,
+            })),
+          });
+        } else if (recipe?.media && recipe.media.length > 0) {
+          await recipeMediaApi.deleteRecipeMedia(recipeId);
+        }
+      }
       navigate('/ho-so/chuyen-gia', { replace: true, state: { recipeUpdated: updated, notice: editAllowed ? 'Đã lưu. Bài vẫn đang ẩn, hãy bấm Gửi duyệt lại để Admin xem xét.' : 'Lưu thay đổi thành công.' } });
     } catch (cause) {
       const apiError = asApiError(cause);
@@ -249,9 +286,28 @@ export function EditRecipe() {
           <button type="button" disabled={!references.ingredients.length} className="mt-4 text-sm font-semibold text-brand-700 disabled:cursor-not-allowed disabled:text-ink-muted" onClick={() => { const first = references.ingredients[0]; if (first) setField('ingredients', [...form.ingredients, { ingredientId: first.ingredientId, unitId: first.unitId, quantity: 1 }]); }}>+ Thêm dòng nguyên liệu</button>
           {fieldError('ingredients')}
         </Card>
-        {recipe.media.length > 0 && <Card className="p-5 sm:p-6"><div className="mb-3 flex items-center justify-between"><div><h2 className="text-lg font-bold text-ink">Hình ảnh</h2><p className="text-xs text-ink-muted">Ảnh được giữ nguyên khi lưu nội dung. Quản lý ảnh chưa hỗ trợ.</p></div><ImagePlus className="h-5 w-5 text-brand-600" /></div><div className="flex flex-wrap gap-3">{recipe.media.map((image) => <div className="relative" key={image.displayOrder}><img src={image.url} alt="Ảnh công thức" className="h-20 w-20 rounded-lg object-cover" />{image.cover && <span className="absolute bottom-1 left-1 rounded bg-paper/90 px-1.5 py-0.5 text-[10px] font-semibold">Ảnh bìa</span>}</div>)}</div></Card>}
+        <Card className="space-y-4 p-5 sm:p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-ink">Hình ảnh bài công thức</h2>
+              <p className="text-xs text-ink-muted">Tối đa 5 ảnh, đúng 1 ảnh bìa. Định dạng JPG, PNG hoặc WebP (tối đa 5 MB/ảnh).</p>
+            </div>
+            <ImagePlus className="h-5 w-5 text-brand-600" />
+          </div>
+          <RecipeImageUploader
+            images={mediaList}
+            onChange={(images) => {
+              setMediaList(images);
+              setMediaDirty(true);
+              setMediaError('');
+            }}
+            onUploadingChange={setMediaUploading}
+            maxImages={5}
+          />
+          {mediaError && <p role="alert" className="text-xs text-red-700">{mediaError}</p>}
+        </Card>
       </div>
-      <aside className="space-y-4 lg:sticky lg:top-6"><Card className="p-5"><p className="mb-1 text-xs font-bold uppercase tracking-wide text-brand-600">Đang chỉnh sửa</p><h2 className="text-lg font-bold text-ink">{recipe.title}</h2><p className="mt-2 text-sm text-ink-muted">{editAllowed ? 'Bài đang ẩn. Lưu xong, quay lại hồ sơ và bấm Gửi duyệt lại.' : 'Bài đang công khai. Khi lưu hợp lệ, nội dung mới được cập nhật ngay.'}</p><Button type="submit" disabled={saving} className="mt-5 w-full">{saving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Lưu thay đổi</Button><Button type="button" variant="outline" className="mt-3 w-full" onClick={() => navigate('/ho-so/chuyen-gia')}>Hủy</Button></Card><div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-950"><strong>Lưu ý:</strong> Bài bị quản trị viên ẩn chỉ sửa được khi quản trị viên cho phép qua khiếu nại. Chỉ quản trị viên mới có thể công khai lại bài.</div></aside>
+      <aside className="space-y-4 lg:sticky lg:top-6"><Card className="p-5"><p className="mb-1 text-xs font-bold uppercase tracking-wide text-brand-600">Đang chỉnh sửa</p><h2 className="text-lg font-bold text-ink">{recipe.title}</h2><p className="mt-2 text-sm text-ink-muted">{editAllowed ? 'Bài đang ẩn. Lưu xong, quay lại hồ sơ và bấm Gửi duyệt lại.' : 'Bài đang công khai. Khi lưu hợp lệ, nội dung mới được cập nhật ngay.'}</p><Button type="submit" disabled={saving || mediaUploading} className="mt-5 w-full">{saving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{mediaUploading ? 'Đang tải ảnh…' : 'Lưu thay đổi'}</Button><Button type="button" variant="outline" className="mt-3 w-full" onClick={() => navigate('/ho-so/chuyen-gia')}>Hủy</Button></Card><div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-950"><strong>Lưu ý:</strong> Bài bị quản trị viên ẩn chỉ sửa được khi quản trị viên cho phép qua khiếu nại. Chỉ quản trị viên mới có thể công khai lại bài.</div></aside>
     </form>
   </PageContainer>;
 }
