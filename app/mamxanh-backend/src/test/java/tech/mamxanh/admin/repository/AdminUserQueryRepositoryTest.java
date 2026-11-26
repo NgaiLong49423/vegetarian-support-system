@@ -46,7 +46,7 @@ class AdminUserQueryRepositoryTest {
         List<AdminUserResponse> result = repository.page("  an%_[  ", "CUSTOMER", "ACTIVE", 2, 20);
 
         assertThat(result).containsExactly(new AdminUserResponse(42L, "Nguyễn An", "an@example.test",
-                "CUSTOMER", "ACTIVE", CREATED, 3));
+                "CUSTOMER", "ACTIVE", CREATED, null, 3));
         verify(jdbc).query(anyString(), ArgumentMatchers.<RowMapper<AdminUserResponse>>any(),
                 eq(new Object[] { "CUSTOMER", "ACTIVE", "%an[%][_][[]%", "%an[%][_][[]%", "%an[%][_][[]%", 40L, 20 }));
     }
@@ -58,7 +58,7 @@ class AdminUserQueryRepositoryTest {
                 .thenAnswer(call -> call.<RowMapper<AdminUserSummaryResponse>>getArgument(1).mapRow(summaryResultSet(), 0));
 
         assertThat(repository.count(null, null, null)).isEqualTo(8L);
-        assertThat(repository.summary()).isEqualTo(new AdminUserSummaryResponse(8, 6, 2, 1));
+        assertThat(repository.summary()).isEqualTo(new AdminUserSummaryResponse(8, 6, 2, 1, 0, 0, 0));
     }
 
     @Test
@@ -69,7 +69,7 @@ class AdminUserQueryRepositoryTest {
         when(rs.next()).thenReturn(true, false);
 
         assertThat(repository.findById(42L)).contains(new AdminUserResponse(42L, "Nguyễn An", "an@example.test",
-                "CUSTOMER", "ACTIVE", CREATED, 3));
+                "CUSTOMER", "ACTIVE", CREATED, null, 3));
         assertThat(repository.findById(42L)).isEmpty();
     }
 
@@ -109,5 +109,6 @@ class AdminUserQueryRepositoryTest {
         when(rs.getString("role")).thenReturn("CUSTOMER");
         when(rs.getString("account_status")).thenReturn("ACTIVE");
         when(rs.getTimestamp("created_at")).thenReturn(Timestamp.valueOf(CREATED));
+        when(rs.getTimestamp("expert_since")).thenReturn(null);
     }
 }

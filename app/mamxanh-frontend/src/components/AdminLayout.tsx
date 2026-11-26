@@ -14,6 +14,7 @@ import {
   Menu,
   Moon,
   ShieldAlert,
+  MessageSquareWarning,
   ShieldCheck,
   Settings2,
   Sun,
@@ -68,6 +69,11 @@ const adminNavigationGroups: { title: string; items: AdminNavItem[] }[] = [
         label: "Xét duyệt Chuyên gia",
         icon: BadgeCheck,
       },
+      {
+        to: "/admin/chuyen-gia",
+        label: "Danh sách Chuyên gia",
+        icon: Users,
+      },
     ],
   },
 
@@ -76,6 +82,8 @@ const adminNavigationGroups: { title: string; items: AdminNavItem[] }[] = [
 
     items: [
       { to: "/admin/bao-cao", label: "Hậu kiểm nội dung", icon: ShieldAlert },
+
+      { to: "/admin/khieu-nai", label: "Khiếu nại bài bị ẩn", icon: MessageSquareWarning },
 
       { to: "/admin/nguoi-dung", label: "Quản lý người dùng", icon: Users },
 
@@ -113,7 +121,13 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     if (pathname.startsWith("/admin/xet-duyet-chuyen-gia"))
       return "Xét duyệt Chuyên gia"
 
+    if (pathname.startsWith("/admin/chuyen-gia/")) return "Hồ sơ Chuyên gia"
+
+    if (pathname.startsWith("/admin/chuyen-gia")) return "Danh sách Chuyên gia"
+
     if (pathname.startsWith("/admin/bao-cao")) return "Hậu kiểm nội dung"
+
+    if (pathname.startsWith("/admin/khieu-nai")) return "Khiếu nại bài bị ẩn"
 
     if (pathname.startsWith("/admin/nguoi-dung")) return "Quản lý người dùng"
 

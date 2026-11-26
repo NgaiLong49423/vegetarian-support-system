@@ -11,6 +11,7 @@ import { RecipeAiAssistance } from '../components/RecipeAiAssistance';
 import { RecipeImageUploader, type ImageItem } from '../components/RecipeImageUploader';
 import { recipeMediaApi } from '../services/recipeMediaApi';
 import { assessRecipeDifficulty } from '../utils/difficultyCalculator';
+import { recipeAppealsApi } from '../api/appeals';
 
 const categories = [
   ['NOODLE_SOUP', 'Món nước'], ['STIR_FRY', 'Món xào'], ['HOT_POT', 'Lẩu'], ['BRAISED', 'Món kho'],
@@ -22,7 +23,7 @@ const difficulties = [['EASY', 'Dễ'], ['MEDIUM', 'Trung bình'], ['HARD', 'Kh�
 
 function messageFor(error: ApiError) {
   if (error.status === 401) return 'Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại bằng tài khoản Chuyên gia.';
-  if (error.code === 'RECIPE_HIDDEN') return 'Công thức đang bị quản trị viên ẩn. Bạn không thể sửa cho đến khi quản trị viên phục hồi bài.';
+  if (error.code === 'RECIPE_HIDDEN') return 'Công thức đang bị quản trị viên ẩn. Bạn chỉ sửa được khi quản trị viên cho phép qua khiếu nại.';
   if (error.code === 'RECIPE_EDIT_NOT_ALLOWED' || error.status === 403) return 'Bạn không có quyền sửa công thức này.';
   if (error.status === 404) return 'Không tìm thấy công thức công khai này.';
   return error.message;
@@ -45,6 +46,8 @@ export function EditRecipe() {
   const [mediaUploading, setMediaUploading] = useState(false);
   const [mediaError, setMediaError] = useState('');
   const [mediaDirty, setMediaDirty] = useState(false);
+  // BR-27: a hidden post opens for editing only after an Administrator answered the appeal with ALLOW_EDIT.
+  const [editAllowed, setEditAllowed] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -65,7 +68,11 @@ export function EditRecipe() {
       }));
       setMediaList(initialMedia);
       setMediaDirty(false);
-      if (data.status === 'HIDDEN') return;
+      if (data.status === 'HIDDEN') {
+        const appeal = await recipeAppealsApi.get(recipeId).catch(() => null);
+        if (!alive || appeal?.appealStatus !== 'EDIT_ALLOWED') return;
+        setEditAllowed(true);
+      }
       const currentIngredients = data.ingredients;
       const refData = await recipeApi.getReferenceData();
       const missingIngredients = [...new Map(currentIngredients
@@ -177,7 +184,7 @@ export function EditRecipe() {
           await recipeMediaApi.deleteRecipeMedia(recipeId);
         }
       }
-      navigate('/ho-so/chuyen-gia', { replace: true, state: { recipeUpdated: updated, notice: 'Lưu thay đổi thành công.' } });
+      navigate('/ho-so/chuyen-gia', { replace: true, state: { recipeUpdated: updated, notice: editAllowed ? 'Đã lưu. Bài vẫn đang ẩn, hãy bấm Gửi duyệt lại để Admin xem xét.' : 'Lưu thay đổi thành công.' } });
     } catch (cause) {
       const apiError = asApiError(cause);
       setError(messageFor(apiError));
@@ -186,11 +193,11 @@ export function EditRecipe() {
   };
 
   if (loading) return <PageContainer className="py-16 text-center text-ink-muted"><LoaderCircle className="mx-auto mb-3 h-7 w-7 animate-spin" />Đang tải công thức…</PageContainer>;
-  if (recipe?.status === 'HIDDEN') return <PageContainer className="py-8">
+  if (recipe?.status === 'HIDDEN' && !editAllowed) return <PageContainer className="py-8">
     <Link to="/ho-so/chuyen-gia" className="mb-5 inline-flex text-sm font-semibold text-brand-700">Quay lại danh sách bài</Link>
     <Card className="mx-auto max-w-3xl p-6 sm:p-8">
       <div role="status" className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
-        <strong>Đã bị Admin ẩn.</strong> Bạn có thể xem bài nhưng không thể sửa hoặc tự công khai lại. Hãy liên hệ Admin để được phục hồi.
+        <strong>Đã bị Admin ẩn.</strong> Bạn có thể xem bài nhưng không thể sửa hoặc tự công khai lại. Hãy gửi khiếu nại ở trang hồ sơ Chuyên gia để Admin xem xét.
       </div>
       <h1 className="text-2xl font-extrabold text-ink">{recipe.title}</h1>
       {recipe.description && <p className="mt-3 text-sm text-ink-muted">{recipe.description}</p>}
@@ -218,8 +225,9 @@ export function EditRecipe() {
   };
 
   return <PageContainer className="py-6 sm:py-9">
-    <Link to={`/cong-thuc/id/${recipeId}`} className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-brand-700"><ArrowLeft className="h-4 w-4" />Quay lại công thức</Link>
-    <div className="mb-6"><p className="mb-1 text-xs font-bold uppercase tracking-widest text-brand-600">Chỉnh sửa bài của bạn · #{recipe.id}</p><h1 className="text-2xl font-extrabold text-ink sm:text-3xl">Chỉnh sửa công thức</h1><p className="mt-1 text-sm text-ink-muted">Cập nhật sẽ hiển thị công khai ngay sau khi lưu.</p></div>
+    <Link to={editAllowed ? '/ho-so/chuyen-gia' : `/cong-thuc/id/${recipeId}`} className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-brand-700"><ArrowLeft className="h-4 w-4" />{editAllowed ? 'Quay lại danh sách bài' : 'Quay lại công thức'}</Link>
+    <div className="mb-6"><p className="mb-1 text-xs font-bold uppercase tracking-widest text-brand-600">Chỉnh sửa bài của bạn · #{recipe.id}</p><h1 className="text-2xl font-extrabold text-ink sm:text-3xl">Chỉnh sửa công thức</h1><p className="mt-1 text-sm text-ink-muted">{editAllowed ? 'Bài đang ẩn: bản sửa chỉ công khai khi Admin duyệt lại.' : 'Cập nhật sẽ hiển thị công khai ngay sau khi lưu.'}</p></div>
+    {editAllowed && <div role="status" className="mb-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">Bài vẫn đang ẩn. Sau khi lưu, hãy gửi duyệt lại để Admin xem xét.</div>}
     {error && <div role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
     {Object.entries(fieldErrors).some(([, message]) => message) && <ul role="alert" className="mb-5 list-inside list-disc rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
       {Object.entries(fieldErrors).filter(([, message]) => message).map(([field, message]) => {
@@ -299,7 +307,7 @@ export function EditRecipe() {
           {mediaError && <p role="alert" className="text-xs text-red-700">{mediaError}</p>}
         </Card>
       </div>
-      <aside className="space-y-4 lg:sticky lg:top-6"><Card className="p-5"><p className="mb-1 text-xs font-bold uppercase tracking-wide text-brand-600">Đang chỉnh sửa</p><h2 className="text-lg font-bold text-ink">{recipe.title}</h2><p className="mt-2 text-sm text-ink-muted">Bài đang công khai. Khi lưu hợp lệ, nội dung mới được cập nhật ngay.</p><Button type="submit" disabled={saving || mediaUploading} className="mt-5 w-full">{saving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{mediaUploading ? 'Đang tải ảnh…' : 'Lưu thay đổi'}</Button><Button type="button" variant="outline" className="mt-3 w-full" onClick={() => navigate('/ho-so/chuyen-gia')}>Hủy</Button></Card><div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-950"><strong>Lưu ý:</strong> Bài bị quản trị viên ẩn sẽ bị chặn mọi thao tác sửa. Chỉ quản trị viên mới có thể phục hồi.</div></aside>
+      <aside className="space-y-4 lg:sticky lg:top-6"><Card className="p-5"><p className="mb-1 text-xs font-bold uppercase tracking-wide text-brand-600">Đang chỉnh sửa</p><h2 className="text-lg font-bold text-ink">{recipe.title}</h2><p className="mt-2 text-sm text-ink-muted">{editAllowed ? 'Bài đang ẩn. Lưu xong, quay lại hồ sơ và bấm Gửi duyệt lại.' : 'Bài đang công khai. Khi lưu hợp lệ, nội dung mới được cập nhật ngay.'}</p><Button type="submit" disabled={saving || mediaUploading} className="mt-5 w-full">{saving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{mediaUploading ? 'Đang tải ảnh…' : 'Lưu thay đổi'}</Button><Button type="button" variant="outline" className="mt-3 w-full" onClick={() => navigate('/ho-so/chuyen-gia')}>Hủy</Button></Card><div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-950"><strong>Lưu ý:</strong> Bài bị quản trị viên ẩn chỉ sửa được khi quản trị viên cho phép qua khiếu nại. Chỉ quản trị viên mới có thể công khai lại bài.</div></aside>
     </form>
   </PageContainer>;
 }

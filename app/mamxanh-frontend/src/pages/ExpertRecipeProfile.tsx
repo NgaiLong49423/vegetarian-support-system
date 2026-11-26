@@ -3,6 +3,7 @@ import { BadgeCheck, BookOpen, ChefHat, Clock, Edit3, ExternalLink, Eye, LayoutG
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthContext';
 import { PageContainer } from '../components/Layout';
+import { RecipeAppealPanel } from '../components/RecipeAppealPanel';
 import { Button, Card } from '../components/ui';
 import { ApiError, asApiError } from '../lib/apiClient';
 import { recipeApi, type RecipePost } from '../api/recipes';
@@ -271,11 +272,7 @@ export function ExpertRecipeProfile() {
                   </span>
                 </div>
 
-                {hidden && (
-                  <p className="mt-2.5 rounded-lg border border-amber-200/60 bg-amber-50 p-2 text-xs leading-relaxed text-amber-900">
-                    Admin đã ẩn bài. Bạn có thể xem nội dung nhưng không thể sửa. Hãy liên hệ Admin để được phục hồi.
-                  </p>
-                )}
+                {hidden && <RecipeAppealPanel recipeId={recipe.id} />}
 
                 <details className="mt-3 text-xs">
                   <summary className="cursor-pointer font-semibold text-brand-700 hover:underline">
@@ -366,7 +363,7 @@ export function ExpertRecipeProfile() {
                     <span className="rounded-full bg-brand-50 px-2.5 py-1 text-brand-700">{recipe.vegetarianType}</span>
                     <span className={`rounded-full px-2.5 py-1 ${hidden ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-800'}`}>{recipeStatus(recipe.status)}</span>
                   </div>
-                  {hidden && <p className="mt-2 text-sm text-amber-900">Admin đã ẩn bài. Bạn có thể xem nội dung nhưng không thể sửa. Hãy liên hệ Admin để được phục hồi.</p>}
+                  {hidden && <RecipeAppealPanel recipeId={recipe.id} />}
                   <details className="mt-3 text-sm">
                     <summary className="cursor-pointer font-semibold text-brand-700">Xem nội dung bài</summary>
                     <div className="mt-3 space-y-2 rounded-xl bg-brand-50/60 p-4 text-ink-soft">

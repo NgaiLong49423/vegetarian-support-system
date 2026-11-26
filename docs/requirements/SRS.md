@@ -1,8 +1,8 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v2.21.1
+> **Version:** v2.24.0
 > **Created:** 2026-09-11
-> **Last Updated:** 2026-11-21
+> **Last Updated:** 2026-11-24
 > **Status:** Active
 > **Related Docs:** `docs/requirements/PRD.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`, `docs/architecture/ARCHITECTURE.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -49,7 +49,7 @@ AI hỗ trợ hỏi đáp, tìm kiếm/gợi ý, soạn bản nháp bài công t
 - Kiểm duyệt sau đăng: người dùng báo cáo nội dung có vấn đề và Administrator xử lý báo cáo. Baseline hiện tại không cung cấp AI quét hoặc gắn cờ nội dung.
 - Người dùng: tìm kiếm/lọc, xem nội dung, tương tác cộng đồng, lưu công thức (`Saved Recipe`), lập thực đơn ngày/tuần (`Meal Plan`), so sánh thống kê dinh dưỡng tuần, và **xuất file công thức (.txt/.pdf) / báo cáo dinh dưỡng ngày hoặc tuần (.pdf, gồm thực đơn dự kiến) / danh sách mua sắm (.txt)**.
 - AI Gemini: các chức năng theo quyền nghiệp vụ người dùng; quota token theo gói; danh mục model chung cho các gói Member; AI Credit thanh toán overage (FR-63–66).
-- Quản trị: quản lý người dùng, từ điển nguyên liệu, đơn vị đo lường `UNIT` và bảng quy đổi nguyên liệu `INGREDIENT_UNIT_CONVERSION`, video nhúng, bình luận, nội dung bị gắn cờ và thẩm định đơn Chuyên gia. Không quản lý bảng danh mục động.
+- Quản trị: quản lý tài khoản Customer, tra cứu Admin ở chế độ chỉ xem và quản lý danh sách/hồ sơ Expert riêng biệt với danh sách Customer; danh sách Expert xếp theo ngày lên vai trò gần nhất, kèm thống kê trạng thái và tổng công thức công khai; quản lý từ điển nguyên liệu, đơn vị đo lường `UNIT` và bảng quy đổi nguyên liệu `INGREDIENT_UNIT_CONVERSION`, video nhúng, bình luận, nội dung bị gắn cờ và thẩm định đơn Chuyên gia. Không quản lý bảng danh mục động.
 - Danh sách mua sắm cơ bản (`Shopping List`): Tạo danh sách từ Meal Plan hoặc Recipe; nguyên liệu chuẩn hóa theo 3 chiều đo lường (`MASS`, `VOLUME`, `COUNT`), gom nguyên liệu cùng chiều an toàn; cấm hoàn toàn giá trị phi số học như “vừa đủ”. Danh sách được phân nhóm theo danh mục và cho phép thêm/sửa/xóa item thủ công, tick đã mua, copy clipboard, xuất file.
 
 ### 3.2 Ngoài phạm vi hiện tại

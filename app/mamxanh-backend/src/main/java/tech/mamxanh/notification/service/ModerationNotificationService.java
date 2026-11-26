@@ -3,6 +3,7 @@ package tech.mamxanh.notification.service;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import tech.mamxanh.admin.entity.AppealDecision;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -55,6 +56,21 @@ public class ModerationNotificationService {
         insert(authorId, reportId, MODERATION_DECISION, "Tài khoản của bạn đã bị khóa",
                 "Quản trị viên đã khóa tài khoản của bạn sau khi xem xét bài “%s”. Lý do: %s".formatted(recipeTitle, reason),
                 null);
+    }
+
+    /** BR-27: the author learns each appeal decision with the Administrator's reason. */
+    public void appealDecided(long authorId, long reportId, String recipeTitle, AppealDecision decision, String reason) {
+        String title = switch (decision) {
+            case RESTORE -> "Bài công thức của bạn đã được mở lại";
+            case KEEP_HIDDEN -> "Khiếu nại của bạn không được chấp nhận";
+            case ALLOW_EDIT -> "Bạn được phép sửa bài công thức đang bị ẩn";
+        };
+        String message = switch (decision) {
+            case RESTORE -> "Quản trị viên đã xem xét khiếu nại và công khai lại bài “%s”. Lý do: %s";
+            case KEEP_HIDDEN -> "Quản trị viên đã xem xét khiếu nại và tiếp tục ẩn bài “%s”. Lý do: %s";
+            case ALLOW_EDIT -> "Quản trị viên cho phép bạn sửa bài “%s”. Bài vẫn ẩn cho đến khi bạn gửi duyệt lại. Lý do: %s";
+        };
+        insert(authorId, reportId, MODERATION_DECISION, title, message.formatted(recipeTitle, reason), AUTHOR_RECIPES_PATH);
     }
 
     private void insert(long userId, long reportId, String type, String title, String message, String targetPath) {

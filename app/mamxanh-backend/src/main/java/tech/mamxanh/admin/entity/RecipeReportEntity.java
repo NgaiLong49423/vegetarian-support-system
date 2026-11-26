@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import tech.mamxanh.common.exception.AppException;
+import tech.mamxanh.common.exception.ErrorCode;
 
 /** Private report record; no public or recipe-author read endpoint exposes its reporter. */
 @Entity
@@ -53,6 +55,28 @@ public class RecipeReportEntity {
     @Column(name = "handled_at")
     private LocalDateTime handledAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "appeal_status", length = 20)
+    private AppealStatus appealStatus;
+
+    @Column(name = "appeal_message", length = 1000)
+    private String appealMessage;
+
+    @Column(name = "appealed_at")
+    private LocalDateTime appealedAt;
+
+    @Column(name = "appeal_resubmitted_at")
+    private LocalDateTime appealResubmittedAt;
+
+    @Column(name = "appeal_decision_reason", length = 1000)
+    private String appealDecisionReason;
+
+    @Column(name = "appeal_handled_at")
+    private LocalDateTime appealHandledAt;
+
+    @Column(name = "appeal_handled_by")
+    private Long appealHandledBy;
+
     public RecipeReportEntity(long reporterId, long recipeId, RecipeReportReason reasonCode,
             String description, LocalDateTime now) {
         this.reporterId = reporterId;
@@ -77,6 +101,47 @@ public class RecipeReportEntity {
         this.decision = decision;
         this.decisionReason = reason;
         this.handledAt = now;
+        this.updatedAt = now;
+    }
+
+    /** BR-27: the author may appeal a hide decision once; later steps go through the Administrator. */
+    public void submitAppeal(String message, LocalDateTime now) {
+        if (decision != ReportDecision.HIDE_RECIPE || appealStatus != null) {
+            throw new AppException(ErrorCode.APPEAL_NOT_ALLOWED);
+        }
+        this.appealStatus = AppealStatus.PENDING;
+        this.appealMessage = message;
+        this.appealedAt = now;
+        this.updatedAt = now;
+    }
+
+    /** The author asks for a second review after editing the post that the Administrator let them edit. */
+    public void resubmitAppeal(LocalDateTime now) {
+        if (appealStatus != AppealStatus.EDIT_ALLOWED) {
+            throw new AppException(ErrorCode.APPEAL_STATE_INVALID);
+        }
+        this.appealStatus = AppealStatus.RESUBMITTED;
+        this.appealResubmittedAt = now;
+        this.updatedAt = now;
+    }
+
+    /**
+     * Records the Administrator's latest appeal decision: RESTORE or KEEP_HIDDEN on a PENDING or
+     * RESUBMITTED appeal, ALLOW_EDIT only on a PENDING one. The caller applies the effect on the post.
+     */
+    public void decideAppeal(AppealDecision appealDecision, String reason, long administratorId, LocalDateTime now) {
+        boolean open = appealStatus == AppealStatus.PENDING || appealStatus == AppealStatus.RESUBMITTED;
+        if (!open || (appealDecision == AppealDecision.ALLOW_EDIT && appealStatus != AppealStatus.PENDING)) {
+            throw new AppException(ErrorCode.APPEAL_STATE_INVALID);
+        }
+        this.appealStatus = switch (appealDecision) {
+            case RESTORE -> AppealStatus.RESTORED;
+            case KEEP_HIDDEN -> AppealStatus.KEPT_HIDDEN;
+            case ALLOW_EDIT -> AppealStatus.EDIT_ALLOWED;
+        };
+        this.appealDecisionReason = reason;
+        this.appealHandledBy = administratorId;
+        this.appealHandledAt = now;
         this.updatedAt = now;
     }
 }

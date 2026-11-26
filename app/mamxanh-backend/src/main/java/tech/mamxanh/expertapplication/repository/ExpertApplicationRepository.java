@@ -56,6 +56,13 @@ public class ExpertApplicationRepository {
         return result.get(0);
     }
 
+    public ExpertApplicationResponse findLatestApprovedByUserId(long userId) {
+        var result = jdbc.query(SELECT + "WHERE a.user_id=? AND a.status='APPROVED' "
+                        + "ORDER BY a.reviewed_at DESC,a.application_id DESC OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY",
+                (rs, row) -> map(rs), userId);
+        return result.isEmpty() ? null : result.get(0);
+    }
+
     public int transitionPending(long id, String status, String note, long reviewer, LocalDateTime now) {
         return jdbc.update("UPDATE [EXPERT_APPLICATION] SET status=?,admin_note=?,reviewed_by=?,reviewed_at=?,updated_at=? WHERE application_id=? AND status='PENDING'",
                 status, note, reviewer, now, now, id);
