@@ -16,11 +16,12 @@ class DietaryConstraintEvaluatorTest {
     private final DietaryConstraintEvaluator evaluator = new DietaryConstraintEvaluator();
 
     @Test
-    void appliesTheFourDeclaredVegetarianPatternsToRecipeTypeAndIngredientGroup() {
+    void appliesTheFourDeclaredVegetarianPatternsToRecipeType() {
         var dairy = recipe(1, "LACTO", ingredient(2L, "phô mai"));
         var profile = profile(null, VegetarianType.VEGAN);
         var result = evaluator.evaluate(dairy, profile, Map.of(2L, ingredientRef(2, "Dairy")));
         assertThat(result.hasVegetarianConflict()).isTrue();
+        assertThat(result.ingredients().getFirst().conflicts()).doesNotContain(DietaryConstraintEvaluator.Conflict.VEGETARIAN_TYPE);
 
         assertThat(DietaryConstraintEvaluator.recipeTypeCompatible("LACTO", "LACTO")).isTrue();
         assertThat(DietaryConstraintEvaluator.recipeTypeCompatible("OVO", "LACTO")).isFalse();
@@ -50,31 +51,26 @@ class DietaryConstraintEvaluatorTest {
         assertThat(evaluator.evaluate(soybeanMilk, "VEGAN", List.of(), List.of(), List.of(), List.of(), catalog)
                 .hasVegetarianConflict()).isFalse();
         assertThat(evaluator.evaluate(cowMilk, "VEGAN", List.of(), List.of(), List.of(), List.of(), catalog)
-                .hasVegetarianConflict()).isTrue();
+                .hasVegetarianConflict()).isFalse();
         var labeledAsOther = recipe(7, "VEGAN", ingredient(11L, "phô mai"));
         assertThat(evaluator.evaluate(labeledAsOther, "VEGAN", List.of(), List.of(), List.of(), List.of(),
-                Map.of(11L, ingredientRef(11, "Khác"))).hasVegetarianConflict()).isTrue();
+                Map.of(11L, ingredientRef(11, "Khác"))).hasVegetarianConflict()).isFalse();
     }
 
     @Test
-    void classifiesEveryCatalogDairyCheeseVariantAsIncompatibleWithVeganAndOvoProfiles() {
-        var catalog = Map.of(54L, ingredientRef(54, "Sữa & Trứng"),
-                55L, ingredientRef(55, "Sữa & Trứng"), 56L, ingredientRef(56, "Sữa & Trứng"),
-                57L, ingredientRef(57, "Sữa & Trứng"), 58L, ingredientRef(58, "Sữa & Trứng"),
-                59L, ingredientRef(59, "Sữa & Trứng"));
-        var cheeseNames = List.of("Phô mai cheddar", "Phô mai cottage", "Phô mai cream cheese",
-                "Phô mai mozzarella", "Phô mai parmesan", "Phô mai xanh");
-
-        for (int index = 0; index < cheeseNames.size(); index++) {
-            var cheese = recipe(20 + index, "VEGAN", ingredient(54L + index, cheeseNames.get(index)));
-            assertThat(evaluator.evaluate(cheese, "VEGAN", List.of(), List.of(), List.of(), List.of(), catalog)
-                    .hasVegetarianConflict()).as(cheeseNames.get(index) + " in a VEGAN recipe").isTrue();
-            assertThat(evaluator.evaluate(cheese, "OVO", List.of(), List.of(), List.of(), List.of(), catalog)
-                    .hasVegetarianConflict()).as(cheeseNames.get(index) + " in an OVO profile").isTrue();
-            assertThat(evaluator.evaluate(cheese, "LACTO", List.of(), List.of(), List.of(), List.of(), catalog)
-                    .hasVegetarianConflict()).as(cheeseNames.get(index) + " in a LACTO profile").isFalse();
-            assertThat(evaluator.evaluate(cheese, "LACTO_OVO", List.of(), List.of(), List.of(), List.of(), catalog)
-                    .hasVegetarianConflict()).as(cheeseNames.get(index) + " in a LACTO_OVO profile").isFalse();
+    void vegetarianCompatibilityDependsOnRecipeTypeRatherThanIngredientName() {
+        var types = List.of("VEGAN", "LACTO", "OVO", "LACTO_OVO");
+        var expected = List.of(List.of(true, false, false, false), List.of(true, true, false, false),
+                List.of(true, false, true, false), List.of(true, true, true, true));
+        for (int profile = 0; profile < types.size(); profile++) {
+            for (int recipeType = 0; recipeType < types.size(); recipeType++) {
+                var recipe = recipe(1, types.get(recipeType), ingredient(54L, "Trứng gà"));
+                var assessment = evaluator.evaluate(recipe, types.get(profile), List.of(), List.of(), List.of(), List.of(),
+                        Map.of(54L, ingredientRef(54, "Sữa & Trứng")));
+                assertThat(assessment.recipeTypeCompatible()).isEqualTo(expected.get(profile).get(recipeType));
+                assertThat(assessment.hasVegetarianConflict()).isEqualTo(!expected.get(profile).get(recipeType));
+                assertThat(assessment.ingredients().getFirst().conflicts()).doesNotContain(DietaryConstraintEvaluator.Conflict.VEGETARIAN_TYPE);
+            }
         }
     }
 

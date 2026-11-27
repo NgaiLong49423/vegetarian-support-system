@@ -1,5 +1,3 @@
-import { mkdirSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { expect, test } from './baseFixtures';
 
 const cors = {
@@ -9,6 +7,7 @@ const cors = {
 };
 
 test('recipe detail separates allergen, vegetarian, dislike, and unverified ingredient warnings', async ({ page }) => {
+  let vegetarianType = 'LACTO';
   await page.addInitScript(() => {
     sessionStorage.setItem('mamxanh.auth', JSON.stringify({
       accessToken: 'header.payload.signature', expiresAt: Date.now() + 3_600_000,
@@ -17,7 +16,7 @@ test('recipe detail separates allergen, vegetarian, dislike, and unverified ingr
   });
   await page.route('**/api/v1/recipes/56', route => route.fulfill({ headers: cors, json: {
     recipeId: 56, title: 'Món chay thử cảnh báo', description: 'Bản kiểm tra giao diện.', instructions: 'Nấu chín.',
-    dishCategory: 'SOUP', dishCategoryLabel: 'Món canh', vegetarianType: 'VEGAN', vegetarianTypeLabel: 'Thuần chay',
+    dishCategory: 'SOUP', dishCategoryLabel: 'Món canh', vegetarianType, vegetarianTypeLabel: 'Chay',
     difficulty: 'EASY', difficultyLabel: 'Dễ', servings: 2, prepTimeMinutes: 10, cookTimeMinutes: 15,
     youtubeUrl: null, publishedAt: '2026-11-05T08:00:00', author: { userId: 8, displayName: 'Tác giả', avatarUrl: null },
     ingredients: [
@@ -31,8 +30,8 @@ test('recipe detail separates allergen, vegetarian, dislike, and unverified ingr
     statistics: { likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null, viewCount: 0 }, media: [],
   } }));
   await page.route('**/api/v1/nutrition/dietary-preferences/recipes/56/safety-assessment', route => route.fulfill({ headers: cors, json: {
-    recipeId: 56, recipeTitle: 'Món chay thử cảnh báo', recipeTypeCompatible: false,
-    hasAllergenOrAvoidConflict: true, hasVegetarianConflict: true, hasDislikedIngredients: true,
+    recipeId: 56, recipeTitle: 'Món chay thử cảnh báo', recipeTypeCompatible: vegetarianType === 'VEGAN',
+    hasAllergenOrAvoidConflict: true, hasVegetarianConflict: vegetarianType !== 'VEGAN', hasDislikedIngredients: true,
     unverifiedIngredients: ['Hương liệu chưa xác minh'], requiresRiskAcknowledgement: true, assessmentToken: 'test-token',
     ingredients: [
       { ingredientId: 1, name: 'Đậu phộng', conflicts: ['ALLERGEN_OR_AVOID'] },
@@ -54,14 +53,24 @@ test('recipe detail separates allergen, vegetarian, dislike, and unverified ingr
   await expect(page.getByRole('heading', { name: 'Món chay thử cảnh báo' })).toBeVisible();
   await expect(page.getByText(/Công thức có nguyên liệu bạn đã chọn cần tránh: Đậu phộng/)).toBeVisible();
   await expect(page.getByText(/Công thức có thể không phù hợp kiểu ăn chay đã chọn/)).toBeVisible();
+  await expect(page.getByText('Theo loại ăn chay do tác giả chọn, công thức có thể chứa sữa hoặc chế phẩm từ sữa.')).toBeVisible();
   await expect(page.getByText(/Có nguyên liệu bạn không thích: Nấm rơm/)).toBeVisible();
   await expect(page.getByText(/Chưa xác minh được nguyên liệu: Hương liệu chưa xác minh/)).toBeVisible();
 
   const ingredients = page.locator('ul').filter({ has: page.getByRole('button', { name: 'Đánh dấu Đậu phộng' }) });
   await expect(ingredients.getByText('Dị ứng / cần tránh')).toBeVisible();
-  await expect(ingredients.getByText('Không phù hợp kiểu chay')).toBeVisible();
+  await expect(ingredients.getByText('Không phù hợp kiểu chay')).toHaveCount(0);
   await expect(ingredients.getByText('Không thích')).toBeVisible();
-  const evidenceDir = resolve(process.cwd(), '../../.agents/outputs/dietary-preference-safety/evidence');
-  mkdirSync(evidenceDir, { recursive: true });
-  await page.screenshot({ path: resolve(evidenceDir, 'recipe-detail-dietary-warnings.png'), fullPage: true });
+
+  for (const [type, message] of [
+    ['OVO', 'Theo loại ăn chay do tác giả chọn, công thức có thể chứa trứng.'],
+    ['LACTO_OVO', 'Theo loại ăn chay do tác giả chọn, công thức có thể chứa trứng hoặc sữa.'],
+  ]) {
+    vegetarianType = type;
+    await page.reload();
+    await expect(page.getByText(message, { exact: true })).toBeVisible();
+  }
+  vegetarianType = 'VEGAN';
+  await page.reload();
+  await expect(page.getByText(/Công thức có thể không phù hợp kiểu ăn chay đã chọn/)).toHaveCount(0);
 });

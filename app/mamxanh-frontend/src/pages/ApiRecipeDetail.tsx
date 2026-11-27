@@ -393,11 +393,11 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
         </div>
       </div>
     )}
-    {dietaryAssessment?.hasVegetarianConflict && (
+    {dietaryAssessment && !dietaryAssessment.recipeTypeCompatible && (
       <div role="alert" className="recipe-detail-no-print mb-4 flex gap-3 rounded-xl border border-orange-300 bg-orange-50 p-4 text-sm leading-6 text-orange-950">
         <AlertTriangle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
         <div><h2 className="font-bold">Công thức có thể không phù hợp kiểu ăn chay đã chọn</h2>
-          <p className="mt-1">{dietaryAssessment.ingredients.filter((line) => line.conflicts.includes('VEGETARIAN_TYPE')).map((line) => line.name).join(', ') || 'Loại ăn chay của công thức không phù hợp hồ sơ.'}</p>
+          <p className="mt-1">{recipe.vegetarianType === 'LACTO' ? 'Theo loại ăn chay do tác giả chọn, công thức có thể chứa sữa hoặc chế phẩm từ sữa.' : recipe.vegetarianType === 'OVO' ? 'Theo loại ăn chay do tác giả chọn, công thức có thể chứa trứng.' : recipe.vegetarianType === 'LACTO_OVO' ? 'Theo loại ăn chay do tác giả chọn, công thức có thể chứa trứng hoặc sữa.' : 'Loại ăn chay của công thức không phù hợp với hồ sơ của bạn.'}</p>
         </div>
       </div>
     )}
@@ -607,7 +607,6 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
                   item.ingredientId != null ? line.ingredientId === item.ingredientId : line.name === item.name,
                 );
                 const allergenRisk = ingredientRisk?.conflicts.includes('ALLERGEN_OR_AVOID') ?? false;
-                const vegetarianRisk = ingredientRisk?.conflicts.includes('VEGETARIAN_TYPE') ?? false;
                 const dislikeRisk = ingredientRisk?.conflicts.includes('DISLIKE') ?? false;
                 const toggle = () => {
                   setCheckedIngredients((current) =>
@@ -619,7 +618,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
                     key={`${item.ingredientId ?? item.name}-${index}`}
                     onClick={toggle}
                     className={`grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-b border-brand-100 px-3 py-2.5 cursor-pointer transition-colors sm:grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] sm:px-4 sm:py-2 ${
-                      allergenRisk ? 'border-l-4 border-l-red-500 bg-red-50/70 text-red-950' : dislikeRisk ? 'border-l-4 border-l-amber-400 bg-amber-50/70 text-amber-950' : vegetarianRisk ? 'border-l-4 border-l-orange-400 bg-orange-50/70 text-orange-950' : isChecked ? 'bg-brand-50/25 text-ink-muted' : 'hover:bg-brand-50/40 text-ink'
+                      allergenRisk ? 'border-l-4 border-l-red-500 bg-red-50/70 text-red-950' : dislikeRisk ? 'border-l-4 border-l-amber-400 bg-amber-50/70 text-amber-950' : isChecked ? 'bg-brand-50/25 text-ink-muted' : 'hover:bg-brand-50/40 text-ink'
                     }`}
                   >
                     <button
@@ -658,8 +657,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
                         </Link>
                       ) : item.name}
                       {allergenRisk && <span className="ml-2 inline-flex rounded-full border border-red-300 bg-red-100 px-2 py-0.5 text-[11px] font-bold text-red-900">Dị ứng / cần tránh</span>}
-                      {!allergenRisk && vegetarianRisk && <span className="ml-2 inline-flex rounded-full border border-orange-300 bg-orange-100 px-2 py-0.5 text-[11px] font-bold text-orange-900">Không phù hợp kiểu chay</span>}
-                      {!allergenRisk && !vegetarianRisk && dislikeRisk && <span className="ml-2 inline-flex rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-900">Không thích</span>}
+                      {!allergenRisk && dislikeRisk && <span className="ml-2 inline-flex rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-900">Không thích</span>}
                       {item.nutritionSupported === false && (
                         <span className="ml-2 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-900">
                           Chưa hỗ trợ tính dinh dưỡng
