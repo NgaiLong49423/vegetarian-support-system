@@ -77,6 +77,8 @@ public class AiAssistantExecutionService {
         this.promptLoader = promptLoader != null ? promptLoader : new AiPromptLoader();
     }
 
+    // Luồng điều phối tương thích: mở phiên, xử lý consent, phân loại và lấy tool theo vai trò.
+    // Sau khi AI lập kế hoạch, từng tool được kiểm tra chế độ/consent trước khi thực thi hoặc chờ xác nhận.
     public AiChatResponse execute(AiChatRequest request) {
         Long userId = users.findAuthenticatedUserId().map(id -> users.requireActiveMember().id()).orElse(null);
         String owner = userId == null ? "guest:" + request.anonymousViewerId() : "user:" + userId;
@@ -196,6 +198,7 @@ public class AiAssistantExecutionService {
         sessions.delete(sessionId, owner);
     }
 
+    // Xử lý quyết định đối với kế hoạch thao tác đang chờ trong phiên của người dùng.
     private AiChatResponse confirm(AiChatRequest request, String owner, Long userId, UUID sessionId,
             AiChatRequest.ExecutionMode mode) {
         var pending = sessions.takePending(sessionId, owner, request.confirmationId());
@@ -233,6 +236,7 @@ public class AiAssistantExecutionService {
                 || "propose_recipe_form_patch".equals(name) || "create_recipe_post".equals(name);
     }
 
+    // Nhờ AI lập câu trả lời và danh sách tool từ các định nghĩa và nguồn đã được cung cấp.
     private Plan plan(AiChatRequest request, Long userId, List<AiAssistantToolRegistry.ToolDefinition> definitions,
             List<Source> sources) {
         String prompt;
@@ -266,6 +270,7 @@ public class AiAssistantExecutionService {
         } catch (JacksonException exception) { throw new AppException(ErrorCode.AI_RESPONSE_INVALID); }
     }
 
+    // Phân loại câu hỏi trước khi lập kế hoạch; lỗi phân loại được trả rõ thay vì bỏ qua.
     private AiChatResponse classify(AiChatRequest request, UUID sessionId, AiChatRequest.ExecutionMode mode, Long userId) {
         quota.requireAvailable(userId, userId == null ? request.anonymousViewerId() : null);
         String model = settings.resolve(userId, userId == null ? request.anonymousViewerId() : null);

@@ -23,6 +23,8 @@ public class AiMenuController {
 
     public AiMenuController(AiMenuService service) { this.service = service; }
 
+    // Tạo bản xem trước cho Member; bước này chưa ghi món vào lịch ăn.
+    // @Valid kiểm tra cấu trúc request, còn điều kiện dinh dưỡng và công thức do service kiểm tra.
     @Operation(summary = "Generate a nutrition-aware weekly meal-plan preview",
             description = "Requires an active Member, FR-38 eligibility and a valid FR-35 profile. "
                     + "PROFILE uses the saved goal; THIS_WEEK uses optional request-only preferences. Does not write Meal Plan entries.")
@@ -37,6 +39,7 @@ public class AiMenuController {
         return service.createPreview(request);
     }
 
+    // Chỉ khi người dùng xác nhận, chuyển các món đã chọn cho service kiểm tra lại và lưu.
     @Operation(summary = "Replace a member's entire week with selected AI preview meals",
             description = "Revalidates Member access, eligibility and every selected published nutrition-complete recipe. "
                     + "The operation is atomic; any invalid entry preserves the old week.")

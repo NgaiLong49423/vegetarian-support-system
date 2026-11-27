@@ -15,6 +15,8 @@ final class AiMenuOptimizer {
     private static final double[] MEAL_SHARES = {0.25, 0.375, 0.375};
     private static final double ENERGY_BUCKET = 0.05;
 
+    // Ghép các công thức đã qua kiểm tra thành ba bữa mỗi ngày trong khoảng được đề xuất.
+    // Mỗi món tính một khẩu phần; thứ hạng AI chỉ là một tiêu chí khi so sánh phương án.
     List<Selection> optimize(LocalDate weekStart, LocalDate firstSuggestionDate, LocalDate lastSuggestionDate,
             double energyTarget, List<Candidate> ranked,
             List<Target> targets) {
@@ -41,6 +43,7 @@ final class AiMenuOptimizer {
                 meals.get(slot).add(initial);
             }
 
+            // Thử thêm từng món và chỉ giữ thay đổi khi điểm tổng thể tốt hơn; dừng khi không cải thiện.
             boolean improved;
             do {
                 improved = false;
@@ -78,11 +81,14 @@ final class AiMenuOptimizer {
         return result;
     }
 
+    // Tránh đưa cùng một món vào hai bữa liền kề trong ngày khi thử thêm món.
     private static boolean adjacentContains(List<List<Candidate>> meals, int slot, long id) {
         return (slot > 0 && meals.get(slot - 1).stream().anyMatch(candidate -> candidate.id() == id))
                 || (slot + 1 < meals.size() && meals.get(slot + 1).stream().anyMatch(candidate -> candidate.id() == id));
     }
 
+    // Cộng dinh dưỡng các món rồi đánh giá năng lượng, mục tiêu chất dinh dưỡng,
+    // nguyên liệu không thích và thứ hạng; đây là ước tính theo dữ liệu công thức.
     private static Score score(List<List<Candidate>> meals, double target, List<Target> targets,
             List<Candidate> ranked) {
         double[] mealKcal = new double[3];
@@ -150,6 +156,8 @@ final class AiMenuOptimizer {
     record Selection(LocalDate date, String mealType, long recipeId) { }
     private record Score(int energyBand, int inRangeMeals, double energyError, int nutrientsMet, double nutrientDeviation,
             int dislikePenalty, int rankPenalty) {
+        // So sánh theo thứ tự ưu tiên cố định: nhóm sai lệch năng lượng, phân bố bữa,
+        // số mục tiêu đạt được, độ lệch, rồi đến món không thích và thứ hạng AI.
         boolean betterThan(Score other) {
             if (energyBand != other.energyBand) return energyBand < other.energyBand;
             if (inRangeMeals != other.inRangeMeals) return inRangeMeals > other.inRangeMeals;

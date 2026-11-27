@@ -1498,6 +1498,8 @@ function datesInWeek(weekStart: string) {
   })
 }
 
+// Quản lý tiêu chí, bản xem trước và các món được chọn cho chức năng AI lập lịch ăn.
+// Màn hình chỉ gửi yêu cầu; Backend kiểm tra điều kiện và quyết định dữ liệu hợp lệ.
 function AiWeeklyMenu({ week }: { week: string }) {
   const [mode, setMode] = useState<AiMenuMode>("PROFILE")
   const [goal, setGoal] = useState<AiMenuGoal | "">("")
@@ -1517,6 +1519,7 @@ function AiWeeklyMenu({ week }: { week: string }) {
   const [error, setError] = useState<{ message: string; code?: string } | null>(null)
   const [successMessage, setSuccessMessage] = useState("")
 
+  // Tìm nguyên liệu muốn ưu tiên sau 250 ms; bỏ qua phản hồi cũ khi từ khóa thay đổi.
   useEffect(() => {
     let active = true
     if (!preferredQuery.trim()) { setPreferredOptions([]); return () => { active = false } }
@@ -1536,6 +1539,7 @@ function AiWeeklyMenu({ week }: { week: string }) {
     return () => { active = false; window.clearTimeout(timer) }
   }, [preferredQuery])
 
+  // Tìm nguyên liệu cần tránh theo cùng cách, độc lập với danh sách muốn ưu tiên.
   useEffect(() => {
     let active = true
     if (!avoidedQuery.trim()) { setAvoidedOptions([]); return () => { active = false } }
@@ -1555,6 +1559,7 @@ function AiWeeklyMenu({ week }: { week: string }) {
     return () => { active = false; window.clearTimeout(timer) }
   }, [avoidedQuery])
 
+  // Tiêu chí thay đổi làm bản xem trước cũ không còn phù hợp, nên xóa lựa chọn và xác nhận cũ.
   function clearPreview() { setPreview(null); setPreviewCriteria(null); setSelected([]); setConfirmArmed(false) }
   function addIngredient(item: { ingredientId: number; name: string }, setList: (update: (ids: number[]) => number[]) => void, clearSearch: () => void, clearOptions: () => void) {
     setList((ids) => ids.includes(item.ingredientId) ? ids : [...ids, item.ingredientId])
@@ -1567,6 +1572,8 @@ function AiWeeklyMenu({ week }: { week: string }) {
     setList((ids) => ids.filter((value) => value !== id))
     clearPreview()
   }
+  // Gửi tiêu chí để tạo bản xem trước, mặc định chọn các món trả về và lưu tiêu chí
+  // tương ứng để dùng lúc áp dụng. THIS_WEEK chỉ dùng mong muốn cho yêu cầu hiện tại.
   async function generate() {
     setLoading(true); setError(null); setSuccessMessage(""); setConfirmArmed(false)
     const criteria = { mode, goal, preferred: [...preferred], avoided: [...avoided] }
@@ -1584,6 +1591,8 @@ function AiWeeklyMenu({ week }: { week: string }) {
     }
     finally { setLoading(false) }
   }
+  // Lần bấm đầu yêu cầu xác nhận; lần tiếp theo mới gửi các món đã chọn để lưu.
+  // Nếu Backend báo lỗi, giữ bản xem trước để người dùng có thể kiểm tra và thử lại.
   async function apply() {
     if (!preview || !selected.length) return
     if (!confirmArmed) { setConfirmArmed(true); return }
@@ -1604,6 +1613,7 @@ function AiWeeklyMenu({ week }: { week: string }) {
     }
     finally { setApplying(false) }
   }
+  // Nhóm món theo ngày và cộng dinh dưỡng của các món đang chọn để cập nhật phần xem trước.
   const grouped = preview?.meals.reduce<Record<string, AiMenuPreview["meals"]>>((acc, meal) => {
     (acc[meal.mealDate] ??= []).push(meal)
     return acc

@@ -1,0 +1,38 @@
+DANH SÁCH GEMINI MODEL ID
+Cập nhật: 28/11/2026
+Nguồn: https://aistudio.google.com/docs/models
+
+GEMINI 4
+--------------------------------------------------
+Model ID: gemini-4-hydrogen
+Tên hiển thị: Gemini 4 Hydrogen
+
+Model ID: gemini-4-neon
+Tên hiển thị: Gemini 4 Neon
+
+Model ID: gemini-4-argon
+Tên hiển thị: Gemini 4 Argon
+
+Model ID: gemini-4-carbon
+Tên hiển thị: Gemini 4 Carbon
+
+GEMINI 3
+--------------------------------------------------
+Model ID: gemini-3.8-flash
+Tên hiển thị: Gemini 3.8 Flash
+
+Model ID: gemini-3.6-flash
+Tên hiển thị: Gemini 3.6 Flash
+
+Model ID: gemini-3.5-flash-lite
+Tên hiển thị: Gemini 3.5 Flash-Lite
+
+Model ID: gemini-3.1-flash-lite
+Tên hiển thị: Gemini 3.1 Flash-Lite
+
+GHI CHÚ
+--------------------------------------------------
+Danh sách gồm 8 model đã nêu, dành cho cấu hình AI xử lý văn bản.
+ID được đối chiếu với danh mục chính thức của Google.
+Khả năng sử dụng thực tế còn phụ thuộc vào API key, quyền truy cập,
+hạn mức và cấu hình backend của ứng dụng; chưa kiểm thử trực tiếp.

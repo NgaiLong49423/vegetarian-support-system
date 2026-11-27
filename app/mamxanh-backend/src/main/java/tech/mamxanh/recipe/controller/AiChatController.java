@@ -102,6 +102,8 @@ public class AiChatController {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(service.answer(effectiveRequest));
     }
 
+    // Chuẩn hóa định danh Guest và áp dụng giới hạn theo Guest/IP trước khi chuyển request đi.
+    // Với người đã đăng nhập, thông tin xác thực tiếp tục được xử lý ở service.
     private AiChatRequest prepareEffectiveRequest(AiChatRequest request, Authentication authentication, HttpServletRequest httpRequest) {
         if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
             String guestHeader = httpRequest.getHeader(GuestChatRateLimiter.ID_HEADER);
@@ -119,6 +121,8 @@ public class AiChatController {
         return request;
     }
 
+    // Mở SSE để gửi từng sự kiện chat; giữ SecurityContext cho tác vụ bất đồng bộ.
+    // Khi ngắt kết nối hoặc timeout, phát tín hiệu hủy và giải phóng lượt đang chạy.
     @PostMapping(value = "/stream", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "Ask the vegetarian cooking assistant with real-time SSE streaming",
             security = {@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH), @SecurityRequirement(name = "")})
@@ -184,6 +188,7 @@ public class AiChatController {
         return emitter;
     }
 
+    // Tạo request điều khiển dựa trên phiên/lượt hiện tại để thông báo hủy khi SSE ngắt.
     private static AiChatRequest asCancellationRequest(AiChatRequest request) {
         return new AiChatRequest(request.contextType(), request.recipeId(),
                 request.question() != null ? request.question() : "Dừng tác vụ",

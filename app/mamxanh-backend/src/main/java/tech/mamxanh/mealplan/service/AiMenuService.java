@@ -78,6 +78,9 @@ public class AiMenuService {
         this.dietaryEvaluator = dietaryEvaluator;
     }
 
+    // Luồng tạo xem trước: chuẩn bị công thức phù hợp, kiểm tra quota, nhờ AI xếp hạng,
+    // kiểm tra lại dữ liệu sau khi AI trả lời rồi tối ưu thực đơn bằng dữ liệu tin cậy.
+    // Chưa ghi lịch ăn; lỗi provider và phản hồi không hợp lệ được trả thành lỗi riêng.
     public AiMenuPreviewResponse createPreview(CreateAiMenuPreviewRequest request) {
         MenuContext context = resolveMenuContext(request);
         if (context.firstSuggestionDate().isAfter(context.lastSuggestionDate())) {
@@ -128,7 +131,7 @@ public class AiMenuService {
         }
     }
 
-    /** Trusted candidates for the Chatbox ADK planner. This method never calls an AI provider. */
+    /** Chuẩn bị danh sách công thức hợp lệ cho Chatbox ADK xếp hạng; hàm này không gọi AI. */
     public Map<String, Object> getAdkPreviewCandidates(CreateAiMenuPreviewRequest request) {
         MenuContext context = resolveMenuContext(request);
         if (context.firstSuggestionDate().isAfter(context.lastSuggestionDate())) {
@@ -162,7 +165,7 @@ public class AiMenuService {
         return result;
     }
 
-    /** Builds the existing business preview from ADK-ranked IDs after re-resolving trusted data. */
+    /** Kiểm tra lại dữ liệu và ID do ADK xếp hạng trước khi tối ưu bản xem trước. */
     public AiMenuPreviewResponse createPreviewFromAdkSelection(CreateAiMenuPreviewRequest request, List<Long> rankedRecipeIds) {
         MenuContext context = resolveMenuContext(request);
         if (context.firstSuggestionDate().isAfter(context.lastSuggestionDate())) {
@@ -184,6 +187,8 @@ public class AiMenuService {
                 context.preferred(), context.profile());
     }
 
+    // Gom hồ sơ dinh dưỡng, chế độ ăn và tiêu chí tuần thành context dùng chung.
+    // Nguyên liệu cần tránh của tuần được gộp với ràng buộc đã lưu trong hồ sơ.
     private MenuContext resolveMenuContext(CreateAiMenuPreviewRequest request) {
         validateWeek(request.weekStartDate());
         long userId = users.requireActiveMember().id();
@@ -203,6 +208,7 @@ public class AiMenuService {
                 dietary.dislikedIngredientIds(), dietary.dislikedIngredientNames(), dietary.vegetarianType(), pool);
     }
 
+    // Không tin trực tiếp kết quả ADK: từ chối ID rỗng, trùng, không hợp lệ hoặc ngoài danh sách cho phép.
     private static List<Long> normalizeAdkRankedIds(List<Long> rankedIds, List<Long> allowedIds) {
         if (rankedIds == null || rankedIds.isEmpty() || rankedIds.size() > CANDIDATE_LIMIT
                 || rankedIds.stream().anyMatch(id -> id == null || id < 1)
@@ -213,6 +219,8 @@ public class AiMenuService {
         return List.copyOf(rankedIds);
     }
 
+    // Khi xác nhận, kiểm tra lại quyền, hồ sơ và từng món trước khi thay lịch từ hôm nay.
+    // Transaction giúp hoàn tác toàn bộ nếu quá trình ghi thất bại; các ngày đã qua được giữ lại.
     @Transactional
     public MealPlanWeekResponse apply(ApplyAiMenuRequest request) {
         validateWeek(request.weekStartDate());
@@ -253,6 +261,8 @@ public class AiMenuService {
         return readService.getWeek(request.weekStartDate());
     }
 
+    // Lấy tối đa 50 công thức công khai, loại món vi phạm chế độ ăn/nguyên liệu cần tránh
+    // hoặc thiếu dữ liệu xác minh và dinh dưỡng; món không thích được tính để xếp ưu tiên thấp hơn.
     private List<Candidate> candidates(String vegetarianType, List<Long> avoidedIds, List<String> avoidedNames,
             List<Long> dislikedIds, List<String> dislikedNames) {
         Map<Integer, UnitResponse> units = ingredientCatalog.findActiveUnits().stream()
@@ -287,6 +297,8 @@ public class AiMenuService {
         return result.stream().sorted(Comparator.comparingInt(Candidate::dislikeCount)).toList();
     }
 
+    // Chuyển lựa chọn của bộ tối ưu thành dữ liệu hiển thị, kèm dinh dưỡng mỗi khẩu phần
+    // và mục tiêu tham khảo; kết quả này vẫn chỉ là bản xem trước, chưa lưu vào lịch.
     private AiMenuPreviewResponse preview(LocalDate start, String mode, String goal,
             List<AiMenuOptimizer.Selection> selections, List<Candidate> pool, Set<Long> preferred,
             NutritionProfileService.MenuNutritionContext profile) {
@@ -308,6 +320,8 @@ public class AiMenuService {
                 targets, meals, DISCLAIMER);
     }
 
+    // Trước khi lưu, từ chối món ngoài khoảng cho phép, không còn phù hợp, trùng cùng bữa
+    // hoặc lặp ở hai bữa liền kề khi có nhiều hơn một công thức hợp lệ.
     private void validateSelectedMeals(ApplyAiMenuRequest request, Map<Long, Candidate> allowed,
             LocalDate firstReplaceDate, LocalDate lastReplaceDate) {
         Set<String> positions = new HashSet<>();
@@ -334,6 +348,8 @@ public class AiMenuService {
         }
     }
 
+    // Chỉ nhận mảng recipeIds hợp lệ, không trùng và nằm trong tập Backend đã cung cấp cho AI.
+    // JSON sai định dạng hoặc ID tự tạo đều dẫn đến AI_RESPONSE_INVALID.
     private List<Long> parseRecipeIds(String json, List<Long> allowed) {
         try {
             var node = objectMapper.readTree(json).get("recipeIds");
@@ -358,6 +374,8 @@ public class AiMenuService {
         return ids.stream().distinct().toList();
     }
 
+    // Yêu cầu AI xếp hạng các ID có sẵn theo hồ sơ và sở thích; không giao AI tự tạo công thức
+    // hay tự tính dinh dưỡng, vì Backend dùng dữ liệu đã kiểm tra để lập thực đơn.
     private static String prompt(LocalDate firstSuggestionDate, LocalDate lastSuggestionDate, String goal, String vegetarianType, Set<Long> preferred,
             List<Long> avoided, List<Long> disliked, List<Candidate> candidates,
             NutritionProfileService.MenuNutritionContext profile) {
@@ -398,6 +416,7 @@ public class AiMenuService {
         MealPlanReadService.validateWeekStart(start);
     }
 
+    // Giới hạn gợi ý từ hôm nay đến cuối tuần hiện tại theo múi giờ Việt Nam.
     private LocalDate firstActionableDate(LocalDate weekStart) {
         LocalDate today = todayInVietnam();
         return today.isAfter(weekStart) ? today : weekStart;

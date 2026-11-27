@@ -193,6 +193,8 @@ public class AdkAssistantEngine implements AutoCloseable {
         this(users, aiQuota, chatSettings, sessionStore, toolRegistry, domainTools, knowledge, promptLoader, aiClient, mapper, events, clock, llmFactory, null, null, configuredApiKey);
     }
 
+    // Điều phối lượt chat không streaming: xác định người dùng và phiên, xử lý consent/xác nhận,
+    // phân loại yêu cầu rồi chạy ADK với ngữ cảnh và công cụ được cấp cho lượt đó.
     public AiChatResponse execute(AiChatRequest request) {
         if (request == null || request.question() == null || request.question().isBlank()) {
             throw new AppException(ErrorCode.VALIDATION_FAILED, "Nội dung câu hỏi không được để trống.");
@@ -509,6 +511,7 @@ public class AdkAssistantEngine implements AutoCloseable {
         return buildResponse(request, sessionHandle.id(), mode, "COMPLETED", steps, sources, null, null, verifiedAnswer);
     }
 
+    // Tiếp tục hoặc từ chối hành động đang chờ theo quyết định của người dùng và trạng thái phiên.
     private AiChatResponse handleConfirmationDecision(
             AiChatRequest request,
             Long userId,
@@ -646,6 +649,8 @@ public class AdkAssistantEngine implements AutoCloseable {
                 sessionHandle.consentScopes(), toolResultContent, true, toolName, steps, sources, turnDeadline);
     }
 
+    // Kiểm tra phạm vi/an toàn câu hỏi trước lượt chính; nếu phân loại thất bại thì trả trạng thái
+    // không khả dụng thay vì coi câu hỏi đã được kiểm tra và tiếp tục mặc định.
     private AiChatResponse classify(AiChatRequest request, UUID sessionId, ExecutionMode mode, Long userId,
             AiTurnDeadline turnDeadline) {
         aiQuota.requireAvailable(userId, userId == null ? request.anonymousViewerId() : null);
@@ -713,6 +718,8 @@ public class AdkAssistantEngine implements AutoCloseable {
         stream(request, consumer, new AiChatCancellationSignal());
     }
 
+    // Phiên bản streaming của luồng điều phối: xử lý phiên, consent, xác nhận và phân loại,
+    // sau đó phát sự kiện trong lúc ADK chạy và nhận tín hiệu hủy từ kết nối.
     public void stream(AiChatRequest request, Consumer<AiChatStreamEvent> consumer,
             AiChatCancellationSignal cancellationSignal) {
         if (request == null) {
@@ -860,6 +867,8 @@ public class AdkAssistantEngine implements AutoCloseable {
                 effectiveCancellationSignal, turnDeadline);
     }
 
+    // Chạy lượt ADK và chuyển sự kiện model/tool thành sự kiện gửi cho giao diện;
+    // kết quả cuối phản ánh các bước thực tế, lỗi hoặc trạng thái cần người dùng xử lý.
     private void runAdkTurnStream(
             AiChatRequest request,
             Long userId,
@@ -1030,6 +1039,7 @@ public class AdkAssistantEngine implements AutoCloseable {
         return cancel(request, null);
     }
 
+    // Dừng lượt và xử lý trạng thái liên quan trong phiên tương ứng với chủ sở hữu.
     public AiChatResponse cancel(AiChatRequest request, AiChatCancellationSignal cancellationSignal) {
         if (request == null || (request.sessionId() == null && request.clientRequestId() == null)) {
             throw new AppException(ErrorCode.VALIDATION_FAILED, "Cần sessionId hoặc clientRequestId để dừng lượt chạy.");
@@ -1457,6 +1467,8 @@ public class AdkAssistantEngine implements AutoCloseable {
             this.expiresAt = expiresAt;
         }
 
+        // Khởi tạo hoặc dùng lại runner phù hợp với model, vai trò, chế độ và ngữ cảnh.
+        // Agent nhận các tool được cung cấp cho phiên; nghiệp vụ vẫn do Backend thực thi.
         private synchronized void ensureRunner(String modelId, String role, ExecutionMode mode, AiChatRequest request) {
             ExecutionMode canonicalMode = mode == null ? ExecutionMode.CHATBOT : mode.canonical();
             List<AiAssistantToolRegistry.ToolDefinition> definitions = scopedDefinitions(role, mode, request);
@@ -1639,6 +1651,8 @@ public class AdkAssistantEngine implements AutoCloseable {
                     .build());
         }
 
+        // Cầu nối khi ADK gọi tool: kiểm tra phạm vi/consent và trạng thái của lượt,
+        // rồi xử lý hoặc yêu cầu xác nhận theo nhánh tương ứng trước khi trả kết quả cho model.
         @Override
         public Single<Map<String, Object>> runAsync(Map<String, Object> args, ToolContext context) {
             EngineSessionState.TurnContext turn = sessionState.currentTurn.get();

@@ -136,6 +136,8 @@ public class AiChatService {
         return answer(request);
     }
 
+    // Điều hướng request không streaming: kiểm tra workflow/context, phiên đang có và pilot,
+    // sau đó dùng ADK; nhánh assistantExecution còn phục vụ tương thích khi thiếu ADK trong test.
     public AiChatResponse answer(AiChatRequest request) {
         Long userId = users.findAuthenticatedUserId().map(id -> users.requireActiveMember().id()).orElse(null);
         String owner = userId == null ? "guest:" + request.anonymousViewerId() : "user:" + userId;
@@ -201,6 +203,7 @@ public class AiChatService {
         throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE, "Dịch vụ AI chưa sẵn sàng.");
     }
 
+    // Gắn tín hiệu dừng với chủ sở hữu và clientRequestId; không cho hai lượt cùng dùng một ID.
     public AiChatCancellationSignal registerStreamCancellation(AiChatRequest request) {
         AiChatCancellationSignal signal = new AiChatCancellationSignal();
         if (request == null || request.clientRequestId() == null) return signal;
@@ -226,6 +229,7 @@ public class AiChatService {
         stream(request, consumer, new AiChatCancellationSignal());
     }
 
+    // Luồng SSE chuyển tới ADK engine; nếu engine không có, trả kết quả answer như sự kiện hoàn tất.
     public void stream(AiChatRequest request, java.util.function.Consumer<AiChatStreamEvent> consumer,
             AiChatCancellationSignal cancellationSignal) {
         Long userId = users.findAuthenticatedUserId().map(id -> users.requireActiveMember().id()).orElse(null);
@@ -243,6 +247,7 @@ public class AiChatService {
         consumer.accept(AiChatStreamEvent.complete(answer(request)));
     }
 
+    // Chuyển yêu cầu xóa đến engine sở hữu phiên; thao tác này không hoàn tác dữ liệu đã thay đổi.
     public void deleteSession(UUID sessionId, String anonymousViewerId) {
         if (sessionId == null) return;
         Long userId = users.findAuthenticatedUserId().map(id -> users.requireActiveMember().id()).orElse(null);

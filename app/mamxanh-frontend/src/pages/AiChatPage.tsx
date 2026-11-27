@@ -376,6 +376,7 @@ export function AiChatPage() {
     </button>
   )
 
+  // Bắt đầu cuộc trò chuyện mới và xử lý phiên cũ để nội dung/trạng thái chờ không lẫn sang phiên mới.
   async function startFreshConversation() {
     if (messages.length > 0 && !window.confirm(
       "Xóa nội dung cuộc trò chuyện hiện tại và bắt đầu phiên mới? Thao tác ghi đã bắt đầu vẫn có thể hoàn tất. Cuộc trò chuyện mới không hoàn tác thay đổi trong hệ thống.",
@@ -471,6 +472,7 @@ export function AiChatPage() {
     )
   }
 
+  // Yêu cầu dừng lượt AI đang chạy; việc dừng không tự hoàn tác thao tác đã hoàn thành.
   async function stopRun() {
     const clientRequestId = activeRequest.current ?? pendingAiChatRequest(ownerKey)
     const cancellation = clientRequestId
@@ -489,6 +491,7 @@ export function AiChatPage() {
     setError("Đã yêu cầu dừng. Thao tác ghi đã bắt đầu có thể hoàn tất. Hãy kiểm tra kết quả.")
   }
 
+  // Tra cứu kết quả thực thi khi kết nối bị gián đoạn để người dùng biết trạng thái đã ghi nhận.
   async function recoverExecution() {
     if (!recoveryRequest || !isAuthenticated) return
     const version = requestVersion.current
@@ -530,6 +533,8 @@ export function AiChatPage() {
     } catch (cause) { if (version === requestVersion.current) setError(asApiError(cause).message) }
   }
 
+  // Tạo request cho lượt chat, kèm phiên, chế độ, ngữ cảnh và lịch sử gần đây.
+  // Các callback streaming cập nhật câu trả lời, bước thực thi và yêu cầu xác nhận trên giao diện.
   async function send(
     questionText: string,
     previous: ChatMessage[],
@@ -600,6 +605,7 @@ export function AiChatPage() {
     ])
 
     try {
+      // Gửi qua SSE: nhận từng phần trong lúc xử lý rồi dùng kết quả cuối để cập nhật phiên/UI.
       const response = await recipesApi.chatStream({
         contextType,
         clientRequestId,
@@ -649,6 +655,8 @@ export function AiChatPage() {
 
       if (version !== requestVersion.current) return
       let formActionMessage: string | undefined
+      // Đề xuất sửa biểu mẫu phải khớp định dạng và phiên bản trước khi áp dụng tại Frontend;
+      // sau đó gửi acknowledgement để Backend biết kết quả, không tự xuất bản công thức.
       const actions = (response.steps ?? []).filter((step) => step.tool === "propose_recipe_form_patch" && step.status === "UI_ACTION_REQUIRED")
       if (actions.length > 0) {
         const data = actions[0].result?.data
@@ -833,6 +841,7 @@ export function AiChatPage() {
     }
   }
 
+  // Không gửi câu hỏi mới khi đang có yêu cầu consent hoặc xác nhận chưa được xử lý.
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const normalized = question.trim()
@@ -853,6 +862,8 @@ export function AiChatPage() {
   )
   const hasUnresolvedAssistantAction = Boolean(humanInputMessage)
 
+  // Consent là đồng ý phạm vi dữ liệu; confirmation là quyết định với thao tác đang chờ.
+  // Consent được chấp nhận và quyết định xác nhận được gửi cùng thông tin phiên; từ chối consent đóng yêu cầu trên UI.
   async function decideHumanInput(approved: boolean) {
     const message = humanInputMessage
     if (!message) return false

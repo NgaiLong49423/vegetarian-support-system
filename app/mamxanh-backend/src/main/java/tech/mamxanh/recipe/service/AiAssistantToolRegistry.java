@@ -88,6 +88,8 @@ public class AiAssistantToolRegistry {
         this.users = users;
     }
 
+    // Khai báo tên, đầu vào, mức rủi ro và phạm vi consent của tool theo vai trò.
+    // Guest chỉ nhận nhóm công khai; Member/Expert có thêm các tool tương ứng.
     public List<ToolDefinition> definitionsFor(String role) {
         boolean member = "CUSTOMER".equals(role) || "EXPERT".equals(role);
         boolean expert = "EXPERT".equals(role);
@@ -136,6 +138,8 @@ public class AiAssistantToolRegistry {
         return List.copyOf(definitions);
     }
 
+    // Ánh xạ tên tool sang service nghiệp vụ thật và chuyển đổi tham số đầu vào.
+    // Tên không được đăng ký bị từ chối; quyền/consent còn được kiểm tra ở các lớp liên quan.
     public ToolResult execute(String tool, Map<String, Object> arguments) {
         Map<String, Object> args = arguments == null ? Map.of() : arguments;
         return switch (tool) {
@@ -207,6 +211,7 @@ public class AiAssistantToolRegistry {
                 : "Đã tra cứu công thức công khai hiện có trên Mâm Xanh.", page.items(), sources);
     }
 
+    // Tìm trong nguồn kiến thức nội bộ đã duyệt và trả kèm nguồn để trợ lý dẫn chứng.
     private ToolResult searchKnowledge(String query) {
         var matches = knowledge.retrieve(query);
         return new ToolResult("SUCCEEDED", matches.isEmpty()
@@ -214,6 +219,7 @@ public class AiAssistantToolRegistry {
                 : "Đã tìm trong tài liệu nội bộ được duyệt.", matches, matches);
     }
 
+    // Chuyển yêu cầu điều hướng thành đường dẫn ứng dụng hợp lệ; không tự điền biểu mẫu.
     private ToolResult navigate(Map<String, Object> args) {
         String page = text(args, "page");
         Long recipeId = optionalLongValue(args, "recipeId");
@@ -342,6 +348,7 @@ public class AiAssistantToolRegistry {
                 mapper.convertValue(value, new TypeReference<Map<String, Object>>() { }), List.of());
     }
 
+    // Chuyển dữ liệu tool sang DTO và kiểm tra ràng buộc trước khi gọi service nghiệp vụ.
     private <T> T validated(Map<String, Object> values, Class<T> type) {
         T value = mapper.convertValue(values == null ? Map.of() : values, type);
         Set<ConstraintViolation<T>> violations = validator.validate(value);
