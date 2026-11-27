@@ -376,7 +376,7 @@ export function AddToMealPlanButton({
         {riskAssessment && <>
           <p className="text-sm leading-6 text-white/75">{riskAssessment.recipeTitle} có cảnh báo. Thêm vào lịch không có nghĩa công thức an toàn để ăn.</p>
           {riskAssessment.hasAllergenOrAvoidConflict && <p className="mt-3 rounded-xl border border-red-400/70 bg-red-950/40 p-3 text-sm text-red-100"><strong>Dị ứng / cần tránh:</strong> {riskAssessment.ingredients.filter((line) => line.conflicts.includes("ALLERGEN_OR_AVOID")).map((line) => line.name).join(", ")}</p>}
-          {riskAssessment.hasVegetarianConflict && <p className="mt-3 rounded-xl border border-orange-300/70 bg-orange-950/30 p-3 text-sm text-orange-100"><strong>Không phù hợp kiểu ăn chay:</strong> {riskAssessment.ingredients.filter((line) => line.conflicts.includes("VEGETARIAN_TYPE")).map((line) => line.name).join(", ")}</p>}
+          {riskAssessment.hasVegetarianConflict && <p className="mt-3 rounded-xl border border-orange-300/70 bg-orange-950/30 p-3 text-sm text-orange-100"><strong>Không phù hợp kiểu ăn chay:</strong> Loại ăn chay do tác giả chọn không phù hợp với hồ sơ của bạn.</p>}
           {riskAssessment.unverifiedIngredients.length > 0 && <p className="mt-3 rounded-xl border border-amber-300/70 bg-amber-950/30 p-3 text-sm text-amber-100"><strong>Chưa xác minh:</strong> {riskAssessment.unverifiedIngredients.join(", ")}</p>}
           <label className="mt-4 flex cursor-pointer items-start gap-3 text-sm leading-6 text-white/85">
             <input type="checkbox" checked={riskChecked} onChange={(event) => setRiskChecked(event.target.checked)} className="mt-1 accent-red-500" />

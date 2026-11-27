@@ -41,19 +41,17 @@ public class DietaryConstraintEvaluator {
             if (ingredient.ingredientId() == null || metadata == null) {
                 unverified.add(ingredient.name());
                 conflicts.add(Conflict.UNVERIFIED);
-            } else if (isIncompatibleIngredient(ingredient.name(), metadata.ingredientGroup(), vegetarianType)) {
-                conflicts.add(Conflict.VEGETARIAN_TYPE);
             }
             lines.add(new IngredientStatus(ingredient.ingredientId(), ingredient.name(),
                     metadata == null ? null : metadata.ingredientGroup(), List.copyOf(conflicts)));
         }
         boolean typeCompatible = recipeTypeCompatible(recipe.vegetarianType(), vegetarianType);
-        if (!typeCompatible && lines.stream().noneMatch(line -> line.conflicts().contains(Conflict.VEGETARIAN_TYPE))) {
+        if (!typeCompatible) {
             lines.add(new IngredientStatus(null, "Loại ăn chay của công thức", null, List.of(Conflict.VEGETARIAN_TYPE)));
         }
         return new Assessment(recipe.id(), recipe.title(), typeCompatible,
                 lines.stream().anyMatch(line -> line.conflicts().contains(Conflict.ALLERGEN_OR_AVOID)),
-                lines.stream().anyMatch(line -> line.conflicts().contains(Conflict.VEGETARIAN_TYPE)),
+                !typeCompatible,
                 lines.stream().anyMatch(line -> line.conflicts().contains(Conflict.DISLIKE)),
                 List.copyOf(unverified), List.copyOf(lines), false, null);
     }
@@ -142,33 +140,6 @@ public class DietaryConstraintEvaluator {
             if (group != null) result.add("@" + group);
         }
         return result;
-    }
-
-    private static boolean isIncompatibleIngredient(String name, String rawGroup, String preferenceType) {
-        String knownClass = ALIASES.get(key(name));
-        // An exact plant-soy alias wins over a broad catalog label such as "Milk".
-        if ("SOY".equals(knownClass)) return false;
-        if (knownClass != null) return groupConflicts(knownClass, preferenceType);
-        String group = key(rawGroup);
-        if (Set.of("meat", "thit", "gia suc", "gia cam", "poultry", "beef", "pork").contains(group)) return true;
-        if (Set.of("ca", "fish", "seafood", "hai san", "thuy san").contains(group)) return true;
-        if (Set.of("egg", "eggs", "trung").contains(group)) return groupConflicts("EGG", preferenceType);
-        if (Set.of("dairy", "milk", "sua dong vat", "che pham sua", "pho mai", "bo sua").contains(group)) {
-            return groupConflicts("DAIRY", preferenceType);
-        }
-        if (Set.of("honey", "mat ong").contains(group)) return groupConflicts("HONEY", preferenceType);
-        return false;
-    }
-
-    private static boolean groupConflicts(String ingredientClass, String preferenceType) {
-        if (preferenceType == null) return false;
-        return switch (ingredientClass) {
-            case "MEAT", "FISH" -> true;
-            case "EGG" -> Set.of("VEGAN", "LACTO").contains(preferenceType);
-            case "DAIRY" -> Set.of("VEGAN", "OVO").contains(preferenceType);
-            case "HONEY" -> "VEGAN".equals(preferenceType);
-            default -> false;
-        };
     }
 
     private static String key(String value) {

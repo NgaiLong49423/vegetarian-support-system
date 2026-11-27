@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.163.0
+> **Version:** v2.164.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-11-28<br>
 > **Status:** Active
@@ -8,6 +8,25 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-11-28 — Assess Vegetarian Compatibility by Recipe Type
+
+**Status:** Committed — 0e00681c.
+
+**Scope:** Base vegetarian compatibility on the recipe author's declared type while retaining separate ingredient preferences.
+
+### Added
+
+None.
+
+### Changed
+
+- Compare recipe and profile vegetarian types for warnings, meal-plan confirmation, and recommendation filtering instead of classifying individual ingredient names.
+- Describe possible milk or egg content from the declared recipe type without identifying individual ingredients. Keep avoid and dislike matching separate.
+
+### Fixed
+
+None.
 
 ## 2026-11-28 — Reconcile Pending payOS Orders and Align 15-Minute Expiry
 
