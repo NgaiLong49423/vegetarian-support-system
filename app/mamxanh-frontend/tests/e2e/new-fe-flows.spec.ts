@@ -103,6 +103,7 @@ async function fillEligibleNutritionProfile(page: Page) {
 async function selectNutritionGoal(page: Page, label: string) {
   await page.locator('#nutrition-goal-trigger').click();
   await page.getByRole('radio', { name: new RegExp(label) }).check();
+  await page.locator('#nutrition-goal-trigger').click();
 }
 
 test('nutrition goals can be selected by clicking their labels and saved', async ({ page }) => {
@@ -115,13 +116,17 @@ test('nutrition goals can be selected by clicking their labels and saved', async
     await route.fulfill({ json: { ...savedNutritionResponse, profile: { ...exampleProfile, nutritionGoal: savedGoal } } });
   });
   const trigger = page.locator('#nutrition-goal-trigger');
+  await trigger.click();
   for (const label of ['Duy trì cân nặng', 'Giảm cân', 'Tăng cân', 'Tăng cơ', 'Hỗ trợ tập luyện', 'Chưa chọn mục tiêu', 'Cải thiện sức khỏe chung']) {
-    await trigger.click();
     await page.getByText(label, { exact: true }).click();
     await expect(trigger).toContainText(label === 'Chưa chọn mục tiêu' ? 'Chọn mục tiêu của bạn' : label);
   }
-  await trigger.click();
+  for (const label of ['Duy trì cân nặng', 'Giảm cân', 'Tăng cân', 'Tăng cơ', 'Hỗ trợ tập luyện', 'Cải thiện sức khỏe chung']) {
+    await page.getByRole('radio', { name: new RegExp(label) }).click();
+    await expect(trigger).toContainText(label);
+  }
   await page.getByText('Giảm cân', { exact: true }).click();
+  await trigger.click();
   await page.getByRole('checkbox').check();
   const request = page.waitForRequest((candidate) => candidate.method() === 'PUT' && new URL(candidate.url()).pathname === '/api/v1/nutrition/profile');
   await page.getByRole('button', { name: 'Lưu hồ sơ' }).click();
@@ -159,6 +164,7 @@ test('nutrition goal dropdown explains each optional choice and restores a saved
   await expect(page.getByRole('radio', { name: /Duy trì cân nặng/ })).toBeChecked();
   await page.getByRole('radio', { name: /Chưa chọn mục tiêu/ }).check();
   await expect(trigger).toContainText('Chọn mục tiêu của bạn');
+  await trigger.click();
 
   let previousMenuBackground = '';
   for (const view of [{ theme: 'dark', width: 390 }, { theme: 'light', width: 1280 }] as const) {

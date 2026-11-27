@@ -404,13 +404,7 @@ export function NutritionProfile() {
             <fieldset className="min-w-0 border-0 p-0 sm:col-span-2">
               <legend id="nutrition-goal-label" className={miniLabelClass}>Mục tiêu dinh dưỡng cá nhân (không bắt buộc)</legend>
               <p id="nutrition-goal-help" className="mt-1 text-xs font-normal leading-5 text-ink-muted">Lựa chọn mục tiêu phù hợp để chúng tôi đề xuất thực đơn dành riêng cho bạn.</p>
-              <details className="group mt-2" onBlur={(event) => {
-                const details = event.currentTarget;
-                // Đợi click trên nhãn chuyển focus sang radio trước khi xét đóng danh sách.
-                window.setTimeout(() => {
-                  if (!details.contains(document.activeElement)) details.open = false;
-                }, 0);
-              }} onKeyDown={(event) => {
+              <details className="group mt-2" onKeyDown={(event) => {
                 if (event.key === 'Escape') {
                   event.preventDefault();
                   event.currentTarget.open = false;
@@ -425,22 +419,14 @@ export function NutritionProfile() {
                   <fieldset className="m-0 min-w-0 space-y-2 border-0 p-0">
                     <legend className="sr-only">Chọn mục tiêu dinh dưỡng cá nhân</legend>
                     <label className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition focus-within:ring-2 focus-within:ring-leaf-200 ${!form.nutritionGoal ? 'border-leaf-300 bg-leaf-50' : 'border-transparent hover:bg-raised'}`}>
-                      <input className="mt-1 shrink-0 accent-leaf-700" type="radio" name="nutritionGoal" value="" checked={!form.nutritionGoal} onChange={(event) => {
-                        setField('nutritionGoal', '');
-                        const details = event.currentTarget.closest('details');
-                        if (details) { details.open = false; details.querySelector('summary')?.focus(); }
-                      }} />
+                      <input className="mt-1 shrink-0 accent-leaf-700" type="radio" name="nutritionGoal" value="" checked={!form.nutritionGoal} onChange={() => setField('nutritionGoal', '')} />
                       <span className="min-w-0">
                         <span className="block text-sm font-bold text-ink">Chưa chọn mục tiêu</span>
                         <span className="mt-1 block text-xs leading-5 text-ink-muted">Bạn có thể để trống mục tiêu này.</span>
                       </span>
                     </label>
                     {nutritionGoals.map((goal) => <label key={goal.value} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition focus-within:ring-2 focus-within:ring-leaf-200 ${form.nutritionGoal === goal.value ? 'border-leaf-300 bg-leaf-50' : 'border-transparent hover:bg-raised'}`}>
-                      <input className="mt-1 shrink-0 accent-leaf-700" type="radio" name="nutritionGoal" value={goal.value} checked={form.nutritionGoal === goal.value} onChange={(event) => {
-                        setField('nutritionGoal', goal.value);
-                        const details = event.currentTarget.closest('details');
-                        if (details) { details.open = false; details.querySelector('summary')?.focus(); }
-                      }} />
+                      <input className="mt-1 shrink-0 accent-leaf-700" type="radio" name="nutritionGoal" value={goal.value} checked={form.nutritionGoal === goal.value} onChange={() => setField('nutritionGoal', goal.value)} />
                       <span className="min-w-0">
                         <span className="block text-sm font-bold text-ink">{goal.label}</span>
                         <span className="mt-1 block text-xs leading-5 text-ink-muted">{goal.description}</span>
