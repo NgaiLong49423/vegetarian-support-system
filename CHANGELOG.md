@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.165.0
+> **Version:** v2.166.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-11-28<br>
 > **Status:** Active
@@ -8,6 +8,24 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-11-28 — Keep Nutrition Goal Options Open
+
+**Status:** Committed — 2db928a9.
+
+**Scope:** Make nutrition goal selection independent of automatic menu closing.
+
+### Added
+
+None.
+
+### Changed
+
+- Keep the goal options visible after selection until the user closes the menu.
+
+### Fixed
+
+- Exercise both radio controls and labels for all nutrition goals in the mock-backed browser test.
 
 ## 2026-11-28 — Fix Nutrition Goal Selection
 
