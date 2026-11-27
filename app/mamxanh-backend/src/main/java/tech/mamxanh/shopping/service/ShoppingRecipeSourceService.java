@@ -13,6 +13,7 @@ import tech.mamxanh.shopping.repository.ShoppingListRepository;
 import tech.mamxanh.shopping.repository.ShoppingRecipeContributionRepository;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -91,8 +92,8 @@ public class ShoppingRecipeSourceService {
         var member = users.lockActiveMember();
         var list = lists.lockOwned(listId, member.id()).orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
         if (recipeId < 1 || request == null || request.servings() == null
-                || request.servings().multiply(BigDecimal.TEN).stripTrailingZeros().scale() > 0) {
-            throw invalid("Khẩu phần phải là bội số 0,1 trong khoảng 0,5 đến 500.");
+                || request.servings().multiply(BigDecimal.valueOf(2)).stripTrailingZeros().scale() > 0) {
+            throw invalid("Khẩu phần phải là bội số 0,5 trong khoảng 0,5 đến 500.");
         }
         var allSources = contributions.findByShoppingListIdOrderByIdAsc(listId);
         var recipeRows = allSources.stream().filter(row -> "RECIPE".equals(row.getSourceKind())
@@ -116,9 +117,9 @@ public class ShoppingRecipeSourceService {
             oldServings.put(group.getKey(), values.getFirst());
         }
         BigDecimal oldTotal = oldServings.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal minimum = BigDecimal.valueOf(oldServings.size()).multiply(new BigDecimal("0.5"));
-        if (request.servings().compareTo(minimum) < 0 || request.servings().compareTo(new BigDecimal("500")) > 0)
-            throw invalid("Tổng khẩu phần phải từ " + minimum.stripTrailingZeros().toPlainString() + " đến 500.");
+        if (request.servings().compareTo(new BigDecimal("0.5")) < 0
+                || request.servings().compareTo(new BigDecimal("500")) > 0)
+            throw invalid("Tổng khẩu phần phải từ 0,5 đến 500 theo bước 0,5.");
         if (request.servings().compareTo(oldTotal) == 0) return checklists.get(listId);
 
         var linkedIds = recipeRows.stream().map(row -> row.getShoppingListItemId())
@@ -128,26 +129,40 @@ public class ShoppingRecipeSourceService {
         var before = linkedItems.stream().collect(Collectors.toMap(
                 item -> item.getId(), item -> quantitiesForItem(item.getId(), allSources), (a, b) -> a));
         Map<UUID, BigDecimal> adjustedServings = distributeServings(request.servings(), oldServings);
+        var updatedQuantities = new java.util.IdentityHashMap<
+                tech.mamxanh.shopping.entity.ShoppingRecipeContributionEntity, BigDecimal>();
+        var maximumQuantity = new BigDecimal("999999999999.999999");
         for (var entry : sourceGroups.entrySet()) {
             BigDecimal previous = oldServings.get(entry.getKey());
             BigDecimal updated = adjustedServings.get(entry.getKey());
             BigDecimal ratio = updated.divide(previous, 12, RoundingMode.HALF_UP);
-            entry.getValue().forEach(row -> {
-                row.setQuantity(row.getQuantity().multiply(ratio).setScale(6, RoundingMode.HALF_UP));
-                row.setServings(updated);
-            });
+            for (var row : entry.getValue()) {
+                BigDecimal quantity = row.getQuantity().multiply(ratio).setScale(6, RoundingMode.HALF_UP);
+                if (quantity.signum() <= 0 || quantity.compareTo(maximumQuantity) > 0)
+                    throw invalid("Định lượng sau khi đổi khẩu phần vượt giới hạn lưu trữ.");
+                updatedQuantities.put(row, quantity);
+            }
         }
-        contributions.saveAll(recipeRows);
+        var updatedItemQuantities = new LinkedHashMap<Long, BigDecimal>();
         for (var item : linkedItems) {
-            var after = quantitiesForItem(item.getId(), allSources);
+            var after = quantitiesForItem(item.getId(), allSources, updatedQuantities);
             var prior = before.get(item.getId());
             if (!prior.containsKey(item.getUnitId()) || !after.containsKey(item.getUnitId()))
                 throw invalid("Đổi khẩu phần không thể cập nhật an toàn vì đơn vị dòng mua đã được thay đổi. Hãy chọn lại đơn vị tương thích trước.");
             BigDecimal delta = after.get(item.getUnitId()).subtract(prior.get(item.getUnitId()));
             BigDecimal quantity = item.getQuantity().add(delta).setScale(6, RoundingMode.HALF_UP);
-            if (quantity.signum() <= 0 || quantity.compareTo(new BigDecimal("999999999999.999999")) > 0)
+            if (quantity.signum() <= 0 || quantity.compareTo(maximumQuantity) > 0)
                 throw invalid("Định lượng sau khi đổi khẩu phần vượt giới hạn lưu trữ.");
-            item.setQuantity(quantity);
+            updatedItemQuantities.put(item.getId(), quantity);
+        }
+        for (var row : recipeRows) row.setQuantity(updatedQuantities.get(row));
+        for (var entry : sourceGroups.entrySet()) {
+            BigDecimal updated = adjustedServings.get(entry.getKey());
+            entry.getValue().forEach(row -> row.setServings(updated));
+        }
+        contributions.saveAll(recipeRows);
+        for (var item : linkedItems) {
+            item.setQuantity(updatedItemQuantities.get(item.getId()));
             item.setBought(false);
         }
         list.setUpdatedAt(LocalDateTime.now(clock));
@@ -209,49 +224,63 @@ public class ShoppingRecipeSourceService {
             Map<UUID, BigDecimal> previous) {
         var entries = previous.entrySet().stream().toList();
         int count = entries.size();
-        int targetTenths = requested.movePointRight(1).intValueExact();
-        int[] weights = entries.stream().mapToInt(entry -> entry.getValue().movePointRight(1).intValueExact()).toArray();
-        int[] allocated = new int[count];
-        long[] remainders = new long[count];
+        long targetMicros = requested.movePointRight(6).longValueExact();
+        if (targetMicros < count)
+            throw invalid("Tổng khẩu phần không đủ để phân bổ lượng dương cho mỗi lần xuất hiện.");
+        BigInteger[] weights = entries.stream()
+                .map(entry -> BigInteger.valueOf(entry.getValue().movePointRight(6).longValueExact()))
+                .toArray(BigInteger[]::new);
+        long[] allocated = new long[count];
+        BigInteger[] remainders = new BigInteger[count];
         var active = new java.util.ArrayList<Integer>();
         for (int index = 0; index < count; index++) active.add(index);
-        int remainingTenths = targetTenths;
+        long remainingMicros = targetMicros;
         while (!active.isEmpty()) {
-            int totalWeight = active.stream().mapToInt(index -> weights[index]).sum();
-            int availableTenths = remainingTenths;
+            BigInteger totalWeight = active.stream().map(index -> weights[index])
+                    .reduce(BigInteger.ZERO, BigInteger::add);
+            long availableMicros = remainingMicros;
             Integer belowMinimum = active.stream()
-                    .filter(index -> (long) availableTenths * weights[index] < 5L * totalWeight)
+                    .filter(index -> BigInteger.valueOf(availableMicros).multiply(weights[index])
+                            .compareTo(totalWeight) < 0)
                     .findFirst().orElse(null);
             if (belowMinimum != null) {
-                allocated[belowMinimum] = 5;
-                remainingTenths -= 5;
+                allocated[belowMinimum] = 1;
+                remainingMicros--;
                 active.remove(belowMinimum);
                 continue;
             }
-            int baseTotal = 0;
+            long baseTotal = 0;
             for (int index : active) {
-                long numerator = (long) remainingTenths * weights[index];
-                allocated[index] = (int) (numerator / totalWeight);
-                remainders[index] = numerator % totalWeight;
+                BigInteger numerator = BigInteger.valueOf(remainingMicros).multiply(weights[index]);
+                BigInteger[] division = numerator.divideAndRemainder(totalWeight);
+                allocated[index] = division[0].longValueExact();
+                remainders[index] = division[1];
                 baseTotal += allocated[index];
             }
-            int remainingUnits = remainingTenths - baseTotal;
-            active.sort(java.util.Comparator.<Integer>comparingLong(index -> remainders[index]).reversed()
+            long remainingUnits = remainingMicros - baseTotal;
+            active.sort(java.util.Comparator.<Integer, BigInteger>comparing(index -> remainders[index]).reversed()
                     .thenComparingInt(Integer::intValue));
-            for (int index = 0; index < remainingUnits; index++) allocated[active.get(index)]++;
+            for (int index = 0; index < remainingUnits; index++) allocated[active.get((int) index)]++;
             break;
         }
         var result = new LinkedHashMap<UUID, BigDecimal>();
         for (int index = 0; index < count; index++) {
-            result.put(entries.get(index).getKey(), BigDecimal.valueOf(allocated[index], 1));
+            result.put(entries.get(index).getKey(), BigDecimal.valueOf(allocated[index], 6));
         }
         return result;
     }
 
     private java.util.Map<Integer, BigDecimal> quantitiesForItem(Long itemId,
             List<tech.mamxanh.shopping.entity.ShoppingRecipeContributionEntity> sources) {
+        return quantitiesForItem(itemId, sources, Map.of());
+    }
+
+    private java.util.Map<Integer, BigDecimal> quantitiesForItem(Long itemId,
+            List<tech.mamxanh.shopping.entity.ShoppingRecipeContributionEntity> sources,
+            Map<tech.mamxanh.shopping.entity.ShoppingRecipeContributionEntity, BigDecimal> updatedQuantities) {
         var lines = sources.stream().filter(row -> itemId.equals(row.getShoppingListItemId()))
-                .map(row -> new ShoppingAggregationLine(row.getIngredientId(), null, row.getQuantity(), row.getUnitId())).toList();
+                .map(row -> new ShoppingAggregationLine(row.getIngredientId(), null,
+                        updatedQuantities.getOrDefault(row, row.getQuantity()), row.getUnitId())).toList();
         if (lines.isEmpty()) return java.util.Map.of();
         return aggregation.aggregate(lines).groups().stream().flatMap(group -> group.items().stream())
                 .collect(java.util.stream.Collectors.toMap(
