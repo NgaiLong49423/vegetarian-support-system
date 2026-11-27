@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.164.0
+> **Version:** v2.165.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-11-28<br>
 > **Status:** Active
@@ -8,6 +8,25 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-11-28 — Fix Nutrition Goal Selection
+
+**Status:** Committed — aaa2236e.
+
+**Scope:** Restore selection of optional nutrition goals in the personal profile.
+
+### Added
+
+None.
+
+### Changed
+
+None.
+
+### Fixed
+
+- Keep the goal menu open while a click moves focus to the selected option, allowing its label to be selected reliably.
+- Cover goal selection, saved request and reload with a mock-backed browser test.
 
 ## 2026-11-28 — Assess Vegetarian Compatibility by Recipe Type
 
