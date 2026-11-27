@@ -66,7 +66,7 @@ public class DietaryPreferenceService {
         Map<String, PreferenceItem> dislike = normalize(request.dislike(), standardByKey);
         avoid.keySet().stream().filter(dislike::containsKey).findFirst().ifPresent(conflict -> {
             throw new AppException(ErrorCode.INGREDIENT_PREFERENCE_CONFLICT,
-                    "\"" + avoid.get(conflict).name() + "\" không thể vừa là nguyên liệu cần tránh vừa là món không thích.");
+                    "\"" + avoid.get(conflict).name() + "\" không thể vừa là nguyên liệu cần tránh vừa là nguyên liệu không thích.");
         });
 
         LocalDateTime now = LocalDateTime.now(clock);

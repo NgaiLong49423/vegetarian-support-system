@@ -165,10 +165,10 @@ test('a new member is invited after the first sign-in and completes onboarding w
   await page.getByRole('button', { name: '+ Đậu phộng' }).click();
   await page.getByRole('button', { name: 'Tiếp tục' }).click();
   await page.getByRole('button', { name: 'Tiếp tục' }).click();
-  await expect(page.getByText('Chọn ít nhất một món hoặc nguyên liệu không thích hoặc xác nhận không có.')).toBeVisible();
-  await page.getByLabel('Thêm vào danh sách 3. món hoặc nguyên liệu không thích', { exact: true }).fill('  Mướp   đắng ');
-  await page.getByRole('button', { name: 'Thêm mục vào 3. món hoặc nguyên liệu không thích' }).click();
-  await expect(page.getByRole('list', { name: '3. Món hoặc nguyên liệu không thích' })).toContainText('Mướp đắng');
+  await expect(page.getByText('Chọn ít nhất một nguyên liệu không thích hoặc xác nhận không có.')).toBeVisible();
+  await page.getByLabel('Thêm vào danh sách 3. nguyên liệu không thích', { exact: true }).fill('  Mướp   đắng ');
+  await page.getByRole('button', { name: 'Thêm mục vào 3. nguyên liệu không thích' }).click();
+  await expect(page.getByRole('list', { name: '3. Nguyên liệu không thích' })).toContainText('Mướp đắng');
   await page.getByRole('button', { name: 'Tiếp tục' }).click();
   await expect(page.getByLabel('Thời gian nấu tối đa (phút)')).toHaveCount(0);
   await page.getByRole('button', { name: 'Tiếp tục' }).click();
@@ -201,7 +201,7 @@ test('confirming "none" for both lists completes onboarding (AC-31.2, mock API)'
   await expect(page.getByRole('list', { name: '2. Nguyên liệu cần tránh (dị ứng/kiêng)' })).toHaveCount(0);
   await expect(page.getByLabel('Thêm vào danh sách 2. nguyên liệu cần tránh (dị ứng/kiêng)', { exact: true })).toBeDisabled();
   await page.getByRole('button', { name: 'Tiếp tục' }).click();
-  await page.getByLabel('Tôi không có món không thích').check();
+  await page.getByLabel('Tôi không có nguyên liệu không thích').check();
   for (let step = 0; step < 3; step++) await page.getByRole('button', { name: 'Tiếp tục' }).click();
   await confirmSave(page);
 
@@ -230,7 +230,7 @@ test('questions appear individually, Back preserves answers, and Enter advances 
   await page.getByRole('button', { name: 'Tiếp tục' }).click();
   await expect(page.getByRole('list', { name: '2. Nguyên liệu cần tránh (dị ứng/kiêng)' })).toContainText('Nấm');
   await page.getByRole('button', { name: 'Tiếp tục' }).click();
-  await page.getByLabel('Tôi không có món không thích').check();
+  await page.getByLabel('Tôi không có nguyên liệu không thích').check();
   await page.getByRole('button', { name: 'Tiếp tục' }).click();
   await page.getByLabel('Khẩu vị ẩm thực').fill('Món Việt');
   await page.getByLabel('Khẩu vị ẩm thực').press('Enter');
@@ -370,7 +370,7 @@ test('settings refuse an empty allergy list until "none" is confirmed (AC-31.7, 
 
   await expect(page.getByRole('status')).toContainText('Đã đủ thông tin cho AI cá nhân hóa.');
   await expect(page.getByLabel('Khẩu vị ẩm thực')).toHaveValue('Món chay Huế');
-  await expect(page.getByLabel('Tôi không có món không thích')).toBeChecked();
+  await expect(page.getByLabel('Tôi không có nguyên liệu không thích')).toBeChecked();
   await page.getByRole('button', { name: 'Bỏ Nấm' }).click();
   await confirmSave(page, 'Lưu thay đổi');
   await expect(page.getByRole('alert')).toHaveText('Chọn ít nhất một nguyên liệu cần tránh hoặc xác nhận không có dị ứng/kiêng cử.');
@@ -392,7 +392,7 @@ test('settings explain which minimum information personalized AI still needs (AC
   await expect(page).toHaveURL(/\/ho-so\/so-thich-an-uong$/);
   const note = page.getByRole('note', { name: 'Thông tin còn thiếu cho AI cá nhân hóa' });
   await expect(note).toContainText('Bạn cần hoàn tất 3 thông tin cơ bản về chế độ ăn chay');
-  await expect(note).toContainText('Còn thiếu: Nguyên liệu dị ứng/kiêng, Món không thích.');
+  await expect(note).toContainText('Còn thiếu: Nguyên liệu dị ứng/kiêng, Nguyên liệu không thích.');
   await expect(page.getByRole('radio', { name: /Chay có sữa \(Lacto\)/ })).toBeChecked();
 });
 
@@ -400,12 +400,12 @@ test('server validation and conflicts are shown on the matching list (mock API)'
   await seedSession(page);
   let attempt = 0;
   await stubPreferences(page, completedProfile, () => (++attempt === 1
-    ? problem(400, 'INGREDIENT_PREFERENCE_CONFLICT', { detail: '"Nấm" không thể vừa là nguyên liệu cần tránh vừa là món không thích.' })
+    ? problem(400, 'INGREDIENT_PREFERENCE_CONFLICT', { detail: '"Nấm" không thể vừa là nguyên liệu cần tránh vừa là nguyên liệu không thích.' })
     : problem(400, 'VALIDATION_FAILED', { errors: [{ field: 'avoid.items[0]', message: 'Tên nguyên liệu tối đa 200 ký tự.' }] })));
   await page.goto('/ho-so/so-thich-an-uong');
 
   await confirmSave(page, 'Lưu thay đổi');
-  await expect(page.getByRole('alert')).toHaveText('"Nấm" không thể vừa là nguyên liệu cần tránh vừa là món không thích.');
+  await expect(page.getByRole('alert')).toHaveText('"Nấm" không thể vừa là nguyên liệu cần tránh vừa là nguyên liệu không thích.');
   await confirmSave(page, 'Lưu thay đổi');
   await expect(page.getByRole('alert')).toHaveText('Tên nguyên liệu tối đa 200 ký tự.');
 });
@@ -415,12 +415,12 @@ test('the same name cannot be added to both lists in the browser (mock API)', as
   const saved = await stubPreferences(page, completedProfile);
   await page.goto('/ho-so/so-thich-an-uong');
 
-  await page.getByLabel('Tôi không có món không thích').uncheck();
-  await page.getByLabel('Thêm vào danh sách 3. món hoặc nguyên liệu không thích', { exact: true }).fill('nấm');
+  await page.getByLabel('Tôi không có nguyên liệu không thích').uncheck();
+  await page.getByLabel('Thêm vào danh sách 3. nguyên liệu không thích', { exact: true }).fill('nấm');
   await page.keyboard.press('Enter');
   await confirmSave(page, 'Lưu thay đổi');
 
-  await expect(page.getByRole('alert')).toHaveText('"Nấm" không thể vừa là nguyên liệu cần tránh vừa là món không thích.');
+  await expect(page.getByRole('alert')).toHaveText('"Nấm" không thể vừa là nguyên liệu cần tránh vừa là nguyên liệu không thích.');
   expect(saved).toHaveLength(0);
 });
 

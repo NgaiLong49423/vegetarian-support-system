@@ -54,23 +54,16 @@ const AVOID_REQUIRED =
   "Chọn ít nhất một nguyên liệu cần tránh hoặc xác nhận không có dị ứng/kiêng cử."
 
 const DISLIKE_REQUIRED =
-  "Chọn ít nhất một món hoặc nguyên liệu không thích hoặc xác nhận không có."
+  "Chọn ít nhất một nguyên liệu không thích hoặc xác nhận không có."
 
 const QUESTIONS = [
   "Bạn ăn chay theo kiểu nào?",
   "Bạn cần tránh nguyên liệu nào?",
-  "Bạn không thích món hoặc nguyên liệu nào?",
+  "Bạn không thích nguyên liệu nào?",
   "Bạn thích phong cách ẩm thực nào?",
   "Bạn muốn dành bao nhiêu phút để nấu?",
   "Bạn muốn nấu món có độ khó thế nào?",
 ]
-
-const AUTO_EXCLUSIONS: Record<VegetarianType, string[]> = {
-  VEGAN: ["Thịt và sản phẩm từ thịt", "Cá và hải sản", "Trứng và chế phẩm", "Sữa động vật và chế phẩm", "Mật ong"],
-  LACTO: ["Thịt và sản phẩm từ thịt", "Cá và hải sản", "Trứng và chế phẩm"],
-  OVO: ["Thịt và sản phẩm từ thịt", "Cá và hải sản", "Sữa động vật và chế phẩm"],
-  LACTO_OVO: ["Thịt và sản phẩm từ thịt", "Cá và hải sản"],
-}
 
 const STEP_FIELDS: Array<Array<keyof Errors>> = [
   ["vegetarianType"],
@@ -152,7 +145,7 @@ function validate(form: FormState): Errors {
     form.dislikeItems.some((dislike) => sameName(avoid, dislike)),
   )
   if (conflict)
-    errors.dislike = `"${conflict}" không thể vừa là nguyên liệu cần tránh vừa là món không thích.`
+    errors.dislike = `"${conflict}" không thể vừa là nguyên liệu cần tránh vừa là nguyên liệu không thích.`
   if (form.cuisinePreference.trim().length > 200)
     errors.cuisinePreference = "Khẩu vị tối đa 200 ký tự."
   if (form.maxCookingTimeMinutes) {
@@ -560,18 +553,6 @@ export function DietaryPreferencesForm({
                 {errors.vegetarianType}
               </span>
             )}
-            {form.vegetarianType && (
-              <div className="mt-4 rounded-xl border border-leaf-200 bg-leaf-50/70 p-4" aria-live="polite">
-                <p className="text-sm font-bold text-ink">Tự động loại trừ theo kiểu ăn chay</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {AUTO_EXCLUSIONS[form.vegetarianType].map((item) => (
-                    <span key={item} className="inline-flex items-center rounded-full border border-leaf-200 bg-paper px-3 py-1 text-xs font-semibold text-ink-soft">{item}</span>
-                  ))}
-                </div>
-                {form.vegetarianType === "LACTO_OVO" && <p className="mt-2 text-xs text-ink-muted">Không có ràng buộc bổ sung đối với trứng và sữa.</p>}
-                <p className="mt-2 text-xs text-ink-muted">Các điều kiện tự động này được cập nhật theo lựa chọn và không thay đổi danh sách cá nhân.</p>
-              </div>
-            )}
           </fieldset>
         )}
         {show(1) && (
@@ -593,9 +574,9 @@ export function DietaryPreferencesForm({
           <IngredientList
             key="dislike"
             id={`${formId}-dislike`}
-            legend="3. Món hoặc nguyên liệu không thích"
+            legend="3. Nguyên liệu không thích"
             hint="Ví dụ: mướp đắng, rau mùi. Một nguyên liệu chỉ nằm trong một danh sách."
-            noneLabel="Tôi không có món không thích"
+            noneLabel="Tôi không có nguyên liệu không thích"
             examples={["Mướp đắng", "Rau mùi", "Sầu riêng"]}
             items={form.dislikeItems}
             none={form.dislikeNone}

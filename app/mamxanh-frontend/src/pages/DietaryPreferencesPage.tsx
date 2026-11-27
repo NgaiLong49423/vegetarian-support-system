@@ -17,7 +17,7 @@ import {
 const REQUIREMENT_LABELS: Record<DietaryRequirement, string> = {
   VEGETARIAN_TYPE: 'Loại ăn chay',
   AVOID_INGREDIENTS: 'Nguyên liệu dị ứng/kiêng',
-  DISLIKED_INGREDIENTS: 'Món không thích',
+  DISLIKED_INGREDIENTS: 'Nguyên liệu không thích',
 };
 
 /** UC-31.3: view and update the private dietary-preference profile from Settings. */
@@ -70,7 +70,7 @@ export function DietaryPreferencesPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-4xl">Sở thích ăn uống</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-muted">Cập nhật loại ăn chay, nguyên liệu cần tránh và món không thích. Thay đổi áp dụng cho các yêu cầu AI tiếp theo, không sửa thực đơn đã lưu.</p>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-muted">Cập nhật loại ăn chay, nguyên liệu cần tránh và nguyên liệu không thích. Thay đổi áp dụng cho các yêu cầu AI tiếp theo, không sửa thực đơn đã lưu.</p>
         </div>
       </div>
 
@@ -92,7 +92,7 @@ export function DietaryPreferencesPage() {
           <aside role="note" aria-label="Thông tin còn thiếu cho AI cá nhân hóa" className="mt-6 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
             <Sparkles aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
-              <p>Bạn cần hoàn tất 3 thông tin cơ bản về chế độ ăn chay (Loại ăn chay, Nguyên liệu dị ứng/kiêng, Món không thích) để AI có thể gợi ý chính xác và an toàn.</p>
+              <p>Bạn cần hoàn tất 3 thông tin cơ bản về chế độ ăn chay (Loại ăn chay, Nguyên liệu dị ứng/kiêng, Nguyên liệu không thích) để AI có thể gợi ý chính xác và an toàn.</p>
               <p className="mt-1 font-semibold">Còn thiếu: {ai.missing.map((item) => REQUIREMENT_LABELS[item] || item).join(', ')}.</p>
             </div>
           </aside>
