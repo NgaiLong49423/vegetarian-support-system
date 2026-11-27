@@ -221,6 +221,52 @@ test.describe('[FR-13] Gói AI & Thanh toán payOS', () => {
     await expect(page.getByText('99.000 đ')).toBeVisible();
     await expect(page.getByText('Đã hủy')).toBeVisible();
   });
+
+  test('Lịch sử giao dịch hiển thị hạn 15 phút cho đơn PENDING, giữ 199.000 đ trên một dòng và không có nút kiểm tra thủ công', async ({ page }) => {
+    await seedDemoSession(page);
+
+    await page.route('**/api/v1/subscriptions/transactions', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          {
+            paymentTransactionId: 3,
+            orderCode: '1728038400555',
+            tier: 'PRO',
+            amountVnd: 199000,
+            status: 'PENDING',
+            createdAt: '2026-10-04T12:00:00Z',
+            paidAt: null,
+            endsAt: null,
+            productType: 'SUBSCRIPTION',
+            creditAmount: null,
+            creditsPer1000VndSnapshot: null,
+            expiresAt: '2026-10-04T12:15:00Z',
+          },
+        ]),
+      });
+    });
+
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/giao-dich');
+    await expect(page.getByText('Đang chờ')).toBeVisible();
+    await expect(page.getByText(/Đơn hết hạn 04\/10\/2026 19:15/)).toBeVisible();
+    await expect(page.getByRole('button', { name: /Kiểm tra trạng thái|Tiếp tục thanh toán/i })).toHaveCount(0);
+
+    const amountCell = page.getByRole('cell', { name: '199.000 đ', exact: true });
+    await expect(amountCell).toBeVisible();
+    const amountLayout = await amountCell.evaluate((cell) => {
+      const range = document.createRange();
+      range.selectNodeContents(cell);
+      const uniqueLineTops = new Set(Array.from(range.getClientRects()).map((rect) => Math.round(rect.top)));
+      return {
+        whiteSpace: getComputedStyle(cell).whiteSpace,
+        lineCount: uniqueLineTops.size,
+      };
+    });
+    expect(amountLayout).toEqual({ whiteSpace: 'nowrap', lineCount: 1 });
+  });
 });
 
 for (const fallback of [false, true]) {

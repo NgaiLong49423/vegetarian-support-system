@@ -143,10 +143,10 @@ class TransactionAuditIntegrationTest extends AbstractIntegrationTest {
         doThrow(new AppException(ErrorCode.PAYMENT_UNAVAILABLE)).when(provider).validateCheckoutConfiguration();
         assertThatThrownBy(() -> subscriptions.createCheckout(member, SubscriptionTier.PLUS)).isInstanceOf(AppException.class);
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM PAYMENT_TRANSACTION WHERE user_id=?",Integer.class,member)).isZero();
-        verify(provider, never()).createPaymentLink(anyLong(), anyInt(), anyString());
+        verify(provider, never()).createPaymentLink(anyLong(), anyInt(), anyString(), anyInt());
     }
     @Test void checkoutCommitsOrderBeforeProviderAndKeepsItAfterAmbiguousTimeout() {
-        when(provider.createPaymentLink(anyLong(),anyInt(),anyString())).thenAnswer(call -> {
+        when(provider.createPaymentLink(anyLong(),anyInt(),anyString(),anyInt())).thenAnswer(call -> {
             String code = Long.toString(call.getArgument(0));
             // A separate JDBC connection must see the order before the remote operation finishes.
             assertThat(java.util.concurrent.CompletableFuture.supplyAsync(() ->
@@ -158,7 +158,7 @@ class TransactionAuditIntegrationTest extends AbstractIntegrationTest {
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM PAYMENT_TRANSACTION WHERE user_id=? AND status='PENDING'",Integer.class,member)).isEqualTo(1);
     }
     @Test void earlyVerifiedSettlementSurvivesCheckoutResponseAndAuditShowsLinkedPurchase() throws Exception {
-        when(provider.createPaymentLink(anyLong(),anyInt(),anyString())).thenAnswer(call -> {
+        when(provider.createPaymentLink(anyLong(),anyInt(),anyString(),anyInt())).thenAnswer(call -> {
             long code=call.getArgument(0); int amount=call.getArgument(1);
             java.util.concurrent.CompletableFuture.runAsync(() ->
                     settlement.settle(Long.toString(code),amount,PaymentStatus.PAID))
@@ -173,10 +173,10 @@ class TransactionAuditIntegrationTest extends AbstractIntegrationTest {
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM SUBSCRIPTION WHERE user_id=?",Integer.class,member)).isEqualTo(1);
     }
     @Test void explicitCreateFailureIsDurableButNeverOverwritesAnEarlyPaidCallback() {
-        when(provider.createPaymentLink(anyLong(),anyInt(),anyString())).thenReturn(new CreatePaymentLinkResponse("99","failed",null,""));
+        when(provider.createPaymentLink(anyLong(),anyInt(),anyString(),anyInt())).thenReturn(new CreatePaymentLinkResponse("99","failed",null,""));
         assertThatThrownBy(() -> subscriptions.createCheckout(member,SubscriptionTier.PLUS)).isInstanceOf(AppException.class);
         assertThat(jdbc.queryForObject("SELECT status FROM PAYMENT_TRANSACTION WHERE user_id=?",String.class,member)).isEqualTo("FAILED");
-        when(provider.createPaymentLink(anyLong(),anyInt(),anyString())).thenAnswer(call -> {
+        when(provider.createPaymentLink(anyLong(),anyInt(),anyString(),anyInt())).thenAnswer(call -> {
             settlement.settle(Long.toString(call.getArgument(0)),call.getArgument(1),PaymentStatus.PAID);
             return new CreatePaymentLinkResponse("99","failed",null,"");
         });

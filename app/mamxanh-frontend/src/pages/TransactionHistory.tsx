@@ -189,13 +189,13 @@ export function TransactionHistory() {
               <table role="table" className="tx-responsive-table w-full text-left text-sm">
                 <thead className="border-b border-brand-100 bg-brand-50/70 text-xs font-bold text-ink-muted uppercase">
                   <tr role="row">
-                    <th role="columnheader" scope="col" className="px-6 py-4">Mã đơn hàng</th>
-                    <th role="columnheader" scope="col" className="px-6 py-4">Sản phẩm</th>
-                    <th role="columnheader" scope="col" className="px-6 py-4">Số tiền</th>
-                    <th role="columnheader" scope="col" className="px-6 py-4">Trạng thái</th>
-                    <th role="columnheader" scope="col" className="px-6 py-4">Thời gian tạo</th>
-                    <th role="columnheader" scope="col" className="px-6 py-4">Thời gian thanh toán</th>
-                    <th role="columnheader" scope="col" className="px-6 py-4">Thời gian hết hạn</th>
+                    <th role="columnheader" scope="col" className="px-4 py-3.5 whitespace-nowrap">Mã đơn hàng</th>
+                    <th role="columnheader" scope="col" className="px-4 py-3.5 whitespace-nowrap">Sản phẩm</th>
+                    <th role="columnheader" scope="col" className="px-4 py-3.5 whitespace-nowrap">Số tiền</th>
+                    <th role="columnheader" scope="col" className="px-4 py-3.5 whitespace-nowrap">Trạng thái</th>
+                    <th role="columnheader" scope="col" className="px-4 py-3.5 whitespace-nowrap">Thời gian tạo</th>
+                    <th role="columnheader" scope="col" className="px-4 py-3.5 whitespace-nowrap">Thời gian thanh toán</th>
+                    <th role="columnheader" scope="col" className="px-4 py-3.5 whitespace-nowrap">Thời gian hết hạn</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-brand-50">
@@ -205,28 +205,28 @@ export function TransactionHistory() {
                       role="row"
                       className="transition-colors hover:bg-brand-50/40"
                     >
-                      <td role="cell" data-label="Mã đơn hàng" className="md:px-6 md:py-4 font-mono font-semibold text-brand-700">
+                      <td role="cell" data-label="Mã đơn hàng" className="md:px-4 md:py-4 font-mono font-semibold text-brand-700 whitespace-nowrap">
                         #{tx.orderCode}
                       </td>
-                      <td role="cell" data-label="Sản phẩm" className="md:px-6 md:py-4 font-bold text-ink">
+                      <td role="cell" data-label="Sản phẩm" className="md:px-4 md:py-4 font-bold text-ink">
                         {tx.productType === "AI_CREDIT"
                           ? <><span>Nạp AI Credit · +{(tx.creditAmount ?? 0).toLocaleString("vi-VN", { maximumFractionDigits: 9 })} Credit</span>{tx.creditsPer1000VndSnapshot !== null && <span className="mt-1 block text-xs font-normal text-ink-muted">Tỷ lệ: {tx.creditsPer1000VndSnapshot.toLocaleString("vi-VN")} Credit / 1.000đ</span>}</>
                           : tx.tier ? `Gói ${tx.tier}` : "Không xác định"}
                       </td>
-                      <td role="cell" data-label="Số tiền" className="md:px-6 md:py-4 font-semibold text-ink">
+                      <td role="cell" data-label="Số tiền" className="md:px-4 md:py-4 font-semibold text-ink whitespace-nowrap">
                         {formatVnd(tx.amountVnd)} đ
                       </td>
-                      <td role="cell" data-label="Trạng thái" className="md:px-6 md:py-4">
+                      <td role="cell" data-label="Trạng thái" className="md:px-4 md:py-4">
                         {renderStatusBadge(tx.status)}
                       </td>
-                      <td role="cell" data-label="Thời gian tạo" className="md:px-6 md:py-4 text-xs text-ink-muted">
+                      <td role="cell" data-label="Thời gian tạo" className="md:px-4 md:py-4 text-xs text-ink-muted whitespace-nowrap">
                         {formatDateTime(tx.createdAt)}
                       </td>
-                      <td role="cell" data-label="Thanh toán" className="md:px-6 md:py-4 text-xs text-ink-muted">
+                      <td role="cell" data-label="Thanh toán" className="md:px-4 md:py-4 text-xs text-ink-muted whitespace-nowrap">
                         {tx.paidAt ? formatDateTime(tx.paidAt) : "—"}
                       </td>
-                      <td role="cell" data-label="Hết hạn" className="md:px-6 md:py-4 text-xs text-ink-muted">
-                        {tx.productType === "AI_CREDIT" && tx.expiresAt && tx.status === "PENDING"
+                      <td role="cell" data-label="Hết hạn" className="md:px-4 md:py-4 text-xs text-ink-muted">
+                        {tx.expiresAt && tx.status === "PENDING"
                           ? `Đơn hết hạn ${formatDateTime(tx.expiresAt)}`
                           : tx.status === "PAID" && tx.endsAt ? formatDateTime(tx.endsAt) : "—"}
                       </td>
