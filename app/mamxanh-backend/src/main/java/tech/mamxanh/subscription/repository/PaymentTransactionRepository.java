@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import tech.mamxanh.subscription.entity.PaymentTransactionEntity;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,4 +25,9 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
     Optional<PaymentTransactionEntity> findByOrderCodeForUpdate(@Param("orderCode") String orderCode);
 
     List<PaymentTransactionEntity> findAllByUserIdOrderByCreatedAtDesc(Long userId);
+
+    List<PaymentTransactionEntity> findTop50ByStatusAndCreatedAtBetweenOrderByCreatedAtDesc(
+            tech.mamxanh.subscription.entity.PaymentStatus status,
+            LocalDateTime from,
+            LocalDateTime to);
 }

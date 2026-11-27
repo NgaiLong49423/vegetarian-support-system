@@ -24,7 +24,7 @@ public class ShoppingRecipeContributionEntity {
     @Column(name = "source_id", nullable = false) private UUID sourceId;
     @Column(name = "source_kind", nullable = false, length = 16) private String sourceKind = "RECIPE";
     @Column(name = "expected_ingredient_count") private Integer expectedIngredientCount;
-    @Column(name = "servings", precision = 4, scale = 1) private BigDecimal servings;
+    @Column(name = "servings", precision = 9, scale = 6) private BigDecimal servings;
     @Column(name = "meal_plan_entry_id") private Long mealPlanEntryId;
     @Column(name = "meal_date") private LocalDate mealDate;
     @Column(name = "meal_type", length = 20) private String mealType;

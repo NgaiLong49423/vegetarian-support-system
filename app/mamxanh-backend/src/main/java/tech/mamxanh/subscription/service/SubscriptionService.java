@@ -74,7 +74,7 @@ public class SubscriptionService {
     }
 
     /**
-     * AC-13.1: Displays the exact 3 official Phase 1 tiers without annual plans, discounts or trials.
+     * AC-13.1: Lấy danh sách 3 gói hội viên chính thức (Free, Plus, Pro) kèm thông tin giá tiền và hạn mức token tháng.
      */
     @Transactional(readOnly = true)
     public List<PlanResponse> getAvailablePlans() {
@@ -113,7 +113,7 @@ public class SubscriptionService {
     }
 
     /**
-     * Initializes payment request and redirects to payOS VietQR.
+     * Khởi tạo giao dịch nâng cấp gói (PLUS/PRO), tạo bản ghi PENDING trong database và gọi payOS để lấy link VietQR.
      */
     @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
     public CheckoutResponse createCheckout(Long userId, SubscriptionTier tier) {
@@ -132,15 +132,19 @@ public class SubscriptionService {
         if (amount <= 0) throw new AppException(ErrorCode.VALIDATION_FAILED, "Gói trả phí phải có giá lớn hơn 0đ.");
         String description = "Nang cap " + tier.name();
 
+        LocalDateTime now = LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC);
+        LocalDateTime expiresAt = now.plusMinutes(15);
         PaymentTransactionEntity transaction = new PaymentTransactionEntity(user.getId(), String.valueOf(orderCode), amount);
         transaction.setSubscriptionTier(tier);
         transaction.setTokenQuotaSnapshot(configuredPlan.tokenQuota());
-        transaction.setCreatedAt(LocalDateTime.now(clock));
+        transaction.setCreatedAt(now);
+        transaction.setExpiresAt(expiresAt);
         orders.create(transaction);
 
         // No SQL transaction spans provider I/O. On an ambiguous provider error keep PENDING:
         // the remote order may exist and a later verified webhook must still find it.
-        CreatePaymentLinkResponse payOsResponse = payOsClient.createPaymentLink(orderCode, amount, description);
+        CreatePaymentLinkResponse payOsResponse = payOsClient.createPaymentLink(orderCode, amount, description,
+                Math.toIntExact(expiresAt.toEpochSecond(ZoneOffset.UTC)));
         if (payOsResponse == null || !payOsResponse.isSuccess() || payOsResponse.data() == null) {
             orders.markFailed(transaction.getOrderCode());
             throw new AppException(ErrorCode.INTERNAL_ERROR, "Không thể khởi tạo liên kết thanh toán payOS. Vui lòng thử lại sau.");
@@ -155,6 +159,9 @@ public class SubscriptionService {
         );
     }
 
+    /**
+     * Khởi tạo giao dịch nạp tiền mua AI Credit dự phòng, tính toán số credit tương ứng và tạo link thanh toán payOS có hạn 15 phút.
+     */
     @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
     public CreditCheckoutResponse createCreditCheckout(Long userId, int amountVnd) {
         User user = validateActiveMember(userId);
@@ -187,6 +194,9 @@ public class SubscriptionService {
                 link.data().checkoutUrl(), link.data().qrCode());
     }
 
+    /**
+     * Tra cứu số dư ví AI Credit hiện có của tài khoản cùng với tỷ giá nạp tiền và giới hạn min/max.
+     */
     @Transactional(readOnly = true)
     public MyAiCreditResponse getMyAiCredit(Long userId) {
         validateActiveMember(userId);
@@ -196,8 +206,7 @@ public class SubscriptionService {
     }
 
     /**
-     * Handles payOS webhook IPN callback.
-     * Enforces AC-13.2, AC-13.3 (idempotency), AC-13.5 (signature & amount validation), AC-13.6 (cancelled/failed).
+     * Xử lý Webhook IPN từ payOS: xác thực chữ ký HMAC-SHA256, kiểm tra idempotency và kích hoạt gói hoặc nạp credit.
      */
     public void handlePayOsWebhook(PayOsWebhookPayload payload) {
         if (!payOsClient.verifyWebhook(payload)) throw new AppException(ErrorCode.PAYMENT_SIGNATURE_INVALID);
@@ -214,7 +223,7 @@ public class SubscriptionService {
     }
 
     /**
-     * AC-13.4 & AC-13.7: Returns active subscription status or default Free if expired/none.
+     * Lấy thông tin gói hội viên hiện tại; tự động chuyển về gói FREE nếu gói cũ đã hết hạn mà không tự động trừ tiền.
      */
     @Transactional
     public MySubscriptionResponse getMySubscription(Long userId) {
@@ -265,6 +274,9 @@ public class SubscriptionService {
         return features(configuration, tier, quota);
     }
 
+    /**
+     * Tra cứu lịch sử các giao dịch thanh toán nâng gói và nạp credit của tài khoản từ cơ sở dữ liệu.
+     */
     @Transactional(readOnly = true)
     public List<TransactionHistoryResponse> getTransactionHistory(Long userId) {
         validateActiveMember(userId);
@@ -297,6 +309,9 @@ public class SubscriptionService {
                 .toList();
     }
 
+    /**
+     * Hàm kiểm tra bảo mật: Xác thực tài khoản có tồn tại, đang hoạt động (ACTIVE) và có vai trò Member (Customer/Expert).
+     */
     private User validateActiveMember(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Không tìm thấy thông tin tài khoản."));
@@ -309,6 +324,9 @@ public class SubscriptionService {
         return user;
     }
 
+    /**
+     * Sinh mã đơn hàng ngẫu nhiên (orderCode) trong phạm vi số nguyên dương an toàn của JavaScript (tránh tràn số FE).
+     */
     private long generateOrderCode() {
         // Positive, JS-safe integer; random IDs avoid collisions across instances/restarts.
         return ORDER_CODES.nextLong(1, 9_007_199_254_740_992L);

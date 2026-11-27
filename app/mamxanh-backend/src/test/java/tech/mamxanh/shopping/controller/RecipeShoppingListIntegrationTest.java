@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import java.math.BigDecimal;
@@ -128,6 +129,41 @@ class RecipeShoppingListIntegrationTest extends AbstractIntegrationTest {
                 Boolean.class, row)).isFalse();
         assertThat(sql.queryForObject("SELECT quantity FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE recipe_id=?",
                 BigDecimal.class, first)).isEqualByComparingTo("300");
+    }
+
+    @Test
+    void groupedHalfServingUpdatePersistsSixDecimalOccurrenceAllocationsInSqlServer() throws Exception {
+        long list = createList(owner, "Khẩu phần chính xác", "MEAL_PLAN");
+        add(owner, list, first, null).andExpect(status().isOk());
+        long itemId = item(list);
+        UUID secondOccurrence = UUID.randomUUID();
+        update("UPDATE [SHOPPING_RECIPE_CONTRIBUTION] SET quantity=?, servings=? WHERE shopping_list_id=? AND recipe_id=?",
+                new BigDecimal("100"), new BigDecimal("1"), list, first);
+        update("UPDATE [SHOPPING_LIST_ITEM] SET quantity=? WHERE shopping_list_item_id=?",
+                new BigDecimal("400"), itemId);
+        update("""
+                INSERT INTO [SHOPPING_RECIPE_CONTRIBUTION]
+                    (shopping_list_id, recipe_id, ingredient_id, unit_id, quantity, shopping_list_item_id,
+                     source_id, source_kind, expected_ingredient_count, servings)
+                SELECT shopping_list_id, recipe_id, ingredient_id, unit_id, ?, shopping_list_item_id,
+                       ?, 'RECIPE', expected_ingredient_count, ?
+                FROM [SHOPPING_RECIPE_CONTRIBUTION]
+                WHERE shopping_list_id=? AND recipe_id=?
+                """, new BigDecimal("300"), secondOccurrence, new BigDecimal("3"), list, first);
+
+        mockMvc.perform(put(ROOT + "/" + list + "/recipes/" + first + "/servings")
+                .with(user("" + owner).roles("CUSTOMER"))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"servings\":0.5}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.recipeSources[0].servings").value(0.5));
+
+        assertThat(sql.queryForObject("SELECT [precision] FROM sys.columns WHERE object_id=OBJECT_ID('SHOPPING_RECIPE_CONTRIBUTION') AND name='servings'", Integer.class))
+                .isEqualTo(9);
+        assertThat(sql.queryForObject("SELECT scale FROM sys.columns WHERE object_id=OBJECT_ID('SHOPPING_RECIPE_CONTRIBUTION') AND name='servings'", Integer.class))
+                .isEqualTo(6);
+        assertThat(sql.queryForList("SELECT servings FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id=? AND recipe_id=? ORDER BY contribution_id",
+                BigDecimal.class, list, first)).containsExactly(new BigDecimal("0.125000"), new BigDecimal("0.375000"));
+        assertThat(quantity(list)).isEqualByComparingTo("50");
     }
 
     @Test

@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.162.0
+> **Version:** v2.164.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-11-28<br>
 > **Status:** Active
@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-11-28 — Assess Vegetarian Compatibility by Recipe Type
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 0e00681c.
 
 **Scope:** Base vegetarian compatibility on the recipe author's declared type while retaining separate ingredient preferences.
 
@@ -27,6 +27,50 @@ None.
 ### Fixed
 
 None.
+
+## 2026-11-28 — Reconcile Pending payOS Orders and Align 15-Minute Expiry
+
+**Status:** Committed — 8209a4d8.
+
+**Scope:** Automatically reconcile pending payOS transactions in the background when webhooks are missed or users leave checkout early, align subscription checkout orders (`PLUS`/`PRO`) to the same 15-minute expiry lifecycle as AI Credit top-ups, and refine the `/giao-dich` history table layout.
+
+### Added
+
+- Add `PendingPaymentReconciliationJob` (`@Scheduled` every 60s) and repository query `findTop50ByStatusAndCreatedAtBetweenOrderByCreatedAtDesc` to query payOS server-to-server outside SQL transactions for recent `PENDING` orders and settle `PAID` or `EXPIRED`/`CANCELLED` outcomes.
+- Add `PendingPaymentReconciliationJobTest` covering unconfigured payOS skip and partial failure isolation.
+- Add Playwright coverage in `subscription.spec.ts` verifying 15-minute expiry display for `PENDING` subscription orders and single-line currency rendering.
+
+### Changed
+
+- Update `SubscriptionService.createCheckout` to record a 15-minute UTC `expiresAt` and pass `expiredAt` to payOS, matching `createCreditCheckout`.
+- Extract shared `PaymentResultService.reconcileWithProvider` helper reused by both `getResult` and the background reconciliation job.
+- Update `TransactionHistory.tsx` to display `Đơn hết hạn <time>` for pending subscription orders, keep `199.000 đ` on a single line (`whitespace-nowrap`), and synchronize the 15-minute expiry notice in `AiPlans.tsx`.
+- Update `FR-13` and `UC-13.2` documentation for the 15-minute pending order window and update `SubscriptionServiceTest` and `TransactionAuditIntegrationTest` for the 4-argument `createPaymentLink` call.
+
+### Fixed
+
+- Prevent pending payOS orders from staying stuck in `PENDING` when users navigate back before redirect or when webhooks are delayed/missed.
+- Prevent the `đ` currency suffix from wrapping onto a second line in `/giao-dich`.
+
+## 2026-11-28 — Allow Lower Shopping List Recipe Servings
+
+**Status:** Committed — 76724498.
+
+**Scope:** Allow members to set the combined servings of a recipe in a shopping list independently of its occurrence count.
+
+### Added
+
+- None.
+
+### Changed
+
+- Set the accepted total to 0.5–500 in 0.5 increments in the quick editor, recipe detail editor, and grouped update endpoint.
+- Distribute edited servings proportionally across saved occurrences at six-decimal precision, while preserving manual and unknown contributions and leaving the meal plan and recipe post unchanged.
+- Update FR-53 AC-53.11 and widen the stored source-serving precision through migration V46.
+
+### Fixed
+
+- None.
 
 ## 2026-11-25 — Enable Recipe Image Management on Edit Recipe Page
 

@@ -99,14 +99,20 @@ test("shopping recipe serving stepper changes total, saves and returns to its li
   expect(state.writes).toEqual([{ servings: 1.5 }])
 })
 
-test("shopping recipe serving minimum follows the number of occurrences", async ({ page }) => {
-  await setup(page, { occurrenceCount: 2, servings: 1 })
+test("shopping recipe serving editor can reduce five occurrences to half a serving", async ({ page }) => {
+  const state = await setup(page, { occurrenceCount: 5, servings: 5 })
   await page.goto("/cong-thuc/id/11?shoppingListId=42")
-  await expect(page.getByRole("button", { name: "Giảm khẩu phần" })).toBeDisabled()
   await expect(page.getByRole("button", { name: "Lưu khẩu phần vào danh sách" })).toBeDisabled()
-  await page.getByRole("button", { name: "Tăng khẩu phần" }).click()
-  await expect(page.getByText("1,5 phần", { exact: true })).toBeVisible()
+  await page.getByRole("button", { name: "Giảm khẩu phần" }).click()
+  await expect(page.getByText("4,5 phần", { exact: true })).toBeVisible()
+  for (let click = 0; click < 8; click += 1)
+    await page.getByRole("button", { name: "Giảm khẩu phần" }).click()
+  await expect(page.getByText("0,5 phần", { exact: true })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Giảm khẩu phần" })).toBeDisabled()
   await expect(page.getByRole("button", { name: "Lưu khẩu phần vào danh sách" })).toBeEnabled()
+  await page.getByRole("button", { name: "Lưu khẩu phần vào danh sách" }).click()
+  await expect(page).toHaveURL(/\/di-cho\?listId=42$/)
+  expect(state.writes).toEqual([{ servings: 0.5 }])
 })
 
 test("shopping recipe serving editor reports missing source and can retry loading", async ({ page }) => {
