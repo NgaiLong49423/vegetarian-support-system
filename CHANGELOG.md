@@ -1,13 +1,37 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.161.0
+> **Version:** v2.162.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-11-25<br>
+> **Last Updated:** 2026-11-28<br>
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-11-28 — Reconcile Pending payOS Orders and Align 15-Minute Expiry
+
+**Status:** Committed — 8209a4d8.
+
+**Scope:** Automatically reconcile pending payOS transactions in the background when webhooks are missed or users leave checkout early, align subscription checkout orders (`PLUS`/`PRO`) to the same 15-minute expiry lifecycle as AI Credit top-ups, and refine the `/giao-dich` history table layout.
+
+### Added
+
+- Add `PendingPaymentReconciliationJob` (`@Scheduled` every 60s) and repository query `findTop50ByStatusAndCreatedAtBetweenOrderByCreatedAtDesc` to query payOS server-to-server outside SQL transactions for recent `PENDING` orders and settle `PAID` or `EXPIRED`/`CANCELLED` outcomes.
+- Add `PendingPaymentReconciliationJobTest` covering unconfigured payOS skip and partial failure isolation.
+- Add Playwright coverage in `subscription.spec.ts` verifying 15-minute expiry display for `PENDING` subscription orders and single-line currency rendering.
+
+### Changed
+
+- Update `SubscriptionService.createCheckout` to record a 15-minute UTC `expiresAt` and pass `expiredAt` to payOS, matching `createCreditCheckout`.
+- Extract shared `PaymentResultService.reconcileWithProvider` helper reused by both `getResult` and the background reconciliation job.
+- Update `TransactionHistory.tsx` to display `Đơn hết hạn <time>` for pending subscription orders, keep `199.000 đ` on a single line (`whitespace-nowrap`), and synchronize the 15-minute expiry notice in `AiPlans.tsx`.
+- Update `FR-13` and `UC-13.2` documentation for the 15-minute pending order window and update `SubscriptionServiceTest` and `TransactionAuditIntegrationTest` for the 4-argument `createPaymentLink` call.
+
+### Fixed
+
+- Prevent pending payOS orders from staying stuck in `PENDING` when users navigate back before redirect or when webhooks are delayed/missed.
+- Prevent the `đ` currency suffix from wrapping onto a second line in `/giao-dich`.
 
 ## 2026-11-25 — Enable Recipe Image Management on Edit Recipe Page
 
