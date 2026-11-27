@@ -38,17 +38,7 @@ public class PaymentResultService {
         subscriptionService.getMySubscription(userId); // Enforce active Member before reading any order.
         PaymentTransactionEntity payment = ownPayment(userId, orderCode);
         if (payment.getStatus() == PaymentStatus.PENDING || payment.getStatus() == PaymentStatus.NEEDS_RECONCILIATION) {
-            PayOsPaymentInfo info = payOs.getPaymentInfo(Long.parseLong(orderCode));
-            if (info.orderCode() != Long.parseLong(orderCode) || info.amount() != payment.getAmountVnd()) {
-                throw new AppException(ErrorCode.PAYMENT_RESPONSE_INVALID);
-            }
-            if ("PAID".equals(info.status())) {
-                if (info.amountPaid() != payment.getAmountVnd()) throw new AppException(ErrorCode.PAYMENT_RESPONSE_INVALID);
-                settlement.settle(orderCode, info.amount(), PaymentStatus.PAID, info.transactionAtUtc());
-            } else if (payment.getStatus() == PaymentStatus.PENDING
-                    && ("CANCELLED".equals(info.status()) || "EXPIRED".equals(info.status()))) {
-                settlement.settle(orderCode, info.amount(), PaymentStatus.CANCELLED, null);
-            }
+            reconcileWithProvider(payment);
             payment = ownPayment(userId, orderCode);
         }
         var currentSubscription = subscriptionService.getMySubscription(userId);
@@ -68,6 +58,31 @@ public class PaymentResultService {
         return new PaymentResultResponse(payment.getOrderCode(), purchasedTier.name(),
                 payment.getAmountVnd(), payment.getStatus().name(), payment.getPaidAt(), activated,
                 currentSubscription, PaymentTransactionEntity.ProductType.SUBSCRIPTION, null, null);
+    }
+
+    /**
+     * Queries payOS server-to-server for a pending/reconciliation order and settles the verified result.
+     */
+    public void reconcileWithProvider(PaymentTransactionEntity payment) {
+        if (payment == null) return;
+        String orderCode = payment.getOrderCode();
+        long numericOrderCode;
+        try {
+            numericOrderCode = Long.parseLong(orderCode);
+        } catch (NumberFormatException ex) {
+            throw new AppException(ErrorCode.PAYMENT_RESPONSE_INVALID);
+        }
+        PayOsPaymentInfo info = payOs.getPaymentInfo(numericOrderCode);
+        if (info.orderCode() != numericOrderCode || info.amount() != payment.getAmountVnd()) {
+            throw new AppException(ErrorCode.PAYMENT_RESPONSE_INVALID);
+        }
+        if ("PAID".equals(info.status())) {
+            if (info.amountPaid() != payment.getAmountVnd()) throw new AppException(ErrorCode.PAYMENT_RESPONSE_INVALID);
+            settlement.settle(orderCode, info.amount(), PaymentStatus.PAID, info.transactionAtUtc());
+        } else if (payment.getStatus() == PaymentStatus.PENDING
+                && ("CANCELLED".equals(info.status()) || "EXPIRED".equals(info.status()))) {
+            settlement.settle(orderCode, info.amount(), PaymentStatus.CANCELLED, null);
+        }
     }
 
     private PaymentTransactionEntity ownPayment(Long userId, String orderCode) {

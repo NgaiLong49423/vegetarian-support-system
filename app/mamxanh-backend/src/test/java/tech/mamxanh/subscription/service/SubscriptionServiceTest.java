@@ -204,12 +204,12 @@ class SubscriptionServiceTest {
     }
 
     @Test
-    @DisplayName("Should successfully create checkout and return payOS payment link")
+    @DisplayName("Should successfully create checkout with 15-minute UTC expiry and return payOS payment link")
     void shouldCreateCheckoutSuccessfully() {
         Long userId = 1L;
         mockActiveUser(userId);
 
-        when(payOsClient.createPaymentLink(anyLong(), anyInt(), anyString()))
+        when(payOsClient.createPaymentLink(anyLong(), anyInt(), anyString(), anyInt()))
                 .thenReturn(new CreatePaymentLinkResponse("00", "success",
                         new PayOsPaymentData(123456L, 99_000, "Nang cap PLUS", "https://pay.payos.vn/123", "qr_123", "plink_1", "PENDING"),
                         "sig_123"));
@@ -220,11 +220,16 @@ class SubscriptionServiceTest {
         assertThat(response.amountVnd()).isEqualTo(99_000);
         assertThat(response.tier()).isEqualTo("PLUS");
         assertThat(response.checkoutUrl()).isEqualTo("https://pay.payos.vn/123");
+        var now = LocalDateTime.ofInstant(FIXED_INSTANT, ZoneOffset.UTC);
         var captured = ArgumentCaptor.forClass(PaymentTransactionEntity.class);
         verify(orders).create(captured.capture());
-        assertThat(captured.getValue().getCreatedAt()).isEqualTo(LocalDateTime.ofInstant(FIXED_INSTANT, ZoneOffset.UTC));
+        assertThat(captured.getValue().getCreatedAt()).isEqualTo(now);
+        assertThat(captured.getValue().getExpiresAt()).isEqualTo(now.plusMinutes(15));
         assertThat(captured.getValue().getSubscriptionTier()).isEqualTo(SubscriptionTier.PLUS);
         assertThat(captured.getValue().getTokenQuotaSnapshot()).isEqualTo(200_000L);
+        verify(payOsClient).createPaymentLink(anyLong(), org.mockito.ArgumentMatchers.eq(99_000),
+                org.mockito.ArgumentMatchers.eq("Nang cap PLUS"),
+                org.mockito.ArgumentMatchers.eq(Math.toIntExact(now.plusMinutes(15).toEpochSecond(ZoneOffset.UTC))));
     }
 
     @Test
@@ -301,7 +306,7 @@ class SubscriptionServiceTest {
         Long userId = 1L;
         mockActiveUser(userId);
 
-        when(payOsClient.createPaymentLink(anyLong(), anyInt(), anyString()))
+        when(payOsClient.createPaymentLink(anyLong(), anyInt(), anyString(), anyInt()))
                 .thenReturn(new CreatePaymentLinkResponse("99", "Failed", null, ""));
 
         assertThatThrownBy(() -> subscriptionService.createCheckout(userId, SubscriptionTier.PLUS))

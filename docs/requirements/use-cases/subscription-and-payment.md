@@ -81,8 +81,8 @@ Member đã đăng nhập tài khoản hợp lệ; giao dịch được thực h
 
 #### Main Flow
 1. Member chọn Plus hoặc Pro và nhấn “Tiến hành thanh toán”.
-2. Hệ thống tạo giao dịch mới với mã giao dịch duy nhất, trạng thái `Pending`, số tiền, mã gói và ID tài khoản Member.
-3. Hệ thống tạo URL chuyển hướng an toàn có chữ ký số và chuyển Member tới cổng thanh toán.
+2. Hệ thống tạo giao dịch mới với mã giao dịch duy nhất, trạng thái `Pending`, hạn chờ thanh toán 15 phút (`expiresAt`), số tiền, mã gói và ID tài khoản Member.
+3. Hệ thống tạo URL chuyển hướng an toàn có chữ ký số (kèm thời hạn `expiredAt` 15 phút) và chuyển Member tới cổng thanh toán.
 4. Member hoàn tất thanh toán trên giao diện của cổng thanh toán.
 5. Cổng thanh toán gửi kết quả giao dịch về máy chủ qua Webhook/IPN.
 6. Hệ thống xác thực chữ ký số, số tiền và trạng thái giao dịch. Khi thông tin hợp lệ và giao dịch thành công, hệ thống chuyển giao dịch sang `Success` và kích hoạt quyền lợi của gói đã mua theo chu kỳ tháng được xác minh (BR-02).

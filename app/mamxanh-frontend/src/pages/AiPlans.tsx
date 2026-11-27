@@ -41,6 +41,7 @@ const DEFAULT_PLANS: PlanResponse[] = [
   },
 ];
 
+// Trang quản lý và đăng ký các gói hội viên AI (Free, Plus, Pro) cùng thông tin hạn mức token và nạp AI Credit.
 export function AiPlans() {
   const navigate = useNavigate();
   const { account, isAuthenticated: isLoggedIn } = useAuth();
@@ -130,6 +131,7 @@ export function AiPlans() {
     : 0;
   const usedQuotaPercent = 100 - remainingQuotaPercent;
 
+  // Khởi tạo giao dịch thanh toán gói qua payOS, xác thực domain pay.payos.vn và chuyển hướng tới cổng thanh toán.
   async function handleSubscribe(tier: 'PLUS' | 'PRO') {
     if (!isLoggedIn) {
       navigate('/dang-nhap', { state: { returnTo: '/goi-ai' } });
@@ -375,7 +377,7 @@ export function AiPlans() {
         <div className="text-sm text-ink-soft">
           <p className="font-semibold text-ink">Thanh toán an toàn qua cổng VietQR payOS</p>
           <p className="text-xs text-ink-muted">
-            Quyền lợi PLUS / PRO được kích hoạt tự động ngay sau khi hoàn tất giao dịch.
+            Quyền lợi PLUS / PRO được kích hoạt tự động ngay sau khi hoàn tất giao dịch. Đơn chờ hết hạn sau 15 phút.
           </p>
         </div>
         <Link
