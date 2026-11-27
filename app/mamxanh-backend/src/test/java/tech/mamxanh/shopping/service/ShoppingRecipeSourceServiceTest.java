@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import tech.mamxanh.auth.entity.Role;
 import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.exception.AppException;
+import tech.mamxanh.shopping.dto.request.ShoppingAggregationLine;
 import tech.mamxanh.shopping.dto.request.UpdateShoppingRecipeSourceServingsRequest;
 import tech.mamxanh.shopping.dto.response.ShoppingAggregationResult;
 import tech.mamxanh.shopping.dto.response.ShoppingListResponse;
@@ -139,6 +140,8 @@ class ShoppingRecipeSourceServiceTest {
         assertThatThrownBy(() -> service.updateRecipeServings(7, 0, request("2"))).isInstanceOf(AppException.class);
         assertThatThrownBy(() -> service.updateRecipeServings(7, 9, null)).isInstanceOf(AppException.class);
         assertThatThrownBy(() -> service.updateRecipeServings(7, 9, request("0.55"))).isInstanceOf(AppException.class);
+        assertThatThrownBy(() -> service.updateRecipeServings(7, 9, request("0.4"))).isInstanceOf(AppException.class);
+        assertThatThrownBy(() -> service.updateRecipeServings(7, 9, request("0.75"))).isInstanceOf(AppException.class);
         when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of());
         assertThatThrownBy(() -> service.updateRecipeServings(7, 9, request("2"))).isInstanceOf(AppException.class);
 
@@ -146,33 +149,63 @@ class ShoppingRecipeSourceServiceTest {
         var a = source(first, 3L, "10", "1"); a.setExpectedIngredientCount(1); a.setRecipeId(9L);
         var b = source(second, 4L, "20", "3"); b.setExpectedIngredientCount(1); b.setRecipeId(9L);
         when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(a, b));
-        assertThatThrownBy(() -> service.updateRecipeServings(7, 9, request("0.5"))).isInstanceOf(AppException.class);
         assertThatThrownBy(() -> service.updateRecipeServings(7, 9, request("501"))).isInstanceOf(AppException.class);
         when(items.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(item(3L,"10"), item(4L,"20")));
         when(aggregation.aggregate(anyList())).thenReturn(aggregate(1,"10"), aggregate(1,"20"),
-                aggregate(1,"11"), aggregate(1,"20.666667"));
+                aggregate(1,"11.25"), aggregate(1,"22.5"));
         when(checklists.get(7L)).thenReturn(emptyResponse());
-        service.updateRecipeServings(7, 9, request("4.2"));
-        assertThat(a.getServings().add(b.getServings())).isEqualByComparingTo("4.2");
-        assertThat(a.getServings()).isGreaterThanOrEqualTo(new BigDecimal("0.5"));
+        service.updateRecipeServings(7, 9, request("4.5"));
+        assertThat(a.getServings().add(b.getServings())).isEqualByComparingTo("4.5");
+        assertThat(a.getServings()).isEqualByComparingTo("1.125");
+        assertThat(b.getServings()).isEqualByComparingTo("3.375");
     }
 
     @Test
-    void updateRecipeServingsKeepsEveryOccurrenceAtHalfServingWhenProportionalShareWouldBeSmaller() {
+    void updateRecipeServingsAllowsHalfTotalAcrossFiveOccurrencesAndUpdatesQuantitiesProportionally() {
         owned();
-        UUID first = UUID.randomUUID(), second = UUID.randomUUID();
-        var small = source(first, 3L, "5", "0.5");
-        var large = source(second, 4L, "95", "9.5");
-        when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(small, large));
-        when(items.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(item(3L, "5"), item(4L, "95")));
-        when(aggregation.aggregate(anyList())).thenReturn(aggregate(1,"5"), aggregate(1,"95"),
-                aggregate(1,"5"), aggregate(1,"6"));
+        var sources = new java.util.ArrayList<ShoppingRecipeContributionEntity>();
+        var shoppingItems = new java.util.ArrayList<ShoppingListItemEntity>();
+        for (long id = 3; id < 8; id++) {
+            var occurrence = source(UUID.randomUUID(), id, "10", "1");
+            occurrence.setRecipeId(9L);
+            occurrence.setExpectedIngredientCount(1);
+            sources.add(occurrence);
+            shoppingItems.add(item(id, "10"));
+        }
+        when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(sources);
+        when(items.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(shoppingItems);
+        when(aggregation.aggregate(anyList())).thenAnswer(invocation -> {
+            List<ShoppingAggregationLine> lines = invocation.getArgument(0);
+            return aggregate(1, lines.getFirst().quantity().toPlainString());
+        });
         when(checklists.get(7L)).thenReturn(emptyResponse());
 
-        service.updateRecipeServings(7, 9, request("1.1"));
+        service.updateRecipeServings(7, 9, request("0.5"));
 
-        assertThat(small.getServings()).isEqualByComparingTo("0.5");
-        assertThat(large.getServings()).isEqualByComparingTo("0.6");
+        assertThat(sources).allSatisfy(source -> {
+            assertThat(source.getServings()).isEqualByComparingTo("0.1");
+            assertThat(source.getQuantity()).isEqualByComparingTo("1.000000");
+        });
+        assertThat(sources.stream().map(ShoppingRecipeContributionEntity::getServings)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)).isEqualByComparingTo("0.5");
+        assertThat(shoppingItems).allSatisfy(item -> assertThat(item.getQuantity()).isEqualByComparingTo("1.000000"));
+    }
+
+    @Test
+    void updateRecipeServingsRejectsUnsafeRoundedSourceQuantityWithoutSavingPartialChanges() {
+        owned();
+        var source = source(UUID.randomUUID(), 3L, "0.000001", "5");
+        source.setRecipeId(9L);
+        source.setExpectedIngredientCount(1);
+        when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(source));
+        when(items.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(item(3L, "0.000001")));
+        when(aggregation.aggregate(anyList())).thenReturn(aggregate(1, "0.000001"));
+
+        assertThatThrownBy(() -> service.updateRecipeServings(7, 9, request("0.5"))).isInstanceOf(AppException.class);
+
+        assertThat(source.getServings()).isEqualByComparingTo("5");
+        assertThat(source.getQuantity()).isEqualByComparingTo("0.000001");
+        verify(contributions, never()).saveAll(anyList());
     }
 
     @Test
@@ -207,6 +240,7 @@ class ShoppingRecipeSourceServiceTest {
         when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(noOp));
         when(checklists.get(7L)).thenReturn(emptyResponse());
         assertThat(service.updateRecipeServings(7, 9, request("2.0"))).isNotNull();
+        verify(contributions, never()).saveAll(anyList());
     }
 
     @Test

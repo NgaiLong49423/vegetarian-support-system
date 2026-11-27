@@ -66,9 +66,9 @@ export function ShoppingListRecipeServings({
   }, [listId, recipeId, onChange, retry])
 
   async function save() {
-    const minimum = (source?.occurrenceCount ?? 1) * 0.5
+    const minimum = 0.5
     if (!source || pending.current || !Number.isFinite(servings) || servings < minimum || servings > 500
-        || !Number.isInteger(servings * 10) || servings === savedServings) return
+        || !Number.isInteger(servings * 2) || servings === savedServings) return
     pending.current = true
     setSaving(true)
     setError("")
@@ -84,16 +84,16 @@ export function ShoppingListRecipeServings({
     }
   }
 
-  const minimum = (source?.occurrenceCount ?? 1) * 0.5
+  const minimum = 0.5
   const validServings = Number.isFinite(servings) && servings >= minimum && servings <= 500
-      && Number.isInteger(servings * 10)
+      && Number.isInteger(servings * 2)
 
   return (
     <div className="recipe-detail-no-print min-w-0 space-y-2" aria-label="Khẩu phần trong danh sách mua sắm" aria-busy={loading || saving}>
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-2 rounded-xl bg-brand-50 p-1">
           <button type="button" aria-label="Giảm khẩu phần" disabled={!source || loading || saving || servings <= minimum}
-            onClick={() => onChange(Math.max(minimum, Math.round((servings - 0.5) * 10) / 10))}
+            onClick={() => onChange(Math.max(minimum, Math.round((servings - 0.5) * 2) / 2))}
             className="rounded-lg p-2 text-brand-700 hover:bg-paper disabled:opacity-40">
             <Minus className="h-4 w-4" />
           </button>
@@ -101,7 +101,7 @@ export function ShoppingListRecipeServings({
             {source ? `${servings.toLocaleString("vi-VN")} phần` : "—"}
           </span>
           <button type="button" aria-label="Tăng khẩu phần" disabled={!source || loading || saving || servings >= 500}
-            onClick={() => onChange(Math.min(500, Math.round((servings + 0.5) * 10) / 10))}
+            onClick={() => onChange(Math.min(500, Math.round((servings + 0.5) * 2) / 2))}
             className="rounded-lg p-2 text-brand-700 hover:bg-paper disabled:opacity-40">
             <Plus className="h-4 w-4" />
           </button>

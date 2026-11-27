@@ -66,41 +66,45 @@ function recipeServingChanges(list: ShoppingChecklist, recipeId: number, request
   }
   const entries = [...occurrences.entries()]
   if (!entries.length || entries.some(([, occurrence]) => occurrence.servings <= 0)) return []
-  const targetTenths = Math.round(requested * 10)
-  const weights = entries.map(([, occurrence]) => Math.round(occurrence.servings * 10))
-  const allocated = Array(entries.length).fill(0) as number[]
-  const remainders = Array(entries.length).fill(0) as number[]
+  const scale = 1_000_000
+  const targetMicros = BigInt(Math.round(requested * scale))
+  const weights = entries.map(([, occurrence]) => BigInt(Math.round(occurrence.servings * scale)))
+  const allocated = Array(entries.length).fill(0n) as bigint[]
+  const remainders = Array(entries.length).fill(0n) as bigint[]
   let active = entries.map((_, index) => index)
-  let remaining = targetTenths
+  let remaining = targetMicros
   while (active.length) {
-    const totalWeight = active.reduce((sum, index) => sum + weights[index], 0)
-    const belowMinimum = active.find((index) => remaining * weights[index] < 5 * totalWeight)
+    const totalWeight = active.reduce((sum, index) => sum + weights[index], 0n)
+    const belowMinimum = active.find((index) => remaining * weights[index] < totalWeight)
     if (belowMinimum !== undefined) {
-      allocated[belowMinimum] = 5
-      remaining -= 5
+      allocated[belowMinimum] = 1n
+      remaining -= 1n
       active = active.filter((index) => index !== belowMinimum)
       continue
     }
-    let baseTotal = 0
+    let baseTotal = 0n
     active.forEach((index) => {
       const numerator = remaining * weights[index]
-      allocated[index] = Math.floor(numerator / totalWeight)
+      allocated[index] = numerator / totalWeight
       remainders[index] = numerator % totalWeight
       baseTotal += allocated[index]
     })
     const leftover = remaining - baseTotal
-    active.sort((left, right) => remainders[right] - remainders[left] || left - right)
-    for (let index = 0; index < leftover; index += 1) allocated[active[index]] += 1
+    active.sort((left, right) => remainders[right] > remainders[left] ? 1
+      : remainders[right] < remainders[left] ? -1 : left - right)
+    for (let index = 0; BigInt(index) < leftover; index += 1) allocated[active[index]] += 1n
     break
   }
   const totals = new Map<string, RecipeAmountChange>()
   entries.forEach(([, occurrence], occurrenceIndex) => {
-    const nextServings = allocated[occurrenceIndex] / 10
+    const nextServings = Number(allocated[occurrenceIndex]) / scale
     occurrence.rows.forEach(({ item, source }) => {
       const unitCode = source.originalUnitCode ?? item.unitCode
       const key = `${item.id}:${unitCode}`
       const current = totals.get(key) ?? { key, itemId: item.id, name: item.name, quantity: 0, unitCode, removeItem: false }
-      current.quantity += source.originalQuantity * nextServings / occurrence.servings - source.originalQuantity
+      const ratio = Math.round(nextServings / occurrence.servings * 1_000_000_000_000) / 1_000_000_000_000
+      const updatedQuantity = Math.round(source.originalQuantity * ratio * scale) / scale
+      current.quantity += updatedQuantity - source.originalQuantity
       totals.set(key, current)
     })
   })
@@ -424,11 +428,11 @@ function ShoppingWorkspace() {
     : recipeServingChanges(list, recipeAction.source.recipeId, Number(recipeServingsDraft))
   const changedRecipeItemCount = new Set(recipeActionChanges.map((change) => change.itemId)).size
   const requestedRecipeServings = Number(recipeServingsDraft)
-  const minimumRecipeServings = (recipeAction?.source.occurrenceCount ?? 1) * 0.5
+  const minimumRecipeServings = 0.5
   const validRecipeServings = Number.isFinite(requestedRecipeServings)
     && requestedRecipeServings >= minimumRecipeServings
     && requestedRecipeServings <= 500
-    && Math.abs(requestedRecipeServings * 10 - Math.round(requestedRecipeServings * 10)) < 0.000001
+    && Math.abs(requestedRecipeServings * 2 - Math.round(requestedRecipeServings * 2)) < 0.000001
   // Saved rows stay separate on reload; this hint never performs a conversion.
   const separate = (item: ShoppingItem) =>
     item.ingredientId !== null &&
@@ -999,7 +1003,7 @@ function ShoppingWorkspace() {
             event.preventDefault()
             if (recipeAction.mode === "servings" && !recipeActionConfirmed) {
               if (!validRecipeServings) {
-                setError(`Khẩu phần phải từ ${minimumRecipeServings.toLocaleString("vi-VN")} đến 500, theo bước 0,1.`)
+                setError("Khẩu phần phải từ 0,5 đến 500, theo bước 0,5.")
                 return
               }
               setError("")
@@ -1020,10 +1024,10 @@ function ShoppingWorkspace() {
             </div>
             {recipeAction.mode === "servings" && !recipeActionConfirmed && (
               <label className="block text-sm font-semibold text-ink" htmlFor="shopping-recipe-servings">Tổng khẩu phần mới
-                <input id="shopping-recipe-servings" type="number" min={minimumRecipeServings} max="500" step="0.1" required
+                <input id="shopping-recipe-servings" type="number" min={minimumRecipeServings} max="500" step="0.5" required
                   value={recipeServingsDraft} onChange={(event) => { setRecipeServingsDraft(event.target.value); setError("") }}
                   className={`${field} mt-2 w-full`} />
-                <span className="mt-1 block text-xs font-normal text-ink-muted">Ít nhất {minimumRecipeServings.toLocaleString("vi-VN")} khẩu phần để mỗi lần xuất hiện còn tối thiểu 0,5 khẩu phần.</span>
+                <span className="mt-1 block text-xs font-normal text-ink-muted">Có thể chỉnh từ 0,5 đến 500 khẩu phần, theo bước 0,5.</span>
               </label>
             )}
             {(recipeActionConfirmed || recipeAction.mode === "remove") && (

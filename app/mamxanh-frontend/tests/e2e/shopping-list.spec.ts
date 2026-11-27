@@ -820,6 +820,43 @@ test("quick recipe serving change previews ingredient deltas before saving to th
   expect(state.writes).toContainEqual({ method: "PUT", suffix: "/42/recipes/9/servings", body: { servings: 1 } })
 })
 
+test("quick recipe serving editor lets five meal-plan occurrences drop to 0.5 in half steps", async ({ page }) => {
+  const state = await setup(page)
+  const occurrences = Array.from({ length: 5 }, (_, index) => ({
+    sourceId: `recipe-9-${index + 1}`, sourceKind: "RECIPE" as const, recipeId: 9, ingredientId: 5,
+    title: "Canh nấm", available: true, originalQuantity: 10, originalUnitId: 1,
+    originalUnitCode: "g", servings: 1,
+  }))
+  const source = {
+    sourceId: "recipe-9", recipeId: 9, occurrenceCount: 5, title: "Canh nấm", available: true,
+    coverUrl: null, servings: 5, mealDate: null, mealType: null,
+  }
+  state.list.recipeSources = [source]
+  state.list.items = [row(1, { quantity: 50, sources: occurrences })]
+  await page.route("**/api/v1/shopping-lists/42/recipes/9/servings", async (route) => {
+    const body = route.request().postDataJSON()
+    state.writes.push({ method: "PUT", suffix: "/42/recipes/9/servings", body })
+    source.servings = body.servings
+    return route.fulfill({ json: state.list })
+  })
+  await page.goto("/di-cho?listId=42")
+  await page.getByRole("button", { name: "Thao tác với Canh nấm" }).click()
+  await page.getByRole("button", { name: "Chỉnh khẩu phần" }).click()
+  const dialog = page.getByRole("dialog", { name: "Chỉnh nhanh khẩu phần" })
+  const servings = dialog.getByLabel("Tổng khẩu phần mới")
+  await expect(servings).toHaveAttribute("min", "0.5")
+  await expect(servings).toHaveAttribute("step", "0.5")
+  await servings.fill("0.5")
+  await dialog.getByRole("button", { name: "Xem thay đổi" }).click()
+  await expect(dialog).toContainText("Khẩu phần: 5 → 0,5")
+  await expect(dialog).toContainText("Giảm 45 g")
+  await expect.poll(() => state.writes.length).toBe(0)
+  await dialog.getByRole("button", { name: "Xác nhận thay đổi" }).click()
+  await expect(dialog).toHaveCount(0)
+  await expect(page.getByRole("status")).toContainText("Đã cập nhật khẩu phần")
+  expect(state.writes).toContainEqual({ method: "PUT", suffix: "/42/recipes/9/servings", body: { servings: 0.5 } })
+})
+
 test("quick recipe serving increase previews named ingredient additions before saving", async ({ page }) => {
   const state = await setup(page)
   const source = {
