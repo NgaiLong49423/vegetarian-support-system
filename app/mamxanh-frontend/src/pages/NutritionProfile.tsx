@@ -405,8 +405,11 @@ export function NutritionProfile() {
               <legend id="nutrition-goal-label" className={miniLabelClass}>Mục tiêu dinh dưỡng cá nhân (không bắt buộc)</legend>
               <p id="nutrition-goal-help" className="mt-1 text-xs font-normal leading-5 text-ink-muted">Lựa chọn mục tiêu phù hợp để chúng tôi đề xuất thực đơn dành riêng cho bạn.</p>
               <details className="group mt-2" onBlur={(event) => {
-                const nextTarget = event.relatedTarget;
-                if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) event.currentTarget.open = false;
+                const details = event.currentTarget;
+                // Đợi click trên nhãn chuyển focus sang radio trước khi xét đóng danh sách.
+                window.setTimeout(() => {
+                  if (!details.contains(document.activeElement)) details.open = false;
+                }, 0);
               }} onKeyDown={(event) => {
                 if (event.key === 'Escape') {
                   event.preventDefault();

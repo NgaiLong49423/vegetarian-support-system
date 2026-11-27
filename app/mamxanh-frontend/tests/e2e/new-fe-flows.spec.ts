@@ -105,6 +105,37 @@ async function selectNutritionGoal(page: Page, label: string) {
   await page.getByRole('radio', { name: new RegExp(label) }).check();
 }
 
+test('nutrition goals can be selected by clicking their labels and saved', async ({ page }) => {
+  await prepareMockAuthenticatedNutritionPage(page, {
+    ...savedNutritionResponse, profile: { ...exampleProfile, nutritionGoal: 'IMPROVE_HEALTH' },
+  });
+  let savedGoal: string | null = 'IMPROVE_HEALTH';
+  await page.route('**/api/v1/nutrition/profile', async (route) => {
+    if (route.request().method() === 'PUT') savedGoal = route.request().postDataJSON().nutritionGoal;
+    await route.fulfill({ json: { ...savedNutritionResponse, profile: { ...exampleProfile, nutritionGoal: savedGoal } } });
+  });
+  const trigger = page.locator('#nutrition-goal-trigger');
+  for (const label of ['Duy trì cân nặng', 'Giảm cân', 'Tăng cân', 'Tăng cơ', 'Hỗ trợ tập luyện', 'Chưa chọn mục tiêu', 'Cải thiện sức khỏe chung']) {
+    await trigger.click();
+    await page.getByText(label, { exact: true }).click();
+    await expect(trigger).toContainText(label === 'Chưa chọn mục tiêu' ? 'Chọn mục tiêu của bạn' : label);
+  }
+  await trigger.click();
+  await page.getByText('Giảm cân', { exact: true }).click();
+  await page.getByRole('checkbox').check();
+  const request = page.waitForRequest((candidate) => candidate.method() === 'PUT' && new URL(candidate.url()).pathname === '/api/v1/nutrition/profile');
+  await page.getByRole('button', { name: 'Lưu hồ sơ' }).click();
+  expect((await request).postDataJSON().nutritionGoal).toBe('LOSE_WEIGHT');
+  await expect.poll(() => savedGoal).toBe('LOSE_WEIGHT');
+  await page.reload();
+  await expect(trigger).toContainText('Giảm cân');
+  await trigger.focus();
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Escape');
+  await expect(trigger).toBeFocused();
+  await expect(page.locator('#nutrition-goal-options')).toBeHidden();
+});
+
 test('nutrition goal dropdown explains each optional choice and restores a saved goal', async ({ page }) => {
   await prepareMockAuthenticatedNutritionPage(page, savedNutritionResponse);
 
