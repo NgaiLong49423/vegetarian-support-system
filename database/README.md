@@ -1,11 +1,15 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.41.1<br>
+> **Version:** v0.42.0<br>
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-11-21<br>
+> **Last Updated:** 2026-11-28<br>
 > **Status:** Active  
 
 # Database Workspace
+
+## Migration V46 — Tăng độ chính xác khẩu phần nguồn công thức
+
+`V46__increase_shopping_recipe_servings_precision.sql` mở rộng `SHOPPING_RECIPE_CONTRIBUTION.servings` từ `DECIMAL(4,1)` thành `DECIMAL(9,6)` để phân bổ tổng khẩu phần đã chỉnh theo tỷ lệ giữa các lần xuất hiện mà vẫn lưu chính xác đến sáu chữ số thập phân. Migration chỉ tăng độ chính xác và giữ nguyên dữ liệu hiện có; `database/schema.sql` phản ánh kiểu dữ liệu mới.
 
 ## Migration V41 — Journal đa tác vụ bền vững cho AI Assistant
 

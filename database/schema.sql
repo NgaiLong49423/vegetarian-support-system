@@ -1260,7 +1260,7 @@ CREATE TABLE [SHOPPING_RECIPE_CONTRIBUTION] (
     source_id UNIQUEIDENTIFIER NOT NULL,
     source_kind VARCHAR(16) NOT NULL CONSTRAINT DF_SRC_source_kind DEFAULT 'RECIPE',
     expected_ingredient_count INT NULL,
-    servings DECIMAL(4,1) NULL,
+    servings DECIMAL(9,6) NULL,
     meal_plan_entry_id BIGINT NULL,
     meal_date DATE NULL,
     meal_type VARCHAR(20) NULL,
