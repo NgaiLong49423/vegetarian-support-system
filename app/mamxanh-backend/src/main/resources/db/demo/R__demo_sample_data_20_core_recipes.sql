@@ -47,17 +47,16 @@ SELECT p.recipe_id, i.ingredient_id, i.unit_id, i.quantity
 FROM @recipe_ingredients i JOIN [RECIPE_POST] p ON p.author_id = @author_id AND p.title = i.title
 WHERE NOT EXISTS (SELECT 1 FROM [RECIPE_INGREDIENT] ri WHERE ri.recipe_id = p.recipe_id);
 
--- Local-only cover images use the Frontend's public demo assets so the recipe
--- cards can render without depending on a developer-specific Azure account.
+-- Demo cover images use the configured Azure Blob Storage base URL.
 DECLARE @recipe_media_seed TABLE (title NVARCHAR(120), blob_url VARCHAR(2048));
 INSERT INTO @recipe_media_seed VALUES
- (N'Đậu hũ sốt cà chua', '/assets/95427.png'),
- (N'Rau muống xào tỏi', '/assets/cddd4.png'),
- (N'Nấm đùi gà kho tiêu', '/assets/40c2c.png'),
- (N'Canh nấm hương cà rốt', '/assets/40053.png'),
- (N'Khoai lang hấp', '/assets/8ef48.png'),
- (N'Bông cải xanh xào nấm', '/assets/09723.png'),
- (N'Súp đậu lăng rau củ', '/assets/5a53c.png');
+ (N'Đậu hũ sốt cà chua', '${demoimagebaseurl}/demo-assets/95427.png'),
+ (N'Rau muống xào tỏi', '${demoimagebaseurl}/demo-assets/cddd4.png'),
+ (N'Nấm đùi gà kho tiêu', '${demoimagebaseurl}/demo-assets/40c2c.png'),
+ (N'Canh nấm hương cà rốt', '${demoimagebaseurl}/demo-assets/40053.png'),
+ (N'Khoai lang hấp', '${demoimagebaseurl}/demo-assets/8ef48.png'),
+ (N'Bông cải xanh xào nấm', '${demoimagebaseurl}/demo-assets/09723.png'),
+ (N'Súp đậu lăng rau củ', '${demoimagebaseurl}/demo-assets/5a53c.png');
 
 INSERT INTO [RECIPE_MEDIA] (recipe_id, blob_url, mime_type, display_order, is_cover)
 SELECT p.recipe_id, s.blob_url, 'image/png', 1, 1

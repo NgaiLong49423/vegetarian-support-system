@@ -52,7 +52,7 @@ INSERT INTO @recipes (
     N'3. Xay 30–45 giây đến khi hỗn hợp mịn, không còn mảnh chuối lớn. Dừng máy và vét thành cối một lần nếu trái cây bám trên thành.' + NCHAR(10) + NCHAR(10) +
     N'4. Thêm phần sữa còn lại từng ít một đến khi đạt độ sánh mong muốn; không thêm toàn bộ cùng lúc nếu muốn ly sinh tố đặc.' + NCHAR(10) + NCHAR(10) +
     N'5. Nếm và điều chỉnh bằng một ít chuối hoặc sữa, không cần thêm đường nếu trái cây đã chín ngọt. Rót ra ly lạnh, dùng ngay; không để ở nhiệt độ phòng quá lâu.',
-    'DESSERT', 'EASY', 2, 10, 0, NULL, '/assets/recipe-phuc-01-sinh-to-dau-tam.png'
+    'DESSERT', 'EASY', 2, 10, 0, NULL, '${demoimagebaseurl}/demo-assets/recipe-phuc-01-sinh-to-dau-tam.png'
 ),
 (
     N'Nước mơ gừng ngâm lạnh',
@@ -63,7 +63,7 @@ INSERT INTO @recipes (
     N'3. Hạ lửa nhỏ, nấu 8–10 phút; không đun sôi mạnh để miếng mơ không nát và siro không đục. Khi mơ chuyển mềm trong nhưng vẫn giữ hình, tắt bếp.' + NCHAR(10) + NCHAR(10) +
     N'4. Nếm siro khi còn ấm, thêm nước nếu vị quá đậm. Để nguội tự nhiên, lọc bỏ gừng nếu muốn vị nhẹ, rồi bảo quản kín trong ngăn mát.' + NCHAR(10) + NCHAR(10) +
     N'5. Pha mỗi ly với khoảng một phần siro và ba phần nước lạnh; khuấy đều, nếm lại độ chua ngọt rồi thêm đá. Dùng trong vài ngày và luôn lấy siro bằng muỗng sạch.',
-    'DESSERT', 'EASY', 3, 15, 10, NULL, '/assets/recipe-phuc-02-nuoc-mo-gung.png'
+    'DESSERT', 'EASY', 3, 15, 10, NULL, '${demoimagebaseurl}/demo-assets/recipe-phuc-02-nuoc-mo-gung.png'
 ),
 (
     N'Nước ép dưa lưới quýt thanh mát',
@@ -74,7 +74,7 @@ INSERT INTO @recipes (
     N'3. Khuấy hai phần nước ép trong bình lạnh. Để yên khoảng một phút cho bọt nổi lên rồi hớt bọt nếu muốn bề mặt trong.' + NCHAR(10) + NCHAR(10) +
     N'4. Nếm trước khi thêm đường; nếu trái cây đã ngọt, giữ nguyên vị tự nhiên. Nếu muốn chua rõ hơn, tăng phần quýt thay vì thêm nhiều chất tạo ngọt.' + NCHAR(10) + NCHAR(10) +
     N'5. Rót vào ly lạnh và dùng ngay. Không để nước ép lâu ngoài không khí vì hương quýt giảm và màu có thể sẫm; phần còn lại đậy kín, giữ lạnh và dùng trong ngày.',
-    'DESSERT', 'EASY', 2, 12, 0, NULL, '/assets/recipe-phuc-03-ep-dua-luoi-quyt.png'
+    'DESSERT', 'EASY', 2, 12, 0, NULL, '${demoimagebaseurl}/demo-assets/recipe-phuc-03-ep-dua-luoi-quyt.png'
 ),
 (
     N'Sữa hạt kiều mạch chà là',
@@ -86,7 +86,7 @@ INSERT INTO @recipes (
     N'4. Xay 60–90 giây đến khi hỗn hợp đồng nhất. Thêm nước từng ít một để đạt độ loãng mong muốn; không đổ quá nhiều ngay từ đầu.' + NCHAR(10) + NCHAR(10) +
     N'5. Lọc qua túi lọc sữa hạt hoặc rây mịn, ép bã nhẹ tay. Nếm và điều chỉnh bằng nước; chà là đã tạo độ ngọt nên không cần thêm nhiều đường.' + NCHAR(10) + NCHAR(10) +
     N'6. Đun sữa ở lửa nhỏ 3–5 phút, khuấy liên tục và không để sôi trào. Làm nguội nhanh, bảo quản kín trong ngăn mát và dùng trong 2 ngày; lắc đều trước khi uống.',
-    'DESSERT', 'MEDIUM', 3, 20, 20, NULL, '/assets/recipe-phuc-04-sua-kieu-mach.png'
+    'DESSERT', 'MEDIUM', 3, 20, 20, NULL, '${demoimagebaseurl}/demo-assets/recipe-phuc-04-sua-kieu-mach.png'
 ),
 (
     N'Trà vải thanh trà lá dứa',
@@ -98,7 +98,7 @@ INSERT INTO @recipes (
     N'4. Nghiền nhẹ một phần vải và thanh trà để lấy hương, giữ lại phần còn nguyên miếng. Không nghiền nát hạt hoặc ép mạnh phần vỏ quả.' + NCHAR(10) + NCHAR(10) +
     N'5. Trộn trái cây với nước lá dứa đã lạnh, nếm lại độ chua ngọt. Ủ trong ngăn mát 20–30 phút để hương hòa quyện.' + NCHAR(10) + NCHAR(10) +
     N'6. Chia ra ly cùng đá, thêm miếng trái cây nguyên để tạo kết cấu. Dùng trong ngày và giữ phần chưa rót trong bình có nắp ở ngăn mát.',
-    'DESSERT', 'EASY', 3, 15, 8, NULL, '/assets/recipe-phuc-05-tra-vai-thanh-tra.png'
+    'DESSERT', 'EASY', 3, 15, 8, NULL, '${demoimagebaseurl}/demo-assets/recipe-phuc-05-tra-vai-thanh-tra.png'
 ),
 (
     N'Chè hạt dền nhãn lá dứa',
@@ -110,7 +110,7 @@ INSERT INTO @recipes (
     N'4. Thêm đường và một nhúm muối, nấu thêm 2 phút cho tan. Nếu chè đặc quá, thêm nước nóng từng ít một.' + NCHAR(10) + NCHAR(10) +
     N'5. Tắt bếp, cho nhãn vào khi chè còn nóng nhưng không sôi để thịt quả vừa ấm, không teo. Múc ra chén, rắc dừa nạo.' + NCHAR(10) + NCHAR(10) +
     N'6. Dùng ấm hoặc làm nguội rồi bảo quản kín trong ngăn mát. Khi chè lạnh đặc lại, khuấy với một ít nước trước khi dùng; không đun lại nhãn quá lâu.',
-    'DESSERT', 'EASY', 4, 15, 25, NULL, '/assets/recipe-phuc-06-che-hat-den-nhan.png'
+    'DESSERT', 'EASY', 4, 15, 25, NULL, '${demoimagebaseurl}/demo-assets/recipe-phuc-06-che-hat-den-nhan.png'
 ),
 (
     N'Chè lúa mạch hạt sen',
@@ -122,7 +122,7 @@ INSERT INTO @recipes (
     N'4. Khi lúa mạch nở mềm nhưng vẫn giữ hạt, thêm đường và một nhúm muối. Nấu thêm 3 phút, nếm độ ngọt và chỉnh bằng nước nóng nếu chè quá đặc.' + NCHAR(10) + NCHAR(10) +
     N'5. Tắt bếp, đậy nắp 5 phút để hạt tiếp tục hút nước. Vớt gừng nếu muốn vị nhẹ hơn.' + NCHAR(10) + NCHAR(10) +
     N'6. Múc chè ra chén, dùng nóng hoặc để nguội rồi làm lạnh. Khi hâm lại, thêm nước và khuấy nhẹ để hạt không vỡ.',
-    'DESSERT', 'MEDIUM', 4, 15, 40, NULL, '/assets/recipe-phuc-07-che-lua-mach-hat-sen.png'
+    'DESSERT', 'MEDIUM', 4, 15, 40, NULL, '${demoimagebaseurl}/demo-assets/recipe-phuc-07-che-lua-mach-hat-sen.png'
 ),
 (
     N'Chè củ năng mận hậu',
@@ -134,7 +134,7 @@ INSERT INTO @recipes (
     N'4. Tắt bếp, để nước chè nguội hoàn toàn. Nếm lại, thêm nước nếu siro quá đậm.' + NCHAR(10) + NCHAR(10) +
     N'5. Cho phần mận còn lại vào khi chè đã nguội, đậy kín và làm lạnh ít nhất 1 giờ để hương hòa quyện.' + NCHAR(10) + NCHAR(10) +
     N'6. Chia vào chén lạnh, dùng trong ngày để củ năng còn giòn. Không để món đã pha ngoài nhiệt độ phòng quá lâu.',
-    'DESSERT', 'EASY', 4, 15, 10, NULL, '/assets/recipe-phuc-08-che-cu-nang-man.png'
+    'DESSERT', 'EASY', 4, 15, 10, NULL, '${demoimagebaseurl}/demo-assets/recipe-phuc-08-che-cu-nang-man.png'
 ),
 (
     N'Sorbet chôm chôm kiwi',
@@ -146,7 +146,7 @@ INSERT INTO @recipes (
     N'4. Thêm nước từng thìa nhỏ chỉ khi máy không cuộn được trái cây. Xay đến khi hỗn hợp mịn nhưng còn lạnh; không xay liên tục quá lâu.' + NCHAR(10) + NCHAR(10) +
     N'5. Nếm và cân bằng vị bằng một ít chanh nếu cần. Dùng ngay dạng mềm hoặc cho vào hộp nông, dàn phẳng và cấp đông thêm 45–60 phút để múc viên.' + NCHAR(10) + NCHAR(10) +
     N'6. Nếu sorbet đông cứng, để ngoài 5–8 phút trước khi múc. Bảo quản kín và dùng trong vài ngày để hạn chế tinh thể đá lớn.',
-    'DESSERT', 'MEDIUM', 4, 20, 0, NULL, '/assets/recipe-phuc-09-sorbet-chom-chom-kiwi.png'
+    'DESSERT', 'MEDIUM', 4, 20, 0, NULL, '${demoimagebaseurl}/demo-assets/recipe-phuc-09-sorbet-chom-chom-kiwi.png'
 ),
 (
     N'Kem mít dừa sữa đậu nành',
@@ -158,7 +158,7 @@ INSERT INTO @recipes (
     N'4. Nếm độ ngọt; nếu mít đã chín ngọt thì không thêm đường. Trộn phần dừa nạo còn lại bằng thìa để giữ chút kết cấu.' + NCHAR(10) + NCHAR(10) +
     N'5. Múc dùng ngay dạng kem mềm. Nếu muốn viên cứng hơn, dàn vào hộp nông, đậy kín và cấp đông thêm 1–2 giờ.' + NCHAR(10) + NCHAR(10) +
     N'6. Trước khi múc kem đã đông, để hộp ở ngăn mát 10 phút. Bảo quản kín và dùng sớm để hạn chế dăm đá.',
-    'DESSERT', 'EASY', 4, 15, 0, NULL, '/assets/recipe-phuc-10-kem-mit-dua.png'
+    'DESSERT', 'EASY', 4, 15, 0, NULL, '${demoimagebaseurl}/demo-assets/recipe-phuc-10-kem-mit-dua.png'
 ),
 (
     N'Bánh chuối hấp nước cốt dừa lá dứa',
@@ -171,7 +171,7 @@ INSERT INTO @recipes (
     N'5. Kiểm tra bằng que tre ở giữa bánh: que rút ra không còn bột lỏng, mặt bánh trong và đàn hồi nhẹ. Nếu còn bột ướt, hấp thêm 5 phút rồi kiểm tra lại.' + NCHAR(10) + NCHAR(10) +
     N'6. Nấu nước với dừa nạo và lá dứa ở lửa nhỏ 8–10 phút, khuấy đều; nêm đường và muối. Hòa một ít bột năng với nước lạnh, rót từ từ vào nồi đến khi sốt phủ được mặt thìa.' + NCHAR(10) + NCHAR(10) +
     N'7. Để bánh nghỉ 15 phút trước khi lấy khỏi khuôn. Cắt bằng dao làm ướt, rưới sốt dừa ấm và dùng trong ngày.',
-    'DESSERT', 'MEDIUM', 6, 20, 40, NULL, '/assets/recipe-phuc-11-banh-chuoi-hap.png'
+    'DESSERT', 'MEDIUM', 6, 20, 40, NULL, '${demoimagebaseurl}/demo-assets/recipe-phuc-11-banh-chuoi-hap.png'
 ),
 (
     N'Bánh khoai mỡ hấp lá dứa',
@@ -184,7 +184,7 @@ INSERT INTO @recipes (
     N'5. Đun sôi nước xửng, cho lá dứa vào phần nước tạo hương. Hấp khuôn ở lửa vừa 30–35 phút; giữ nắp kín nhưng không để nước sôi trào vào khuôn.' + NCHAR(10) + NCHAR(10) +
     N'6. Thử phần giữa bằng que tre. Khi que sạch, bánh đàn hồi nhẹ và không còn bột ướt, tắt bếp; nếu chưa đạt, hấp tiếp từng 5 phút.' + NCHAR(10) + NCHAR(10) +
     N'7. Để bánh nguội 15 phút rồi mới cắt. Dùng ấm hoặc để nguội hoàn toàn, bảo quản kín trong ngăn mát và hấp lại nhẹ trước khi ăn.',
-    'DESSERT', 'MEDIUM', 6, 20, 40, NULL, '/assets/recipe-phuc-12-banh-khoai-mo.png'
+    'DESSERT', 'MEDIUM', 6, 20, 40, NULL, '${demoimagebaseurl}/demo-assets/recipe-phuc-12-banh-khoai-mo.png'
 ),
 (
     N'Bánh kếp kiều mạch hạnh nhân',
@@ -196,7 +196,7 @@ INSERT INTO @recipes (
     N'4. Làm nóng chảo ở lửa vừa thấp, quét một lớp dầu thật mỏng. Múc bột thành bánh đường kính khoảng 8 cm, không dàn quá mỏng.' + NCHAR(10) + NCHAR(10) +
     N'5. Nấu 2–3 phút đến khi mặt bánh xuất hiện lỗ nhỏ và viền se lại. Lật nhẹ, áp chảo thêm 1–2 phút đến khi hai mặt vàng và giữa bánh không còn bột ướt.' + NCHAR(10) + NCHAR(10) +
     N'6. Làm lần lượt, hạ lửa nếu bánh sẫm nhanh. Xếp bánh lên giá để hơi thoát, dùng ấm với trái cây tươi hoặc bảo quản lạnh tối đa một ngày.',
-    'DESSERT', 'MEDIUM', 3, 15, 20, NULL, '/assets/recipe-phuc-13-banh-kep-kieu-mach.png'
+    'DESSERT', 'MEDIUM', 3, 15, 20, NULL, '${demoimagebaseurl}/demo-assets/recipe-phuc-13-banh-kep-kieu-mach.png'
 ),
 (
     N'Bánh bắp hấp lá dứa',
@@ -209,7 +209,7 @@ INSERT INTO @recipes (
     N'5. Đặt khuôn vào xửng đang có hơi nước mạnh, đặt bó lá dứa ở phần nước. Hấp lửa vừa 30–35 phút; phủ khăn dưới nắp để nước không nhỏ xuống bánh.' + NCHAR(10) + NCHAR(10) +
     N'6. Xiên que vào giữa bánh; nếu que không dính bột lỏng, mặt bánh đàn hồi và hạt ngô chín mềm là đạt. Hấp thêm 5 phút nếu phần giữa còn ướt.' + NCHAR(10) + NCHAR(10) +
     N'7. Để bánh nguội trong khuôn 15 phút rồi lấy ra. Cắt bằng dao ướt, dùng trong ngày hoặc đậy kín và bảo quản lạnh.',
-    'DESSERT', 'MEDIUM', 6, 15, 40, NULL, '/assets/recipe-phuc-14-banh-bap-hap.png'
+    'DESSERT', 'MEDIUM', 6, 15, 40, NULL, '${demoimagebaseurl}/demo-assets/recipe-phuc-14-banh-bap-hap.png'
 ),
 (
     N'Bánh khoai môn hấp dừa nạo',
@@ -222,7 +222,7 @@ INSERT INTO @recipes (
     N'5. Hấp lửa vừa 35–40 phút. Sau 30 phút, thử que tre ở giữa; nếu còn bột lỏng thì hấp tiếp từng 5 phút.' + NCHAR(10) + NCHAR(10) +
     N'6. Khi bánh chắc, que rút ra sạch và mặt bánh hơi trong, tắt bếp. Để bánh nghỉ 15–20 phút trong khuôn để cấu trúc ổn định.' + NCHAR(10) + NCHAR(10) +
     N'7. Cắt miếng bằng dao làm ướt, rắc thêm dừa nạo nếu muốn. Bảo quản kín trong ngăn mát và hấp lại nhẹ để bánh mềm trước khi dùng.',
-    'DESSERT', 'MEDIUM', 6, 20, 45, NULL, '/assets/recipe-phuc-15-banh-khoai-mon-hap.png'
+    'DESSERT', 'MEDIUM', 6, 20, 45, NULL, '${demoimagebaseurl}/demo-assets/recipe-phuc-15-banh-khoai-mon-hap.png'
 );
 
 IF (SELECT COUNT(*) FROM @recipes) <> 15
