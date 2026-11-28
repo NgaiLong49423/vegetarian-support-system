@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.166.0
+> **Version:** v2.167.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-11-28<br>
 > **Status:** Active
@@ -8,6 +8,25 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-11-28 — Reference Demo Recipe Images in Azure Storage
+
+**Status:** Committed — 89f167ad.
+
+**Scope:** Use a configurable Azure Blob Storage base URL for local demo recipe image fixtures.
+
+### Added
+
+None.
+
+### Changed
+
+- Replace local asset and Unsplash image references in demo recipe fixtures with Azure Blob URLs.
+- Allow the local Flyway fixture image base URL to be configured through the Backend environment.
+
+### Fixed
+
+None.
 
 ## 2026-11-28 — Keep Nutrition Goal Options Open
 
